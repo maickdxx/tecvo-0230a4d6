@@ -12,7 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Settings, AlertTriangle, Calendar as CalendarIcon, Clock, Users } from "lucide-react";
+import { Settings, TriangleAlert as AlertTriangle, Calendar as CalendarIcon, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

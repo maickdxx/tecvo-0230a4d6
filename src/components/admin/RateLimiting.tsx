@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Shield, Plus, Edit, Trash2, Activity, AlertTriangle } from "lucide-react";
+import { Shield, Plus, CreditCard as Edit, Trash2, Activity, TriangleAlert as AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface RateLimitRule {

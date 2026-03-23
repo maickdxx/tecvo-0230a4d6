@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, Search, RefreshCw, Trash2, Play, Pause, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Mail, Search, RefreshCw, Trash2, Play, Pause, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock, Circle as XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 

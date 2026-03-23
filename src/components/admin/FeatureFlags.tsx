@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Flag, Plus, Search, Trash2, Edit, AlertTriangle } from "lucide-react";
+import { Flag, Plus, Search, Trash2, CreditCard as Edit, TriangleAlert as AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface FeatureFlag {
