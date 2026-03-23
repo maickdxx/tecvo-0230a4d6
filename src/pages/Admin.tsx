@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ArrowLeft, Shield, LayoutDashboard, CreditCard, Activity, FileText, DollarSign } from "lucide-react";
+import { ArrowLeft, Shield, LayoutDashboard, CreditCard, Activity, FileText, DollarSign, Flag, Database, Mail, Zap, Wrench, HardDrive } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,12 @@ import { PlanManagement } from "@/components/admin/PlanManagement";
 import { SystemMonitoring } from "@/components/admin/SystemMonitoring";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { FinancialDashboard } from "@/components/admin/FinancialDashboard";
+import { FeatureFlags } from "@/components/admin/FeatureFlags";
+import { CacheManagement } from "@/components/admin/CacheManagement";
+import { EmailQueue } from "@/components/admin/EmailQueue";
+import { RateLimiting } from "@/components/admin/RateLimiting";
+import { MaintenanceMode } from "@/components/admin/MaintenanceMode";
+import { DatabaseManager } from "@/components/admin/DatabaseManager";
 import { useAdminOrganizations } from "@/hooks/useAdminOrganizations";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useEngagementMetrics } from "@/hooks/useEngagementMetrics";
@@ -118,7 +124,7 @@ export default function Admin() {
               Planos
             </TabsTrigger>
             <TabsTrigger value="organizations">Empresas</TabsTrigger>
-            <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="monitoring" className="gap-2">
               <Activity className="h-4 w-4" />
               Monitoramento
@@ -131,6 +137,30 @@ export default function Admin() {
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             <TabsTrigger value="ai-credits">IA</TabsTrigger>
             <TabsTrigger value="backups">Backups</TabsTrigger>
+            <TabsTrigger value="features" className="gap-2">
+              <Flag className="h-4 w-4" />
+              Features
+            </TabsTrigger>
+            <TabsTrigger value="cache" className="gap-2">
+              <Database className="h-4 w-4" />
+              Cache
+            </TabsTrigger>
+            <TabsTrigger value="email" className="gap-2">
+              <Mail className="h-4 w-4" />
+              Email
+            </TabsTrigger>
+            <TabsTrigger value="rate-limit" className="gap-2">
+              <Zap className="h-4 w-4" />
+              Rate Limit
+            </TabsTrigger>
+            <TabsTrigger value="maintenance" className="gap-2">
+              <Wrench className="h-4 w-4" />
+              Manutencao
+            </TabsTrigger>
+            <TabsTrigger value="database" className="gap-2">
+              <HardDrive className="h-4 w-4" />
+              Database
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard">
@@ -202,6 +232,30 @@ export default function Admin() {
 
           <TabsContent value="whatsapp">
             <AdminWhatsAppStatus />
+          </TabsContent>
+
+          <TabsContent value="features">
+            <FeatureFlags />
+          </TabsContent>
+
+          <TabsContent value="cache">
+            <CacheManagement />
+          </TabsContent>
+
+          <TabsContent value="email">
+            <EmailQueue />
+          </TabsContent>
+
+          <TabsContent value="rate-limit">
+            <RateLimiting />
+          </TabsContent>
+
+          <TabsContent value="maintenance">
+            <MaintenanceMode />
+          </TabsContent>
+
+          <TabsContent value="database">
+            <DatabaseManager />
           </TabsContent>
         </Tabs>
       </div>
