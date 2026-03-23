@@ -1,0 +1,1 @@
+ALTER TABLE public.organizations ADD COLUMN is_demo_mode boolean NOT NULL DEFAULT true;

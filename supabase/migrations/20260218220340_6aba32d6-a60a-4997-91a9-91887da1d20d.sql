@@ -1,0 +1,1 @@
+ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS welcome_whatsapp_sent boolean NOT NULL DEFAULT false;

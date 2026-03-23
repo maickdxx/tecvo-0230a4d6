@@ -1,0 +1,10 @@
+export { default as PontoDashboard } from "./PontoDashboard";
+export { default as PontoRegistros } from "./PontoRegistros";
+export { default as PontoEspelho } from "./PontoEspelho";
+export { default as PontoFuncionarios } from "./PontoFuncionarios";
+export { default as PontoAjustes } from "./PontoAjustes";
+export { default as PontoRelatorios } from "./PontoRelatorios";
+export { default as PontoConfiguracoes } from "./PontoConfiguracoes";
+export { default as PontoCalendario } from "./PontoCalendario";
+export { default as PontoEscalas } from "./PontoEscalas";
+export { default as PontoFechamento } from "./PontoFechamento";

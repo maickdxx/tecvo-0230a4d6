@@ -1,0 +1,1 @@
+DELETE FROM public.auto_message_log WHERE id = 'aac286f1-3998-4350-a458-ee940175a85b';

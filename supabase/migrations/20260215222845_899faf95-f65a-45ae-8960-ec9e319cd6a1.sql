@@ -1,0 +1,1 @@
+ALTER TABLE public.catalog_services ADD COLUMN service_type text;

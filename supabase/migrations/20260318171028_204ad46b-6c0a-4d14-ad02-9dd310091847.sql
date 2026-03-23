@@ -1,0 +1,1 @@
+DELETE FROM auto_message_log WHERE id = 'd135efb6-7374-4303-aada-62edc1211b48';
