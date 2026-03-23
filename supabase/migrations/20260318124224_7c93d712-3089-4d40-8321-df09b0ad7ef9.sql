@@ -1,0 +1,1 @@
+ALTER TABLE public.time_clock_settings ADD COLUMN IF NOT EXISTS default_hourly_rate numeric DEFAULT NULL;

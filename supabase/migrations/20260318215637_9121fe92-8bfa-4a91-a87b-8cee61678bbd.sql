@@ -1,0 +1,132 @@
+
+-- Fix get_dashboard_stats: cast text params to date/timestamptz for proper comparison
+CREATE OR REPLACE FUNCTION public.get_dashboard_stats(
+  _org_id uuid, _start_date text, _end_date text,
+  _prev_start_date text, _prev_end_date text, _is_demo boolean DEFAULT false
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  _income numeric; _expense numeric;
+  _prev_income numeric; _prev_expense numeric;
+  _income_service_paid_count integer; _forecasted_revenue numeric;
+  _total_services integer; _completed_services integer; _pending_services integer;
+  _revenue_by_type jsonb; _count_by_type jsonb;
+  _cancelled_count integer; _avg_exec_days numeric;
+  _sd date := _start_date::date;
+  _ed date := _end_date::date;
+  _psd date := _prev_start_date::date;
+  _ped date := _prev_end_date::date;
+BEGIN
+  PERFORM public.validate_org_access(_org_id);
+
+  -- Income: paid income transactions in period (by payment_date, which is DATE)
+  SELECT COALESCE(SUM(amount), 0) INTO _income FROM transactions
+  WHERE organization_id = _org_id AND type = 'income' AND status = 'paid'
+    AND payment_date >= _sd AND payment_date <= _ed
+    AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false);
+
+  -- Count DISTINCT services with paid income (for ticket médio)
+  SELECT COUNT(DISTINCT service_id) INTO _income_service_paid_count FROM transactions
+  WHERE organization_id = _org_id AND type = 'income' AND status = 'paid' AND service_id IS NOT NULL
+    AND payment_date >= _sd AND payment_date <= _ed
+    AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false);
+
+  -- Expenses: paid expense transactions in period
+  SELECT COALESCE(SUM(amount), 0) INTO _expense FROM transactions
+  WHERE organization_id = _org_id AND type = 'expense' AND status = 'paid'
+    AND payment_date >= _sd AND payment_date <= _ed
+    AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false);
+
+  -- Previous period income
+  SELECT COALESCE(SUM(amount), 0) INTO _prev_income FROM transactions
+  WHERE organization_id = _org_id AND type = 'income' AND status = 'paid'
+    AND payment_date >= _psd AND payment_date <= _ped
+    AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false);
+
+  -- Previous period expenses
+  SELECT COALESCE(SUM(amount), 0) INTO _prev_expense FROM transactions
+  WHERE organization_id = _org_id AND type = 'expense' AND status = 'paid'
+    AND payment_date >= _psd AND payment_date <= _ped
+    AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false);
+
+  -- Forecasted revenue: scheduled OR in_progress services in period
+  SELECT COALESCE(SUM(value), 0) INTO _forecasted_revenue FROM services
+  WHERE organization_id = _org_id AND status IN ('scheduled', 'in_progress')
+    AND scheduled_date >= (_sd::text || ' 00:00:00')::timestamptz
+    AND scheduled_date <= (_ed::text || ' 23:59:59')::timestamptz
+    AND deleted_at IS NULL AND document_type IS DISTINCT FROM 'quote'
+    AND (_is_demo OR is_demo_data = false);
+
+  -- Total services in period (by scheduled_date)
+  SELECT COUNT(*) INTO _total_services FROM services
+  WHERE organization_id = _org_id
+    AND scheduled_date >= (_sd::text || ' 00:00:00')::timestamptz
+    AND scheduled_date <= (_ed::text || ' 23:59:59')::timestamptz
+    AND deleted_at IS NULL AND document_type IS DISTINCT FROM 'quote'
+    AND status != 'cancelled'
+    AND (_is_demo OR is_demo_data = false);
+
+  -- Completed services in period (completed_date is timestamptz)
+  SELECT COUNT(*) INTO _completed_services FROM services
+  WHERE organization_id = _org_id AND status = 'completed'
+    AND completed_date >= (_sd::text || ' 00:00:00')::timestamptz
+    AND completed_date <= (_ed::text || ' 23:59:59')::timestamptz
+    AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false);
+
+  -- Pending services in period
+  SELECT COUNT(*) INTO _pending_services FROM services
+  WHERE organization_id = _org_id AND status IN ('pending', 'scheduled')
+    AND scheduled_date >= (_sd::text || ' 00:00:00')::timestamptz
+    AND scheduled_date <= (_ed::text || ' 23:59:59')::timestamptz
+    AND deleted_at IS NULL AND document_type IS DISTINCT FROM 'quote'
+    AND (_is_demo OR is_demo_data = false);
+
+  -- Revenue by service type (completed in period)
+  SELECT COALESCE(jsonb_object_agg(st, total), '{}'::jsonb) INTO _revenue_by_type FROM (
+    SELECT service_type::text AS st, COALESCE(SUM(value), 0) AS total FROM services
+    WHERE organization_id = _org_id AND status = 'completed'
+      AND completed_date >= (_sd::text || ' 00:00:00')::timestamptz
+      AND completed_date <= (_ed::text || ' 23:59:59')::timestamptz
+      AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false)
+    GROUP BY service_type) sub;
+
+  -- Count by service type (completed in period)
+  SELECT COALESCE(jsonb_object_agg(st, cnt), '{}'::jsonb) INTO _count_by_type FROM (
+    SELECT service_type::text AS st, COUNT(*) AS cnt FROM services
+    WHERE organization_id = _org_id AND status = 'completed'
+      AND completed_date >= (_sd::text || ' 00:00:00')::timestamptz
+      AND completed_date <= (_ed::text || ' 23:59:59')::timestamptz
+      AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false)
+    GROUP BY service_type) sub;
+
+  -- Cancelled services in period
+  SELECT COUNT(*) INTO _cancelled_count FROM services
+  WHERE organization_id = _org_id AND status = 'cancelled'
+    AND scheduled_date >= (_sd::text || ' 00:00:00')::timestamptz
+    AND scheduled_date <= (_ed::text || ' 23:59:59')::timestamptz
+    AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false);
+
+  -- Average execution time (completed in period)
+  SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (completed_date - created_at)) / 86400.0), 0) INTO _avg_exec_days FROM services
+  WHERE organization_id = _org_id AND status = 'completed'
+    AND completed_date >= (_sd::text || ' 00:00:00')::timestamptz
+    AND completed_date <= (_ed::text || ' 23:59:59')::timestamptz
+    AND deleted_at IS NULL AND (_is_demo OR is_demo_data = false);
+
+  RETURN jsonb_build_object(
+    'income', _income, 'expense', _expense,
+    'prev_income', _prev_income, 'prev_expense', _prev_expense,
+    'income_service_paid_count', _income_service_paid_count,
+    'forecasted_revenue', _forecasted_revenue,
+    'total_services', _total_services, 'completed_services', _completed_services,
+    'pending_services', _pending_services,
+    'revenue_by_type', _revenue_by_type, 'count_by_type', _count_by_type,
+    'cancelled_count', _cancelled_count, 'avg_exec_days', _avg_exec_days
+  );
+END;
+$function$;

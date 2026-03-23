@@ -1,0 +1,1 @@
+DELETE FROM public.notification_tokens WHERE user_id = 'c68e3697-c547-4dc5-93cf-b5d46b770ed1';

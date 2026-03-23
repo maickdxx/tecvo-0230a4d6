@@ -1,0 +1,1 @@
+UPDATE whatsapp_contacts SET name = phone WHERE name = 'Space Ar Condicionado';

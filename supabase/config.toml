@@ -1,0 +1,122 @@
+project_id = "vcuwimodpfbzpuvzesfm"
+
+[auth]
+  [auth.email]
+    [auth.email.template]
+      [auth.email.template.confirmation]
+        content_path = "./supabase/templates/confirmation.html"
+        subject = "Bem-vindo à Tecvo — Confirme seu e-mail"
+
+[functions]
+  [functions.accept-invite]
+    verify_jwt = false
+  [functions.admin-delete-organization]
+    verify_jwt = false
+  [functions.admin-delete-user]
+    verify_jwt = false
+  [functions.admin-notify]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.auto-business-tips]
+    verify_jwt = false
+  [functions.auto-org-backup]
+    verify_jwt = false
+  [functions.auto-service-notify]
+    verify_jwt = false
+  [functions.auto-weather-notify]
+    verify_jwt = false
+  [functions.bot-engine]
+    verify_jwt = false
+  [functions.broadcast-secretary]
+    verify_jwt = false
+  [functions.recurrence-automation]
+    verify_jwt = false
+  [functions.recurrence-test]
+    verify_jwt = false
+  [functions.check-subscription]
+    verify_jwt = false
+  [functions.client-portal-auth]
+    verify_jwt = false
+  [functions.cnpj-lookup]
+    verify_jwt = false
+  [functions.delete-account]
+    verify_jwt = false
+  [functions.exit-demo-mode]
+    verify_jwt = false
+  [functions.extension-auth]
+    verify_jwt = false
+  [functions.external-backup-sync]
+    verify_jwt = false
+  [functions.generate-time-clock-inconsistencies]
+    verify_jwt = false
+  [functions.generate-vapid-keys]
+    verify_jwt = false
+  [functions.mp-create-checkout]
+    verify_jwt = false
+  [functions.mp-credits-checkout]
+    verify_jwt = false
+  [functions.mp-credits-webhook]
+    verify_jwt = false
+  [functions.mp-webhook]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.remove-team-member]
+    verify_jwt = false
+  [functions.send-invite]
+    verify_jwt = false
+  [functions.send-password-reset-code]
+    verify_jwt = false
+  [functions.send-push-notification]
+    verify_jwt = false
+  [functions.send-scheduled-messages]
+    verify_jwt = false
+  [functions.send-support-email]
+    verify_jwt = false
+  [functions.send-verification-email]
+    verify_jwt = false
+  [functions.send-welcome-whatsapp]
+    verify_jwt = false
+  [functions.stripe-cancel-subscription]
+    verify_jwt = false
+  [functions.stripe-change-plan]
+    verify_jwt = false
+  [functions.stripe-create-checkout]
+    verify_jwt = false
+  [functions.stripe-customer-portal]
+    verify_jwt = false
+  [functions.stripe-webhook]
+    verify_jwt = false
+  [functions.tecvo-chat]
+    verify_jwt = false
+  [functions.validate-backup]
+    verify_jwt = false
+  [functions.verify-email-code]
+    verify_jwt = false
+  [functions.verify-password-reset-code]
+    verify_jwt = false
+  [functions.webchat-api]
+    verify_jwt = false
+  [functions.webhook-whatsapp]
+    verify_jwt = false
+  [functions.whatsapp-connect]
+    verify_jwt = false
+  [functions.whatsapp-disconnect]
+    verify_jwt = false
+  [functions.whatsapp-health]
+    verify_jwt = false
+  [functions.whatsapp-instance]
+    verify_jwt = false
+  [functions.whatsapp-media]
+    verify_jwt = false
+  [functions.whatsapp-message-action]
+    verify_jwt = false
+  [functions.whatsapp-send]
+    verify_jwt = false
+  [functions.whatsapp-status]
+    verify_jwt = false
+  [functions.whatsapp-admin-status]
+    verify_jwt = false
+  [functions.whatsapp-webhook]
+    verify_jwt = false
