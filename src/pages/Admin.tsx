@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { ArrowLeft, Shield, LayoutDashboard, CreditCard, Activity, FileText, DollarSign, Flag, Database, Mail, Zap, Wrench, HardDrive } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,12 @@ import { useNotificationTokens } from "@/hooks/useNotificationTokens";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export default function Admin() {
+  useEffect(() => {
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   const navigate = useNavigate();
   const { 
     organizations, 
