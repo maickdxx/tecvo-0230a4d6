@@ -1,0 +1,10 @@
+-- Add equipment, payment, and timing fields to services table
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS equipment_type TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS equipment_brand TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS equipment_model TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS solution TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS payment_method TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS payment_due_date DATE;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS payment_notes TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS entry_date TIMESTAMPTZ;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS exit_date TIMESTAMPTZ;

@@ -1,0 +1,1 @@
+ALTER TABLE public.organizations ADD COLUMN monthly_goal numeric DEFAULT null;

@@ -1,0 +1,1 @@
+ALTER TABLE public.time_clock_settings ALTER COLUMN work_days SET DEFAULT ARRAY['seg'::text, 'ter'::text, 'qua'::text, 'qui'::text, 'sex'::text];

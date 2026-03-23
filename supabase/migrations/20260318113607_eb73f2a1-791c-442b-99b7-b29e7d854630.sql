@@ -1,0 +1,1 @@
+ALTER TABLE public.time_clock_work_schedules ADD COLUMN IF NOT EXISTS hourly_rate numeric DEFAULT NULL;

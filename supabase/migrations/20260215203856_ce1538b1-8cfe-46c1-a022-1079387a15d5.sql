@@ -1,0 +1,1 @@
+ALTER TABLE public.transactions ADD COLUMN compensation_date date;

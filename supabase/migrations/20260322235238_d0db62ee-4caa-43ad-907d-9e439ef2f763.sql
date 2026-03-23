@@ -1,0 +1,2 @@
+ALTER TABLE public.whatsapp_contacts DROP CONSTRAINT whatsapp_contacts_channel_id_fkey;
+ALTER TABLE public.whatsapp_contacts ADD CONSTRAINT whatsapp_contacts_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.whatsapp_channels(id) ON DELETE SET NULL;
