@@ -1,5 +1,4 @@
 export { AdminProtectedRoute } from "./AdminProtectedRoute";
-export { AdminStats } from "./AdminStats";
 export { AdminOrgList } from "./AdminOrgList";
 export { AdminOrgDialog } from "./AdminOrgDialog";
 export { AdminUserList } from "./AdminUserList";
@@ -8,10 +7,7 @@ export { AdminSuperAdminList } from "./AdminSuperAdminList";
 export { AdminAICredits } from "./AdminAICredits";
 export { AdminAIUsage } from "./AdminAIUsage";
 export { AdminBackups } from "./AdminBackups";
-export { AdminTestCheckout } from "./AdminTestCheckout";
 export { AdminWhatsAppStatus } from "./AdminWhatsAppStatus";
 export { ExecutiveDashboard } from "./ExecutiveDashboard";
-export { PlanManagement } from "./PlanManagement";
-export { SystemMonitoring } from "./SystemMonitoring";
 export { AuditLogs } from "./AuditLogs";
 export { FinancialDashboard } from "./FinancialDashboard";
