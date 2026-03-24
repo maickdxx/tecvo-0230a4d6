@@ -61,7 +61,7 @@ export function useSystemMetrics() {
       ] = await Promise.all([
         supabase.from("organizations").select("id, plan, plan_expires_at, cancel_at_period_end, trial_ends_at, created_at", { count: "exact" }),
         supabase.from("profiles").select("id", { count: "exact" }),
-        supabase.rpc("count_technicians"),
+        supabase.from("profiles").select("id", { count: "exact" }).eq("field_worker", true),
         supabase.from("services").select("id", { count: "exact" }),
         supabase.from("whatsapp_messages").select("id", { count: "exact" }),
         supabase.from("services").select("id", { count: "exact" }).gte("created_at", startOfThisMonth.toISOString()).lte("created_at", endOfThisMonth.toISOString()),
@@ -75,7 +75,7 @@ export function useSystemMetrics() {
       const organizations = orgsResult.data || [];
       const totalOrgs = orgsResult.count || 0;
       const totalUsers = usersResult.count || 0;
-      const totalTechnicians = (techsResult.data as number) || 0;
+      const totalTechnicians = techsResult.count || 0;
       const totalServices = servicesResult.count || 0;
       const totalMessages = messagesResult.count || 0;
 
