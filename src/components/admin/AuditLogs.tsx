@@ -18,113 +18,100 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Download, User, Building2, Settings, Trash2, CreditCard as Edit, Plus, Shield, Calendar } from "lucide-react";
+import { Search, Download, User, Building2, Settings, Trash2, CreditCard as Edit, Plus, Shield, Calendar, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
-interface AuditLog {
+interface AuditLogRow {
   id: string;
-  action: string;
-  actionType: "create" | "update" | "delete" | "access";
-  userId: string;
-  userEmail: string;
-  organizationId?: string;
-  organizationName?: string;
-  details: string;
-  metadata: Record<string, any>;
-  timestamp: string;
-  ipAddress?: string;
+  operation: string;
+  table_name: string;
+  record_id: string | null;
+  user_id: string | null;
+  organization_id: string | null;
+  ip_address: string | null;
+  metadata: Record<string, any> | null;
+  old_data: Record<string, any> | null;
+  new_data: Record<string, any> | null;
+  created_at: string;
+}
+
+type ActionType = "INSERT" | "UPDATE" | "DELETE" | "other";
+
+function classifyAction(operation: string): ActionType {
+  const op = operation.toUpperCase();
+  if (op === "INSERT" || op === "CREATE") return "INSERT";
+  if (op === "UPDATE") return "UPDATE";
+  if (op === "DELETE") return "DELETE";
+  return "other";
 }
 
 export function AuditLogs() {
+  const { isSuperAdmin } = useSuperAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
-  const [userFilter, setUserFilter] = useState<string>("all");
+  const [limit, setLimit] = useState(100);
 
-  const [logs] = useState<AuditLog[]>([
-    {
-      id: "1",
-      action: "Plano atualizado",
-      actionType: "update",
-      userId: "user-1",
-      userEmail: "admin@tecvo.com.br",
-      organizationId: "org-1",
-      organizationName: "Empresa ABC Ltda",
-      details: "Plano alterado de Starter para Pro",
-      metadata: { oldPlan: "starter", newPlan: "pro" },
-      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      ipAddress: "192.168.1.1",
-    },
-    {
-      id: "2",
-      action: "Organização excluída",
-      actionType: "delete",
-      userId: "user-1",
-      userEmail: "admin@tecvo.com.br",
-      organizationId: "org-2",
-      organizationName: "Tech Solutions",
-      details: "Organização e todos os dados foram removidos",
-      metadata: { reason: "Solicitação do cliente" },
-      timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      ipAddress: "192.168.1.1",
-    },
-    {
-      id: "3",
-      action: "Super Admin concedido",
-      actionType: "create",
-      userId: "user-1",
-      userEmail: "admin@tecvo.com.br",
-      details: "Privilégios de super admin concedidos a user@example.com",
-      metadata: { targetUserId: "user-3", targetEmail: "user@example.com" },
-      timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-      ipAddress: "192.168.1.1",
-    },
-    {
-      id: "4",
-      action: "Configuração alterada",
-      actionType: "update",
-      userId: "user-1",
-      userEmail: "admin@tecvo.com.br",
-      details: "Limite de mensagens WhatsApp atualizado",
-      metadata: { setting: "whatsapp_message_limit", oldValue: 1000, newValue: 5000 },
-      timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-      ipAddress: "192.168.1.1",
-    },
-    {
-      id: "5",
-      action: "Acesso ao painel admin",
-      actionType: "access",
-      userId: "user-2",
-      userEmail: "manager@tecvo.com.br",
-      details: "Login realizado no painel administrativo",
-      metadata: { userAgent: "Chrome/120.0" },
-      timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-      ipAddress: "192.168.1.2",
-    },
-  ]);
+  const { data: logs = [], isLoading } = useQuery({
+    queryKey: ["audit-logs-real", actionFilter, limit],
+    queryFn: async () => {
+      let query = supabase
+        .from("data_audit_log")
+        .select("id, operation, table_name, record_id, user_id, organization_id, ip_address, metadata, old_data, new_data, created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit);
 
-  const getActionIcon = (actionType: AuditLog["actionType"]) => {
+      if (actionFilter !== "all") {
+        query = query.eq("operation", actionFilter);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as AuditLogRow[];
+    },
+    enabled: isSuperAdmin,
+  });
+
+  // Fetch org names for display
+  const orgIds = [...new Set(logs.filter(l => l.organization_id).map(l => l.organization_id!))];
+  const { data: orgMap = new Map<string, string>() } = useQuery({
+    queryKey: ["audit-org-names", orgIds.join(",")],
+    queryFn: async () => {
+      if (orgIds.length === 0) return new Map<string, string>();
+      const { data } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .in("id", orgIds);
+      return new Map((data || []).map(o => [o.id, o.name]));
+    },
+    enabled: isSuperAdmin && orgIds.length > 0,
+  });
+
+  const getActionIcon = (actionType: ActionType) => {
     switch (actionType) {
-      case "create":
+      case "INSERT":
         return <Plus className="h-4 w-4 text-green-600" />;
-      case "update":
+      case "UPDATE":
         return <Edit className="h-4 w-4 text-blue-600" />;
-      case "delete":
+      case "DELETE":
         return <Trash2 className="h-4 w-4 text-red-600" />;
-      case "access":
+      default:
         return <Shield className="h-4 w-4 text-purple-600" />;
     }
   };
 
-  const getActionBadge = (actionType: AuditLog["actionType"]) => {
+  const getActionBadge = (actionType: ActionType) => {
     switch (actionType) {
-      case "create":
+      case "INSERT":
         return <Badge variant="default" className="bg-green-600">Criação</Badge>;
-      case "update":
+      case "UPDATE":
         return <Badge variant="default" className="bg-blue-600">Atualização</Badge>;
-      case "delete":
+      case "DELETE":
         return <Badge variant="destructive">Exclusão</Badge>;
-      case "access":
-        return <Badge variant="default" className="bg-purple-600">Acesso</Badge>;
+      default:
+        return <Badge variant="default" className="bg-purple-600">{actionType}</Badge>;
     }
   };
 
@@ -133,20 +120,42 @@ export function AuditLogs() {
   };
 
   const filteredLogs = logs.filter(log => {
-    const matchesSearch =
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.organizationName?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesAction = actionFilter === "all" || log.actionType === actionFilter;
-    const matchesUser = userFilter === "all" || log.userId === userFilter;
-
-    return matchesSearch && matchesAction && matchesUser;
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      log.operation.toLowerCase().includes(term) ||
+      log.table_name.toLowerCase().includes(term) ||
+      log.user_id?.toLowerCase().includes(term) ||
+      (log.organization_id && orgMap.get(log.organization_id)?.toLowerCase().includes(term))
+    );
   });
 
   const handleExport = () => {
-    console.log("Exportando logs...");
+    const csvRows = [
+      ["ID", "Operação", "Tabela", "Usuário", "Organização", "IP", "Data"].join(","),
+      ...filteredLogs.map(log => [
+        log.id,
+        log.operation,
+        log.table_name,
+        log.user_id || "",
+        log.organization_id ? (orgMap.get(log.organization_id) || log.organization_id) : "",
+        log.ip_address || "",
+        formatTimestamp(log.created_at),
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    ];
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `audit-logs-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
+
+  // Stats from real data
+  const insertCount = logs.filter(l => classifyAction(l.operation) === "INSERT").length;
+  const updateCount = logs.filter(l => classifyAction(l.operation) === "UPDATE").length;
+  const deleteCount = logs.filter(l => classifyAction(l.operation) === "DELETE").length;
 
   return (
     <div className="space-y-6">
@@ -156,12 +165,12 @@ export function AuditLogs() {
             <div>
               <CardTitle>Logs de Auditoria</CardTitle>
               <CardDescription>
-                Registro completo de todas as ações realizadas na plataforma
+                Registros reais de operações no banco de dados
               </CardDescription>
             </div>
-            <Button variant="outline" onClick={handleExport}>
+            <Button variant="outline" onClick={handleExport} disabled={filteredLogs.length === 0}>
               <Download className="h-4 w-4 mr-2" />
-              Exportar
+              Exportar CSV
             </Button>
           </div>
         </CardHeader>
@@ -170,7 +179,7 @@ export function AuditLogs() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por ação, usuário ou organização..."
+                placeholder="Buscar por operação, tabela ou organização..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -178,88 +187,97 @@ export function AuditLogs() {
             </div>
             <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger className="w-full md:w-48">
-                <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Tipo de ação" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as ações</SelectItem>
-                <SelectItem value="create">Criação</SelectItem>
-                <SelectItem value="update">Atualização</SelectItem>
-                <SelectItem value="delete">Exclusão</SelectItem>
-                <SelectItem value="access">Acesso</SelectItem>
+                <SelectItem value="INSERT">Criação</SelectItem>
+                <SelectItem value="UPDATE">Atualização</SelectItem>
+                <SelectItem value="DELETE">Exclusão</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Ação</TableHead>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Organização</TableHead>
-                  <TableHead>Data/Hora</TableHead>
-                  <TableHead>IP</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Nenhum log encontrado
-                    </TableCell>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Operação / Tabela</TableHead>
+                    <TableHead>Organização</TableHead>
+                    <TableHead>Data/Hora</TableHead>
+                    <TableHead>IP</TableHead>
                   </TableRow>
-                ) : (
-                  filteredLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getActionIcon(log.actionType)}
-                          {getActionBadge(log.actionType)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{log.action}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {log.details}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{log.userEmail}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {log.organizationName ? (
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{log.organizationName}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{formatTimestamp(log.timestamp)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground font-mono">
-                          {log.ipAddress || "-"}
-                        </span>
+                </TableHeader>
+                <TableBody>
+                  {filteredLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Nenhum log encontrado
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ) : (
+                    filteredLogs.map((log) => {
+                      const actionType = classifyAction(log.operation);
+                      return (
+                        <TableRow key={log.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getActionIcon(actionType)}
+                              {getActionBadge(actionType)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{log.operation}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {log.table_name}
+                                {log.record_id && <span className="ml-1 font-mono text-xs">({log.record_id.slice(0, 8)}…)</span>}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {log.organization_id ? (
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">{orgMap.get(log.organization_id) || log.organization_id.slice(0, 8)}</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{formatTimestamp(log.created_at)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground font-mono">
+                              {log.ip_address || "—"}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {filteredLogs.length >= limit && (
+            <div className="flex justify-center mt-4">
+              <Button variant="outline" size="sm" onClick={() => setLimit(prev => prev + 100)}>
+                Carregar mais
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -271,9 +289,7 @@ export function AuditLogs() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{logs.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Últimas 24 horas
-            </p>
+            <p className="text-xs text-muted-foreground">Últimos registros carregados</p>
           </CardContent>
         </Card>
 
@@ -283,12 +299,8 @@ export function AuditLogs() {
             <Plus className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {logs.filter(l => l.actionType === "create").length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Novos registros
-            </p>
+            <div className="text-2xl font-bold">{insertCount}</div>
+            <p className="text-xs text-muted-foreground">INSERT</p>
           </CardContent>
         </Card>
 
@@ -298,12 +310,8 @@ export function AuditLogs() {
             <Edit className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {logs.filter(l => l.actionType === "update").length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Modificações
-            </p>
+            <div className="text-2xl font-bold">{updateCount}</div>
+            <p className="text-xs text-muted-foreground">UPDATE</p>
           </CardContent>
         </Card>
 
@@ -313,12 +321,8 @@ export function AuditLogs() {
             <Trash2 className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {logs.filter(l => l.actionType === "delete").length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Ações críticas
-            </p>
+            <div className="text-2xl font-bold">{deleteCount}</div>
+            <p className="text-xs text-muted-foreground">DELETE</p>
           </CardContent>
         </Card>
       </div>

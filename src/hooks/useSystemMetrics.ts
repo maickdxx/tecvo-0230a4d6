@@ -2,6 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSuperAdmin } from "./useSuperAdmin";
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
+import { PLAN_CONFIG } from "@/lib/planConfig";
+import type { PlanSlug } from "@/lib/planConfig";
+
+function getPlanPrice(slug: string): number {
+  if (slug in PLAN_CONFIG) {
+    return PLAN_CONFIG[slug as Exclude<PlanSlug, "free">].pricePerMonth;
+  }
+  return 0;
+}
 
 export interface SystemMetrics {
   totalOrganizations: number;
@@ -98,15 +107,8 @@ export function useSystemMetrics() {
         return new Date(org.plan_expires_at) < now;
       }).length;
 
-      const planPrices: Record<string, number> = {
-        teste: 1,
-        starter: 49,
-        essential: 119,
-        pro: 229,
-      };
-
       const monthlyRevenue = organizations.reduce((sum, org) => {
-        const price = planPrices[org.plan || ""] || 0;
+        const price = getPlanPrice(org.plan || "");
         if (org.plan && org.plan !== "free" && !org.cancel_at_period_end) {
           if (org.plan_expires_at && new Date(org.plan_expires_at) > now) {
             return sum + price;
@@ -187,15 +189,8 @@ export function useSystemMetrics() {
             .lte("created_at", monthEnd.toISOString()),
         ]);
 
-        const planPrices: Record<string, number> = {
-          teste: 1,
-          starter: 49,
-          essential: 119,
-          pro: 229,
-        };
-
         const revenue = (orgsResult.data || []).reduce((sum, org) => {
-          const price = planPrices[org.plan || ""] || 0;
+          const price = getPlanPrice(org.plan || "");
           if (org.plan && org.plan !== "free") {
             return sum + price;
           }

@@ -411,15 +411,36 @@ export function AdminUserDialog({ user, open, onOpenChange, onGrantSuperAdmin, i
               )}
             </div>
             {!isSuperAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onGrantSuperAdmin(user.user_id)}
-                disabled={isGranting}
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Tornar Super Admin
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isGranting}
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Tornar Super Admin
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Conceder Super Admin?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Deseja realmente conceder privilégios de <strong>Super Admin</strong> ao usuário{" "}
+                      <strong>{user.full_name || user.email}</strong>?
+                      <span className="block mt-2 text-destructive">
+                        Esta ação dará acesso total ao painel administrativo da plataforma.
+                      </span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onGrantSuperAdmin(user.user_id)}>
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
 

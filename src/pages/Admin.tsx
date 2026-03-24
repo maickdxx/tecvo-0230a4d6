@@ -1,19 +1,16 @@
 import { useMemo } from "react";
-import { ArrowLeft, Shield, LayoutDashboard, CreditCard, Activity, FileText, DollarSign } from "lucide-react";
+import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AdminStats, AdminOrgList } from "@/components/admin";
+import { AdminOrgList } from "@/components/admin";
 import { AdminUserList } from "@/components/admin/AdminUserList";
 import { AdminSuperAdminList } from "@/components/admin/AdminSuperAdminList";
 import { AdminAICredits } from "@/components/admin/AdminAICredits";
 import { AdminAIUsage } from "@/components/admin/AdminAIUsage";
 import { AdminBackups } from "@/components/admin/AdminBackups";
-import { AdminTestCheckout } from "@/components/admin/AdminTestCheckout";
 import { AdminWhatsAppStatus } from "@/components/admin/AdminWhatsAppStatus";
 import { ExecutiveDashboard } from "@/components/admin/ExecutiveDashboard";
-import { PlanManagement } from "@/components/admin/PlanManagement";
-import { SystemMonitoring } from "@/components/admin/SystemMonitoring";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { FinancialDashboard } from "@/components/admin/FinancialDashboard";
 import { useAdminOrganizations } from "@/hooks/useAdminOrganizations";
@@ -47,35 +44,12 @@ export default function Admin() {
   const { isSuperAdmin } = useSuperAdmin();
   const { pushInfo } = useNotificationTokens(isSuperAdmin);
 
-  const engagementSummary = useMemo(() => {
-    if (!metricsMap || metricsMap.size === 0) return undefined;
-    let active = 0, warm = 0, risk = 0;
-    metricsMap.forEach((m) => {
-      if (m.engagement_level === "active") active++;
-      else if (m.engagement_level === "warm") warm++;
-      else risk++;
-    });
-    return { active, warm, risk };
-  }, [metricsMap]);
-
   const handleUpdatePlan = (orgId: string, plan: string, expiresAt: string | null) => {
     updateOrganizationPlan.mutate({ orgId, plan, expiresAt });
   };
 
   const handleDelete = (orgId: string) => {
     deleteOrganization.mutate(orgId);
-  };
-
-  const extendedStats = {
-    ...stats,
-    totalSuperAdmins: grants.length,
-    starter: organizations.filter(o => o.plan === "starter").length,
-    inTrial: organizations.filter(o => {
-      if (!o.trial_ends_at) return false;
-      return new Date(o.trial_ends_at) > new Date();
-    }).length,
-    activeSubscribers: stats.activeSubscribers,
-    cancelledCount: stats.cancelledCount,
   };
 
   if (isLoading) {
@@ -113,16 +87,8 @@ export default function Admin() {
               <DollarSign className="h-4 w-4" />
               Financeiro
             </TabsTrigger>
-            <TabsTrigger value="plans" className="gap-2">
-              <CreditCard className="h-4 w-4" />
-              Planos
-            </TabsTrigger>
             <TabsTrigger value="organizations">Empresas</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="monitoring" className="gap-2">
-              <Activity className="h-4 w-4" />
-              Monitoramento
-            </TabsTrigger>
             <TabsTrigger value="logs" className="gap-2">
               <FileText className="h-4 w-4" />
               Auditoria
@@ -139,10 +105,6 @@ export default function Admin() {
 
           <TabsContent value="financial">
             <FinancialDashboard />
-          </TabsContent>
-
-          <TabsContent value="plans">
-            <PlanManagement />
           </TabsContent>
 
           <TabsContent value="organizations">
@@ -168,10 +130,6 @@ export default function Admin() {
               pushEnabledUsers={pushInfo.userIds}
               pushDeviceCounts={pushInfo.deviceCounts}
             />
-          </TabsContent>
-
-          <TabsContent value="monitoring">
-            <SystemMonitoring />
           </TabsContent>
 
           <TabsContent value="logs">

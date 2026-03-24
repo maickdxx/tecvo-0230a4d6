@@ -42,11 +42,11 @@ export function FinancialDashboard() {
 
       const now = new Date();
 
-      const planPrices: Record<string, number> = {
-        teste: 1,
-        starter: 49,
-        essential: 119,
-        pro: 229,
+      const getPlanPrice = (slug: string): number => {
+        if (slug in PLAN_CONFIG) {
+          return PLAN_CONFIG[slug as Exclude<PlanSlug, "free">].pricePerMonth;
+        }
+        return 0;
       };
 
       const getPlanDisplayName = (slug: string) => {
@@ -71,7 +71,7 @@ export function FinancialDashboard() {
       });
 
       const mrr = activePayingOrgs.reduce((sum, org) => {
-        return sum + (planPrices[org.plan || ""] || 0);
+        return sum + getPlanPrice(org.plan || "");
       }, 0);
 
       const arr = mrr * 12;
@@ -91,7 +91,7 @@ export function FinancialDashboard() {
           name: org.name,
           plan: org.plan || "",
           planDisplayName: getPlanDisplayName(org.plan || ""),
-          pricePerMonth: planPrices[org.plan || ""] || 0,
+          pricePerMonth: getPlanPrice(org.plan || ""),
           daysOverdue: differenceInDays(now, new Date(org.plan_expires_at!)),
           planExpiresAt: org.plan_expires_at!,
         }))
@@ -126,7 +126,9 @@ export function FinancialDashboard() {
       }));
 
       // Revenue by plan
-      const revenueByPlan = Object.entries(planPrices).map(([slug, price]) => {
+      const paidSlugs = ["teste", "starter", "essential", "pro"] as const;
+      const revenueByPlan = paidSlugs.map((slug) => {
+        const price = getPlanPrice(slug);
         const count = activePayingOrgs.filter(o => o.plan === slug).length;
         return {
           slug,
