@@ -75,7 +75,7 @@ export function useSystemMetrics() {
       const organizations = orgsResult.data || [];
       const totalOrgs = orgsResult.count || 0;
       const totalUsers = usersResult.count || 0;
-      const totalTechnicians = (techsResult.data as number) || 0;
+      const totalTechnicians = techsResult.count || 0;
       const totalServices = servicesResult.count || 0;
       const totalMessages = messagesResult.count || 0;
 
