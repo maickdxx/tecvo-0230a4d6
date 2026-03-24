@@ -324,14 +324,10 @@ export function useWhatsAppConversations() {
   const deleteConversation = useCallback(async (contactId: string) => {
     if (!organization?.id) return;
     setContacts(prev => prev.filter(c => c.id !== contactId));
-    await supabase
-      .from("whatsapp_messages")
-      .delete()
-      .eq("contact_id", contactId)
-      .eq("organization_id", organization.id);
+    // Soft-delete: hide conversation but preserve messages permanently
     await supabase
       .from("whatsapp_contacts")
-      .delete()
+      .update({ has_conversation: false, conversation_status: "resolvido" })
       .eq("id", contactId)
       .eq("organization_id", organization.id);
   }, [organization?.id]);
