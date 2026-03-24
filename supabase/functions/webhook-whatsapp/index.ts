@@ -1125,9 +1125,12 @@ Deno.serve(async (req) => {
 
     if (existingContact) {
       contactId = existingContact.id;
-      // Never reassign channel_id automatically.
-      // A conversation belongs to client + channel permanently.
+      // Reassign channel_id if the message arrived on a different (active) channel
       const updateData: Record<string, any> = {};
+      
+      if (needsChannelReassign) {
+        updateData.channel_id = channel.id;
+      }
       
       if (!existingContact.is_name_custom && !existingContact.linked_client_id && !fromMe && pushName) {
         updateData.name = pushName;
