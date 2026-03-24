@@ -127,12 +127,23 @@ export function useWhatsAppConversations() {
                   current.is_private === updated.is_private &&
                   current.last_message_content === updated.last_message_content &&
                   current.name === updated.name &&
-                  current.tags === updated.tags) {
+                  current.tags === updated.tags &&
+                  current.channel_id === updated.channel_id) {
                 return prev; // No change — preserve array reference & scroll
               }
               const newList = [...prev];
-              // Preserve joined fields not present in realtime payload
-              newList[idx] = { ...current, ...updated, linked_client: current.linked_client, channel: current.channel };
+              // Preserve joined fields, but clear stale channel if channel_id changed
+              const channelChanged = current.channel_id !== updated.channel_id;
+              newList[idx] = {
+                ...current,
+                ...updated,
+                linked_client: current.linked_client,
+                channel: channelChanged ? null : current.channel,
+              };
+              // If channel changed, trigger full refetch to get fresh join data
+              if (channelChanged) {
+                setTimeout(() => fetchContacts(), 500);
+              }
               return newList;
             }
             // New conversation, add to top

@@ -1051,12 +1051,15 @@ Deno.serve(async (req) => {
     console.log("[WEBHOOK-WHATSAPP] Mode:", mode, "| channel_type:", channel.channel_type, "| sender:", normalizedSender, "| channel_org:", channelOrganizationId, "| target_org:", targetOrganizationId);
 
     // 2. Find or create contact — in the TARGET org
-    // For groups, also try matching by the numeric part of the JID to handle @lid/@g.us variants
+    // Strategy: first try exact match (same channel), then fall back to same org (any channel)
+    // to handle channel rotation (disconnect A → connect B) without creating duplicates.
     let existingContact: any = null;
+    let needsChannelReassign = false;
     {
+      // Step 1: Exact match — same channel + same whatsapp_id
       const { data: exactMatch } = await supabase
         .from("whatsapp_contacts")
-        .select("id, profile_picture_url, is_name_custom, name, linked_client_id, is_blocked")
+        .select("id, profile_picture_url, is_name_custom, name, linked_client_id, is_blocked, channel_id")
         .eq("organization_id", targetOrganizationId)
         .eq("channel_id", channel.id)
         .eq("whatsapp_id", remoteJid)
@@ -1064,27 +1067,48 @@ Deno.serve(async (req) => {
       
       if (exactMatch) {
         existingContact = exactMatch;
-      } else if (isGroup) {
-        // Fallback: search by numeric group ID prefix to handle JID format variations,
-        // but ALWAYS scoped to the same channel to prevent cross-channel merges.
-        const groupNumericId = remoteJid.split("@")[0];
-        if (groupNumericId) {
-          const { data: fuzzyMatch } = await supabase
-            .from("whatsapp_contacts")
-            .select("id, profile_picture_url, is_name_custom, name, linked_client_id, is_blocked, whatsapp_id")
-            .eq("organization_id", targetOrganizationId)
-            .eq("channel_id", channel.id)
-            .eq("is_group", true)
-            .like("whatsapp_id", `${groupNumericId}@%`)
-            .maybeSingle();
-          
-          if (fuzzyMatch) {
-            existingContact = fuzzyMatch;
-            await supabase
+      } else {
+        // Step 2: Cross-channel fallback — same org + same whatsapp_id on ANY channel
+        // This handles the case where Channel A was disconnected/deleted and Channel B is now active.
+        const { data: orgMatch } = await supabase
+          .from("whatsapp_contacts")
+          .select("id, profile_picture_url, is_name_custom, name, linked_client_id, is_blocked, channel_id")
+          .eq("organization_id", targetOrganizationId)
+          .eq("whatsapp_id", remoteJid)
+          .maybeSingle();
+        
+        if (orgMatch) {
+          existingContact = orgMatch;
+          // The message arrived on a different (active) channel — reassign
+          if (orgMatch.channel_id !== channel.id) {
+            needsChannelReassign = true;
+            console.log("[WEBHOOK-WHATSAPP] Channel reassign: contact", orgMatch.id, "from channel", orgMatch.channel_id, "→", channel.id);
+          }
+        } else if (isGroup) {
+          // Fallback: search by numeric group ID prefix to handle JID format variations
+          const groupNumericId = remoteJid.split("@")[0];
+          if (groupNumericId) {
+            const { data: fuzzyMatch } = await supabase
               .from("whatsapp_contacts")
-              .update({ whatsapp_id: remoteJid })
-              .eq("id", fuzzyMatch.id);
-            console.log("[WEBHOOK-WHATSAPP] Group JID synced from", fuzzyMatch.whatsapp_id, "to", remoteJid, "on channel", channel.id);
+              .select("id, profile_picture_url, is_name_custom, name, linked_client_id, is_blocked, whatsapp_id, channel_id")
+              .eq("organization_id", targetOrganizationId)
+              .eq("is_group", true)
+              .like("whatsapp_id", `${groupNumericId}@%`)
+              .maybeSingle();
+            
+            if (fuzzyMatch) {
+              existingContact = fuzzyMatch;
+              const updates: Record<string, any> = { whatsapp_id: remoteJid };
+              if (fuzzyMatch.channel_id !== channel.id) {
+                updates.channel_id = channel.id;
+                needsChannelReassign = false; // handled inline
+                console.log("[WEBHOOK-WHATSAPP] Group JID synced + channel reassign:", fuzzyMatch.id, "→ channel", channel.id);
+              }
+              await supabase
+                .from("whatsapp_contacts")
+                .update(updates)
+                .eq("id", fuzzyMatch.id);
+            }
           }
         }
       }
@@ -1101,9 +1125,12 @@ Deno.serve(async (req) => {
 
     if (existingContact) {
       contactId = existingContact.id;
-      // Never reassign channel_id automatically.
-      // A conversation belongs to client + channel permanently.
+      // Reassign channel_id if the message arrived on a different (active) channel
       const updateData: Record<string, any> = {};
+      
+      if (needsChannelReassign) {
+        updateData.channel_id = channel.id;
+      }
       
       if (!existingContact.is_name_custom && !existingContact.linked_client_id && !fromMe && pushName) {
         updateData.name = pushName;
