@@ -146,9 +146,9 @@ export default function Dashboard() {
         if (firstNode || secondNode) {
           const bothVisible = !!firstNode && !!secondNode;
           result.push(
-            <div key={`pair-${id}-${nextId}`} className={`grid gap-5 mb-5 ${bothVisible ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
-              {firstNode}
-              {secondNode}
+            <div key={`pair-${id}-${nextId}`} className={`grid gap-5 mb-5 overflow-hidden ${bothVisible ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
+              <div className="min-w-0">{firstNode}</div>
+              <div className="min-w-0">{secondNode}</div>
             </div>
           );
         }

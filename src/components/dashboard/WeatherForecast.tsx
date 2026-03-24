@@ -131,7 +131,7 @@ export function WeatherForecast() {
   if (!weather) return null;
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -159,7 +159,7 @@ export function WeatherForecast() {
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 max-w-full">
           {weather.days.map((day) => (
             <DayCard key={day.date} day={day} />
           ))}
