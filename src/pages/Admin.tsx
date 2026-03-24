@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export default function Admin() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("dashboard");
+
   const { 
     organizations, 
     isLoading, 
@@ -77,7 +79,7 @@ export default function Admin() {
       </div>
 
       <div className="container mx-auto px-3 py-4 space-y-4 sm:px-4 sm:py-6 sm:space-y-6">
-        <Tabs defaultValue="dashboard" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="w-full justify-start overflow-x-auto flex-nowrap">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
@@ -100,7 +102,7 @@ export default function Admin() {
           </TabsList>
 
           <TabsContent value="dashboard">
-            <ExecutiveDashboard />
+            <ExecutiveDashboard onNavigateTab={setActiveTab} />
           </TabsContent>
 
           <TabsContent value="financial">
