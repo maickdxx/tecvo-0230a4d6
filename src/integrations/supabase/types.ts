@@ -4332,6 +4332,47 @@ export type Database = {
           },
         ]
       }
+      whatsapp_channel_transitions: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_channel_id: string | null
+          organization_id: string
+          previous_channel_id: string | null
+          reason: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_channel_id?: string | null
+          organization_id: string
+          previous_channel_id?: string | null
+          reason?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_channel_id?: string | null
+          organization_id?: string
+          previous_channel_id?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_channel_transitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_channels: {
         Row: {
           access_token: string | null

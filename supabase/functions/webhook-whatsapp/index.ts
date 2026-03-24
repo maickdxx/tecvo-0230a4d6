@@ -1130,6 +1130,16 @@ Deno.serve(async (req) => {
       
       if (needsChannelReassign) {
         updateData.channel_id = channel.id;
+        // Log channel transition for audit trail
+        await supabase.from("whatsapp_channel_transitions").insert({
+          organization_id: targetOrganizationId,
+          contact_id: contactId,
+          previous_channel_id: existingContact.channel_id,
+          new_channel_id: channel.id,
+          reason: "message_received",
+          metadata: { instance, remote_jid: remoteJid, from_me: fromMe },
+        });
+        console.log("[WEBHOOK-WHATSAPP] Channel transition logged: contact", contactId, "from", existingContact.channel_id, "→", channel.id);
       }
       
       if (!existingContact.is_name_custom && !existingContact.linked_client_id && !fromMe && pushName) {
