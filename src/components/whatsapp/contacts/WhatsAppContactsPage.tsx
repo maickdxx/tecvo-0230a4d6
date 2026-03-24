@@ -139,9 +139,13 @@ export function WhatsAppContactsPage() {
   const handleCreate = () => { setEditingContact(null); setEditDialog(true); };
   const handleDelete = async () => {
     if (!deletingContact) return;
-    const { error } = await supabase.from("whatsapp_contacts").delete().eq("id", deletingContact.id);
+    // Soft-delete: hide contact but preserve all messages
+    const { error } = await supabase
+      .from("whatsapp_contacts")
+      .update({ has_conversation: false, conversation_status: "resolvido" })
+      .eq("id", deletingContact.id);
     if (error) toast.error("Erro ao excluir contato");
-    else { toast.success("Contato excluído"); fetchContacts(); }
+    else { toast.success("Contato removido da listagem"); fetchContacts(); }
     setDeleteDialog(false); setDeletingContact(null);
   };
   const toggleTagFilter = (tagName: string) => {
@@ -165,12 +169,16 @@ export function WhatsAppContactsPage() {
       const ids = Array.from(selectedIds);
       for (let i = 0; i < ids.length; i += 50) {
         const batch = ids.slice(i, i + 50);
-        const { error } = await supabase.from("whatsapp_contacts").delete().in("id", batch);
+        // Soft-delete: hide contacts but preserve all messages
+        const { error } = await supabase
+          .from("whatsapp_contacts")
+          .update({ has_conversation: false, conversation_status: "resolvido" })
+          .in("id", batch);
         if (error) throw error;
       }
-      toast.success(`${ids.length} contato(s) excluído(s)`);
+      toast.success(`${ids.length} contato(s) removido(s) da listagem`);
       exitSelectionMode(); setBulkDeleteDialog(false); setBulkDeleteConfirmText(""); fetchContacts();
-    } catch { toast.error("Erro ao excluir contatos"); } finally { setBulkDeleting(false); }
+    } catch { toast.error("Erro ao remover contatos"); } finally { setBulkDeleting(false); }
   }, [selectedIds, exitSelectionMode, fetchContacts]);
 
   const handleToggleBlock = useCallback(async (contact: any) => {

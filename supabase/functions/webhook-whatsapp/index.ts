@@ -1379,6 +1379,7 @@ Deno.serve(async (req) => {
     // For incoming messages, always increment unread even if not newer (for counter accuracy)
     const unreadUpdate: Record<string, any> = {
       normalized_phone: normalizedPhoneUpdate,
+      has_conversation: true, // Always reactivate — ensures soft-deleted conversations reappear
       ...(typeof profilePictureUrl === "string" && profilePictureUrl ? { profile_picture_url: profilePictureUrl } : {}),
     };
 
