@@ -93,12 +93,12 @@ export default function Dashboard() {
     alertas_inteligentes: isVisible("alertas_inteligentes") ? <AlertasInteligentes /> : null,
 
     eficiencia_operacional: isVisible("eficiencia_operacional") ? (
-      <>
+      <div className="min-w-0 overflow-hidden">
         <ClosedPeriodServices />
         <div className="mt-5">
           <WeatherForecast />
         </div>
-      </>
+      </div>
     ) : null,
 
     motor_receita: canViewFinance && isVisible("motor_receita") ? (
