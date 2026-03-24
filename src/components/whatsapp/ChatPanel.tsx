@@ -245,12 +245,13 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   // Determine if the channel for this conversation is online
   const channelData = contact.channel;
   const isChannelConnected = useMemo(() => {
-    if (!channelData) return false;
+    if (!channelData) return true; // No channel data yet (loading/reassigning) — assume ok
     return channelData.is_connected === true && channelData.channel_status === "connected";
   }, [channelData]);
   const isChannelDeleted = channelData?.channel_status === "deleted";
   const canSend = !!channelId && isChannelConnected;
-  const isChannelOffline = !!channelId && !isChannelConnected;
+  // Only show offline banner when we have definitive channel data showing disconnection
+  const isChannelOffline = !!channelId && !!channelData && !isChannelConnected;
   const tags: string[] = contact.tags || [];
   const userName = profile?.full_name || "";
   const isSending = sending || sendingMedia;

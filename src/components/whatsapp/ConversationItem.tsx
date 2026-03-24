@@ -78,7 +78,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
   const assignedMember = teamMembers.find((m) => m.user_id === contact.assigned_to);
   const avatarBg = nameToAvatarColor(displayName);
   const channelLabel = contact.channel?.phone_number || contact.channel?.name || null;
-  const isChannelOffline = contact.channel?.is_connected === false || ["disconnected", "deleted", "error", "deleting"].includes(contact.channel?.channel_status);
+  const isChannelOffline = contact.channel ? (contact.channel.is_connected === false || ["disconnected", "deleted", "error", "deleting"].includes(contact.channel.channel_status)) : false;
 
   const getColor = (name: string) => orgTags.find(t => t.name === name)?.color || "gray";
 
