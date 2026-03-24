@@ -99,9 +99,10 @@ export function useSystemMetrics() {
       }).length;
 
       const planPrices: Record<string, number> = {
-        starter: 97,
-        essential: 197,
-        pro: 397,
+        teste: 1,
+        starter: 49,
+        essential: 119,
+        pro: 229,
       };
 
       const monthlyRevenue = organizations.reduce((sum, org) => {
