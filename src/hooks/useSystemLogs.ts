@@ -27,10 +27,10 @@ export function useSystemLogs(filters?: {
     queryKey: ["system-logs", filters],
     queryFn: async (): Promise<SystemLog[]> => {
       let query = supabase
-        .from("audit_logs")
+        .from("data_audit_log")
         .select(`
           id,
-          action,
+          operation,
           user_id,
           organization_id,
           metadata,
@@ -40,7 +40,7 @@ export function useSystemLogs(filters?: {
         .limit(filters?.limit || 100);
 
       if (filters?.action) {
-        query = query.eq("action", filters.action);
+        query = query.eq("operation", filters.action);
       }
 
       if (filters?.userId) {
@@ -63,25 +63,17 @@ export function useSystemLogs(filters?: {
 
       if (error) throw error;
 
-      const logsWithDetails = await Promise.all(
-        (data || []).map(async (log) => {
-          const userEmail = log.user_id
-            ? (await supabase.auth.admin.getUserById(log.user_id)).data.user?.email
-            : undefined;
+      // Map data_audit_log fields to SystemLog interface
+      const logs: SystemLog[] = (data || []).map((log) => ({
+        id: log.id,
+        action: log.operation,
+        user_id: log.user_id || "",
+        organization_id: log.organization_id,
+        metadata: (log.metadata as Record<string, any>) || {},
+        created_at: log.created_at,
+      }));
 
-          const orgName = log.organization_id
-            ? (await supabase.from("organizations").select("name").eq("id", log.organization_id).single()).data?.name
-            : undefined;
-
-          return {
-            ...log,
-            user_email: userEmail,
-            organization_name: orgName,
-          };
-        })
-      );
-
-      return logsWithDetails;
+      return logs;
     },
     enabled: isSuperAdmin,
   });
