@@ -154,34 +154,47 @@ export async function generateReportPDF({
     return lines.length * 4.5 + 8;
   };
 
-  const drawStatusBadge = (report: TechnicalReport, x: number, y: number) => {
-    const condition = report.equipment_condition;
-    const working = report.equipment_working;
-    
+  const drawStatusBadge = (report: TechnicalReport, x: number, y: number, type: "structural" | "cleanliness" = "structural") => {
     let color = colors.primary;
     let label = "INSPEÇÃO REALIZADA";
     
-    if ((condition === "good" || !condition) && working === "yes") {
-      color = colors.success;
-      label = "EM PERFEITO ESTADO";
-    } else if (condition === "regular" || working === "partial") {
-      color = colors.warning;
-      label = "REQUER ATENÇÃO";
-    } else if (condition === "bad" || condition === "critical" || condition === "inoperative" || working === "no") {
-      color = colors.danger;
-      label = "NECESSITA REPARO IMEDIATO";
+    if (type === "structural") {
+      const condition = report.equipment_condition;
+      const working = report.equipment_working;
+      
+      if ((condition === "good" || !condition) && working === "yes") {
+        color = colors.success;
+        label = "PERFEITO ESTADO";
+      } else if (condition === "regular" || working === "partial") {
+        color = colors.warning;
+        label = "REQUER ATENÇÃO";
+      } else if (condition === "bad" || condition === "critical" || condition === "inoperative" || working === "no") {
+        color = colors.danger;
+        label = "CRÍTICO / NECESSITA REPARO";
+      }
+    } else {
+      const cleanliness = report.cleanliness_status;
+      if (cleanliness === "clean") {
+        color = colors.success;
+        label = "LIMPO";
+      } else if (cleanliness === "dirty") {
+        color = colors.danger;
+        label = "SUJO";
+      } else if (cleanliness === "needs_cleaning") {
+        color = colors.warning;
+        label = "NECESSITA LIMPEZA";
+      }
     }
 
-    const paddingX = 8;
-    const paddingY = 4;
-    doc.setFontSize(9);
+    const paddingX = 6;
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     const textWidth = doc.getTextWidth(label);
     const badgeWidth = textWidth + paddingX * 2;
-    const badgeHeight = 10;
+    const badgeHeight = 8;
 
     doc.setFillColor(color.r, color.g, color.b);
-    doc.roundedRect(x, y - 7, badgeWidth, badgeHeight, 1.5, 1.5, "F");
+    doc.roundedRect(x, y - 6, badgeWidth, badgeHeight, 1, 1, "F");
     
     doc.setTextColor(255, 255, 255);
     doc.text(label, x + paddingX, y);
