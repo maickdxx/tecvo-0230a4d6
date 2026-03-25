@@ -556,18 +556,24 @@ export async function generateServiceOrderPDF({
   // ═══════════════════════════════════════════
   const hasPayment = orderData.paymentMethod || orderData.paymentDueDate || orderData.paymentNotes;
   if (hasPayment) {
-    const payH = orderData.paymentNotes ? 16 : 10;
+    const payH = orderData.paymentNotes ? 18 : 12;
     ensureSpace(payH + 14);
     drawSectionTitle("DADOS DO PAGAMENTO");
-    doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-    doc.rect(margin, yPos, contentWidth, payH, "S");
+    // Highlighted block with light blue background
+    doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
+    doc.setDrawColor(primary.r, primary.g, primary.b);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, yPos, contentWidth, payH, "FD");
+    // Left accent bar
+    doc.setFillColor(primary.r, primary.g, primary.b);
+    doc.rect(margin, yPos, 3, payH, "F");
     doc.setFontSize(8);
-    drawField("Vencimento:", orderData.paymentDueDate || undefined, leftX, yPos + 6);
-    drawField("Forma:", orderData.paymentMethod || undefined, rightX, yPos + 6);
+    drawField("Vencimento:", orderData.paymentDueDate || undefined, leftX + 2, yPos + 7);
+    drawField("Forma de pagamento:", orderData.paymentMethod || undefined, rightX, yPos + 7);
     if (orderData.paymentNotes) {
-      drawField("Obs:", orderData.paymentNotes.length > 80 ? orderData.paymentNotes.substring(0, 80) + "..." : orderData.paymentNotes, leftX, yPos + 12);
+      drawField("Obs:", orderData.paymentNotes.length > 80 ? orderData.paymentNotes.substring(0, 80) + "..." : orderData.paymentNotes, leftX + 2, yPos + 14);
     }
-    yPos += payH + 5;
+    yPos += payH + 4;
   }
 
   // ═══════════════════════════════════════════
@@ -584,33 +590,36 @@ export async function generateServiceOrderPDF({
     doc.setDrawColor(230, 200, 100);
     doc.setLineWidth(0.3);
     doc.rect(margin, yPos, contentWidth, noteH, "FD");
-    // Accent left bar
     doc.setFillColor(230, 180, 50);
     doc.rect(margin, yPos, 3, noteH, "F");
     doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
     doc.text(noteLines, margin + 7, yPos + 6);
-    yPos += noteH + 5;
+    yPos += noteH + 4;
   }
 
   // ═══════════════════════════════════════════
-  //  SIGNATURES
+  //  SIGNATURES — flow naturally after content, no forced bottom push
   // ═══════════════════════════════════════════
   const needsClause = organizationSignature && autoSignatureOS;
-  const sigBlockH = needsClause ? 50 : 35;
+  const sigBlockH = needsClause ? 48 : 34;
   ensureSpace(sigBlockH);
 
-  // Push signatures to near-bottom
-  const sigBottomY = usableHeight - (needsClause ? 20 : 6);
-  if (yPos < sigBottomY - 22) yPos = sigBottomY - 22;
+  // Small gap then signatures — NO push to bottom
+  yPos += 6;
 
   const signatureWidth = 68;
   const leftSignX = margin + 18;
   const rightSignX = pageWidth - margin - signatureWidth - 18;
 
-  // Labels above signature lines
+  // Signature area top label
   doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-  doc.text("ASSINATURA DO CLIENTE", leftSignX + signatureWidth / 2, yPos - 18, { align: "center" });
-  doc.text("ASSINATURA DA EMPRESA", rightSignX + signatureWidth / 2, yPos - 18, { align: "center" });
+  doc.text("ASSINATURA DO CLIENTE", leftSignX + signatureWidth / 2, yPos, { align: "center" });
+  doc.text("ASSINATURA DA EMPRESA", rightSignX + signatureWidth / 2, yPos, { align: "center" });
+  yPos += 3;
+
+  // Signature image area — images sit between label and line
+  const sigImgY = yPos;
+  const sigLineY = yPos + 18; // fixed space for signature images
 
   // Draw client signature image
   if (clientSignatureUrl) {
@@ -623,7 +632,7 @@ export async function generateServiceOrderPDF({
         await new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); });
         const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
         const dw = (img.width || maxW) * ratio, dh = (img.height || maxH) * ratio;
-        doc.addImage(cSigB64, "PNG", leftSignX + (signatureWidth - dw) / 2, yPos - dh - 2, dw, dh);
+        doc.addImage(cSigB64, "PNG", leftSignX + (signatureWidth - dw) / 2, sigImgY + (16 - dh) / 2, dw, dh);
       }
     } catch { /* ignore */ }
   }
@@ -639,12 +648,13 @@ export async function generateServiceOrderPDF({
         await new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); });
         const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
         const dw = (img.width || maxW) * ratio, dh = (img.height || maxH) * ratio;
-        doc.addImage(oSigB64, "PNG", rightSignX + (signatureWidth - dw) / 2, yPos - dh - 2, dw, dh);
+        doc.addImage(oSigB64, "PNG", rightSignX + (signatureWidth - dw) / 2, sigImgY + (16 - dh) / 2, dw, dh);
       }
     } catch { /* ignore */ }
   }
 
   // Signature lines
+  yPos = sigLineY;
   doc.setDrawColor(textMuted.r, textMuted.g, textMuted.b);
   doc.setLineWidth(0.4);
   doc.setLineDashPattern([2, 1.5], 0);
