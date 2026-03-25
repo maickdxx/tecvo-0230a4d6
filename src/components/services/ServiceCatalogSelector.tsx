@@ -153,10 +153,14 @@ export function ServiceCatalogSelector({
       const { error } = await supabase
         .from("catalog_services")
         .insert({
-          name: item.description,
+          name: item.name,
+          description: item.description,
           unit_price: item.unit_price,
           organization_id: organizationId,
           service_type: item.catalog_service_type || "other",
+          estimated_duration: item.estimated_duration,
+          category: item.category,
+          standard_checklist: item.standard_checklist,
           is_active: true,
         });
 
