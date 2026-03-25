@@ -336,6 +336,12 @@ export async function generateReportPDF({
     : "Impacto Baixo: Requer manutenção preventiva para evitar falhas futuras.";
 
   const fullDiagText = `${diagText}\n\nIMPACTO IDENTIFICADO: ${impactText}`;
+  
+  // Set font size before splitting to ensure correct width calculation
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+  
   const diagLines = doc.splitTextToSize(fullDiagText, contentWidth - 16);
   const diagBoxH = diagLines.length * 5 + 16;
   
@@ -346,9 +352,6 @@ export async function generateReportPDF({
   doc.setLineWidth(0.1);
   doc.roundedRect(margin, yPos, contentWidth, diagBoxH, 1, 1, "FD");
 
-  doc.setFontSize(8.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
   doc.text(diagLines, margin + 8, yPos + 8);
   
   yPos += diagBoxH + 10;
@@ -399,10 +402,11 @@ export async function generateReportPDF({
                      "• Testes de estanqueidade e monitoramento de pressões.";
     }
     
-    const intLines = doc.splitTextToSize(servicesText, contentWidth - 4);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    
+    const intLines = doc.splitTextToSize(servicesText, contentWidth - 4);
     doc.text(intLines, margin + 2, yPos);
     yPos += intLines.length * 5 + 10;
   }
@@ -470,6 +474,10 @@ export async function generateReportPDF({
     }
   }
   
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+  
   const conclLines = doc.splitTextToSize(finalStatus, contentWidth - 8);
   const conclBoxH = conclLines.length * 5 + 10;
   
@@ -477,9 +485,6 @@ export async function generateReportPDF({
   doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
   doc.roundedRect(margin, yPos, contentWidth, conclBoxH, 1, 1, "F");
   
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
   doc.text(conclLines, margin + 4, yPos + 6);
   yPos += conclBoxH + 10;
 
