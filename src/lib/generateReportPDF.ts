@@ -3,6 +3,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   INSPECTION_ITEMS,
+  CLEANLINESS_STATUS,
+  EQUIPMENT_CONDITIONS,
   type TechnicalReport,
 } from "@/hooks/useTechnicalReports";
 import type { ReportPhoto } from "@/hooks/useReportPhotos";
