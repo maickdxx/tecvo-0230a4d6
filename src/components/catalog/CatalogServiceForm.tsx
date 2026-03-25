@@ -32,7 +32,12 @@ export function CatalogServiceForm({
     notes: "",
     is_active: true,
     service_type: "",
+    category: "",
+    estimated_duration: "01:00",
+    standard_checklist: [],
   });
+
+  const [newChecklistItem, setNewChecklistItem] = useState("");
 
   useEffect(() => {
     if (service) {
@@ -44,9 +49,28 @@ export function CatalogServiceForm({
         notes: service.notes || "",
         is_active: service.is_active,
         service_type: service.service_type || "",
+        category: service.category || "",
+        estimated_duration: service.estimated_duration || "01:00",
+        standard_checklist: service.standard_checklist || [],
       });
     }
   }, [service]);
+
+  const addChecklistItem = () => {
+    if (!newChecklistItem.trim()) return;
+    setFormData(prev => ({
+      ...prev,
+      standard_checklist: [...(prev.standard_checklist || []), newChecklistItem.trim()]
+    }));
+    setNewChecklistItem("");
+  };
+
+  const removeChecklistItem = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      standard_checklist: (prev.standard_checklist || []).filter((_, i) => i !== index)
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
