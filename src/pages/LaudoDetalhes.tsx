@@ -105,6 +105,7 @@ export default function LaudoDetalhes() {
         organizationCity: organization?.city || undefined,
         organizationState: organization?.state || undefined,
         timezone: tz,
+        signature,
       });
       toast({ title: "PDF gerado!" });
     } catch (err) {
