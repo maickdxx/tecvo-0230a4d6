@@ -522,6 +522,11 @@ export function Sidebar() {
             </button>
           </div>
         )}
+        {!collapsed && (
+          <div className="mt-1 px-1 flex justify-center">
+            <span className="text-[10px] text-sidebar-foreground/20 font-medium">Versão 1.0.1</span>
+          </div>
+        )}
       </div>
 
       <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
