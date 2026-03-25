@@ -556,6 +556,7 @@ function DayView({
   services,
   onServiceClick,
   tz,
+  typeLabels,
 }: {
   currentDate: Date;
   services: Service[];
@@ -638,11 +639,11 @@ function DayView({
                   }}
                 >
                   <div className="font-medium text-sm truncate">
-                    {service.client?.name}
+                    {service.client?.name || typeLabels[service.service_type] || service.service_type}
                   </div>
                   {height >= 40 && (
                     <div className="text-xs opacity-80 truncate">
-                      {SERVICE_TYPE_LABELS[service.service_type]}
+                      {typeLabels[service.service_type] || service.service_type}
                     </div>
                   )}
                   {height >= 56 && service.assigned_profile?.full_name && (
