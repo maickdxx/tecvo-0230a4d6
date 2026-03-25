@@ -30,6 +30,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { generateServiceOrderPDF } from "@/lib/generateServiceOrderPDF";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useServiceSignatures } from "@/hooks/useServiceSignatures";
 import type { Service } from "@/hooks/useServices";
 import { SERVICE_STATUS_LABELS } from "@/hooks/useServices";
 import { format } from "date-fns";
