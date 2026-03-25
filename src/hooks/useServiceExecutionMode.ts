@@ -30,10 +30,14 @@ export interface ServiceEquipmentWithReport {
   photoCount: number;
 }
 
+export type SavingStatus = "idle" | "saving" | "saved" | "error";
+
 export function useServiceExecutionMode(serviceId: string | undefined) {
   const { user, organizationId } = useAuth();
   const queryClient = useQueryClient();
+  const [savingStatus, setSavingStatus] = useState<SavingStatus>("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDataRef = useRef<{ equipmentId: string; data: Partial<EquipmentReportData> } | null>(null);
 
   // Fetch equipment list with report data and service items
   const { data: executionData, isLoading: isLoadingEquipment } = useQuery({
@@ -246,6 +250,7 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
     async (equipmentId: string, data: Partial<EquipmentReportData>) => {
       if (!serviceId) return;
 
+      setSavingStatus("saving");
       const updatePayload: Record<string, any> = { updated_at: new Date().toISOString() };
       if ("service_type_performed" in data) updatePayload.service_type_performed = data.service_type_performed;
       if ("problem_identified" in data) updatePayload.problem_identified = data.problem_identified;
@@ -254,26 +259,66 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
       if ("checklist" in data) updatePayload.checklist = data.checklist;
       if ("status" in data) updatePayload.status = data.status;
 
-      const { error } = await supabase
-        .from("equipment_report_data" as any)
-        .update(updatePayload)
-        .eq("service_id", serviceId)
-        .eq("equipment_id", equipmentId);
+      try {
+        const { error } = await supabase
+          .from("equipment_report_data" as any)
+          .update(updatePayload)
+          .eq("service_id", serviceId)
+          .eq("equipment_id", equipmentId);
 
-      if (error) throw error;
+        if (error) throw error;
+        setSavingStatus("saved");
+        
+        // Clear saved status after 2 seconds
+        setTimeout(() => setSavingStatus("idle"), 2000);
+      } catch (error) {
+        console.error("Error saving equipment data:", error);
+        setSavingStatus("error");
+        toast({
+          variant: "destructive",
+          title: "Erro de conexão",
+          description: "Não foi possível salvar os dados automaticamente. Verifique sua internet.",
+        });
+        throw error;
+      }
     },
     [serviceId]
   );
 
+  const forceSave = useCallback(async () => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    
+    if (pendingDataRef.current) {
+      const { equipmentId, data } = pendingDataRef.current;
+      pendingDataRef.current = null;
+      try {
+        await saveEquipmentData(equipmentId, data);
+      } catch (error) {
+        // Error already handled in saveEquipmentData
+      }
+    }
+  }, [saveEquipmentData]);
+
   // Debounced auto-save
   const autoSave = useCallback(
     (equipmentId: string, data: Partial<EquipmentReportData>) => {
+      pendingDataRef.current = { equipmentId, data };
+      
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      
       autoSaveTimerRef.current = setTimeout(async () => {
-        try {
-          await saveEquipmentData(equipmentId, data);
-        } catch {
-          // Silent fail for auto-save - will retry
+        autoSaveTimerRef.current = null;
+        if (pendingDataRef.current) {
+          const currentData = pendingDataRef.current;
+          pendingDataRef.current = null;
+          try {
+            await saveEquipmentData(currentData.equipmentId, currentData.data);
+          } catch {
+            // Error handled in saveEquipmentData
+          }
         }
       }, 1500);
     },
@@ -283,6 +328,7 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
   // Mark equipment as completed
   const completeEquipment = useMutation({
     mutationFn: async (equipmentId: string) => {
+      await forceSave(); // Ensure pending data is saved first
       await saveEquipmentData(equipmentId, { status: "completed" });
     },
     onSuccess: () => {
@@ -310,6 +356,8 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
     isLoading: isLoadingEquipment,
     reportId,
     autoSave,
+    forceSave,
+    savingStatus,
     saveEquipmentData,
     completeEquipment: completeEquipment.mutateAsync,
     allCompleted,
