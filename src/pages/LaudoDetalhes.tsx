@@ -257,15 +257,23 @@ export default function LaudoDetalhes() {
         )}
 
         {/* Condition */}
-        {(conditionLabel || report.equipment_working) && (
-          <SectionCard icon={ShieldAlert} title="Classificação do Equipamento">
-            <InfoRow label="Estado" value={conditionLabel} />
+        {(conditionLabel || report.cleanliness_status || report.equipment_working) && (
+          <SectionCard icon={ShieldAlert} title="Status Estrutural e Limpeza">
+            <InfoRow label="Estado Estrutural" value={conditionLabel} />
+            <InfoRow label="Condição de Limpeza" value={report.cleanliness_status ? CLEANLINESS_STATUS[report.cleanliness_status] || report.cleanliness_status : null} />
             <InfoRow label="Funcionando" value={workingLabel} />
             {report.needs_quote && (
               <div className="flex items-center gap-1.5 text-sm text-amber-600 mt-1">
                 <XCircle className="h-3.5 w-3.5" /> Necessita orçamento
               </div>
             )}
+          </SectionCard>
+        )}
+
+        {/* Interventions */}
+        {report.interventions_performed && (
+          <SectionCard icon={Wrench} title="Intervenções Realizadas">
+            <p className="text-sm whitespace-pre-wrap">{report.interventions_performed}</p>
           </SectionCard>
         )}
 
