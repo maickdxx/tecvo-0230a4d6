@@ -98,6 +98,7 @@ export function ServiceOrderDialog({ open, onOpenChange, service }: ServiceOrder
   const { isFreePlan } = useSubscription();
   const { items, total } = useServiceItems(service.id);
   const [isSaving, setIsSaving] = useState(false);
+  const { signature } = useServiceSignatures(service.id);
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
 
   // Fetch equipment directly with useQuery to ensure it loads when dialog opens
@@ -192,6 +193,7 @@ export function ServiceOrderDialog({ open, onOpenChange, service }: ServiceOrder
         organizationState: org?.state || undefined,
         organizationSignature: org?.signature_url || undefined,
         autoSignatureOS: org?.auto_signature_os ?? false,
+        clientSignatureUrl: signature?.signature_url || undefined,
         orderData,
         isFreePlan,
       });
