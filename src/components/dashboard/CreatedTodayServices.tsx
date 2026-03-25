@@ -3,7 +3,8 @@ import { CalendarCheck, User, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useServices, SERVICE_TYPE_LABELS } from "@/hooks/useServices";
+import { useServices } from "@/hooks/useServices";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 import { getDatePartInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 
@@ -36,7 +37,7 @@ function formatDate(dateStr: string | null, tz: string): string {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: tz });
 }
 
-export function CreatedTodayServices() {
+const { typeLabels } = useServiceTypes();
   const { services, isLoading } = useServices();
   const [expanded, setExpanded] = useState(false);
   const tz = useOrgTimezone();
@@ -117,7 +118,7 @@ export function CreatedTodayServices() {
                         variant="secondary"
                         className={`text-[10px] px-1.5 py-0 leading-4 font-medium flex-shrink-0 ${typeColor}`}
                       >
-                        {SERVICE_TYPE_LABELS[s.service_type] || s.service_type}
+                        {typeLabels[s.service_type] || s.service_type}
                       </Badge>
                       <span className="font-semibold text-xs flex-shrink-0 whitespace-nowrap">
                         {formatCurrency(s.value)}
