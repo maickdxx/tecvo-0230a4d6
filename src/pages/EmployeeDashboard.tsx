@@ -268,10 +268,10 @@ export default function EmployeeDashboard() {
           open={completeDialogOpen}
           onOpenChange={setCompleteDialogOpen}
           serviceValue={completingService.value || 0}
-          onConfirm={async (payments, signatureBlob) => {
+          onConfirm={async (payments, signatureBlob, signerName) => {
             await updateStatus({ id: completingService.id, status: "completed", payments });
             if (signatureBlob) {
-              await createSignature({ serviceId: completingService.id, blob: signatureBlob });
+              await createSignature({ serviceId: completingService.id, blob: signatureBlob, signerName });
             }
             setCompletingService(null);
           }}

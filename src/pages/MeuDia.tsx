@@ -277,10 +277,10 @@ export default function MeuDia() {
           open={completeDialogOpen}
           onOpenChange={setCompleteDialogOpen}
           serviceValue={completingService.value || 0}
-          onConfirm={async (payments, signatureBlob) => {
+          onConfirm={async (payments, signatureBlob, signerName) => {
             await handleStatusChange(completingService.id, "completed", undefined, payments);
             if (signatureBlob) {
-              await createSignature({ serviceId: completingService.id, blob: signatureBlob });
+              await createSignature({ serviceId: completingService.id, blob: signatureBlob, signerName });
             }
             setCompletingService(null);
           }}
