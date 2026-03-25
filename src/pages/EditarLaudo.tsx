@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { TechnicalReportForm } from "@/components/laudos/TechnicalReportForm";
+import { ReportPhotoUploader } from "@/components/laudos/ReportPhotoUploader";
 import { useTechnicalReport, useTechnicalReportMutations, type TechnicalReportFormData } from "@/hooks/useTechnicalReports";
 import { useClients } from "@/hooks/useClients";
 
@@ -62,6 +63,12 @@ export default function EditarLaudo() {
         onCancel={() => navigate(-1)}
         isSubmitting={isUpdating}
       />
+
+      {id && (
+        <div className="max-w-3xl mx-auto mt-4 mb-8">
+          <ReportPhotoUploader reportId={id} />
+        </div>
+      )}
     </AppLayout>
   );
 }
