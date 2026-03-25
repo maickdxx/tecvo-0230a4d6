@@ -380,6 +380,7 @@ export default function Recorrencia() {
 
   const { data: statsData, isLoading: statsLoading } = useRecurrenceStats();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePaginatedRecurrence(filter);
+  const { typeLabels } = useServiceTypes();
 
   const stats = statsData ?? { totalFuture: 0, totalProximo: 0, totalPronto: 0, totalActive: 0, potentialRevenue: 0, revenue60Days: 0, convertedThisMonth: 0 };
   const clients = data?.pages.flatMap(p => p.clients) ?? [];
