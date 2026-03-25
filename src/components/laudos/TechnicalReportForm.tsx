@@ -16,6 +16,7 @@ import {
 import { Loader2, FileText, User, Wrench, ClipboardCheck, Stethoscope, Gauge, ShieldAlert, MessageSquare } from "lucide-react";
 import { ClientCombobox } from "@/components/services/ClientCombobox";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { useToast } from "@/hooks/use-toast";
 import {
   INSPECTION_ITEMS,
   EQUIPMENT_CONDITIONS,
