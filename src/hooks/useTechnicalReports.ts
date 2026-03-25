@@ -82,6 +82,8 @@ export interface TechnicalReportFormData {
   recommendation?: string;
   risks?: string;
   conclusion?: string;
+  interventions_performed?: string;
+  cleanliness_status?: string;
   observations?: string;
   needs_quote?: boolean;
   equipment_working?: string;
