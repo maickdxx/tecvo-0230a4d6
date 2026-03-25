@@ -248,7 +248,7 @@ export function ServiceCatalogSelector({
                 <TableRow key={item.id}>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <span className="font-medium">{item.description}</span>
+                      <span className="font-medium">{item.name || item.description}</span>
                       {item.is_non_standard && (
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-[10px] h-4 border-amber-500 text-amber-600 bg-amber-50 gap-1 font-normal">
