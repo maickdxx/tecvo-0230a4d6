@@ -294,21 +294,24 @@ export async function generateReportPDF({
   // ========== DIAGNOSIS & PROBLEM ==========
   if (report.diagnosis) {
     drawSectionTitle("Diagnóstico Técnico e Problemas Identificados");
-    ensureSpace(25);
-    
-    doc.setFillColor(255, 245, 245); // Light Red Background for highlight
-    doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
-    doc.setLineWidth(0.1);
-    
-    const diagLines = doc.splitTextToSize(report.diagnosis, contentWidth - 10);
-    const boxHeight = diagLines.length * 5 + 10;
-    
-    doc.roundedRect(margin, yPos - 5, contentWidth, boxHeight, 1, 1, "FD");
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
+    
+    const padding = 6;
+    const diagLines = doc.splitTextToSize(report.diagnosis, contentWidth - (padding * 2));
+    const boxHeight = diagLines.length * 5 + (padding * 2);
+    
+    ensureSpace(boxHeight + 5);
+    
+    doc.setFillColor(255, 245, 245);
+    doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
+    doc.setLineWidth(0.2);
+    
+    doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1, 1, "FD");
+    
     doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    doc.text(diagLines, margin + 5, yPos + 2);
+    doc.text(diagLines, margin + padding, yPos + padding + 3.5);
     
     yPos += boxHeight + 10;
   }
