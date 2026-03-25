@@ -277,7 +277,8 @@ export function ServiceCompleteDialog({
                 signerNameLabel="Nome do cliente"
                 signerNamePlaceholder="Nome de quem está assinando"
                 defaultSignerName={signerName}
-                onSave={(_, name) => { setSignerName(name); setHasSignatureDrawn(true); }}
+                onDrawChange={setHasSignatureDrawn}
+                onSave={(_, name) => { setSignerName(name); }}
               />
             </div>
 
