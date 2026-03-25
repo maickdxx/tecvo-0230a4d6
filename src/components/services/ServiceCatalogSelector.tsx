@@ -77,6 +77,7 @@ export function ServiceCatalogSelector({
     if (serviceId === "manual") {
       setNewItem({ description: "", quantity: "1", unit_price: "", discount: "0", discount_type: "percentage" });
       setSelectedCatalogServiceType(null);
+      setSelectedCatalogServiceId(null);
       return;
     }
     const service = activeServices.find((s) => s.id === serviceId);
@@ -89,6 +90,7 @@ export function ServiceCatalogSelector({
         discount_type: "percentage",
       });
       setSelectedCatalogServiceType(service.service_type);
+      setSelectedCatalogServiceId(service.id);
       onServiceTypeDetected?.(service.service_type);
     }
   };
@@ -104,11 +106,51 @@ export function ServiceCatalogSelector({
       discount: parseFloat(newItem.discount) || 0,
       discount_type: newItem.discount_type,
       catalog_service_type: selectedCatalogServiceType || undefined,
+      catalog_service_id: selectedCatalogServiceId || undefined,
+      is_non_standard: !selectedCatalogServiceId,
     };
 
     onItemsChange([...items, newItemData]);
     setNewItem({ description: "", quantity: "1", unit_price: "", discount: "0", discount_type: "percentage" });
     setSelectedCatalogServiceType(null);
+    setSelectedCatalogServiceId(null);
+  };
+
+  const saveToCatalog = async (item: ServiceItemLocal) => {
+    if (!organizationId) return;
+
+    try {
+      const { error } = await supabase
+        .from("catalog_services")
+        .insert({
+          name: item.description,
+          unit_price: item.unit_price,
+          organization_id: organizationId,
+          service_type: item.catalog_service_type || "other",
+          is_active: true,
+        });
+
+      if (error) throw error;
+
+      // Update the item in the list to be linked to the new catalog service
+      const updatedItems = items.map(i =>
+        i.id === item.id ? { ...i, is_non_standard: false } : i
+      );
+      onItemsChange(updatedItems);
+
+      queryClient.invalidateQueries({ queryKey: ["catalog-services"] });
+
+      toast({
+        title: "Salvo no catálogo",
+        description: `O serviço "${item.description}" foi adicionado ao seu catálogo.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar no catálogo",
+        description: (error as Error).message,
+      });
+    }
   };
 
   const handleRemoveItem = (id: string) => {
