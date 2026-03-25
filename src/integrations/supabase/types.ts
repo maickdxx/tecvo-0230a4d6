@@ -3002,6 +3002,7 @@ export type Database = {
       technical_reports: {
         Row: {
           capacity_btus: string | null
+          cleanliness_status: string | null
           client_id: string
           conclusion: string | null
           created_at: string
@@ -3016,6 +3017,7 @@ export type Database = {
           equipment_working: string | null
           id: string
           inspection_checklist: Json | null
+          interventions_performed: string | null
           measurements: Json | null
           needs_quote: boolean | null
           observations: string | null
@@ -3035,6 +3037,7 @@ export type Database = {
         }
         Insert: {
           capacity_btus?: string | null
+          cleanliness_status?: string | null
           client_id: string
           conclusion?: string | null
           created_at?: string
@@ -3049,6 +3052,7 @@ export type Database = {
           equipment_working?: string | null
           id?: string
           inspection_checklist?: Json | null
+          interventions_performed?: string | null
           measurements?: Json | null
           needs_quote?: boolean | null
           observations?: string | null
@@ -3068,6 +3072,7 @@ export type Database = {
         }
         Update: {
           capacity_btus?: string | null
+          cleanliness_status?: string | null
           client_id?: string
           conclusion?: string | null
           created_at?: string
@@ -3082,6 +3087,7 @@ export type Database = {
           equipment_working?: string | null
           id?: string
           inspection_checklist?: Json | null
+          interventions_performed?: string | null
           measurements?: Json | null
           needs_quote?: boolean | null
           observations?: string | null
