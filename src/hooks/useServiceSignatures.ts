@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "./use-toast";
 
+const SIGNATURE_BUCKET = "service-signatures";
+
 export interface ServiceSignature {
   id: string;
   service_id: string;
@@ -13,6 +15,18 @@ export interface ServiceSignature {
   token: string;
   ip_address: string | null;
   created_at: string;
+}
+
+/** Fetch client IP from a public API (best effort) */
+async function fetchClientIP(): Promise<string | null> {
+  try {
+    const res = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.ip || null;
+  } catch {
+    return null;
+  }
 }
 
 export function useServiceSignatures(serviceId?: string) {
@@ -35,21 +49,24 @@ export function useServiceSignatures(serviceId?: string) {
   });
 
   const createSignatureMutation = useMutation({
-    mutationFn: async ({ serviceId, blob }: { serviceId: string; blob: Blob }) => {
+    mutationFn: async ({ serviceId, blob, signerName }: { serviceId: string; blob: Blob; signerName?: string }) => {
       if (!profile?.organization_id) throw new Error("Organização não encontrada");
 
       const fileName = `${profile.organization_id}/client-sig-${serviceId}-${Date.now()}.png`;
 
       const { error: uploadError } = await supabase.storage
-        .from("organization-logos")
+        .from(SIGNATURE_BUCKET)
         .upload(fileName, blob, { upsert: true, contentType: "image/png" });
       if (uploadError) throw uploadError;
 
       const { data: publicUrlData } = supabase.storage
-        .from("organization-logos")
+        .from(SIGNATURE_BUCKET)
         .getPublicUrl(fileName);
 
       const signatureUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+      // Capture IP for legal validity
+      const ip = await fetchClientIP();
 
       const { data, error } = await supabase
         .from("service_signatures")
@@ -57,7 +74,9 @@ export function useServiceSignatures(serviceId?: string) {
           service_id: serviceId,
           organization_id: profile.organization_id,
           signature_url: signatureUrl,
+          signer_name: signerName || null,
           signed_at: new Date().toISOString(),
+          ip_address: ip,
         } as any)
         .select()
         .single();
@@ -67,7 +86,7 @@ export function useServiceSignatures(serviceId?: string) {
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["service-signature", vars.serviceId] });
-      toast({ title: "Assinatura salva!", description: "A assinatura do cliente foi registrada" });
+      toast({ title: "Assinatura salva!", description: "A assinatura do cliente foi registrada com sucesso." });
     },
     onError: (error: Error) => {
       toast({ variant: "destructive", title: "Erro ao salvar assinatura", description: error.message });
@@ -77,6 +96,20 @@ export function useServiceSignatures(serviceId?: string) {
   const createSignatureLinkMutation = useMutation({
     mutationFn: async (serviceId: string) => {
       if (!profile?.organization_id) throw new Error("Organização não encontrada");
+
+      // Check if a signature already exists (prevent duplicates)
+      const { data: existing } = await supabase
+        .from("service_signatures")
+        .select("*")
+        .eq("service_id", serviceId)
+        .maybeSingle();
+
+      if (existing) {
+        if (existing.signature_url) {
+          throw new Error("Esta OS já possui uma assinatura registrada.");
+        }
+        return existing as ServiceSignature;
+      }
 
       const { data, error } = await supabase
         .from("service_signatures")
@@ -117,18 +150,26 @@ export async function signViaToken(token: string, blob: Blob, signerName: string
   const sigRecord = sigRows?.[0] || null;
   if (fetchError || !sigRecord) throw new Error("Link inválido ou já utilizado");
 
+  // Prevent overwriting existing signature
+  if (sigRecord.signature_url) {
+    throw new Error("Esta ordem de serviço já foi assinada.");
+  }
+
   const fileName = `public-sig-${token}-${Date.now()}.png`;
 
   const { error: uploadError } = await supabase.storage
-    .from("organization-logos")
+    .from(SIGNATURE_BUCKET)
     .upload(fileName, blob, { upsert: true, contentType: "image/png" });
   if (uploadError) throw uploadError;
 
   const { data: publicUrlData } = supabase.storage
-    .from("organization-logos")
+    .from(SIGNATURE_BUCKET)
     .getPublicUrl(fileName);
 
   const signatureUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+  // Capture IP for legal validity
+  const ip = await fetchClientIP();
 
   // Use secure RPC to update signature (prevents tampering)
   const { data: signed, error: updateError } = await supabase
@@ -136,6 +177,7 @@ export async function signViaToken(token: string, blob: Blob, signerName: string
       p_token: token,
       p_signature_url: signatureUrl,
       p_signer_name: signerName,
+      ...(ip ? { p_ip_address: ip } : {}),
     });
 
   if (updateError) throw updateError;
