@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
+import { trackFBEvent } from "@/lib/fbPixel";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useInviteByToken } from "@/hooks/useInvites";
@@ -192,6 +193,7 @@ export default function Auth() {
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
     } else {
+      trackFBEvent("Lead", { content_name: "Signup" });
       setConfirmationEmail(signupEmail);
       setResendCooldown(60);
     }
@@ -229,6 +231,7 @@ export default function Auth() {
           handleBackToLogin();
         } else {
           toast({ title: "🎉 Conta criada!", description: "Bem-vindo à Tecvo!" });
+          trackFBEvent("CompleteRegistration");
           setSignUpSuccess(false);
           navigate(getRedirectPath());
         }

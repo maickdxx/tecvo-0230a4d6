@@ -7,6 +7,7 @@ import { useDemoMode } from "./useDemoMode";
 import type { Client } from "./useClients";
 import { format } from "date-fns";
 import { getTodayInTz, buildTimestamp, toTimestampWithTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
+import { trackFBCustomEvent } from "@/lib/fbPixel";
 export type ServiceType = string;
 
 const serviceTypeSlugToEnum: Record<string, string> = {
@@ -442,6 +443,7 @@ export function useServices(options?: UseServicesOptions | string) {
       queryClient.invalidateQueries({ queryKey: ["services"] });
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      trackFBCustomEvent("CreateOS");
       toast({
         title: "Serviço registrado",
         description: "O serviço foi adicionado com sucesso",
@@ -639,6 +641,7 @@ export function useServices(options?: UseServicesOptions | string) {
       if (status === "completed") {
         updateData.completed_date = new Date().toISOString();
         updateData.operational_status = "completed";
+        trackFBCustomEvent("FinishOS");
         if (paymentMethod) {
           updateData.payment_method = paymentMethod;
         }

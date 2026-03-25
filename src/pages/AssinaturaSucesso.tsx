@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { trackFBEvent } from "@/lib/fbPixel";
 import { PartyPopper, CheckCircle2, ArrowRight, Loader2, LogIn } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export default function AssinaturaSucesso() {
       setChecking(false);
       clearCheckoutContext();
       stopPolling();
+      trackFBEvent("Purchase", { content_name: plan || "unknown", currency: "BRL" });
       await queryClient.invalidateQueries({ queryKey: ["subscription"] });
       await queryClient.invalidateQueries({ queryKey: ["organization"] });
       await queryClient.invalidateQueries({ queryKey: ["profile"] });

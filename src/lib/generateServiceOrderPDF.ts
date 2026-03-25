@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Service } from "@/hooks/useServices";
 import type { ServiceItem } from "@/hooks/useServiceItems";
+import { trackFBCustomEvent } from "@/lib/fbPixel";
 
 export interface ServiceOrderData {
   entryDate: string;
@@ -96,6 +97,8 @@ export async function generateServiceOrderPDF({
   const margin = 14;
   const contentWidth = pageWidth - margin * 2;
   let yPos = margin;
+
+  trackFBCustomEvent("GeneratePDF", { os_number: service.quote_number });
 
   const FOOTER_RESERVED = 16;
   const usableHeight = pageHeight - FOOTER_RESERVED;
