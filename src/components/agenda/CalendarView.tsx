@@ -12,7 +12,8 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { Service, SERVICE_TYPE_LABELS, type ServiceStatus } from "@/hooks/useServices";
+import { Service, type ServiceStatus } from "@/hooks/useServices";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 import {
   formatTimeInTz,
   getDatePartInTz,
@@ -109,6 +110,8 @@ export function CalendarView({
   readOnly = false,
 }: CalendarViewProps) {
   const tz = useOrgTimezone();
+  const { typeLabels } = useServiceTypes();
+
 
   if (isLoading) {
     return (
@@ -128,6 +131,7 @@ export function CalendarView({
           onDateSelect={onDateSelect}
           onServiceClick={onServiceClick}
           tz={tz}
+          typeLabels={typeLabels}
         />
       );
     case "week":
@@ -139,6 +143,7 @@ export function CalendarView({
           onDateSelect={onDateSelect}
           onServiceClick={onServiceClick}
           tz={tz}
+          typeLabels={typeLabels}
         />
       );
     case "day":
@@ -148,6 +153,7 @@ export function CalendarView({
           services={services}
           onServiceClick={onServiceClick}
           tz={tz}
+          typeLabels={typeLabels}
         />
       );
   }
