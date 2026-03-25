@@ -122,7 +122,9 @@ export async function generateReportPDF({
     yPos += 12;
   };
 
-  const drawInfoBlock = (label: string, value: string | null | undefined, x: number, y: number, width: number) => {
+  const drawInfoBlock = (label: string, value: string | null | undefined, x: number, y: number, width: number, forceShow: boolean = false) => {
+    if (!value && !forceShow) return 0;
+    
     doc.setFont("helvetica", "bold");
     doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
     doc.setFontSize(7);
@@ -131,36 +133,39 @@ export async function generateReportPDF({
     doc.setFont("helvetica", "normal");
     doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
     doc.setFontSize(9);
-    const val = value || "---";
+    const val = value || "NÃO AFERIDO";
     const lines = doc.splitTextToSize(val, width);
     doc.text(lines, x, y + 4.5);
     return lines.length * 4.5 + 6;
   };
 
-  const drawStatusBadge = (status: string, x: number, y: number) => {
-    let color = colors.primary;
-    let label = status.toUpperCase();
+  const drawStatusBadge = (report: TechnicalReport, x: number, y: number) => {
+    const condition = report.equipment_condition;
+    const working = report.equipment_working;
     
-    if (status === "good" || status === "yes" || status.toLowerCase().includes("func")) {
+    let color = colors.primary;
+    let label = "INSPEÇÃO REALIZADA";
+    
+    if ((condition === "good" || !condition) && working === "yes") {
       color = colors.success;
-      label = "FUNCIONANDO";
-    } else if (status === "regular" || status === "partial" || status.toLowerCase().includes("aten")) {
+      label = "FUNCIONANDO NORMALMENTE";
+    } else if (condition === "regular" || working === "partial") {
       color = colors.warning;
-      label = "ATENÇÃO";
-    } else if (status === "bad" || status === "critical" || status === "no" || status === "inoperative" || status.toLowerCase().includes("crit")) {
+      label = "FUNCIONANDO COM RESSALVAS";
+    } else if (condition === "bad" || condition === "critical" || condition === "inoperative" || working === "no") {
       color = colors.danger;
-      label = status === "bad" ? "RUIM" : status === "critical" ? "CRÍTICO" : status === "inoperative" ? "INOPERANTE" : "CRÍTICO";
+      label = "NECESSITA INTERVENÇÃO";
     }
 
-    const padding = 4;
+    const padding = 5;
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     const textWidth = doc.getTextWidth(label);
     const badgeWidth = textWidth + padding * 2;
-    const badgeHeight = 6;
+    const badgeHeight = 7;
 
     doc.setFillColor(color.r, color.g, color.b);
-    doc.roundedRect(x, y - 4, badgeWidth, badgeHeight, 1, 1, "F");
+    doc.roundedRect(x, y - 5, badgeWidth, badgeHeight, 1, 1, "F");
     
     doc.setTextColor(255, 255, 255);
     doc.text(label, x + padding, y);
