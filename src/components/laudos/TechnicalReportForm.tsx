@@ -386,42 +386,47 @@ export function TechnicalReportForm({
         </CardContent>
       </Card>
 
-      {/* 9. Interventions */}
+      {/* 9. Services Executed */}
       <Card>
-        <SectionHeader icon={Wrench} title="Intervenções Realizadas" />
+        <SectionHeader icon={Wrench} title="Serviços Executados (Obrigatório)" />
         <CardContent className="px-4 pb-4">
+          <p className="text-[10px] text-muted-foreground mb-2">Liste os serviços técnicos realizados nesta visita para validade técnica.</p>
           <Textarea 
             rows={3} 
-            placeholder="O que foi feito nesta visita? Ex: Limpeza de filtros, reaperto de conexões..." 
-            {...register("interventions_performed")} 
+            placeholder="Ex: Limpeza de filtros, higienização, reaperto de conexões..." 
+            {...register("interventions_performed", { required: true })} 
           />
+          {errors.interventions_performed && <p className="text-xs text-destructive mt-1">Os serviços executados são obrigatórios.</p>}
         </CardContent>
       </Card>
 
       {/* 10. Recommendation */}
       <Card>
-        <SectionHeader icon={MessageSquare} title="Recomendações de Segurança / Ação" />
+        <SectionHeader icon={MessageSquare} title="Parecer e Recomendação Estratégica" />
         <CardContent className="px-4 pb-4">
+          <p className="text-[10px] text-muted-foreground mb-2">Diretrizes para o cliente e sugestão de manutenção preventiva.</p>
           <Textarea rows={3} placeholder="Recomendações técnicas para o cliente..." {...register("recommendation")} />
         </CardContent>
       </Card>
 
-      {/* 10. Risks */}
+      {/* 11. Risks */}
       <Card>
-        <SectionHeader icon={ShieldAlert} title="Riscos / Consequências" />
+        <SectionHeader icon={ShieldAlert} title="Análise de Risco / Consequências" />
         <CardContent className="px-4 pb-4">
+          <p className="text-[10px] text-muted-foreground mb-2">Descreva o que acontece caso o problema não seja resolvido agora.</p>
           <Textarea rows={3} placeholder="Descreva os riscos caso não seja corrigido..." {...register("risks")} />
         </CardContent>
       </Card>
 
       {/* 12. Conclusion */}
       <Card>
-        <SectionHeader icon={ClipboardCheck} title="Conclusão e Status Pós-Intervenção (Obrigatório)" />
+        <SectionHeader icon={ClipboardCheck} title="Status Após Intervenção (Obrigatório)" />
         <CardContent className="px-4 pb-4">
+          <p className="text-[10px] text-muted-foreground mb-2">Informe a condição final de entrega técnica (Melhora, normalização, etc).</p>
           <Textarea 
             rows={4} 
             {...register("conclusion")} 
-            placeholder="Descreva o status final do equipamento após as intervenções. Informe se houve melhora e se o equipamento está operacional." 
+            placeholder="Descreva o status final do equipamento após as intervenções." 
           />
         </CardContent>
       </Card>
