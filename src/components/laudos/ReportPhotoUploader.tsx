@@ -23,6 +23,7 @@ import {
 
 interface ReportPhotoUploaderProps {
   reportId: string;
+  equipmentId?: string;
 }
 
 const CATEGORY_ICONS: Record<PhotoCategory, string> = {
@@ -37,8 +38,8 @@ const CATEGORY_COLORS: Record<PhotoCategory, string> = {
   after: "bg-green-500/10 text-green-700 border-green-200",
 };
 
-export function ReportPhotoUploader({ reportId }: ReportPhotoUploaderProps) {
-  const { photos, upload, remove, isUploading } = useReportPhotos(reportId);
+export function ReportPhotoUploader({ reportId, equipmentId }: ReportPhotoUploaderProps) {
+  const { photos, upload, remove, isUploading } = useReportPhotos(reportId, equipmentId);
   const [selectedCategory, setSelectedCategory] = useState<PhotoCategory>("problem");
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

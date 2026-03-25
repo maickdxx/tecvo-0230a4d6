@@ -987,6 +987,83 @@ export type Database = {
           },
         ]
       }
+      equipment_report_data: {
+        Row: {
+          checklist: Json | null
+          created_at: string
+          equipment_id: string
+          id: string
+          observations: string | null
+          organization_id: string
+          problem_identified: string | null
+          report_id: string | null
+          service_id: string
+          service_type_performed: string | null
+          status: string
+          updated_at: string
+          work_performed: string | null
+        }
+        Insert: {
+          checklist?: Json | null
+          created_at?: string
+          equipment_id: string
+          id?: string
+          observations?: string | null
+          organization_id: string
+          problem_identified?: string | null
+          report_id?: string | null
+          service_id: string
+          service_type_performed?: string | null
+          status?: string
+          updated_at?: string
+          work_performed?: string | null
+        }
+        Update: {
+          checklist?: Json | null
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          observations?: string | null
+          organization_id?: string
+          problem_identified?: string | null
+          report_id?: string | null
+          service_id?: string
+          service_type_performed?: string | null
+          status?: string
+          updated_at?: string
+          work_performed?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_report_data_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "service_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_report_data_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_report_data_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "technical_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_report_data_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       external_backup_logs: {
         Row: {
           backup_date: string
@@ -2816,6 +2893,7 @@ export type Database = {
           caption: string | null
           category: string
           created_at: string
+          equipment_id: string | null
           id: string
           organization_id: string
           photo_url: string
@@ -2826,6 +2904,7 @@ export type Database = {
           caption?: string | null
           category?: string
           created_at?: string
+          equipment_id?: string | null
           id?: string
           organization_id: string
           photo_url: string
@@ -2836,6 +2915,7 @@ export type Database = {
           caption?: string | null
           category?: string
           created_at?: string
+          equipment_id?: string | null
           id?: string
           organization_id?: string
           photo_url?: string
@@ -2843,6 +2923,13 @@ export type Database = {
           sort_order?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "technical_report_photos_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "service_equipment"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "technical_report_photos_organization_id_fkey"
             columns: ["organization_id"]

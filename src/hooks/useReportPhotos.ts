@@ -31,20 +31,26 @@ export function getCategoryCount(photos: ReportPhoto[], category: PhotoCategory)
   return photos.filter((p) => p.category === category).length;
 }
 
-export function useReportPhotos(reportId: string | undefined) {
+export function useReportPhotos(reportId: string | undefined, equipmentId?: string) {
   const { organizationId } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: photos = [], isLoading } = useQuery({
-    queryKey: ["report-photos", reportId],
+    queryKey: ["report-photos", reportId, equipmentId],
     queryFn: async () => {
       if (!reportId) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from("technical_report_photos")
         .select("*")
         .eq("report_id", reportId)
         .order("category")
         .order("sort_order");
+      if (equipmentId) {
+        query = query.eq("equipment_id", equipmentId);
+      } else {
+        query = query.is("equipment_id", null);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as ReportPhoto[];
     },
@@ -93,11 +99,12 @@ export function useReportPhotos(reportId: string | undefined) {
           photo_url: urlData.publicUrl,
           caption: caption || null,
           sort_order: currentCount,
-        });
+          equipment_id: equipmentId || null,
+        } as any);
       if (insertError) throw insertError;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["report-photos", reportId] });
+      queryClient.invalidateQueries({ queryKey: ["report-photos", reportId, equipmentId] });
       toast({ title: "Foto adicionada com sucesso ✓" });
     },
     onError: (err: Error) => {
@@ -122,7 +129,7 @@ export function useReportPhotos(reportId: string | undefined) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["report-photos", reportId] });
+      queryClient.invalidateQueries({ queryKey: ["report-photos", reportId, equipmentId] });
       toast({ title: "Foto removida" });
     },
     onError: (err: Error) => {
