@@ -209,6 +209,8 @@ Deno.serve(async (req) => {
 
       const e = execution as any;
 
+      await logExecution(supabase, e.id, e.current_step_id, "resumed_by_user", { message });
+
       if (e.status === "waiting_input") {
         const { data: step } = await supabase
           .from("whatsapp_bot_steps")
