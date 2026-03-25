@@ -59,6 +59,7 @@ export default function LaudoDetalhes() {
   const { remove } = useTechnicalReportMutations();
   const { organization } = useOrganization();
   const tz = useOrgTimezone();
+  const { signature } = useServiceSignatures(report?.service_id || undefined);
   const [showDelete, setShowDelete] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
