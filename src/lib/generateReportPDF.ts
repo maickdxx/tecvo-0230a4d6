@@ -224,13 +224,13 @@ export async function generateReportPDF({
   yPos += 35;
 
   // ========== EXECUTIVE SUMMARY ==========
-  drawSectionTitle("Resumo Executivo");
+  drawSectionTitle("Resumo Executivo e Status");
   
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  const summaryText = report.visit_reason || "Relatório técnico detalhado das condições de funcionamento e integridade do equipamento de climatização após inspeção técnica realizada no local.";
+  const summaryText = report.visit_reason || "Relatório técnico detalhado das condições de funcionamento e integridade do equipamento de climatização após inspeção técnica realizada no local para garantir eficiência operacional e prevenção de falhas.";
   const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 85);
-  const boxHeight = Math.max(25, summaryLines.length * 5 + 10);
+  const boxHeight = Math.max(30, summaryLines.length * 5 + 15);
   
   ensureSpace(boxHeight + 10);
   
@@ -242,16 +242,14 @@ export async function generateReportPDF({
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
-  doc.text("STATUS DO EQUIPAMENTO", margin + 5, yPos + 7);
+  doc.text("CONDIÇÃO ATUAL DO EQUIPAMENTO", margin + 5, yPos + 8);
   
-  let badgeX = margin + 5;
-  badgeX += drawStatusBadge(report.equipment_condition || "---", badgeX, yPos + 15) + 3;
-  drawStatusBadge(report.equipment_working, badgeX, yPos + 15);
+  drawStatusBadge(report, margin + 5, yPos + 18);
 
   doc.setFont("helvetica", "normal");
   doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
   doc.setFontSize(9);
-  doc.text(summaryLines, margin + 80, yPos + 7);
+  doc.text(summaryLines, margin + 80, yPos + 8);
 
   yPos += boxHeight + 10;
 
