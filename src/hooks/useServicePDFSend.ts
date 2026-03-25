@@ -45,6 +45,13 @@ export function useServicePDFSend() {
 
     const itemsTotal = (items || []).reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
 
+    // Fetch client signature
+    const { data: sigData } = await supabase
+      .from("service_signatures")
+      .select("signature_url")
+      .eq("service_id", service.id)
+      .maybeSingle();
+
     return {
       service: {
         ...service,
@@ -64,6 +71,7 @@ export function useServicePDFSend() {
       organizationState: org?.state || undefined,
       organizationSignature: org?.signature_url || undefined,
       autoSignatureOS: org?.auto_signature_os ?? false,
+      clientSignatureUrl: sigData?.signature_url || undefined,
       orderData,
       isFreePlan: false,
     };
