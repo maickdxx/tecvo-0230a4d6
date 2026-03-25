@@ -114,6 +114,16 @@ export default function LaudosTecnicos() {
 
   const handlePDF = async (report: any) => {
     try {
+      let signatureData = null;
+      if (report.service_id) {
+        const { data } = await supabase
+          .from("service_signatures")
+          .select("*")
+          .eq("service_id", report.service_id)
+          .maybeSingle();
+        signatureData = data;
+      }
+
       await generateReportPDF({
         report,
         organizationName: organization?.name || "Minha Empresa",
@@ -125,6 +135,7 @@ export default function LaudosTecnicos() {
         organizationCity: organization?.city || undefined,
         organizationState: organization?.state || undefined,
         timezone: tz,
+        signature: signatureData,
       });
       toast({ title: "PDF gerado!" });
     } catch (err) {
