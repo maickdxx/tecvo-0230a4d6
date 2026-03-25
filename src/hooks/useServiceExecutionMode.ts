@@ -35,11 +35,11 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
   const queryClient = useQueryClient();
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch equipment list with report data
-  const { data: equipmentList = [], isLoading: isLoadingEquipment } = useQuery({
+  // Fetch equipment list with report data and service items
+  const { data: executionData, isLoading: isLoadingEquipment } = useQuery({
     queryKey: ["execution-equipment", serviceId, organizationId],
     queryFn: async () => {
-      if (!serviceId || !organizationId) return [];
+      if (!serviceId || !organizationId) return { equipment: [], standardChecklist: [] };
 
       // Fetch equipment
       const { data: equipment, error: eqError } = await supabase
@@ -48,7 +48,30 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
         .eq("service_id", serviceId)
         .order("created_at");
       if (eqError) throw eqError;
-      if (!equipment || equipment.length === 0) return [];
+      if (!equipment) return { equipment: [], standardChecklist: [] };
+
+      // Fetch service items to get catalog checklists
+      const { data: serviceItems } = await supabase
+        .from("service_items")
+        .select("catalog_service_id")
+        .eq("service_id", serviceId);
+      
+      let standardChecklist: string[] = [];
+      if (serviceItems && serviceItems.length > 0) {
+        const catalogIds = serviceItems.map(si => si.catalog_service_id).filter(Boolean);
+        if (catalogIds.length > 0) {
+          const { data: catalogServices } = await supabase
+            .from("catalog_services")
+            .select("standard_checklist")
+            .in("id", catalogIds)
+            .not("standard_checklist", "is", null)
+            .limit(1);
+          
+          if (catalogServices && catalogServices.length > 0) {
+            standardChecklist = (catalogServices[0].standard_checklist as any) || [];
+          }
+        }
+      }
 
       // Fetch report data
       const { data: reportData, error: rdError } = await supabase
