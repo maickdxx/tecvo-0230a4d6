@@ -274,6 +274,11 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
       } catch (error) {
         console.error("Error saving equipment data:", error);
         setSavingStatus("error");
+        toast({
+          variant: "destructive",
+          title: "Erro de conexão",
+          description: "Não foi possível salvar os dados automaticamente. Verifique sua internet.",
+        });
         throw error;
       }
     },
