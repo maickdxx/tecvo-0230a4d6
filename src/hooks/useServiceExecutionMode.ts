@@ -81,7 +81,7 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
       if (rdError) throw rdError;
 
       // Fetch photo counts per equipment
-      const equipmentIds = equipment.map((e) => e.id);
+      const equipmentIds = rawEquipment.map((e) => e.id);
       const { data: photos } = await supabase
         .from("technical_report_photos")
         .select("equipment_id")
@@ -98,7 +98,7 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
         ((reportData as any[]) || []).map((rd: any) => [rd.equipment_id, rd])
       );
 
-      const equipment = (equipment || []).map((eq): ServiceEquipmentWithReport => ({
+      const equipment = (rawEquipment || []).map((eq): ServiceEquipmentWithReport => ({
         id: eq.id,
         name: eq.name || "",
         brand: eq.brand || null,
@@ -299,6 +299,7 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
 
   return {
     equipmentList,
+    standardChecklist,
     isLoading: isLoadingEquipment,
     reportId,
     autoSave,
