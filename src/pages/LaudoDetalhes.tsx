@@ -127,7 +127,7 @@ export default function LaudoDetalhes() {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto px-4 py-4 md:py-6 space-y-4">
+      <div className="max-w-3xl mx-auto px-4 py-4 md:py-6 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -162,146 +162,171 @@ export default function LaudoDetalhes() {
 
         {/* Links */}
         {(report.service || report.quote_service) && (
-          <Card>
-            <CardContent className="p-3 flex flex-wrap gap-3">
+          <Card className="bg-muted/30 border-dashed">
+            <CardContent className="p-3 flex flex-wrap gap-2">
               {report.service && (
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => navigate(`/ordens-servico/${report.service_id}`)}>
+                <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-[10px] uppercase font-bold tracking-wider" onClick={() => navigate(`/ordens-servico/${report.service_id}`)}>
                   <Link2 className="h-3 w-3" />
-                  Vinculado à OS #{report.service.quote_number?.toString().padStart(4, "0")}
+                  Ordem de Serviço #{report.service.quote_number?.toString().padStart(4, "0")}
                 </Button>
               )}
               {report.quote_service && (
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => navigate(`/orcamentos/editar/${report.quote_service_id}`)}>
+                <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-[10px] uppercase font-bold tracking-wider" onClick={() => navigate(`/orcamentos/editar/${report.quote_service_id}`)}>
                   <Link2 className="h-3 w-3" />
-                  Vinculado ao Orçamento #{report.quote_service.quote_number?.toString().padStart(4, "0")}
+                  Orçamento #{report.quote_service.quote_number?.toString().padStart(4, "0")}
                 </Button>
               )}
             </CardContent>
           </Card>
         )}
 
-        {/* Client */}
-        <SectionCard icon={User} title="Cliente">
-          <p className="text-base font-semibold">{report.client?.name || "—"}</p>
-          <InfoRow label="Telefone" value={report.client?.phone} />
-          <InfoRow label="E-mail" value={report.client?.email} />
-          <InfoRow label="Endereço" value={report.client?.address} />
-          <InfoRow label="Cidade" value={[report.client?.city, report.client?.state].filter(Boolean).join(" - ")} />
-        </SectionCard>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Client */}
+          <SectionCard icon={User} title="Cliente">
+            <p className="text-sm font-bold">{report.client?.name || "—"}</p>
+            <InfoRow label="Telefone" value={report.client?.phone} />
+            <InfoRow label="Endereço" value={[report.client?.address, report.client?.city].filter(Boolean).join(", ")} />
+          </SectionCard>
 
-        {/* Info */}
-        <SectionCard icon={FileText} title="Informações do Laudo">
-          <InfoRow label="Data" value={formatDateInTz(report.report_date, tz)} />
-          <InfoRow label="Técnico" value={report.technician_profile?.full_name || report.responsible_technician_name} />
-        </SectionCard>
+          {/* Info */}
+          <SectionCard icon={FileText} title="Emissão">
+            <InfoRow label="Data" value={formatDateInTz(report.report_date, tz)} />
+            <InfoRow label="Técnico" value={report.technician_profile?.full_name || report.responsible_technician_name} />
+          </SectionCard>
+        </div>
 
         {/* Equipment */}
         {(report.equipment_type || report.equipment_brand) && (
-          <SectionCard icon={Wrench} title="Equipamento">
-            <InfoRow label="Tipo" value={report.equipment_type} />
-            <InfoRow label="Marca" value={report.equipment_brand} />
-            <InfoRow label="Modelo" value={report.equipment_model} />
-            <InfoRow label="Capacidade" value={report.capacity_btus ? `${report.capacity_btus} BTUs` : null} />
-            <InfoRow label="Nº Série" value={report.serial_number} />
-            <InfoRow label="Quantidade" value={report.equipment_quantity > 1 ? String(report.equipment_quantity) : null} />
-            <InfoRow label="Localização" value={report.equipment_location} />
-          </SectionCard>
-        )}
-
-        {/* Visit Reason */}
-        {report.visit_reason && (
-          <SectionCard icon={Stethoscope} title="Motivo da Visita">
-            <p className="text-sm text-foreground whitespace-pre-wrap">{report.visit_reason}</p>
+          <SectionCard icon={Wrench} title="Identificação do Ativo">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4">
+              <InfoRow label="Tipo" value={report.equipment_type} />
+              <InfoRow label="Marca" value={report.equipment_brand} />
+              <InfoRow label="Modelo" value={report.equipment_model} />
+              <InfoRow label="Capacidade" value={report.capacity_btus ? `${report.capacity_btus} BTUs` : null} />
+              <InfoRow label="Nº Série" value={report.serial_number} />
+              <InfoRow label="Local" value={report.equipment_location} />
+            </div>
           </SectionCard>
         )}
 
         {/* Checklist */}
         {checklist.length > 0 && (
-          <SectionCard icon={ClipboardCheck} title="Inspeção Realizada">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-              {INSPECTION_ITEMS.map((item) => {
-                const checked = checklist.includes(item.key);
-                if (!checked) return null;
-                return (
-                  <div key={item.key} className="flex items-center gap-2 text-sm py-0.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                    <span>{item.label}</span>
-                  </div>
-                );
-              })}
+          <SectionCard icon={ClipboardCheck} title="Inspeção e Conformidade">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+              {INSPECTION_ITEMS.filter(i => checklist.includes(i.key)).map((item) => (
+                <div key={item.key} className="flex items-center gap-2 text-[13px] py-0.5 border-b border-border/50 last:border-0">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                  <span className="text-muted-foreground">{item.label}</span>
+                  <span className="ml-auto font-medium text-[11px] text-green-700 bg-green-50 px-1.5 rounded">OK</span>
+                </div>
+              ))}
             </div>
           </SectionCard>
         )}
 
         {/* Diagnosis */}
-        {report.diagnosis && (
-          <SectionCard icon={Stethoscope} title="Diagnóstico Técnico">
-            <p className="text-sm whitespace-pre-wrap">{report.diagnosis}</p>
-          </SectionCard>
-        )}
+        <SectionCard icon={Stethoscope} title="Diagnóstico Técnico">
+          <p className="text-sm whitespace-pre-wrap text-foreground leading-relaxed">
+            {report.diagnosis || "Inspeção técnica detalhada realizada para avaliação das condições operacionais."}
+          </p>
+          <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-1">Impacto Identificado</p>
+            <p className="text-sm">
+              {report.equipment_working === "no" 
+                ? "Impacto Crítico: Parada total do sistema, comprometendo o ambiente/processo."
+                : report.equipment_working === "partial"
+                ? "Impacto Moderado: Operação ineficiente e risco de parada definitiva."
+                : "Impacto Baixo: Requer manutenção para garantir a longevidade do ativo."}
+            </p>
+          </div>
+        </SectionCard>
 
         {/* Measurements */}
         {Object.keys(measurements).filter((k) => measurements[k]).length > 0 && (
-          <SectionCard icon={Gauge} title="Medições / Evidências">
-            <InfoRow label="Pressão" value={measurements.pressure} />
-            <InfoRow label="Temperatura" value={measurements.temperature} />
-            <InfoRow label="Tensão" value={measurements.voltage_measured} />
-            <InfoRow label="Corrente" value={measurements.current_measured} />
+          <SectionCard icon={Gauge} title="Dados Operacionais Aferidos">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <InfoRow label="Pressão" value={measurements.pressure ? `${measurements.pressure} PSI` : null} />
+              <InfoRow label="Temperatura" value={measurements.temperature ? `${measurements.temperature} °C` : null} />
+              <InfoRow label="Tensão" value={measurements.voltage_measured ? `${measurements.voltage_measured} V` : null} />
+              <InfoRow label="Corrente" value={measurements.current_measured ? `${measurements.current_measured} A` : null} />
+            </div>
             {measurements.notes && (
-              <div className="mt-2">
-                <span className="text-xs font-medium text-muted-foreground">Observações:</span>
-                <p className="text-sm mt-1 whitespace-pre-wrap">{measurements.notes}</p>
+              <div className="mt-2 pt-2 border-t border-border">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Observações de Medição</span>
+                <p className="text-sm mt-1 text-foreground">{measurements.notes}</p>
               </div>
             )}
           </SectionCard>
         )}
 
-        {/* Condition */}
-        {(conditionLabel || report.cleanliness_status || report.equipment_working) && (
-          <SectionCard icon={ShieldAlert} title="Status Estrutural e Limpeza">
-            <InfoRow label="Estado Estrutural" value={conditionLabel} />
-            <InfoRow label="Condição de Limpeza" value={report.cleanliness_status ? CLEANLINESS_STATUS[report.cleanliness_status] || report.cleanliness_status : null} />
-            <InfoRow label="Funcionando" value={workingLabel} />
-            {report.needs_quote && (
-              <div className="flex items-center gap-1.5 text-sm text-amber-600 mt-1">
-                <XCircle className="h-3.5 w-3.5" /> Necessita orçamento
+        {/* Services Executed */}
+        <SectionCard icon={Wrench} title="Serviços Executados">
+          <p className="text-sm whitespace-pre-wrap leading-relaxed">
+            {report.interventions_performed || (report.status === "finalized" ? "Limpeza técnica, higienização, reaperto de conexões e testes funcionais realizados." : "Aguardando detalhamento das intervenções.")}
+          </p>
+        </SectionCard>
+
+        {/* Recommendation & Strategy */}
+        <SectionCard icon={MessageSquare} title="Parecer e Recomendação">
+          <div className="space-y-4">
+            {report.recommendation && (
+              <div>
+                <p className="text-[11px] font-bold text-blue-600 uppercase mb-1">Diretriz Técnica</p>
+                <p className="text-sm whitespace-pre-wrap">{report.recommendation}</p>
               </div>
             )}
-          </SectionCard>
-        )}
-
-        {/* Interventions */}
-        {report.interventions_performed && (
-          <SectionCard icon={Wrench} title="Intervenções Realizadas">
-            <p className="text-sm whitespace-pre-wrap">{report.interventions_performed}</p>
-          </SectionCard>
-        )}
-
-        {/* Recommendation */}
-        {report.recommendation && (
-          <SectionCard icon={MessageSquare} title="Recomendação Técnica">
-            <p className="text-sm whitespace-pre-wrap">{report.recommendation}</p>
-          </SectionCard>
-        )}
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+              <p className="text-[11px] font-bold text-blue-700 uppercase mb-1">Sugestão Estratégica</p>
+              <p className="text-sm text-blue-900">
+                Implementar Plano de Manutenção Preventiva (PMOC) para garantir eficiência energética e conformidade legal.
+              </p>
+            </div>
+          </div>
+        </SectionCard>
 
         {/* Risks */}
         {report.risks && (
-          <SectionCard icon={ShieldAlert} title="Riscos / Consequências">
-            <p className="text-sm whitespace-pre-wrap">{report.risks}</p>
+          <SectionCard icon={ShieldAlert} title="Análise de Risco">
+            <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
+              <p className="text-sm text-destructive-foreground whitespace-pre-wrap italic">
+                {report.risks}
+              </p>
+            </div>
           </SectionCard>
         )}
 
-        {/* Conclusion */}
-        {report.conclusion && (
-          <SectionCard icon={ClipboardCheck} title="CONCLUSÃO E STATUS PÓS-INTERVENÇÃO">
-            <p className="text-sm whitespace-pre-wrap">{report.conclusion}</p>
-          </SectionCard>
-        )}
+        {/* Conclusion / Final Status */}
+        <SectionCard icon={ClipboardCheck} title="Status Após Intervenção">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-100">
+            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-green-900">Condição Final de Entrega</p>
+              <p className="text-sm text-green-800 whitespace-pre-wrap mt-1">
+                {report.conclusion || (report.equipment_working === "yes" ? "Equipamento normalizado e em operação regular." : "Equipamento em aguardo de peças/orçamento.")}
+              </p>
+            </div>
+          </div>
+        </SectionCard>
 
-        {/* Observations */}
-        {report.observations && (
-          <SectionCard icon={MessageSquare} title="Observações Finais">
-            <p className="text-sm whitespace-pre-wrap">{report.observations}</p>
+        {/* Signature Integration */}
+        {signature && (
+          <SectionCard icon={User} title="Validação Digital">
+            <div className="flex flex-col md:flex-row items-center gap-6 p-4 bg-muted/20 rounded-xl border border-dashed">
+              {signature.signature_url && (
+                <div className="bg-white p-2 rounded border shadow-sm">
+                  <img src={signature.signature_url} alt="Assinatura" className="h-16 object-contain" />
+                </div>
+              )}
+              <div className="text-center md:text-left">
+                <p className="text-sm font-bold">{signature.signer_name || report.client?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Assinado em {signature.signed_at ? formatDateInTz(signature.signed_at, tz) : "---"}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  IP: {signature.ip_address || "---"} | Ref. OS: #{report.service?.quote_number?.toString().padStart(4, "0")}
+                </p>
+              </div>
+            </div>
           </SectionCard>
         )}
 
@@ -312,17 +337,17 @@ export default function LaudoDetalhes() {
               const catPhotos = photos.filter((p) => p.category === cat);
               if (catPhotos.length === 0) return null;
               return (
-                <div key={cat} className="mb-3 last:mb-0">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-                    {PHOTO_CATEGORY_LABELS[cat]} ({catPhotos.length})
+                <div key={cat} className="mb-4 last:mb-0">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 border-l-2 border-primary pl-2">
+                    {PHOTO_CATEGORY_LABELS[cat]}
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {catPhotos.map((photo) => (
-                      <div key={photo.id} className="rounded-lg overflow-hidden border border-border aspect-square">
+                      <div key={photo.id} className="group relative rounded-lg overflow-hidden border border-border aspect-square bg-muted">
                         <img
                           src={photo.photo_url}
                           alt={photo.caption || PHOTO_CATEGORY_LABELS[cat]}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
                         />
                       </div>
                     ))}
