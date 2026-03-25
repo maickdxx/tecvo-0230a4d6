@@ -207,7 +207,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
             </p>
             <div className="flex items-center gap-1 mt-1.5 flex-wrap">
               {/* Conversion status badge */}
-              {contact.conversion_status && contact.conversion_status !== "lead_novo" && (() => {
+              {contact.conversion_status && contact.conversion_status !== "novo_contato" && (() => {
                 const step = getConversionStep(contact.conversion_status);
                 const StepIcon = step.icon;
                 return (

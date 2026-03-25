@@ -143,7 +143,7 @@ export function ConversationList({
     }
     // Conversion pipeline filter
     if (conversionFilter) {
-      if ((c.conversion_status || "lead_novo") !== conversionFilter) return false;
+      if ((c.conversion_status || "novo_contato") !== conversionFilter) return false;
     }
     if (tagFilters.length > 0) {
       const cTags: string[] = c.tags || [];
@@ -350,7 +350,7 @@ export function ConversationList({
             </DropdownMenuItem>
             {CONVERSION_STEPS.map((step) => {
               const StepIcon = step.icon;
-              const count = contacts.filter((c) => (c.conversion_status || "lead_novo") === step.key).length;
+              const count = contacts.filter((c) => (c.conversion_status || "novo_contato") === step.key).length;
               return (
                 <DropdownMenuItem key={step.key} onClick={() => setConversionFilter(step.key)}>
                   <StepIcon className={cn("h-4 w-4 mr-2", step.color)} />

@@ -26,7 +26,7 @@ export interface ConversionStep {
 }
 
 export const CONVERSION_STEPS: ConversionStep[] = [
-  { key: "lead_novo", label: "Novo lead", icon: UserPlus, color: "text-blue-600", bgColor: "bg-blue-500/10" },
+  { key: "novo_contato", label: "Novo contato", icon: UserPlus, color: "text-blue-600", bgColor: "bg-blue-500/10" },
   { key: "em_atendimento", label: "Em atendimento", icon: MessageSquare, color: "text-amber-600", bgColor: "bg-amber-500/10" },
   { key: "agendado", label: "Agendado", icon: CalendarCheck, color: "text-emerald-600", bgColor: "bg-emerald-500/10" },
   { key: "concluido", label: "Concluído", icon: CheckCircle2, color: "text-green-600", bgColor: "bg-green-500/10" },
@@ -37,6 +37,7 @@ export function getConversionStep(status: string | null): ConversionStep {
   if (status === "finalizado" || status === "nao_convertido") return CONVERSION_STEPS[3];
   if (status === "aguardando_cliente" || status === "orcamento_enviado") return CONVERSION_STEPS[1];
   if (status === "recorrencia") return CONVERSION_STEPS[3];
+  if (status === "lead_novo" || status === "pending") return CONVERSION_STEPS[0];
   return CONVERSION_STEPS.find((s) => s.key === status) || CONVERSION_STEPS[0];
 }
 

@@ -273,10 +273,10 @@ export function useWhatsAppConversations() {
     if (!contact) return;
     
     const currentConvStatus = contact.conversation_status || "novo";
-    const currentPipelineStatus = contact.conversion_status || "lead_novo";
+    const currentPipelineStatus = contact.conversion_status || "novo_contato";
     
     // Only promote if still in initial state
-    if (currentConvStatus !== "novo" && currentPipelineStatus !== "lead_novo") return;
+    if (currentConvStatus !== "novo" && currentPipelineStatus !== "novo_contato") return;
     
     const updates: Record<string, any> = {};
     const optimisticFields: Record<string, any> = {};
@@ -285,7 +285,7 @@ export function useWhatsAppConversations() {
       updates.conversation_status = "atendendo";
       optimisticFields.conversation_status = "atendendo";
     }
-    if (currentPipelineStatus === "lead_novo") {
+    if (currentPipelineStatus === "novo_contato") {
       updates.conversion_status = "em_atendimento";
       optimisticFields.conversion_status = "em_atendimento";
     }
