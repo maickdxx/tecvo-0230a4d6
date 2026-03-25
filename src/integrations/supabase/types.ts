@@ -2583,6 +2583,7 @@ export type Database = {
           equipment_brand: string | null
           equipment_model: string | null
           equipment_type: string | null
+          estimated_duration: string | null
           exit_date: string | null
           id: string
           internal_notes: string | null
@@ -2625,6 +2626,7 @@ export type Database = {
           equipment_brand?: string | null
           equipment_model?: string | null
           equipment_type?: string | null
+          estimated_duration?: string | null
           exit_date?: string | null
           id?: string
           internal_notes?: string | null
@@ -2667,6 +2669,7 @@ export type Database = {
           equipment_brand?: string | null
           equipment_model?: string | null
           equipment_type?: string | null
+          estimated_duration?: string | null
           exit_date?: string | null
           id?: string
           internal_notes?: string | null
