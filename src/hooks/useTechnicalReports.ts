@@ -96,11 +96,16 @@ export const REPORT_STATUS_LABELS: Record<string, string> = {
 };
 
 export const EQUIPMENT_CONDITIONS: Record<string, string> = {
-  good: "Bom",
-  regular: "Regular",
-  bad: "Ruim",
-  critical: "Crítico",
+  good: "Perfeito estado",
+  regular: "Requer atenção",
+  bad: "Crítico / Necessita Reparo",
   inoperative: "Inoperante",
+};
+
+export const CLEANLINESS_STATUS: Record<string, string> = {
+  clean: "Limpo",
+  dirty: "Sujo",
+  needs_cleaning: "Necessita limpeza",
 };
 
 export const INSPECTION_ITEMS = [
