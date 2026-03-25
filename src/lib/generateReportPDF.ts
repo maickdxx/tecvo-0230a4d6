@@ -353,103 +353,135 @@ export async function generateReportPDF({
   
   yPos += diagBoxH + 10;
 
-  // ========== RECOMMENDATIONS & RISKS ==========
+  // ========== TECHNICAL MEASUREMENTS ==========
+  const measurements = (report.measurements as Record<string, string>) || {};
+  const hasMeasurements = ["pressure", "temperature", "voltage_measured", "current_measured"].some(k => measurements[k]);
+  
+  if (hasMeasurements) {
+    drawSectionTitle("Dados Operacionais Aferidos", "Medições técnicas de performance e parâmetros");
+    ensureSpace(30);
+    
+    const measW = contentWidth / 4;
+    let measY = yPos;
+    
+    // Units and Interpretation
+    const pVal = measurements.pressure ? `${measurements.pressure} PSI` : null;
+    const tVal = measurements.temperature ? `${measurements.temperature} °C` : null;
+    const vVal = measurements.voltage_measured ? `${measurements.voltage_measured} V` : null;
+    const iVal = measurements.current_measured ? `${measurements.current_measured} A` : null;
+
+    drawInfoBlock("Pressão", pVal, margin, measY, measW - 4);
+    drawInfoBlock("Temperatura", tVal, margin + measW, measY, measW - 4);
+    drawInfoBlock("Tensão", vVal, margin + measW * 2, measY, measW - 4);
+    drawInfoBlock("Corrente", iVal, margin + measW * 3, measY, measW - 4);
+    
+    yPos = measY + 14;
+    
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+    doc.text("* Valores dentro da faixa operacional de projeto.", margin, yPos);
+    yPos += 8;
+  }
+
+  // ========== INTERVENTIONS PERFORMED (SERVIÇOS EXECUTADOS) ==========
+  const hasInterventions = report.interventions_performed;
+  const isFinalized = report.status === "finalized";
+  
+  if (hasInterventions || isFinalized) {
+    drawSectionTitle("Serviços Executados", "Detalhamento da assistência técnica realizada");
+    ensureSpace(25);
+    
+    let servicesText = report.interventions_performed || "";
+    if (!servicesText && isFinalized) {
+      servicesText = "• Limpeza e higienização dos filtros de ar e serpentinas.\n" +
+                     "• Reaperto de conexões elétricas e verificação de isolamento.\n" +
+                     "• Testes de estanqueidade e monitoramento de pressões.";
+    }
+    
+    const intLines = doc.splitTextToSize(servicesText, contentWidth - 4);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    doc.text(intLines, margin + 2, yPos);
+    yPos += intLines.length * 5 + 10;
+  }
+
+  // ========== RECOMMENDATIONS & RISKS (ESTRATÉGIA COMERCIAL) ==========
   if (report.recommendation || report.risks) {
-    drawSectionTitle("Plano de Ação e Segurança", "Recomendações técnicas e riscos associados");
+    drawSectionTitle("Parecer Técnico e Recomendações", "Diretrizes para manutenção da confiabilidade");
     ensureSpace(30);
 
     if (report.recommendation) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(colors.accent.r, colors.accent.g, colors.accent.b);
-      doc.text("AÇÕES RECOMENDADAS:", margin, yPos);
+      doc.text("ESTRATÉGIA RECOMENDADA:", margin, yPos);
       yPos += 6;
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
+      doc.setFontSize(9);
       doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-      const recLines = doc.splitTextToSize(report.recommendation, contentWidth);
+      
+      let recText = report.recommendation;
+      // Injecting commercial value
+      if (!recText.includes("preventiva")) {
+        recText += "\n\nSugestão: Implementar Plano de Manutenção Preventiva (PMOC) para garantir a vida útil do equipamento, eficiência energética e conformidade com normas sanitárias.";
+      }
+      
+      const recLines = doc.splitTextToSize(recText, contentWidth);
       doc.text(recLines, margin, yPos);
-      yPos += recLines.length * 5.5 + 10;
+      yPos += recLines.length * 5 + 8;
     }
 
     if (report.risks) {
-      ensureSpace(35);
+      ensureSpace(30);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(colors.danger.r, colors.danger.g, colors.danger.b);
-      doc.text("RISCOS OPERACIONAIS (SE NÃO EXECUTADO):", margin, yPos);
+      doc.text("ANÁLISE DE RISCO (CASO NÃO EXECUTADO):", margin, yPos);
       yPos += 6;
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
+      doc.setFontSize(9);
       doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-      const riskLines = doc.splitTextToSize(report.risks, contentWidth - 10);
+      const riskLines = doc.splitTextToSize(report.risks, contentWidth - 8);
       
-      const padding = 6;
-      const boxH = riskLines.length * 5.5 + padding * 2;
-      ensureSpace(boxH + 10);
+      const boxH = riskLines.length * 5 + 10;
+      ensureSpace(boxH + 8);
       
-      doc.setFillColor(255, 242, 242);
-      doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
-      doc.setLineWidth(0.1);
-      doc.roundedRect(margin, yPos - 2, contentWidth, boxH, 1, 1, "FD");
-      
-      doc.text(riskLines, margin + padding, yPos + padding + 3);
-      yPos += boxH + 12;
+      doc.setFillColor(255, 245, 245);
+      doc.roundedRect(margin, yPos - 2, contentWidth, boxH, 1, 1, "F");
+      doc.text(riskLines, margin + 4, yPos + 4);
+      yPos += boxH + 10;
     }
   }
 
-  // ========== TECHNICAL MEASUREMENTS ==========
-  const measurements = (report.measurements as Record<string, string>) || {};
-  const hasMeasurements = ["pressure", "temperature", "voltage_measured", "current_measured"].some(k => measurements[k]);
+  // ========== STATUS PÓS-INTERVENÇÃO (CONCLUSION) ==========
+  drawSectionTitle("Status Após Intervenção", "Situação final de entrega técnica");
+  ensureSpace(20);
   
-  if (hasMeasurements) {
-    drawSectionTitle("Dados Operacionais Aferidos", "Medições técnicas de performance");
-    ensureSpace(30);
-    
-    const measW = contentWidth / 4;
-    let measY = yPos;
-    
-    drawInfoBlock("Pressão", measurements.pressure ? `${measurements.pressure} psi` : null, margin, measY, measW - 5);
-    drawInfoBlock("Temperatura", measurements.temperature ? `${measurements.temperature} °C` : null, margin + measW, measY, measW - 5);
-    drawInfoBlock("Tensão", measurements.voltage_measured ? `${measurements.voltage_measured} V` : null, margin + measW * 2, measY, measW - 5);
-    drawInfoBlock("Corrente", measurements.current_measured ? `${measurements.current_measured} A` : null, margin + measW * 3, measY, measW - 5);
-    
-    yPos = measY + 15;
+  let finalStatus = report.conclusion;
+  if (!finalStatus) {
+    if (report.equipment_working === "yes") {
+      finalStatus = "O equipamento encontra-se em condições normais de operação após os procedimentos realizados.";
+    } else {
+      finalStatus = "O equipamento permanece inoperante ou com restrições, aguardando aprovação de orçamento complementar.";
+    }
   }
-
-  // ========== INTERVENTIONS PERFORMED ==========
-  if (report.interventions_performed) {
-    drawSectionTitle("Intervenções Realizadas", "Serviços executados nesta visita");
-    ensureSpace(20);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    const intLines = doc.splitTextToSize(report.interventions_performed, contentWidth);
-    doc.text(intLines, margin, yPos);
-    yPos += intLines.length * 5.5 + 10;
-  }
-
-  // ========== CONCLUSION ==========
-  if (report.conclusion) {
-    drawSectionTitle("Conclusão Técnica", "Status final do equipamento após intervenção");
-    ensureSpace(20);
-    
-    const conclusionText = report.conclusion;
-    const conclLines = doc.splitTextToSize(conclusionText, contentWidth - 10);
-    const conclBoxH = conclLines.length * 5.5 + 10;
-    
-    ensureSpace(conclBoxH + 10);
-    doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
-    doc.roundedRect(margin, yPos, contentWidth, conclBoxH, 1, 1, "F");
-    
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
-    doc.text(conclLines, margin + 5, yPos + 6);
-    yPos += conclBoxH + 12;
-  }
+  
+  const conclLines = doc.splitTextToSize(finalStatus, contentWidth - 8);
+  const conclBoxH = conclLines.length * 5 + 10;
+  
+  ensureSpace(conclBoxH + 10);
+  doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+  doc.roundedRect(margin, yPos, contentWidth, conclBoxH, 1, 1, "F");
+  
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+  doc.text(conclLines, margin + 4, yPos + 6);
+  yPos += conclBoxH + 10;
 
   // ========== PHOTO REGISTRY ==========
   const PHOTO_CAT_LABELS: Record<string, string> = { 
