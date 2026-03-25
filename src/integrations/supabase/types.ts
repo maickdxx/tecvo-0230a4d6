@@ -480,12 +480,16 @@ export type Database = {
       }
       catalog_services: {
         Row: {
+          category: string | null
+          checklist_id: string | null
           created_at: string | null
           default_discount: number | null
           deleted_at: string | null
           description: string | null
+          estimated_duration: string | null
           id: string
           is_active: boolean | null
+          is_non_standard: boolean | null
           name: string
           notes: string | null
           organization_id: string
@@ -494,12 +498,16 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          category?: string | null
+          checklist_id?: string | null
           created_at?: string | null
           default_discount?: number | null
           deleted_at?: string | null
           description?: string | null
+          estimated_duration?: string | null
           id?: string
           is_active?: boolean | null
+          is_non_standard?: boolean | null
           name: string
           notes?: string | null
           organization_id: string
@@ -508,12 +516,16 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          category?: string | null
+          checklist_id?: string | null
           created_at?: string | null
           default_discount?: number | null
           deleted_at?: string | null
           description?: string | null
+          estimated_duration?: string | null
           id?: string
           is_active?: boolean | null
+          is_non_standard?: boolean | null
           name?: string
           notes?: string | null
           organization_id?: string
@@ -522,6 +534,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "catalog_services_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "pmoc_checklists"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "catalog_services_organization_id_fkey"
             columns: ["organization_id"]
@@ -2287,42 +2306,55 @@ export type Database = {
       }
       service_items: {
         Row: {
+          catalog_service_id: string | null
           created_at: string
           deleted_at: string | null
           description: string
           discount: number | null
           discount_type: string | null
           id: string
+          is_non_standard: boolean | null
           organization_id: string
           quantity: number
           service_id: string
           unit_price: number
         }
         Insert: {
+          catalog_service_id?: string | null
           created_at?: string
           deleted_at?: string | null
           description: string
           discount?: number | null
           discount_type?: string | null
           id?: string
+          is_non_standard?: boolean | null
           organization_id: string
           quantity?: number
           service_id: string
           unit_price: number
         }
         Update: {
+          catalog_service_id?: string | null
           created_at?: string
           deleted_at?: string | null
           description?: string
           discount?: number | null
           discount_type?: string | null
           id?: string
+          is_non_standard?: boolean | null
           organization_id?: string
           quantity?: number
           service_id?: string
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "service_items_catalog_service_id_fkey"
+            columns: ["catalog_service_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_services"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "service_items_organization_id_fkey"
             columns: ["organization_id"]
