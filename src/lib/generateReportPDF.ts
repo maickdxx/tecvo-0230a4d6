@@ -336,6 +336,12 @@ export async function generateReportPDF({
     : "Impacto Baixo: Requer manutenção preventiva para evitar falhas futuras.";
 
   const fullDiagText = `${diagText}\n\nIMPACTO IDENTIFICADO: ${impactText}`;
+  
+  // Set font size before splitting to ensure correct width calculation
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+  
   const diagLines = doc.splitTextToSize(fullDiagText, contentWidth - 16);
   const diagBoxH = diagLines.length * 5 + 16;
   
@@ -346,9 +352,6 @@ export async function generateReportPDF({
   doc.setLineWidth(0.1);
   doc.roundedRect(margin, yPos, contentWidth, diagBoxH, 1, 1, "FD");
 
-  doc.setFontSize(8.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
   doc.text(diagLines, margin + 8, yPos + 8);
   
   yPos += diagBoxH + 10;
