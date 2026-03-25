@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { signViaToken } from "@/hooks/useServiceSignatures";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { CheckCircle, Loader2, PenLine, Eraser, RotateCcw } from "lucide-react";
+import { Loader2, CheckCircle, PenLine, AlertTriangle } from "lucide-react";
+import { SignatureCanvas, type SignatureCanvasRef } from "@/components/services/SignatureCanvas";
 
 interface SignatureInfo {
   token: string;
@@ -20,38 +18,13 @@ export default function AssinarOS() {
   const [info, setInfo] = useState<SignatureInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [signerName, setSignerName] = useState("");
   const [isSigning, setIsSigning] = useState(false);
   const [signed, setSigned] = useState(false);
-
-  // Canvas state
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [hasDrawn, setHasDrawn] = useState(false);
-
-  const setupCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, rect.width, rect.height);
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  }, []);
 
   useEffect(() => {
     async function loadInfo() {
       if (!token) { setError("Token inválido"); setLoading(false); return; }
       try {
-        // Load signature record via secure RPC (requires exact token)
         const { data: sigRows, error: sigErr } = await supabase
           .rpc("get_signature_by_token", { p_token: token });
 
@@ -65,7 +38,6 @@ export default function AssinarOS() {
           return;
         }
 
-        // Get service + client + org info
         const { data: svc } = await supabase
           .from("services")
           .select("quote_number, client:clients(name), organization:organizations(name)")
@@ -87,54 +59,10 @@ export default function AssinarOS() {
     loadInfo();
   }, [token]);
 
-  useEffect(() => {
-    if (info && !info.already_signed) {
-      setTimeout(setupCanvas, 100);
-    }
-  }, [info, setupCanvas]);
-
-  const getPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  };
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.setPointerCapture(e.pointerId);
-    const ctx = canvas.getContext("2d")!;
-    const pos = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-    setIsDrawing(true);
-    setHasDrawn(true);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const pos = getPos(e);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-  };
-
-  const handlePointerUp = () => setIsDrawing(false);
-
-  const clearCanvas = () => {
-    setupCanvas();
-    setHasDrawn(false);
-  };
-
-  const handleSign = async () => {
-    if (!token || !canvasRef.current) return;
+  const handleSign = async (blob: Blob, signerName: string) => {
+    if (!token) return;
     setIsSigning(true);
     try {
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvasRef.current!.toBlob((b) => resolve(b), "image/png", 0.9);
-      });
-      if (!blob) { setIsSigning(false); return; }
       await signViaToken(token, blob, signerName || "Cliente");
       setSigned(true);
     } catch (err: any) {
@@ -155,6 +83,7 @@ export default function AssinarOS() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="text-center space-y-2">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
           <p className="text-destructive font-semibold">{error}</p>
           <p className="text-sm text-muted-foreground">Verifique o link e tente novamente.</p>
         </div>
@@ -195,58 +124,26 @@ export default function AssinarOS() {
           ) : null}
         </div>
 
-        {/* Signer name */}
-        <div className="space-y-1.5">
-          <Label htmlFor="signer-name" className="text-sm">Seu nome (opcional)</Label>
-          <Input
-            id="signer-name"
-            placeholder="Nome de quem está assinando"
-            value={signerName}
-            onChange={(e) => setSignerName(e.target.value)}
-          />
-        </div>
-
-        {/* Canvas */}
+        {/* Unified Signature Canvas */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <PenLine className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">Desenhe sua assinatura</span>
           </div>
-          <div className="rounded-lg border-2 border-dashed border-border overflow-hidden bg-white">
-            <canvas
-              ref={canvasRef}
-              className="w-full cursor-crosshair"
-              style={{ height: 200, touchAction: "none" }}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={clearCanvas} disabled={!hasDrawn}>
-              <Eraser className="h-4 w-4 mr-1" /> Limpar
-            </Button>
-            <Button variant="outline" size="sm" onClick={clearCanvas} disabled={!hasDrawn}>
-              <RotateCcw className="h-4 w-4 mr-1" /> Refazer
-            </Button>
-          </div>
-        </div>
 
-        {/* Confirm */}
-        <Button
-          className="w-full"
-          size="lg"
-          onClick={handleSign}
-          disabled={!hasDrawn || isSigning}
-        >
-          {isSigning ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <CheckCircle className="h-4 w-4 mr-2" />
-          )}
-          Confirmar Assinatura
-        </Button>
+          <SignatureCanvas
+            onSave={handleSign}
+            height={200}
+            showControls={true}
+            showSignerName={true}
+            signerNameRequired={true}
+            signerNameLabel="Seu nome *"
+            signerNamePlaceholder="Nome completo de quem está assinando"
+            showConfirmButton={true}
+            confirmLabel={isSigning ? "Salvando..." : "Confirmar Assinatura"}
+            disabled={isSigning}
+          />
+        </div>
 
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
           Ao assinar, você confirma o recebimento e a conclusão do serviço descrito na ordem de serviço.

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,10 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, Loader2, Plus, Trash2, ArrowRight, PenLine, Eraser, RotateCcw, Link2 } from "lucide-react";
+import { CheckCircle, Loader2, Plus, Trash2, ArrowRight, PenLine, Link2 } from "lucide-react";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useFinancialAccounts } from "@/hooks/useFinancialAccounts";
 import { useOrganization } from "@/hooks/useOrganization";
+import { SignatureCanvas, type SignatureCanvasRef } from "./SignatureCanvas";
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
 
 interface PaymentLine {
@@ -33,7 +34,7 @@ interface ServiceCompleteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   serviceValue: number;
-  onConfirm: (payments: ServicePaymentInput[], signatureBlob?: Blob | null) => Promise<void>;
+  onConfirm: (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => Promise<void>;
 }
 
 const formatCurrency = (value: number) =>
@@ -51,12 +52,9 @@ export function ServiceCompleteDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientDidNotPay, setClientDidNotPay] = useState(false);
   const [step, setStep] = useState<"payment" | "signature">("payment");
-  const [skipSignature, setSkipSignature] = useState(false);
-
-  // Signature canvas
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [hasDrawn, setHasDrawn] = useState(false);
+  const [signerName, setSignerName] = useState("");
+  const [hasSignatureDrawn, setHasSignatureDrawn] = useState(false);
+  const signatureRef = useRef<SignatureCanvasRef>(null);
 
   const { paymentMethods, isLoading: isLoadingPM } = usePaymentMethods();
   const { activeAccounts, isLoading: isLoadingAccounts } = useFinancialAccounts();
@@ -97,69 +95,6 @@ export function ServiceCompleteDialog({
     setLines(updated);
   };
 
-  // Canvas setup
-  const setupCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, rect.width, rect.height);
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  }, []);
-
-  useEffect(() => {
-    if (step === "signature") {
-      setTimeout(setupCanvas, 100);
-    }
-  }, [step, setupCanvas]);
-
-  const getPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  };
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.setPointerCapture(e.pointerId);
-    const ctx = canvas.getContext("2d")!;
-    const pos = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-    setIsDrawing(true);
-    setHasDrawn(true);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const pos = getPos(e);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-  };
-
-  const handlePointerUp = () => setIsDrawing(false);
-  const clearCanvas = () => { setupCanvas(); setHasDrawn(false); };
-
-  const getCanvasBlob = (): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-      const canvas = canvasRef.current;
-      if (!canvas) { resolve(null); return; }
-      canvas.toBlob((b) => resolve(b), "image/png", 0.9);
-    });
-  };
-
   const handleNextStep = () => {
     if (requireClientSignature) {
       setStep("signature");
@@ -178,30 +113,30 @@ export function ServiceCompleteDialog({
             amount: parseFloat(l.amount),
             financial_account_id: l.financial_account_id,
           }));
-      await onConfirm(payments, signatureBlob);
+      await onConfirm(payments, signatureBlob, signerName || undefined);
       onOpenChange(false);
       setStep("payment");
-      setHasDrawn(false);
+      setSignerName("");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSignAndConfirm = async () => {
-    const blob = hasDrawn ? await getCanvasBlob() : null;
+    const blob = signatureRef.current?.hasDrawn ? await signatureRef.current.getBlob() : null;
+    if (requireClientSignature && !blob) return; // Block if required but not signed
     await handleFinalConfirm(blob);
   };
 
   const handleSkipSignature = async () => {
-    setSkipSignature(true);
     await handleFinalConfirm(null);
   };
 
   const handleClose = (open: boolean) => {
     if (!open) {
       setStep("payment");
-      setHasDrawn(false);
-      setSkipSignature(false);
+      setSignerName("");
+      setHasSignatureDrawn(false);
     }
     onOpenChange(open);
   };
@@ -334,26 +269,18 @@ export function ServiceCompleteDialog({
                 O cliente pode assinar diretamente na tela do dispositivo.
               </p>
 
-              <div className="rounded-lg border-2 border-dashed border-border overflow-hidden bg-white">
-                <canvas
-                  ref={canvasRef}
-                  className="w-full cursor-crosshair"
-                  style={{ height: 200, touchAction: "none" }}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerLeave={handlePointerUp}
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={clearCanvas} disabled={!hasDrawn}>
-                  <Eraser className="h-4 w-4 mr-1" /> Limpar
-                </Button>
-                <Button variant="outline" size="sm" onClick={clearCanvas} disabled={!hasDrawn}>
-                  <RotateCcw className="h-4 w-4 mr-1" /> Refazer
-                </Button>
-              </div>
+              <SignatureCanvas
+                ref={signatureRef}
+                height={200}
+                showControls={true}
+                showSignerName={true}
+                signerNameRequired={false}
+                signerNameLabel="Nome do cliente"
+                signerNamePlaceholder="Nome de quem está assinando"
+                defaultSignerName={signerName}
+                onDrawChange={setHasSignatureDrawn}
+                onSave={(_, name) => { setSignerName(name); }}
+              />
             </div>
 
             <DialogFooter className="flex-col sm:flex-row gap-2">
@@ -365,7 +292,7 @@ export function ServiceCompleteDialog({
                 <Button variant="outline" onClick={() => setStep("payment")}>
                   Voltar
                 </Button>
-                <Button onClick={handleSignAndConfirm} disabled={!hasDrawn || isSubmitting}>
+                <Button onClick={handleSignAndConfirm} disabled={!hasSignatureDrawn || isSubmitting}>
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (

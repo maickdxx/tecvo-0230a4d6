@@ -393,6 +393,13 @@ export default function OrdensServico() {
 
       const itemsTotal = (items || []).reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
 
+      // Fetch client signature
+      const { data: sigData } = await supabase
+        .from("service_signatures")
+        .select("signature_url")
+        .eq("service_id", service.id)
+        .maybeSingle();
+
       await generateServiceOrderPDF({
         service: {
           ...service,
@@ -412,6 +419,7 @@ export default function OrdensServico() {
         organizationState: org?.state || undefined,
         organizationSignature: org?.signature_url || undefined,
         autoSignatureOS: org?.auto_signature_os ?? false,
+        clientSignatureUrl: sigData?.signature_url || undefined,
         orderData,
         isFreePlan,
       });

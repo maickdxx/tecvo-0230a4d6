@@ -564,7 +564,7 @@ export async function generateServiceOrderPDF({
       doc.text((index + 1).toString(), colX + 3, yPos + 5);
       colX += colWidths[0];
       
-      const descTruncated = item.description.length > 40 ? item.description.substring(0, 40) + "..." : item.description;
+      const descTruncated = item.description.length > 65 ? item.description.substring(0, 65) + "..." : item.description;
       doc.text(descTruncated, colX + 3, yPos + 5);
       colX += colWidths[1];
       

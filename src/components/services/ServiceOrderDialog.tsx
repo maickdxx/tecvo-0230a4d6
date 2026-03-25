@@ -30,6 +30,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { generateServiceOrderPDF } from "@/lib/generateServiceOrderPDF";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useServiceSignatures } from "@/hooks/useServiceSignatures";
 import type { Service } from "@/hooks/useServices";
 import { SERVICE_STATUS_LABELS } from "@/hooks/useServices";
 import { format } from "date-fns";
@@ -97,6 +98,7 @@ export function ServiceOrderDialog({ open, onOpenChange, service }: ServiceOrder
   const { isFreePlan } = useSubscription();
   const { items, total } = useServiceItems(service.id);
   const [isSaving, setIsSaving] = useState(false);
+  const { signature } = useServiceSignatures(service.id);
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
 
   // Fetch equipment directly with useQuery to ensure it loads when dialog opens
@@ -191,6 +193,7 @@ export function ServiceOrderDialog({ open, onOpenChange, service }: ServiceOrder
         organizationState: org?.state || undefined,
         organizationSignature: org?.signature_url || undefined,
         autoSignatureOS: org?.auto_signature_os ?? false,
+        clientSignatureUrl: signature?.signature_url || undefined,
         orderData,
         isFreePlan,
       });

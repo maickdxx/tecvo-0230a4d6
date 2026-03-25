@@ -170,7 +170,7 @@ export default function OrdemServicoDetalhes() {
   const tz = useOrgTimezone();
   const { services, updateStatus, remove } = useServices();
   const { sendOSViaWhatsApp, sending: sendingPDF } = useServicePDFSend();
-  const { signature, createSignatureLink, isCreatingLink } = useServiceSignatures(id);
+  const { signature, createSignature, createSignatureLink, isCreatingLink } = useServiceSignatures(id);
   const { isFreePlan } = useSubscription();
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -296,11 +296,13 @@ export default function OrdemServicoDetalhes() {
     setShowCompleteDialog(true);
   };
 
-  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null) => {
+  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
     setIsUpdating(true);
     try {
-      const mainMethod = payments[0]?.payment_method;
       await updateStatus({ id: service.id, status: "completed" });
+      if (signatureBlob) {
+        await createSignature({ serviceId: service.id, blob: signatureBlob, signerName });
+      }
       setShowCompleteDialog(false);
     } finally {
       setIsUpdating(false);
@@ -360,6 +362,7 @@ export default function OrdemServicoDetalhes() {
         organizationState: org?.state || undefined,
         organizationSignature: org?.signature_url || undefined,
         autoSignatureOS: org?.auto_signature_os ?? false,
+        clientSignatureUrl: signature?.signature_url || undefined,
         orderData,
         isFreePlan,
       });
