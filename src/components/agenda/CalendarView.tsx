@@ -20,6 +20,7 @@ import {
   getMinutesInTz,
   isSameDayInTz,
   getTodayInTz,
+  parseDurationToMinutes,
 } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -315,14 +316,24 @@ function getServicePosition(service: Service, slotHeight: number, gridStartHour:
   const top = (startHour - gridStartHour) * slotHeight + (startMinutes / 60) * slotHeight;
 
   let height = slotHeight; // default 1h
-  if (service.exit_date) {
+  
+  // 1. Real duration from execution
+  if (service.entry_date && service.exit_date) {
     const endHour = getHourInTz(service.exit_date, tz);
     const endMinutes = getMinutesInTz(service.exit_date, tz);
     const durationMinutes = (endHour * 60 + endMinutes) - (startHour * 60 + startMinutes);
     if (durationMinutes > 0) {
       height = (durationMinutes / 60) * slotHeight;
     }
+  } 
+  // 2. Estimated duration from items
+  else if (service.estimated_duration) {
+    const dur = parseDurationToMinutes(service.estimated_duration);
+    if (dur > 0) {
+      height = (dur / 60) * slotHeight;
+    }
   }
+
 
   return { top, height: Math.max(height, slotHeight * 0.5) }; // min 30min visual
 }
