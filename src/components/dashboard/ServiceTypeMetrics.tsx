@@ -19,13 +19,23 @@ interface ServiceTypeMetricsProps {
 }
 
 const ENUM_TO_PT: Record<string, string> = {
+  limpeza: "Limpeza",
+  instalacao: "Instalação",
+  manutencao: "Manutenção",
+  reparo: "Reparo",
+  contratos: "Contratos",
+  pmoc: "PMOC",
+  visita: "Visita Técnica",
+  orcamento: "Orçamento",
+  desinstalacao: "Desinstalação",
+  outros: "Outros",
+  // Legacy
   cleaning: "Limpeza",
   installation: "Instalação",
   maintenance: "Manutenção",
   maintenance_contract: "Contratos",
-  other: "Outros",
   repair: "Reparo",
-  
+  other: "Outros",
 };
 
 const ICON_MAP: Record<string, typeof Snowflake> = {
@@ -37,10 +47,14 @@ const ICON_MAP: Record<string, typeof Snowflake> = {
   maintenance: Wrench,
   contratos: FileText,
   maintenance_contract: FileText,
-  outros: MoreHorizontal,
-  other: MoreHorizontal,
   reparo: Wrench,
   repair: Wrench,
+  pmoc: Calculator,
+  visita: Eye,
+  orcamento: Calculator,
+  desinstalacao: Wrench,
+  outros: MoreHorizontal,
+  other: MoreHorizontal,
 };
 
 function formatCurrency(value: number): string {

@@ -13,7 +13,10 @@ const SERVICE_TYPE_BORDER_COLORS: Record<string, string> = {
   instalacao: "border-l-blue-500",
   manutencao: "border-l-amber-500",
   reparo: "border-l-red-500",
-  
+  pmoc: "border-l-indigo-500",
+  visita: "border-l-sky-500",
+  orcamento: "border-l-emerald-500",
+  desinstalacao: "border-l-orange-500",
   contratos: "border-l-purple-500",
   outros: "border-l-gray-400",
   // Legacy

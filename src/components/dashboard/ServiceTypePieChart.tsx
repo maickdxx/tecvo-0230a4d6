@@ -10,13 +10,23 @@ interface ServiceTypePieChartProps {
 }
 
 const ENUM_TO_PT: Record<string, string> = {
+  limpeza: "Limpeza",
+  instalacao: "Instalação",
+  manutencao: "Manutenção",
+  reparo: "Reparo",
+  contratos: "Contratos",
+  pmoc: "PMOC",
+  visita: "Visita Técnica",
+  orcamento: "Orçamento",
+  desinstalacao: "Desinstalação",
+  outros: "Outros",
+  // Legacy
   cleaning: "Limpeza",
   installation: "Instalação",
   maintenance: "Manutenção",
   maintenance_contract: "Contratos",
-  other: "Outros",
   repair: "Reparo",
-  
+  other: "Outros",
 };
 
 const LABEL_COLORS: Record<string, string> = {

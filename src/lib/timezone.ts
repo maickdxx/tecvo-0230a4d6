@@ -292,3 +292,34 @@ export function toTimestampWithTz(
   const time = match[2] ? timeStr : `${timeStr}:00`;
   return buildTimestamp(refDate, time, tz);
 }
+
+/**
+ * Parse a duration string ("HH:MM", "MM", or "Xh Ym") into total minutes.
+ * Used to calculate operational capacity and agenda layout.
+ */
+export function parseDurationToMinutes(duration: string | null | undefined): number {
+  if (!duration) return 0;
+  
+  const d = duration.trim();
+  
+  // Format HH:MM or H:MM
+  if (d.includes(":")) {
+    const parts = d.split(":");
+    const h = parseInt(parts[0]) || 0;
+    const m = parseInt(parts[1]) || 0;
+    return h * 60 + m;
+  }
+  
+  // Format Xh Ym, Xh, or Ym
+  if (d.toLowerCase().includes("h") || d.toLowerCase().includes("m")) {
+    const hoursMatch = d.match(/(\d+)\s*h/i);
+    const minsMatch = d.match(/(\d+)\s*m/i);
+    const h = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+    const m = minsMatch ? parseInt(minsMatch[1]) : 0;
+    return h * 60 + m;
+  }
+  
+  // Just minutes
+  const mins = parseInt(d);
+  return isNaN(mins) ? 0 : mins;
+}

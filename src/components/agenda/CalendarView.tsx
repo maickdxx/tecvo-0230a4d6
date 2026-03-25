@@ -12,7 +12,8 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { Service, SERVICE_TYPE_LABELS, type ServiceStatus } from "@/hooks/useServices";
+import { Service, type ServiceStatus } from "@/hooks/useServices";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 import {
   formatTimeInTz,
   getDatePartInTz,
@@ -20,6 +21,7 @@ import {
   getMinutesInTz,
   isSameDayInTz,
   getTodayInTz,
+  parseDurationToMinutes,
 } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -108,6 +110,8 @@ export function CalendarView({
   readOnly = false,
 }: CalendarViewProps) {
   const tz = useOrgTimezone();
+  const { typeLabels } = useServiceTypes();
+
 
   if (isLoading) {
     return (
@@ -127,6 +131,7 @@ export function CalendarView({
           onDateSelect={onDateSelect}
           onServiceClick={onServiceClick}
           tz={tz}
+          typeLabels={typeLabels}
         />
       );
     case "week":
@@ -138,6 +143,7 @@ export function CalendarView({
           onDateSelect={onDateSelect}
           onServiceClick={onServiceClick}
           tz={tz}
+          typeLabels={typeLabels}
         />
       );
     case "day":
@@ -147,6 +153,7 @@ export function CalendarView({
           services={services}
           onServiceClick={onServiceClick}
           tz={tz}
+          typeLabels={typeLabels}
         />
       );
   }
@@ -160,6 +167,7 @@ function MonthView({
   onDateSelect,
   onServiceClick,
   tz,
+  typeLabels,
 }: {
   currentDate: Date;
   services: Service[];
@@ -167,7 +175,9 @@ function MonthView({
   onDateSelect: (date: Date) => void;
   onServiceClick: (service: Service) => void;
   tz: string;
+  typeLabels: Record<string, string>;
 }) {
+
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
@@ -285,7 +295,7 @@ function MonthView({
                         STATUS_COLORS[effectiveStatus]
                       )}
                     >
-                      {service.client?.name || SERVICE_TYPE_LABELS[service.service_type]}
+                      {service.client?.name || typeLabels[service.service_type] || service.service_type}
                     </div>
                   );
                 })}
@@ -315,14 +325,24 @@ function getServicePosition(service: Service, slotHeight: number, gridStartHour:
   const top = (startHour - gridStartHour) * slotHeight + (startMinutes / 60) * slotHeight;
 
   let height = slotHeight; // default 1h
-  if (service.exit_date) {
+  
+  // 1. Real duration from execution
+  if (service.entry_date && service.exit_date) {
     const endHour = getHourInTz(service.exit_date, tz);
     const endMinutes = getMinutesInTz(service.exit_date, tz);
     const durationMinutes = (endHour * 60 + endMinutes) - (startHour * 60 + startMinutes);
     if (durationMinutes > 0) {
       height = (durationMinutes / 60) * slotHeight;
     }
+  } 
+  // 2. Estimated duration from items
+  else if (service.estimated_duration) {
+    const dur = parseDurationToMinutes(service.estimated_duration);
+    if (dur > 0) {
+      height = (dur / 60) * slotHeight;
+    }
   }
+
 
   return { top, height: Math.max(height, slotHeight * 0.5) }; // min 30min visual
 }
@@ -335,6 +355,7 @@ function WeekView({
   onDateSelect,
   onServiceClick,
   tz,
+  typeLabels,
 }: {
   currentDate: Date;
   services: Service[];
@@ -342,6 +363,7 @@ function WeekView({
   onDateSelect: (date: Date) => void;
   onServiceClick: (service: Service) => void;
   tz: string;
+  typeLabels: Record<string, string>;
 }) {
   const weekDays = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
@@ -456,7 +478,7 @@ function WeekView({
                       }}
                     >
                       <div className="text-2xs font-medium truncate">
-                        {service.client?.name || SERVICE_TYPE_LABELS[service.service_type]}
+                        {service.client?.name || typeLabels[service.service_type] || service.service_type}
                       </div>
                       {height >= 40 && timeStr && timeStr !== "—" && (
                         <div className="text-2xs opacity-70 truncate">{timeStr}</div>
@@ -534,11 +556,13 @@ function DayView({
   services,
   onServiceClick,
   tz,
+  typeLabels,
 }: {
   currentDate: Date;
   services: Service[];
   onServiceClick: (service: Service) => void;
   tz: string;
+  typeLabels: Record<string, string>;
 }) {
   const hours = useMemo(() => {
     return Array.from({ length: 16 }, (_, i) => i + DAY_GRID_START_HOUR);
@@ -615,11 +639,11 @@ function DayView({
                   }}
                 >
                   <div className="font-medium text-sm truncate">
-                    {service.client?.name}
+                    {service.client?.name || typeLabels[service.service_type] || service.service_type}
                   </div>
                   {height >= 40 && (
                     <div className="text-xs opacity-80 truncate">
-                      {SERVICE_TYPE_LABELS[service.service_type]}
+                      {typeLabels[service.service_type] || service.service_type}
                     </div>
                   )}
                   {height >= 56 && service.assigned_profile?.full_name && (

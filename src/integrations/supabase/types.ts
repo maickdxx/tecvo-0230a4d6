@@ -2617,7 +2617,7 @@ export type Database = {
           service_number: string | null
           service_state: string | null
           service_street: string | null
-          service_type: Database["public"]["Enums"]["service_type"]
+          service_type: string
           service_zip_code: string | null
           solution: string | null
           status: Database["public"]["Enums"]["service_status"]
@@ -2660,7 +2660,7 @@ export type Database = {
           service_number?: string | null
           service_state?: string | null
           service_street?: string | null
-          service_type: Database["public"]["Enums"]["service_type"]
+          service_type: string
           service_zip_code?: string | null
           solution?: string | null
           status?: Database["public"]["Enums"]["service_status"]
@@ -2703,7 +2703,7 @@ export type Database = {
           service_number?: string | null
           service_state?: string | null
           service_street?: string | null
-          service_type?: Database["public"]["Enums"]["service_type"]
+          service_type?: string
           service_zip_code?: string | null
           solution?: string | null
           status?: Database["public"]["Enums"]["service_status"]

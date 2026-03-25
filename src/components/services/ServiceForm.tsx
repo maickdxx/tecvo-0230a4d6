@@ -115,13 +115,25 @@ export function ServiceForm({
   const tz = useOrgTimezone();
   const [detectedServiceType, setDetectedServiceType] = useState<string | null>(null);
 
-  const SERVICE_TYPE_OPTIONS = [
-    { slug: "limpeza", label: "Limpeza" },
-    { slug: "instalacao", label: "Instalação" },
-    { slug: "manutencao", label: "Manutenção" },
-    { slug: "reparo", label: "Reparo" },
-    { slug: "outros", label: "Outros" },
-  ];
+  const SERVICE_TYPE_OPTIONS = useMemo(() => {
+    // Priority: dynamic types from DB
+    if (serviceTypes && serviceTypes.length > 0) {
+      return serviceTypes.map(t => ({ slug: t.slug, label: t.name }));
+    }
+    // Fallback: standard set matching DB enum
+    return [
+      { slug: "limpeza", label: "Limpeza" },
+      { slug: "instalacao", label: "Instalação" },
+      { slug: "manutencao", label: "Manutenção" },
+      { slug: "reparo", label: "Reparo" },
+      { slug: "pmoc", label: "PMOC" },
+      { slug: "visita", label: "Visita Técnica" },
+      { slug: "orcamento", label: "Orçamento" },
+      { slug: "desinstalacao", label: "Desinstalação" },
+      { slug: "contratos", label: "Contratos" },
+      { slug: "outros", label: "Outros" },
+    ];
+  }, [serviceTypes]);
 
   const getServiceTypeLabel = (slug: string) =>
     SERVICE_TYPE_OPTIONS.find(o => o.slug === slug)?.label || slug;

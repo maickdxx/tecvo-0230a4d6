@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { getHourInTz, getMinutesInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
+import { getHourInTz, getMinutesInTz, parseDurationToMinutes, DEFAULT_TIMEZONE } from "@/lib/timezone";
 import type { Service } from "./useServices";
 
 /** Fallback daily capacity in minutes (8h48 = 528min for 44h/week) */
@@ -50,12 +50,20 @@ function sameAddress(a: Service, b: Service): boolean {
 }
 
 function getServiceDurationMin(service: Service, tz: string): number {
+  // 1. Real duration from execution
   if (service.entry_date && service.exit_date) {
     const startMin = getHourInTz(service.entry_date, tz) * 60 + getMinutesInTz(service.entry_date, tz);
     const endMin = getHourInTz(service.exit_date, tz) * 60 + getMinutesInTz(service.exit_date, tz);
     const dur = endMin - startMin;
     if (dur > 0) return dur;
   }
+  
+  // 2. Estimated duration from items
+  if (service.estimated_duration) {
+    const dur = parseDurationToMinutes(service.estimated_duration);
+    if (dur > 0) return dur;
+  }
+  
   // Default: 60 min per service if no time info
   return 60;
 }
