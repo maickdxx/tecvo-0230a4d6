@@ -30,10 +30,14 @@ export interface ServiceEquipmentWithReport {
   photoCount: number;
 }
 
+export type SavingStatus = "idle" | "saving" | "saved" | "error";
+
 export function useServiceExecutionMode(serviceId: string | undefined) {
   const { user, organizationId } = useAuth();
   const queryClient = useQueryClient();
+  const [savingStatus, setSavingStatus] = useState<SavingStatus>("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDataRef = useRef<{ equipmentId: string; data: Partial<EquipmentReportData> } | null>(null);
 
   // Fetch equipment list with report data and service items
   const { data: executionData, isLoading: isLoadingEquipment } = useQuery({
