@@ -402,10 +402,11 @@ export async function generateReportPDF({
                      "• Testes de estanqueidade e monitoramento de pressões.";
     }
     
-    const intLines = doc.splitTextToSize(servicesText, contentWidth - 4);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    
+    const intLines = doc.splitTextToSize(servicesText, contentWidth - 4);
     doc.text(intLines, margin + 2, yPos);
     yPos += intLines.length * 5 + 10;
   }
