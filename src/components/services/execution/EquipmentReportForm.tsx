@@ -19,8 +19,10 @@ import {
   Camera,
   Save,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { ReportPhotoUploader } from "@/components/laudos/ReportPhotoUploader";
+import { useReportPhotos } from "@/hooks/useReportPhotos";
 import type {
   EquipmentReportData,
   ServiceEquipmentWithReport,
@@ -107,6 +109,9 @@ const DEFAULT_CHECKLIST = [
   { key: "limpeza_basica", label: "Limpeza básica" },
 ];
 
+// Service types that require before/after photos
+const PHOTO_REQUIRED_TYPES = ["limpeza", "pmoc"];
+
 export function EquipmentReportForm({
   equipment,
   reportId,
@@ -124,8 +129,30 @@ export function EquipmentReportForm({
   const [isSaving, setIsSaving] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const { photos } = useReportPhotos(reportId || undefined, equipment.id);
 
   const isCompleted = rd?.status === "completed";
+
+  const requiresPhotos = PHOTO_REQUIRED_TYPES.includes(serviceType);
+
+  // Validation function
+  const validate = useCallback((): string[] => {
+    const errors: string[] = [];
+    if (!serviceType) errors.push("Selecione o tipo de serviço");
+    if (!problem.trim()) errors.push("Preencha o problema identificado");
+    if (!workPerformed.trim()) errors.push("Preencha o que foi feito");
+
+    if (requiresPhotos) {
+      const hasBefore = photos.some((p) => p.category === "before");
+      const hasAfter = photos.some((p) => p.category === "after");
+      if (!hasBefore) errors.push("Adicione pelo menos 1 foto \"Antes\"");
+      if (!hasAfter) errors.push("Adicione pelo menos 1 foto \"Depois\"");
+    }
+
+    return errors;
+  }, [serviceType, problem, workPerformed, requiresPhotos, photos]);
 
   // Auto-save on changes
   const triggerAutoSave = useCallback(
@@ -145,11 +172,15 @@ export function EquipmentReportForm({
   );
 
   useEffect(() => {
-    // Don't auto-save completed items or initial render
     if (isCompleted) return;
     const hasData = serviceType || problem || workPerformed || observations || checklist.length > 0;
     if (hasData) triggerAutoSave();
   }, [serviceType, problem, workPerformed, observations, checklist]);
+
+  // Clear validation errors when fields change
+  useEffect(() => {
+    if (validationErrors.length > 0) setValidationErrors([]);
+  }, [serviceType, problem, workPerformed, photos.length]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -170,6 +201,12 @@ export function EquipmentReportForm({
   };
 
   const handleComplete = async () => {
+    const errors = validate();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors([]);
     setIsCompleting(true);
     try {
       await onSave(equipment.id, {
@@ -227,10 +264,10 @@ export function EquipmentReportForm({
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Wrench className="h-4 w-4 text-primary" />
-            <Label className="font-semibold text-sm">Tipo de Serviço</Label>
+            <Label className="font-semibold text-sm">Tipo de Serviço *</Label>
           </div>
           <Select value={serviceType} onValueChange={handleServiceTypeChange} disabled={isCompleted}>
-            <SelectTrigger>
+            <SelectTrigger className={!serviceType && validationErrors.length > 0 ? "border-destructive" : ""}>
               <SelectValue placeholder="Selecione o tipo" />
             </SelectTrigger>
             <SelectContent>
@@ -271,13 +308,14 @@ export function EquipmentReportForm({
       {/* Problem identified */}
       <Card>
         <CardContent className="p-4 space-y-2">
-          <Label className="font-semibold text-sm">Problema Identificado</Label>
+          <Label className="font-semibold text-sm">Problema Identificado *</Label>
           <Textarea
             rows={3}
             placeholder="Descreva o problema encontrado..."
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
             disabled={isCompleted}
+            className={!problem.trim() && validationErrors.length > 0 ? "border-destructive" : ""}
           />
         </CardContent>
       </Card>
@@ -285,24 +323,30 @@ export function EquipmentReportForm({
       {/* Work performed */}
       <Card>
         <CardContent className="p-4 space-y-2">
-          <Label className="font-semibold text-sm">O que foi feito</Label>
+          <Label className="font-semibold text-sm">O que foi feito *</Label>
           <Textarea
             rows={3}
             placeholder="Descreva os serviços realizados..."
             value={workPerformed}
             onChange={(e) => setWorkPerformed(e.target.value)}
             disabled={isCompleted}
+            className={!workPerformed.trim() && validationErrors.length > 0 ? "border-destructive" : ""}
           />
         </CardContent>
       </Card>
 
       {/* Photos */}
       {reportId && (
-        <Card>
+        <Card className={requiresPhotos && validationErrors.some(e => e.includes("foto")) ? "border-destructive" : ""}>
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center gap-2 mb-1">
               <Camera className="h-4 w-4 text-primary" />
               <Label className="font-semibold text-sm">Fotos</Label>
+              {requiresPhotos && (
+                <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-600 dark:text-amber-400">
+                  Antes/Depois obrigatório
+                </Badge>
+              )}
             </div>
             <ReportPhotoUploader
               reportId={reportId}
@@ -325,6 +369,25 @@ export function EquipmentReportForm({
           />
         </CardContent>
       </Card>
+
+      {/* Validation errors */}
+      {validationErrors.length > 0 && (
+        <Card className="border-destructive bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-destructive">Preencha os campos obrigatórios:</p>
+                <ul className="text-xs text-destructive/80 space-y-0.5">
+                  {validationErrors.map((err, i) => (
+                    <li key={i}>• {err}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Action buttons - fixed bottom */}
       {!isCompleted && (
