@@ -128,8 +128,30 @@ export function EquipmentReportForm({
   const [isSaving, setIsSaving] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const { photos } = useReportPhotos(reportId || undefined, equipment.id);
 
   const isCompleted = rd?.status === "completed";
+
+  const requiresPhotos = PHOTO_REQUIRED_TYPES.includes(serviceType);
+
+  // Validation function
+  const validate = useCallback((): string[] => {
+    const errors: string[] = [];
+    if (!serviceType) errors.push("Selecione o tipo de serviço");
+    if (!problem.trim()) errors.push("Preencha o problema identificado");
+    if (!workPerformed.trim()) errors.push("Preencha o que foi feito");
+
+    if (requiresPhotos) {
+      const hasBefore = photos.some((p) => p.category === "before");
+      const hasAfter = photos.some((p) => p.category === "after");
+      if (!hasBefore) errors.push("Adicione pelo menos 1 foto \"Antes\"");
+      if (!hasAfter) errors.push("Adicione pelo menos 1 foto \"Depois\"");
+    }
+
+    return errors;
+  }, [serviceType, problem, workPerformed, requiresPhotos, photos]);
 
   // Auto-save on changes
   const triggerAutoSave = useCallback(
@@ -149,11 +171,15 @@ export function EquipmentReportForm({
   );
 
   useEffect(() => {
-    // Don't auto-save completed items or initial render
     if (isCompleted) return;
     const hasData = serviceType || problem || workPerformed || observations || checklist.length > 0;
     if (hasData) triggerAutoSave();
   }, [serviceType, problem, workPerformed, observations, checklist]);
+
+  // Clear validation errors when fields change
+  useEffect(() => {
+    if (validationErrors.length > 0) setValidationErrors([]);
+  }, [serviceType, problem, workPerformed, photos.length]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -174,6 +200,12 @@ export function EquipmentReportForm({
   };
 
   const handleComplete = async () => {
+    const errors = validate();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors([]);
     setIsCompleting(true);
     try {
       await onSave(equipment.id, {
