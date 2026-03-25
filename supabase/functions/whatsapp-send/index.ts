@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { normalizePhone } from "../_shared/whatsapp-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,14 +8,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/**
- * Extract only digits from any phone/JID string.
- * NEVER returns @lid — always strips everything after @.
- */
-function normalizePhone(input: string): string {
-  const beforeAt = input.split("@")[0];
-  return beforeAt.replace(/\D/g, "");
-}
+// normalizePhone imported from shared utils
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

@@ -312,14 +312,9 @@ Deno.serve(async (req) => {
         .eq("id", channel_id)
         .eq("organization_id", orgId);
 
-      // Only adopt orphaned contacts (channel_id IS NULL) — never reassign from other channels
-      if (connectedPhone) {
-        await supabase
-          .from("whatsapp_contacts")
-          .update({ channel_id: channel_id })
-          .eq("organization_id", orgId)
-          .is("channel_id", null);
-      }
+      // Removed aggressive adoption logic.
+      // Re-adoption is handled naturally by the webhook/sync-fallback when the first message arrives,
+      // which is safer and respects cross-channel boundaries.
 
       return json({
         ok: true,
