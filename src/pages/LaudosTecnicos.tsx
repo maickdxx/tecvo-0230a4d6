@@ -73,9 +73,9 @@ export default function LaudosTecnicos() {
   const stats = useMemo(() => {
     return {
       total: reports.length,
-      attention: reports.filter(r => r.equipment_condition === 'regular' || r.equipment_condition === 'bad').length,
+      attention: reports.filter(r => r.equipment_condition === 'regular' || r.equipment_condition === 'bad' || r.cleanliness_status === 'dirty' || r.cleanliness_status === 'needs_cleaning').length,
       critical: reports.filter(r => r.equipment_condition === 'critical' || r.equipment_condition === 'inoperative').length,
-      working: reports.filter(r => r.equipment_condition === 'good').length,
+      working: reports.filter(r => r.equipment_condition === 'good' && r.cleanliness_status === 'clean').length,
     };
   }, [reports]);
 
