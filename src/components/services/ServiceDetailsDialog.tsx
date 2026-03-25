@@ -529,6 +529,20 @@ export function ServiceDetailsDialog({
 
             {/* Action buttons */}
             <div className="space-y-2 pt-1">
+              {/* Execution mode - primary action for in_progress services */}
+              {(service.status === "in_progress" || service.status === "scheduled") && (
+                <Button 
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate(`/executar-servico/${service.id}`);
+                  }}
+                  variant={service.status === "in_progress" ? "default" : "outline"}
+                  className="w-full rounded-xl shadow-sm"
+                >
+                  <Wrench className="h-4 w-4 mr-2" />
+                  {service.status === "in_progress" ? "Continuar Execução" : "Iniciar Execução"}
+                </Button>
+              )}
               {onEdit && (
                 <Button 
                   variant="outline"
