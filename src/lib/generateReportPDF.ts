@@ -56,14 +56,21 @@ export async function generateReportPDF({
   const margin = 15;
   const contentWidth = pageWidth - margin * 2;
   let yPos = margin;
-  const FOOTER_RESERVED = 18;
+  const FOOTER_RESERVED = 25;
   const usableHeight = pageHeight - FOOTER_RESERVED;
 
-  const primary = { r: 25, g: 95, b: 170 };
-  const primaryLight = { r: 235, g: 244, b: 255 };
-  const textDark = { r: 33, g: 37, b: 41 };
-  const textMuted = { r: 108, g: 117, b: 125 };
-  const borderLight = { r: 222, g: 226, b: 230 };
+  // Modern Color Palette
+  const colors = {
+    primary: { r: 0, g: 68, b: 148 },     // Deep Blue
+    accent: { r: 0, g: 122, b: 255 },     // Bright Blue
+    success: { r: 40, g: 167, b: 69 },    // Green
+    warning: { r: 255, g: 193, b: 7 },    // Yellow
+    danger: { r: 220, g: 53, b: 69 },     // Red
+    textMain: { r: 33, g: 37, b: 41 },    // Dark Gray
+    textMuted: { r: 108, g: 117, b: 125 }, // Light Gray
+    bgLight: { r: 248, g: 249, b: 250 },  // Very Light Gray
+    border: { r: 222, g: 226, b: 230 },   // Border Gray
+  };
 
   const ensureSpace = (needed: number) => {
     if (yPos + needed > usableHeight) {
@@ -74,349 +81,331 @@ export async function generateReportPDF({
   };
 
   const addFooter = () => {
+    const footerY = pageHeight - 15;
+    doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+    doc.setLineWidth(0.1);
+    doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+    
     doc.setFontSize(7);
-    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text(
-      `${organizationName} • Laudo Técnico #${report.report_number.toString().padStart(4, "0")}`,
-      margin,
-      pageHeight - 8
-    );
+    doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+    
+    // Company Info in Footer
+    const footerText = [
+      organizationName,
+      organizationCnpj ? `CNPJ: ${organizationCnpj}` : null,
+      organizationPhone ? `Tel/WhatsApp: ${organizationPhone}` : null
+    ].filter(Boolean).join("  |  ");
+    
+    doc.text(footerText, margin, footerY);
     doc.text(
       `Página ${doc.getNumberOfPages()}`,
       pageWidth - margin,
-      pageHeight - 8,
+      footerY,
       { align: "right" }
     );
   };
 
-  const drawSectionLabel = (title: string) => {
-    ensureSpace(12);
-    doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
-    doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-    doc.setLineWidth(0.3);
-    doc.rect(margin, yPos, contentWidth, 7, "FD");
+  const drawSectionTitle = (title: string) => {
+    ensureSpace(15);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+    doc.text(title.toUpperCase(), margin, yPos + 5);
+    
+    doc.setDrawColor(colors.primary.r, colors.primary.g, colors.primary.b);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPos + 7, margin + 20, yPos + 7);
+    
+    doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+    doc.setLineWidth(0.1);
+    doc.line(margin + 20, yPos + 7, pageWidth - margin, yPos + 7);
+    
+    yPos += 12;
+  };
+
+  const drawInfoBlock = (label: string, value: string | null | undefined, x: number, y: number, width: number) => {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+    doc.setFontSize(7);
+    doc.text(label.toUpperCase(), x, y);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
     doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(primary.r, primary.g, primary.b);
-    doc.text(title, margin + 4, yPos + 5);
-    yPos += 7;
+    const val = value || "---";
+    const lines = doc.splitTextToSize(val, width);
+    doc.text(lines, x, y + 4.5);
+    return lines.length * 4.5 + 6;
   };
 
-  const drawField = (label: string, value: string | null | undefined, x: number, y: number) => {
-    if (!value) return;
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.setFontSize(8);
-    doc.text(label, x, y);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(textDark.r, textDark.g, textDark.b);
-    doc.text(value, x + doc.getTextWidth(label) + 2, y);
-  };
+  const drawStatusBadge = (status: string, x: number, y: number) => {
+    let color = colors.primary;
+    let label = status;
+    
+    if (status.toLowerCase().includes("func") || status === "good" || status === "yes") {
+      color = colors.success;
+      label = "FUNCIONANDO";
+    } else if (status.toLowerCase().includes("aten") || status === "regular" || status === "partial") {
+      color = colors.warning;
+      label = "ATENÇÃO";
+    } else if (status.toLowerCase().includes("crit") || status === "bad" || status === "no") {
+      color = colors.danger;
+      label = "CRÍTICO";
+    } else if (status === "inoperative") {
+      color = colors.danger;
+      label = "INOPERANTE";
+    }
 
-  const drawTextBlock = (text: string) => {
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(textDark.r, textDark.g, textDark.b);
+    const padding = 4;
     doc.setFontSize(8);
-    const lines = doc.splitTextToSize(text, contentWidth - 8);
-    const lineHeight = 4;
-    ensureSpace(lines.length * lineHeight + 4);
-    lines.forEach((line: string) => {
-      ensureSpace(lineHeight + 2);
-      doc.text(line, margin + 4, yPos + 4);
-      yPos += lineHeight;
-    });
-    yPos += 4;
+    doc.setFont("helvetica", "bold");
+    const textWidth = doc.getTextWidth(label);
+    const badgeWidth = textWidth + padding * 2;
+    const badgeHeight = 6;
+
+    doc.setFillColor(color.r, color.g, color.b);
+    doc.roundedRect(x, y - 4, badgeWidth, badgeHeight, 1, 1, "F");
+    
+    doc.setTextColor(255, 255, 255);
+    doc.text(label, x + padding, y);
+    
+    return badgeWidth;
   };
 
   // ========== HEADER ==========
-  const headerHeight = 30;
-  doc.setFillColor(primary.r, primary.g, primary.b);
-  doc.rect(margin, yPos, contentWidth, 3, "F");
-  yPos += 3;
-
-  doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
-  doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-  doc.setLineWidth(0.3);
-  doc.rect(margin, yPos, contentWidth, headerHeight, "FD");
-
-  let logoWidth = 0;
+  let logoData = null;
   if (organizationLogo) {
-    const logoData = await loadImageAsBase64(organizationLogo);
-    if (logoData) {
-      try {
-        doc.addImage(logoData, "PNG", margin + 4, yPos + 3, 24, 24);
-        logoWidth = 30;
-      } catch { /* skip */ }
-    }
+    logoData = await loadImageAsBase64(organizationLogo);
   }
 
-  const textStartX = margin + 5 + logoWidth;
-  doc.setFontSize(13);
+  // Top Bar
+  doc.setFillColor(colors.primary.r, colors.primary.g, colors.primary.b);
+  doc.rect(0, 0, pageWidth, 2, "F");
+  yPos = 12;
+
+  // Logo & Title
+  if (logoData) {
+    try {
+      doc.addImage(logoData, "PNG", margin, yPos, 35, 35, undefined, "FAST");
+    } catch { /* skip */ }
+  }
+
+  const headerTextX = margin + (logoData ? 45 : 0);
+  doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(textDark.r, textDark.g, textDark.b);
-  doc.text(organizationName, textStartX, yPos + 8);
+  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+  doc.text("LAUDO TÉCNICO DE CLIMATIZAÇÃO", headerTextX, yPos + 10);
 
-  doc.setFontSize(7.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-  let infoY = yPos + 13;
-  const details: string[] = [];
-  if (organizationCnpj) details.push(`CNPJ: ${organizationCnpj}`);
-  if (organizationPhone) details.push(organizationPhone);
-  if (organizationEmail) details.push(organizationEmail);
-  if (details.length > 0) { doc.text(details.join("  •  "), textStartX, infoY); infoY += 4; }
-  const addressParts: string[] = [];
-  if (organizationAddress) addressParts.push(organizationAddress);
-  if (organizationCity) addressParts.push(organizationCity);
-  if (organizationState) addressParts.push(organizationState);
-  if (addressParts.length > 0) doc.text(addressParts.join(" - "), textStartX, infoY);
-
-  yPos += headerHeight + 6;
-
-  // ========== DOCUMENT TITLE ==========
-  doc.setFillColor(primary.r, primary.g, primary.b);
-  doc.rect(margin, yPos, contentWidth, 14, "F");
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text(`LAUDO TÉCNICO Nº ${report.report_number.toString().padStart(4, "0")}`, margin + 5, yPos + 9.5);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  const reportDate = report.report_date ? format(new Date(report.report_date), "dd/MM/yyyy", { locale: ptBR }) : "";
-  doc.text(reportDate, pageWidth - margin - 5, yPos + 9.5, { align: "right" });
-  yPos += 18;
+  doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+  doc.text(`LAUDO Nº: ${report.report_number.toString().padStart(4, "0")}`, headerTextX, yPos + 17);
+  
+  const reportDate = report.report_date ? format(new Date(report.report_date), "dd/MM/yyyy", { locale: ptBR }) : "---";
+  doc.text(`DATA: ${reportDate}`, headerTextX, yPos + 22);
 
-  doc.setDrawColor(primary.r, primary.g, primary.b);
-  doc.setLineWidth(0.3);
-  doc.line(margin, yPos - 1, pageWidth - margin, yPos - 1);
-  yPos += 3;
-
-  // ========== LINKS ==========
-  if (report.service || report.quote_service) {
-    ensureSpace(10);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(primary.r, primary.g, primary.b);
-    const links: string[] = [];
-    if (report.service) links.push(`Vinculado à OS #${report.service.quote_number?.toString().padStart(4, "0")}`);
-    if (report.quote_service) links.push(`Vinculado ao Orçamento #${report.quote_service.quote_number?.toString().padStart(4, "0")}`);
-    doc.text(links.join("  •  "), margin + 4, yPos + 3);
-    yPos += 8;
+  if (report.service?.quote_number) {
+    doc.text(`ORDEM DE SERVIÇO: #${report.service.quote_number.toString().padStart(4, "0")}`, headerTextX, yPos + 27);
   }
 
-  // ========== CLIENT ==========
-  drawSectionLabel("DADOS DO CLIENTE");
-  ensureSpace(24);
-  const leftX = margin + 4;
-  const halfWidth = contentWidth / 2;
-  const rightX = margin + halfWidth + 4;
+  yPos += 40;
+
+  // ========== CLIENT DATA ==========
+  doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.roundedRect(margin, yPos, contentWidth, 22, 1, 1, "FD");
+
+  drawInfoBlock("Cliente", report.client?.name, margin + 5, yPos + 7, contentWidth / 2 - 10);
+  drawInfoBlock("Endereço", [report.client?.address, report.client?.city, report.client?.state].filter(Boolean).join(", "), margin + 5, yPos + 16, contentWidth - 10);
+  drawInfoBlock("Contato", report.client?.phone || report.client?.email, margin + contentWidth / 2 + 5, yPos + 7, contentWidth / 2 - 10);
+
+  yPos += 30;
+
+  // ========== EXECUTIVE SUMMARY ==========
+  drawSectionTitle("Resumo Executivo");
+  ensureSpace(30);
+  
+  doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.roundedRect(margin, yPos, contentWidth, 20, 1, 1, "FD");
+
   doc.setFontSize(8);
-  drawField("Cliente: ", report.client?.name, leftX, yPos + 5);
-  drawField("Telefone: ", report.client?.phone, rightX, yPos + 5);
-  yPos += 7;
-  drawField("Endereço: ", report.client?.address, leftX, yPos + 5);
-  yPos += 7;
-  drawField("Cidade: ", [report.client?.city, report.client?.state].filter(Boolean).join(" - "), leftX, yPos + 5);
-  drawField("E-mail: ", report.client?.email, rightX, yPos + 5);
-  yPos += 10;
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+  doc.text("SITUAÇÃO DO EQUIPAMENTO", margin + 5, yPos + 7);
+  
+  // Status badges
+  let badgeX = margin + 5;
+  badgeX += drawStatusBadge(EQUIPMENT_CONDITIONS[report.equipment_condition || ""] || report.equipment_condition || "N/A", badgeX, yPos + 14) + 3;
+  
+  const workingLabel = report.equipment_working === "yes" ? "Operacional" : report.equipment_working === "no" ? "Inoperante" : "Parcial";
+  drawStatusBadge(report.equipment_working, badgeX, yPos + 14);
 
-  // ========== TECHNICIAN ==========
-  const techName = report.technician_profile?.full_name || report.responsible_technician_name;
-  if (techName) {
-    ensureSpace(10);
-    drawField("Técnico Responsável: ", techName, leftX, yPos + 5);
-    yPos += 10;
-  }
+  // Summary text
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+  doc.setFontSize(9);
+  const summaryText = report.visit_reason || "Relatório técnico de inspeção e manutenção preventiva/corretiva.";
+  const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 85);
+  doc.text(summaryLines, margin + 80, yPos + 7);
 
-  // ========== EQUIPMENT ==========
-  if (report.equipment_type || report.equipment_brand) {
-    drawSectionLabel("IDENTIFICAÇÃO DO EQUIPAMENTO");
-    ensureSpace(28);
-    drawField("Tipo: ", report.equipment_type, leftX, yPos + 5);
-    drawField("Marca: ", report.equipment_brand, rightX, yPos + 5);
-    yPos += 7;
-    drawField("Modelo: ", report.equipment_model, leftX, yPos + 5);
-    drawField("BTUs: ", report.capacity_btus, rightX, yPos + 5);
-    yPos += 7;
-    drawField("Nº Série: ", report.serial_number, leftX, yPos + 5);
-    if (report.equipment_quantity > 1) drawField("Qtd: ", String(report.equipment_quantity), rightX, yPos + 5);
-    yPos += 7;
-    if (report.equipment_location) {
-      drawField("Localização: ", report.equipment_location, leftX, yPos + 5);
-      yPos += 7;
-    }
-    yPos += 3;
-  }
+  yPos += 28;
 
-  // ========== VISIT REASON ==========
-  if (report.visit_reason) {
-    drawSectionLabel("MOTIVO DA VISITA");
-    drawTextBlock(report.visit_reason);
-  }
+  // ========== EQUIPMENT INFO ==========
+  drawSectionTitle("Dados do Equipamento");
+  ensureSpace(30);
+  
+  const colW = contentWidth / 3;
+  drawInfoBlock("Tipo", report.equipment_type, margin, yPos, colW - 5);
+  drawInfoBlock("Marca / Modelo", [report.equipment_brand, report.equipment_model].filter(Boolean).join(" / "), margin + colW, yPos, colW - 5);
+  drawInfoBlock("Capacidade", report.capacity_btus ? `${report.capacity_btus} BTUs` : null, margin + colW * 2, yPos, colW - 5);
+  
+  yPos += 12;
+  drawInfoBlock("Localização", report.equipment_location, margin, yPos, colW * 2 - 5);
+  drawInfoBlock("Nº de Série", report.serial_number, margin + colW * 2, yPos, colW - 5);
 
-  // ========== INSPECTION CHECKLIST ==========
+  yPos += 15;
+
+  // ========== CHECKLIST ==========
   const checklist = (report.inspection_checklist as string[]) || [];
   if (checklist.length > 0) {
-    drawSectionLabel("INSPEÇÃO REALIZADA");
+    drawSectionTitle("Checklist de Inspeção");
+    ensureSpace(40);
+    
     const checkedItems = INSPECTION_ITEMS.filter((i) => checklist.includes(i.key));
-    ensureSpace(checkedItems.length * 5 + 4);
+    const itemsPerCol = Math.ceil(checkedItems.length / 2);
+    
     doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(textDark.r, textDark.g, textDark.b);
-    checkedItems.forEach((item) => {
-      ensureSpace(6);
-      doc.text(`✓ ${item.label}`, leftX, yPos + 4);
-      yPos += 5;
+    checkedItems.forEach((item, index) => {
+      const col = Math.floor(index / itemsPerCol);
+      const row = index % itemsPerCol;
+      const x = margin + col * (contentWidth / 2);
+      const y = yPos + row * 6;
+      
+      ensureSpace(8);
+      
+      // Draw check icon
+      doc.setDrawColor(colors.success.r, colors.success.g, colors.success.b);
+      doc.setLineWidth(0.5);
+      doc.line(x, y + 2, x + 1, y + 3);
+      doc.line(x + 1, y + 3, x + 3, y + 1);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+      doc.text(item.label, x + 5, y + 3);
     });
-    yPos += 4;
+    
+    yPos += itemsPerCol * 6 + 10;
   }
 
-  // ========== DIAGNOSIS ==========
+  // ========== DIAGNOSIS & PROBLEM ==========
   if (report.diagnosis) {
-    drawSectionLabel("DIAGNÓSTICO TÉCNICO");
-    drawTextBlock(report.diagnosis);
+    drawSectionTitle("Diagnóstico Técnico");
+    ensureSpace(20);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    const lines = doc.splitTextToSize(report.diagnosis, contentWidth);
+    doc.text(lines, margin, yPos);
+    yPos += lines.length * 5 + 10;
   }
 
-  // ========== MEASUREMENTS ==========
-  const measurements = (report.measurements as Record<string, string>) || {};
-  const measKeys = ["pressure", "temperature", "voltage_measured", "current_measured"];
-  const measLabels: Record<string, string> = { pressure: "Pressão", temperature: "Temperatura", voltage_measured: "Tensão", current_measured: "Corrente" };
-  const hasMeasurements = measKeys.some((k) => measurements[k]);
-  if (hasMeasurements) {
-    drawSectionLabel("MEDIÇÕES / EVIDÊNCIAS");
-    ensureSpace(14);
-    measKeys.forEach((k) => {
-      if (measurements[k]) {
-        drawField(`${measLabels[k]}: `, measurements[k], leftX, yPos + 5);
-        yPos += 6;
-      }
-    });
-    if (measurements.notes) {
-      yPos += 2;
-      drawTextBlock(measurements.notes);
-    }
-    yPos += 2;
-  }
-
-  // ========== EQUIPMENT CONDITION ==========
-  if (report.equipment_condition) {
-    drawSectionLabel("CLASSIFICAÇÃO DO EQUIPAMENTO");
-    ensureSpace(14);
-    drawField("Estado: ", EQUIPMENT_CONDITIONS[report.equipment_condition] || report.equipment_condition, leftX, yPos + 5);
-    const workingLabel = report.equipment_working === "yes" ? "Sim" : report.equipment_working === "no" ? "Não" : "Parcial";
-    drawField("Funcionando: ", workingLabel, rightX, yPos + 5);
-    yPos += 7;
-    if (report.needs_quote) {
-      doc.setTextColor(200, 100, 0);
-      doc.text("⚠ Necessita orçamento", leftX, yPos + 5);
-      doc.setTextColor(textDark.r, textDark.g, textDark.b);
-      yPos += 7;
-    }
-    yPos += 3;
-  }
-
-  // ========== RECOMMENDATION ==========
+  // ========== RECOMMENDATIONS ==========
   if (report.recommendation) {
-    drawSectionLabel("RECOMENDAÇÃO TÉCNICA");
-    drawTextBlock(report.recommendation);
-  }
-
-  // ========== RISKS ==========
-  if (report.risks) {
-    drawSectionLabel("RISCOS / CONSEQUÊNCIAS");
-    drawTextBlock(report.risks);
-  }
-
-  // ========== CONCLUSION ==========
-  if (report.conclusion) {
-    drawSectionLabel("CONCLUSÃO FINAL");
-    drawTextBlock(report.conclusion);
-  }
-
-  // ========== OBSERVATIONS ==========
-  if (report.observations) {
-    drawSectionLabel("OBSERVAÇÕES FINAIS");
-    drawTextBlock(report.observations);
+    drawSectionTitle("Recomendações e Observações");
+    ensureSpace(20);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    const lines = doc.splitTextToSize(report.recommendation, contentWidth);
+    doc.text(lines, margin, yPos);
+    yPos += lines.length * 5 + 10;
   }
 
   // ========== PHOTOS ==========
-  const PHOTO_CAT_LABELS: Record<string, string> = { before: "ANTES", problem: "PROBLEMA IDENTIFICADO", after: "DEPOIS" };
-  const photoCategories: Array<"before" | "problem" | "after"> = ["before", "problem", "after"];
+  const catPhotos = {
+    before: photos.filter(p => p.category === "before").slice(0, 2),
+    problem: photos.filter(p => p.category === "problem").slice(0, 2),
+    after: photos.filter(p => p.category === "after").slice(0, 2),
+  };
+
+  const hasPhotos = Object.values(catPhotos).some(arr => arr.length > 0);
   
-  const hasPhotos = photos.length > 0;
   if (hasPhotos) {
-    drawSectionLabel("EVIDÊNCIAS FOTOGRÁFICAS");
+    drawSectionTitle("Registro Fotográfico");
     
+    const photoCategories: Array<keyof typeof catPhotos> = ["before", "problem", "after"];
+    const labels = { before: "Antes", problem: "Problema Identificado", after: "Depois" };
+
     for (const cat of photoCategories) {
-      const catPhotos = photos.filter((p) => p.category === cat).slice(0, 3);
-      if (catPhotos.length === 0) continue;
-      
-      ensureSpace(10);
-      doc.setFontSize(8);
+      const currentPhotos = catPhotos[cat];
+      if (currentPhotos.length === 0) continue;
+
+      ensureSpace(15);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(primary.r, primary.g, primary.b);
-      doc.text(`▪ ${PHOTO_CAT_LABELS[cat] || cat}`, margin + 4, yPos + 5);
-      yPos += 8;
+      doc.setFontSize(9);
+      doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+      doc.text(labels[cat], margin, yPos);
+      yPos += 5;
+
+      const imgWidth = (contentWidth - 10) / 2;
+      const imgHeight = imgWidth * 0.75;
       
-      // Layout: 3 photos per row, ~55mm each
-      const photosPerRow = Math.min(catPhotos.length, 3);
-      const imgGap = 4;
-      const totalGap = imgGap * (photosPerRow - 1);
-      const imgSize = Math.min(55, (contentWidth - 8 - totalGap) / photosPerRow);
+      ensureSpace(imgHeight + 10);
       
-      ensureSpace(imgSize + 6);
-      
-      for (let j = 0; j < catPhotos.length; j++) {
-        const photo = catPhotos[j];
-        const x = margin + 4 + j * (imgSize + imgGap);
+      for (let i = 0; i < currentPhotos.length; i++) {
+        const photo = currentPhotos[i];
+        const x = margin + i * (imgWidth + 10);
         try {
           const imgData = await loadImageAsBase64(photo.photo_url);
           if (imgData) {
-            doc.addImage(imgData, "JPEG", x, yPos, imgSize, imgSize);
+            doc.addImage(imgData, "JPEG", x, yPos, imgWidth, imgHeight, undefined, "MEDIUM");
           }
         } catch {
-          doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-          doc.rect(x, yPos, imgSize, imgSize);
+          doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+          doc.rect(x, yPos, imgWidth, imgHeight);
           doc.setFontSize(7);
-          doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-          doc.text("Indisponível", x + imgSize / 2, yPos + imgSize / 2, { align: "center" });
+          doc.text("Erro ao carregar imagem", x + imgWidth / 2, yPos + imgHeight / 2, { align: "center" });
         }
       }
-      yPos += imgSize + 6;
+      yPos += imgHeight + 10;
     }
   }
 
-
-  ensureSpace(30);
-  yPos += 10;
-  doc.setDrawColor(textMuted.r, textMuted.g, textMuted.b);
-  const sigLineWidth = 70;
-  const sigLineY = yPos + 15;
-  // Technician signature
-  doc.line(margin + 10, sigLineY, margin + 10 + sigLineWidth, sigLineY);
+  // ========== SIGNATURES ==========
+  ensureSpace(50);
+  yPos += 15;
+  
+  const sigWidth = 70;
+  const sigSpacing = (contentWidth - sigWidth * 2) / 2;
+  
+  // Technician
+  doc.setDrawColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+  doc.setLineWidth(0.2);
+  doc.line(margin + 5, yPos + 20, margin + 5 + sigWidth, yPos + 20);
+  
   doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+  const techName = report.technician_profile?.full_name || report.responsible_technician_name || "Técnico Responsável";
+  doc.text(techName, margin + 5 + sigWidth / 2, yPos + 25, { align: "center" });
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-  const techLabel = report.technician_profile?.full_name || report.responsible_technician_name || "Técnico Responsável";
-  doc.text(techLabel, margin + 10 + sigLineWidth / 2, sigLineY + 5, { align: "center" });
+  doc.text("Técnico Responsável", margin + 5 + sigWidth / 2, yPos + 29, { align: "center" });
 
-  // Client signature
-  const rightSigX = pageWidth - margin - 10 - sigLineWidth;
-  doc.line(rightSigX, sigLineY, rightSigX + sigLineWidth, sigLineY);
-  doc.text(report.client?.name || "Cliente", rightSigX + sigLineWidth / 2, sigLineY + 5, { align: "center" });
+  // Client
+  doc.line(pageWidth - margin - 5 - sigWidth, yPos + 20, pageWidth - margin - 5, yPos + 20);
+  doc.setFont("helvetica", "bold");
+  doc.text(report.client?.name || "Cliente", pageWidth - margin - 5 - sigWidth / 2, yPos + 25, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.text("Cliente / Responsável", pageWidth - margin - 5 - sigWidth / 2, yPos + 29, { align: "center" });
 
-  // Footer on all pages
+  // Add final footer to all pages
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFontSize(7);
-    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text(
-      `${organizationName} • Laudo Técnico #${report.report_number.toString().padStart(4, "0")}`,
-      margin,
-      pageHeight - 8
-    );
-    doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+    addFooter();
   }
 
   doc.save(`Laudo_Tecnico_${report.report_number.toString().padStart(4, "0")}.pdf`);
