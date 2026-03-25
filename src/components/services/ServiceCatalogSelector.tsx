@@ -36,6 +36,8 @@ export interface ServiceItemLocal {
   discount: number;
   discount_type: "percentage" | "fixed";
   catalog_service_type?: string;
+  catalog_service_id?: string;
+  is_non_standard?: boolean;
 }
 
 interface ServiceCatalogSelectorProps {
