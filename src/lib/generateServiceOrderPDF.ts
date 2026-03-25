@@ -617,6 +617,10 @@ export async function generateServiceOrderPDF({
   doc.text("ASSINATURA DA EMPRESA", rightSignX + signatureWidth / 2, yPos, { align: "center" });
   yPos += 3;
 
+  // Signature image area — images sit between label and line
+  const sigImgY = yPos;
+  const sigLineY = yPos + 18; // fixed space for signature images
+
   // Draw client signature image
   if (clientSignatureUrl) {
     try {
@@ -628,7 +632,7 @@ export async function generateServiceOrderPDF({
         await new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); });
         const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
         const dw = (img.width || maxW) * ratio, dh = (img.height || maxH) * ratio;
-        doc.addImage(cSigB64, "PNG", leftSignX + (signatureWidth - dw) / 2, yPos - dh - 2, dw, dh);
+        doc.addImage(cSigB64, "PNG", leftSignX + (signatureWidth - dw) / 2, sigImgY + (16 - dh) / 2, dw, dh);
       }
     } catch { /* ignore */ }
   }
@@ -644,12 +648,13 @@ export async function generateServiceOrderPDF({
         await new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); });
         const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
         const dw = (img.width || maxW) * ratio, dh = (img.height || maxH) * ratio;
-        doc.addImage(oSigB64, "PNG", rightSignX + (signatureWidth - dw) / 2, yPos - dh - 2, dw, dh);
+        doc.addImage(oSigB64, "PNG", rightSignX + (signatureWidth - dw) / 2, sigImgY + (16 - dh) / 2, dw, dh);
       }
     } catch { /* ignore */ }
   }
 
   // Signature lines
+  yPos = sigLineY;
   doc.setDrawColor(textMuted.r, textMuted.g, textMuted.b);
   doc.setLineWidth(0.4);
   doc.setLineDashPattern([2, 1.5], 0);
