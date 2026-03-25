@@ -174,7 +174,9 @@ function MonthView({
   onDateSelect: (date: Date) => void;
   onServiceClick: (service: Service) => void;
   tz: string;
+  typeLabels: Record<string, string>;
 }) {
+
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
@@ -292,7 +294,7 @@ function MonthView({
                         STATUS_COLORS[effectiveStatus]
                       )}
                     >
-                      {service.client?.name || SERVICE_TYPE_LABELS[service.service_type]}
+                      {service.client?.name || typeLabels[service.service_type] || service.service_type}
                     </div>
                   );
                 })}
@@ -359,6 +361,7 @@ function WeekView({
   onDateSelect: (date: Date) => void;
   onServiceClick: (service: Service) => void;
   tz: string;
+  typeLabels: Record<string, string>;
 }) {
   const weekDays = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
@@ -473,7 +476,7 @@ function WeekView({
                       }}
                     >
                       <div className="text-2xs font-medium truncate">
-                        {service.client?.name || SERVICE_TYPE_LABELS[service.service_type]}
+                        {service.client?.name || typeLabels[service.service_type] || service.service_type}
                       </div>
                       {height >= 40 && timeStr && timeStr !== "—" && (
                         <div className="text-2xs opacity-70 truncate">{timeStr}</div>
@@ -556,6 +559,7 @@ function DayView({
   services: Service[];
   onServiceClick: (service: Service) => void;
   tz: string;
+  typeLabels: Record<string, string>;
 }) {
   const hours = useMemo(() => {
     return Array.from({ length: 16 }, (_, i) => i + DAY_GRID_START_HOUR);
