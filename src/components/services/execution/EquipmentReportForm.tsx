@@ -42,6 +42,7 @@ interface EquipmentReportFormProps {
   onAutoSave: (equipmentId: string, data: Partial<EquipmentReportData>) => void;
   onSave: (equipmentId: string, data: Partial<EquipmentReportData>) => Promise<void>;
   onComplete: (equipmentId: string) => Promise<void>;
+  standardChecklist?: string[];
 }
 
 const SERVICE_TYPES = [
