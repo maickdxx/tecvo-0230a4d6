@@ -56,6 +56,7 @@ export async function generateReportPDF({
   organizationLogo,
   organizationCity,
   organizationState,
+  signature,
 }: ReportPDFData) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
