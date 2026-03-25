@@ -60,6 +60,7 @@ export function TechnicalReportForm({
   defaultQuoteServiceId,
   defaultClientId,
 }: TechnicalReportFormProps) {
+  const { toast } = useToast();
   const { fieldWorkers } = useTeamMembers();
   const [checklist, setChecklist] = useState<string[]>(
     (report?.inspection_checklist as string[]) || []
