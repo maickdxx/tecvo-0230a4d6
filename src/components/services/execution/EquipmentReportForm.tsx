@@ -216,6 +216,13 @@ export function EquipmentReportForm({
     onBack();
   };
 
+  // Force save on unmount
+  useEffect(() => {
+    return () => {
+      forceSave();
+    };
+  }, [forceSave]);
+
   const handleServiceTypeChange = (value: string) => {
     setServiceType(value);
     setChecklist([]);
