@@ -348,45 +348,44 @@ export async function generateReportPDF({
     drawSectionLabel("EVIDÊNCIAS FOTOGRÁFICAS");
     
     for (const cat of photoCategories) {
-      const catPhotos = photos.filter((p) => p.category === cat);
+      const catPhotos = photos.filter((p) => p.category === cat).slice(0, 3);
       if (catPhotos.length === 0) continue;
       
       ensureSpace(10);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-      doc.text(PHOTO_CAT_LABELS[cat] || cat, margin + 4, yPos + 5);
+      doc.setTextColor(primary.r, primary.g, primary.b);
+      doc.text(`▪ ${PHOTO_CAT_LABELS[cat] || cat}`, margin + 4, yPos + 5);
       yPos += 8;
       
-      // Layout: 2 photos per row, 60mm each
-      const imgSize = 60;
-      const imgGap = 10;
+      // Layout: 3 photos per row, ~55mm each
+      const photosPerRow = Math.min(catPhotos.length, 3);
+      const imgGap = 4;
+      const totalGap = imgGap * (photosPerRow - 1);
+      const imgSize = Math.min(55, (contentWidth - 8 - totalGap) / photosPerRow);
       
-      for (let i = 0; i < catPhotos.length; i += 2) {
-        ensureSpace(imgSize + 8);
-        
-        for (let j = 0; j < 2 && i + j < catPhotos.length; j++) {
-          const photo = catPhotos[i + j];
-          const x = margin + 4 + j * (imgSize + imgGap);
-          try {
-            const imgData = await loadImageAsBase64(photo.photo_url);
-            if (imgData) {
-              doc.addImage(imgData, "JPEG", x, yPos, imgSize, imgSize);
-            }
-          } catch {
-            // Draw placeholder
-            doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-            doc.rect(x, yPos, imgSize, imgSize);
-            doc.setFontSize(7);
-            doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-            doc.text("Imagem indisponível", x + imgSize / 2, yPos + imgSize / 2, { align: "center" });
+      ensureSpace(imgSize + 6);
+      
+      for (let j = 0; j < catPhotos.length; j++) {
+        const photo = catPhotos[j];
+        const x = margin + 4 + j * (imgSize + imgGap);
+        try {
+          const imgData = await loadImageAsBase64(photo.photo_url);
+          if (imgData) {
+            doc.addImage(imgData, "JPEG", x, yPos, imgSize, imgSize);
           }
+        } catch {
+          doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
+          doc.rect(x, yPos, imgSize, imgSize);
+          doc.setFontSize(7);
+          doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+          doc.text("Indisponível", x + imgSize / 2, yPos + imgSize / 2, { align: "center" });
         }
-        yPos += imgSize + 4;
       }
-      yPos += 2;
+      yPos += imgSize + 6;
     }
   }
+
 
   ensureSpace(30);
   yPos += 10;
