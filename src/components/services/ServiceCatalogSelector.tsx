@@ -359,13 +359,38 @@ export function ServiceCatalogSelector({
               </Popover>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="item-name" className="text-xs">
+                  Nome do Serviço *
+                </Label>
+                <Input
+                  id="item-name"
+                  placeholder="Ex: Instalação de Split"
+                  value={newItem.name}
+                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="item-duration" className="text-xs">
+                  Tempo Estimado (ex: 01:30)
+                </Label>
+                <Input
+                  id="item-duration"
+                  placeholder="00:00"
+                  value={newItem.estimated_duration}
+                  onChange={(e) => setNewItem({ ...newItem, estimated_duration: e.target.value })}
+                />
+              </div>
+            </div>
+
             <div className="space-y-1">
               <Label htmlFor="item-desc" className="text-xs">
-                Descrição *
+                Descrição Detalhada
               </Label>
               <Input
                 id="item-desc"
-                placeholder="Ex: Instalação de Split"
+                placeholder="Detalhes adicionais do serviço..."
                 value={newItem.description}
                 onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
               />
