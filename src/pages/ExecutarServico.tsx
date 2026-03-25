@@ -44,6 +44,7 @@ export default function ExecutarServico() {
     completedCount,
     totalCount,
     invalidate,
+    standardChecklist,
   } = useServiceExecutionMode(serviceId);
 
   const { updateStatus } = useServices({ skipQuery: true });
