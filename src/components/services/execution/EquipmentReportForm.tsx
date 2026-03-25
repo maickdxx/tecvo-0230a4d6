@@ -146,6 +146,8 @@ export function EquipmentReportForm({
   onAutoSave,
   onSave,
   onComplete,
+  forceSave,
+  savingStatus,
   standardChecklist = [],
 }: EquipmentReportFormProps) {
   const rd = equipment.reportData;
@@ -155,10 +157,32 @@ export function EquipmentReportForm({
   const [workPerformed, setWorkPerformed] = useState(rd?.work_performed || "");
   const [observations, setObservations] = useState(rd?.observations || "");
   const [checklist, setChecklist] = useState<string[]>(rd?.checklist || []);
-  const [isSaving, setIsSaving] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isListening, setIsListening] = useState(false);
+
+  // Auto-save useEffect
+  useEffect(() => {
+    if (isCompleted) return;
+    
+    // Only auto-save if something has actually changed from initial state
+    const hasChanged = 
+      serviceType !== (rd?.service_type_performed || "") ||
+      problem !== (rd?.problem_identified || "") ||
+      workPerformed !== (rd?.work_performed || "") ||
+      observations !== (rd?.observations || "") ||
+      JSON.stringify(checklist) !== JSON.stringify(rd?.checklist || []);
+
+    if (hasChanged) {
+      onAutoSave(equipment.id, {
+        service_type_performed: serviceType,
+        problem_identified: problem,
+        work_performed: workPerformed,
+        observations: observations,
+        checklist,
+      });
+    }
+  }, [serviceType, problem, workPerformed, observations, checklist]);
 
   const { photos } = useReportPhotos(reportId || undefined, equipment.id);
   const isCompleted = rd?.status === "completed";
@@ -175,10 +199,22 @@ export function EquipmentReportForm({
     return errors.length === 0;
   };
 
-  const nextStep = () => {
-    if (validateStep(step)) setStep((s) => Math.min(s + 1, totalSteps));
+  const nextStep = async () => {
+    if (validateStep(step)) {
+      await forceSave();
+      setStep((s) => Math.min(s + 1, totalSteps));
+    }
   };
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  
+  const prevStep = async () => {
+    await forceSave();
+    setStep((s) => Math.max(s - 1, 1));
+  };
+
+  const handleBack = async () => {
+    await forceSave();
+    onBack();
+  };
 
   const handleServiceTypeChange = (value: string) => {
     setServiceType(value);
@@ -256,14 +292,38 @@ export function EquipmentReportForm({
       {/* Header & Progress */}
       <div className="sticky top-0 bg-background/80 backdrop-blur-md z-40 p-4 border-b space-y-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="-ml-2">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-bold truncate">{equipment.name}</h2>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-              Etapa {step} de {totalSteps}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                Etapa {step} de {totalSteps}
+              </p>
+              
+              {/* SAVING INDICATOR */}
+              <div className="flex items-center gap-1.5 animate-in fade-in duration-300">
+                {savingStatus === "saving" && (
+                  <>
+                    <Loader2 className="h-2.5 w-2.5 animate-spin text-primary" />
+                    <span className="text-[9px] font-medium text-primary">Salvando...</span>
+                  </>
+                )}
+                {savingStatus === "saved" && (
+                  <>
+                    <CheckCircle className="h-2.5 w-2.5 text-emerald-500" />
+                    <span className="text-[9px] font-medium text-emerald-500">Salvo</span>
+                  </>
+                )}
+                {savingStatus === "error" && (
+                  <>
+                    <AlertCircle className="h-2.5 w-2.5 text-destructive" />
+                    <span className="text-[9px] font-medium text-destructive">Erro ao salvar</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
           {isCompleted && (
             <Badge className="bg-emerald-500 text-white border-none text-[10px]">CONCLUÍDO</Badge>
@@ -491,7 +551,7 @@ export function EquipmentReportForm({
             <ChevronLeft className="mr-2 h-5 w-5" /> Voltar
           </Button>
         ) : (
-          <Button variant="outline" size="lg" className="flex-1 h-14 rounded-2xl" onClick={onBack}>
+          <Button variant="outline" size="lg" className="flex-1 h-14 rounded-2xl" onClick={handleBack}>
             Sair
           </Button>
         )}

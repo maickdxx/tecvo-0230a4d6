@@ -159,6 +159,8 @@ export default function ExecutarServico() {
               invalidate();
             }}
             onAutoSave={autoSave}
+            forceSave={forceSave}
+            savingStatus={savingStatus}
             onSave={saveEquipmentData}
             onComplete={async (eqId) => {
               await completeEquipment(eqId);
