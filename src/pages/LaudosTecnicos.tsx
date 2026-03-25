@@ -393,6 +393,7 @@ export default function LaudosTecnicos() {
                             {report.client?.name || "Cliente não informado"}
                           </h3>
                           {getConditionBadge(report.equipment_condition)}
+                          {getCleanlinessBadge(report.cleanliness_status)}
                           <Badge variant="outline" className={cn(
                             "text-[10px] uppercase font-bold",
                             report.status === 'finalized' ? "text-primary border-primary/20 bg-primary/5" : "text-muted-foreground border-muted"
