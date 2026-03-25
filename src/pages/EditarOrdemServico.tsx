@@ -44,6 +44,8 @@ export default function EditarOrdemServico() {
               unit_price: item.unit_price,
               discount: item.discount,
               discount_type: item.discount_type,
+              catalog_service_id: item.catalog_service_id,
+              is_non_standard: item.is_non_standard,
             })));
         }
 
