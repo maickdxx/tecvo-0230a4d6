@@ -362,6 +362,7 @@ export default function OrdemServicoDetalhes() {
         organizationState: org?.state || undefined,
         organizationSignature: org?.signature_url || undefined,
         autoSignatureOS: org?.auto_signature_os ?? false,
+        clientSignatureUrl: signature?.signature_url || undefined,
         orderData,
         isFreePlan,
       });
