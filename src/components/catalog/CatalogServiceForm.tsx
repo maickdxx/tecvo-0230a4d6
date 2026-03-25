@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Clock, ListChecks } from "lucide-react";
 import type { CatalogService, CatalogServiceFormData } from "@/hooks/useCatalogServices";
 import { useServiceTypes } from "@/hooks/useServiceTypes";
+import { Badge } from "@/components/ui/badge";
 
 interface CatalogServiceFormProps {
   service?: CatalogService | null;
