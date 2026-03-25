@@ -107,14 +107,16 @@ export function NewConversationDialog({ open, onOpenChange, channels, onSelected
     try {
       const { data: existing } = await supabase
         .from("whatsapp_contacts")
-        .select("id")
+        .select("id, channel_id")
         .eq("organization_id", organization.id)
-        .eq("channel_id", resolvedChannelId)
         .eq("normalized_phone", normalized)
         .maybeSingle();
 
       if (existing) {
-        toast.info("Já existe uma conversa deste número neste canal, abrindo conversa");
+        const channelMsg = existing.channel_id === resolvedChannelId
+          ? "Já existe uma conversa deste número neste canal, abrindo"
+          : "Este contato já existe em outro canal, abrindo histórico anterior";
+        toast.info(channelMsg);
         onSelected(existing.id);
         onOpenChange(false);
         return;

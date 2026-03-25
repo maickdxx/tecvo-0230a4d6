@@ -248,13 +248,12 @@ Deno.serve(async (req) => {
         const isGroup = remoteJid.includes("@g.us");
         const normalizedPhone = phoneNumber.replace(/\D/g, "");
 
-        // Find or create contact — ALWAYS scoped to this channel
+        // Find or create contact — organization-wide
         let contactId: string;
         const { data: existingContact } = await supabase
           .from("whatsapp_contacts")
-          .select("id")
+          .select("id, channel_id")
           .eq("organization_id", orgId)
-          .eq("channel_id", channel_id)
           .eq("whatsapp_id", remoteJid)
           .maybeSingle();
 
@@ -287,12 +286,11 @@ Deno.serve(async (req) => {
           if (contactErr) {
             // Unique constraint = contact already exists with different lookup
             if (contactErr.code === "23505") {
-              // Try to find by normalized_phone
+              // Try to find by normalized_phone (organization-wide)
               const { data: byPhone } = await supabase
                 .from("whatsapp_contacts")
-                .select("id")
+                .select("id, channel_id")
                 .eq("organization_id", orgId)
-                .eq("channel_id", channel_id)
                 .eq("normalized_phone", normalizedPhone)
                 .maybeSingle();
               if (byPhone) {
