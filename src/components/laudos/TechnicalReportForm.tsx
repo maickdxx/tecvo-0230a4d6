@@ -89,6 +89,7 @@ export function TechnicalReportForm({
       recommendation: report?.recommendation ?? "",
       risks: report?.risks ?? "",
       conclusion: report?.conclusion ?? "",
+      recommendation: report?.recommendation ?? "Realizar reaperto e alinhamento da turbina e manter plano de manutenção preventiva periódica.",
       observations: report?.observations ?? "",
       needs_quote: report?.needs_quote ?? false,
       equipment_working: report?.equipment_working ?? "yes",
