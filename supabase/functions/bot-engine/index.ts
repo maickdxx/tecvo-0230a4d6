@@ -277,6 +277,19 @@ Deno.serve(async (req) => {
     }
 
     if (action === "stop") {
+      const { execution_id } = body;
+
+      await supabase
+        .from("whatsapp_bot_executions")
+        .update({ status: "stopped", completed_at: new Date().toISOString() })
+        .eq("id", execution_id);
+
+      await logExecution(supabase, execution_id, null, "stopped", { reason: "manual" });
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
