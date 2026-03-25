@@ -296,11 +296,13 @@ export default function OrdemServicoDetalhes() {
     setShowCompleteDialog(true);
   };
 
-  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null) => {
+  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
     setIsUpdating(true);
     try {
-      const mainMethod = payments[0]?.payment_method;
       await updateStatus({ id: service.id, status: "completed" });
+      if (signatureBlob) {
+        await createSignature({ serviceId: service.id, blob: signatureBlob, signerName });
+      }
       setShowCompleteDialog(false);
     } finally {
       setIsUpdating(false);
