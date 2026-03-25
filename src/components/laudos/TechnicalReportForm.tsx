@@ -19,6 +19,7 @@ import { useTeamMembers } from "@/hooks/useTeamMembers";
 import {
   INSPECTION_ITEMS,
   EQUIPMENT_CONDITIONS,
+  CLEANLINESS_STATUS,
   type TechnicalReportFormData,
   type TechnicalReport,
 } from "@/hooks/useTechnicalReports";
