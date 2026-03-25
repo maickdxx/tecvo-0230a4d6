@@ -494,6 +494,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           service_type: string
+          standard_checklist: Json | null
           unit_price: number
           updated_at: string | null
         }
@@ -512,6 +513,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           service_type?: string
+          standard_checklist?: Json | null
           unit_price?: number
           updated_at?: string | null
         }
@@ -530,6 +532,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           service_type?: string
+          standard_checklist?: Json | null
           unit_price?: number
           updated_at?: string | null
         }
