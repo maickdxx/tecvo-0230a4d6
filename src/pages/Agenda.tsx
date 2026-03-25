@@ -52,7 +52,7 @@ import { AgendaDayPanel } from "@/components/agenda/AgendaDayPanel";
 import { AgendaPeriodPanel } from "@/components/agenda/AgendaPeriodPanel";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { isSameDayInTz, getDatePartInTz, getHourInTz, getMinutesInTz, buildTimestamp } from "@/lib/timezone";
+import { isSameDayInTz, getDatePartInTz, getHourInTz, getMinutesInTz, buildTimestamp, parseDurationToMinutes } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { useDistanceBetweenServices } from "@/hooks/useDistanceBetweenServices";
 import { useOperationalCapacity, type OperationalCapacity } from "@/hooks/useOperationalCapacity";
@@ -230,21 +230,20 @@ export default function Agenda({ fullscreen = false }: { fullscreen?: boolean })
 
     // For week/month: aggregate stats from periodServices
     const getServiceDurationMin = (s: Service): number => {
-      // Use estimated_duration from catalog if available
-      if (s.estimated_duration) {
-        const [hours, minutes] = s.estimated_duration.split(":").map(Number);
-        if (!isNaN(hours) && !isNaN(minutes)) {
-          return hours * 60 + minutes;
-        }
-      }
-      
-      // Fallback to entry/exit dates if available
+      // 1. Real duration from execution
       if (s.entry_date && s.exit_date) {
         const startMin = getHourInTz(s.entry_date, tz) * 60 + getMinutesInTz(s.entry_date, tz);
         const endMin = getHourInTz(s.exit_date, tz) * 60 + getMinutesInTz(s.exit_date, tz);
         const dur = endMin - startMin;
         if (dur > 0) return dur;
       }
+      
+      // 2. Estimated duration from items
+      if (s.estimated_duration) {
+        const dur = parseDurationToMinutes(s.estimated_duration);
+        if (dur > 0) return dur;
+      }
+      
       return 60; // Default 1 hour
     };
 
