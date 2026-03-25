@@ -263,10 +263,10 @@ export function EquipmentReportForm({
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Wrench className="h-4 w-4 text-primary" />
-            <Label className="font-semibold text-sm">Tipo de Serviço</Label>
+            <Label className="font-semibold text-sm">Tipo de Serviço *</Label>
           </div>
           <Select value={serviceType} onValueChange={handleServiceTypeChange} disabled={isCompleted}>
-            <SelectTrigger>
+            <SelectTrigger className={!serviceType && validationErrors.length > 0 ? "border-destructive" : ""}>
               <SelectValue placeholder="Selecione o tipo" />
             </SelectTrigger>
             <SelectContent>
