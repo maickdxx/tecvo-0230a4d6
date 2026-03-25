@@ -110,7 +110,8 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
     setupCanvas();
     setHasDrawn(false);
     setConfirmed(false);
-  }, [setupCanvas]);
+    onDrawChange?.(false);
+  }, [setupCanvas, onDrawChange]);
 
   useImperativeHandle(ref, () => ({
     getBlob,
