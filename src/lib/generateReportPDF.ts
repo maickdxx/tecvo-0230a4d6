@@ -538,35 +538,71 @@ export async function generateReportPDF({
   }
 
   // ========== SIGNATURES ==========
-  ensureSpace(70);
-  yPos += 25;
-  
-  const sW = 70;
-  const sTop = yPos + 20;
-  
-  doc.setDrawColor(colors.primary.r, colors.primary.g, colors.primary.b);
-  doc.setLineWidth(0.3);
-  
-  // Technician
-  doc.line(margin + 5, sTop, margin + 5 + sW, sTop);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-  const tName = report.technician_profile?.full_name || report.responsible_technician_name || "Técnico Responsável";
-  doc.text(tName, margin + 5 + sW / 2, sTop + 6, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text("Responsável Técnico", margin + 5 + sW / 2, sTop + 10, { align: "center" });
+  ensureSpace(60);
+  yPos += 20;
 
-  // Client
-  const cX = pageWidth - margin - 5 - sW;
-  doc.line(cX, sTop, cX + sW, sTop);
+  const sW = 80;
+  const sTop = yPos + 30;
+
+  // Technician Signature Area
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.setLineWidth(0.1);
+  doc.line(margin, sTop, margin + sW, sTop);
+  
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text(report.client?.name || "Representante do Cliente", cX + sW / 2, sTop + 6, { align: "center" });
+  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+  const tName = report.technician_profile?.full_name || report.responsible_technician_name || "Técnico Responsável";
+  doc.text(tName, margin, sTop + 5);
+  
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text("Assinatura / Carimbo", cX + sW / 2, sTop + 10, { align: "center" });
+  doc.setFontSize(7.5);
+  doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+  doc.text("Responsável Técnico", margin, sTop + 9);
+
+  // Client / OS Signature Integration
+  const cX = pageWidth - margin - sW;
+  if (signature?.signature_url) {
+    try {
+      const sigImg = await loadImageAsBase64(signature.signature_url);
+      if (sigImg) {
+        doc.addImage(sigImg, "PNG", cX + 10, sTop - 22, 60, 20, undefined, "FAST");
+      }
+    } catch (e) { console.error("Error loading signature", e); }
+
+    doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+    doc.setLineWidth(0.1);
+    doc.line(cX, sTop, cX + sW, sTop);
+
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+    doc.text(signature.signer_name || report.client?.name || "Representante", cX, sTop + 5);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+    const signedDate = signature.signed_at ? format(new Date(signature.signed_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "";
+    const ipInfo = signature.ip_address ? `IP: ${signature.ip_address}` : "";
+    const osRef = report.service?.quote_number ? `Ref. OS: #${report.service.quote_number.toString().padStart(4, "0")}` : "";
+    
+    doc.text(`Assinado digitalmente em ${signedDate}`, cX, sTop + 9);
+    doc.text(`${ipInfo} | ${osRef}`, cX, sTop + 13);
+  } else {
+    doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+    doc.setLineWidth(0.1);
+    doc.line(cX, sTop, cX + sW, sTop);
+    
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+    doc.text(report.client?.name || "Representante do Cliente", cX, sTop + 5);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+    doc.text("Assinatura do Cliente", cX, sTop + 9);
+  }
 
   // Apply footer to all pages
   const total = doc.getNumberOfPages();
