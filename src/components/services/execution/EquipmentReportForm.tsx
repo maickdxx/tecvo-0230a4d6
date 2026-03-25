@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { ReportPhotoUploader } from "@/components/laudos/ReportPhotoUploader";
+import { useReportPhotos } from "@/hooks/useReportPhotos";
 import type {
   EquipmentReportData,
   ServiceEquipmentWithReport,
