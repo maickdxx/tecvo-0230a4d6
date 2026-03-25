@@ -62,6 +62,7 @@ export function useServiceTypes() {
           slug,
           organization_id: organizationId,
           is_default: false,
+          generates_recurrence: data.generates_recurrence ?? false,
         })
         .select()
         .single();
