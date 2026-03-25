@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 
 export interface ServiceItemLocal {
   id: string;
+  name: string;
   description: string;
   quantity: number;
   unit_price: number;
@@ -43,6 +44,9 @@ export interface ServiceItemLocal {
   catalog_service_type?: string;
   catalog_service_id?: string;
   is_non_standard?: boolean;
+  category?: string;
+  estimated_duration?: string;
+  standard_checklist?: any;
 }
 
 interface ServiceCatalogSelectorProps {
@@ -63,11 +67,13 @@ export function ServiceCatalogSelector({
   const queryClient = useQueryClient();
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [newItem, setNewItem] = useState({
+    name: "",
     description: "",
     quantity: "1",
     unit_price: "",
     discount: "0",
     discount_type: "percentage" as "percentage" | "fixed",
+    estimated_duration: "",
   });
 
   const [selectedCatalogServiceId, setSelectedCatalogServiceId] = useState<string | null>(null);
@@ -75,7 +81,15 @@ export function ServiceCatalogSelector({
 
   const handleSelectFromCatalog = (serviceId: string) => {
     if (serviceId === "manual") {
-      setNewItem({ description: "", quantity: "1", unit_price: "", discount: "0", discount_type: "percentage" });
+      setNewItem({ 
+        name: "", 
+        description: "", 
+        quantity: "1", 
+        unit_price: "", 
+        discount: "0", 
+        discount_type: "percentage",
+        estimated_duration: "",
+      });
       setSelectedCatalogServiceType(null);
       setSelectedCatalogServiceId(null);
       return;
@@ -83,24 +97,27 @@ export function ServiceCatalogSelector({
     const service = activeServices.find((s) => s.id === serviceId);
     if (service) {
       setNewItem({
-        description: service.name,
+        name: service.name,
+        description: service.description || "",
         quantity: "1",
         unit_price: service.unit_price.toString(),
         discount: service.default_discount?.toString() || "0",
         discount_type: "percentage",
+        estimated_duration: service.estimated_duration || "",
       });
       setSelectedCatalogServiceType(service.service_type);
       setSelectedCatalogServiceId(service.id);
-      onServiceTypeDetected?.(service.service_type);
+      onServiceTypeDetected?.(service.service_type || "");
     }
   };
 
   const handleAddItem = () => {
-    if (!newItem.description || !newItem.unit_price) return;
+    if (!newItem.name || !newItem.unit_price) return;
 
     const newItemData: ServiceItemLocal = {
       id: crypto.randomUUID(),
-      description: newItem.description,
+      name: newItem.name,
+      description: newItem.description || newItem.name,
       quantity: parseFloat(newItem.quantity) || 1,
       unit_price: parseFloat(newItem.unit_price) || 0,
       discount: parseFloat(newItem.discount) || 0,
@@ -108,10 +125,23 @@ export function ServiceCatalogSelector({
       catalog_service_type: selectedCatalogServiceType || undefined,
       catalog_service_id: selectedCatalogServiceId || undefined,
       is_non_standard: !selectedCatalogServiceId,
+      estimated_duration: newItem.estimated_duration || undefined,
+      category: selectedCatalogServiceType || undefined,
+      standard_checklist: selectedCatalogServiceId 
+        ? activeServices.find(s => s.id === selectedCatalogServiceId)?.standard_checklist 
+        : undefined,
     };
 
     onItemsChange([...items, newItemData]);
-    setNewItem({ description: "", quantity: "1", unit_price: "", discount: "0", discount_type: "percentage" });
+    setNewItem({ 
+      name: "", 
+      description: "", 
+      quantity: "1", 
+      unit_price: "", 
+      discount: "0", 
+      discount_type: "percentage",
+      estimated_duration: "",
+    });
     setSelectedCatalogServiceType(null);
     setSelectedCatalogServiceId(null);
   };
@@ -120,21 +150,27 @@ export function ServiceCatalogSelector({
     if (!organizationId) return;
 
     try {
-      const { error } = await supabase
+      const { data: newService, error } = await supabase
         .from("catalog_services")
         .insert({
-          name: item.description,
+          name: item.name,
+          description: item.description,
           unit_price: item.unit_price,
           organization_id: organizationId,
           service_type: item.catalog_service_type || "other",
+          estimated_duration: item.estimated_duration,
+          category: item.category,
+          standard_checklist: item.standard_checklist,
           is_active: true,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       // Update the item in the list to be linked to the new catalog service
       const updatedItems = items.map(i =>
-        i.id === item.id ? { ...i, is_non_standard: false } : i
+        i.id === item.id ? { ...i, is_non_standard: false, catalog_service_id: newService.id } : i
       );
       onItemsChange(updatedItems);
 
@@ -214,7 +250,7 @@ export function ServiceCatalogSelector({
                 <TableRow key={item.id}>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <span className="font-medium">{item.description}</span>
+                      <span className="font-medium">{item.name || item.description}</span>
                       {item.is_non_standard && (
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-[10px] h-4 border-amber-500 text-amber-600 bg-amber-50 gap-1 font-normal">
@@ -329,13 +365,38 @@ export function ServiceCatalogSelector({
               </Popover>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="item-name" className="text-xs">
+                  Nome do Serviço *
+                </Label>
+                <Input
+                  id="item-name"
+                  placeholder="Ex: Instalação de Split"
+                  value={newItem.name}
+                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="item-duration" className="text-xs">
+                  Tempo Estimado (ex: 01:30)
+                </Label>
+                <Input
+                  id="item-duration"
+                  placeholder="00:00"
+                  value={newItem.estimated_duration}
+                  onChange={(e) => setNewItem({ ...newItem, estimated_duration: e.target.value })}
+                />
+              </div>
+            </div>
+
             <div className="space-y-1">
               <Label htmlFor="item-desc" className="text-xs">
-                Descrição *
+                Descrição Detalhada
               </Label>
               <Input
                 id="item-desc"
-                placeholder="Ex: Instalação de Split"
+                placeholder="Detalhes adicionais do serviço..."
                 value={newItem.description}
                 onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
               />

@@ -40,11 +40,17 @@ export default function NovoOrcamento() {
           .insert(items.map(item => ({
             service_id: newService.id,
             organization_id: organization.id,
+            name: item.name,
             description: item.description,
             quantity: item.quantity,
             unit_price: item.unit_price,
             discount: item.discount,
             discount_type: item.discount_type,
+            catalog_service_id: item.catalog_service_id,
+            is_non_standard: item.is_non_standard,
+            category: item.category,
+            estimated_duration: item.estimated_duration,
+            standard_checklist: item.standard_checklist,
           })));
       }
 

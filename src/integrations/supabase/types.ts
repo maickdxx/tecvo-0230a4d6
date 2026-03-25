@@ -2310,44 +2310,56 @@ export type Database = {
       service_items: {
         Row: {
           catalog_service_id: string | null
+          category: string | null
           created_at: string
           deleted_at: string | null
           description: string
           discount: number | null
           discount_type: string | null
+          estimated_duration: string | null
           id: string
           is_non_standard: boolean | null
+          name: string | null
           organization_id: string
           quantity: number
           service_id: string
+          standard_checklist: Json | null
           unit_price: number
         }
         Insert: {
           catalog_service_id?: string | null
+          category?: string | null
           created_at?: string
           deleted_at?: string | null
           description: string
           discount?: number | null
           discount_type?: string | null
+          estimated_duration?: string | null
           id?: string
           is_non_standard?: boolean | null
+          name?: string | null
           organization_id: string
           quantity?: number
           service_id: string
+          standard_checklist?: Json | null
           unit_price: number
         }
         Update: {
           catalog_service_id?: string | null
+          category?: string | null
           created_at?: string
           deleted_at?: string | null
           description?: string
           discount?: number | null
           discount_type?: string | null
+          estimated_duration?: string | null
           id?: string
           is_non_standard?: boolean | null
+          name?: string | null
           organization_id?: string
           quantity?: number
           service_id?: string
+          standard_checklist?: Json | null
           unit_price?: number
         }
         Relationships: [
@@ -5500,6 +5512,10 @@ export type Database = {
           _user_id?: string
         }
         Returns: number
+      }
+      calculate_service_total_duration: {
+        Args: { s_id: string }
+        Returns: string
       }
       can_create_service: { Args: { org_id: string }; Returns: boolean }
       can_modify: { Args: { _user_id: string }; Returns: boolean }
