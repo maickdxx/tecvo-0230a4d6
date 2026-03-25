@@ -167,6 +167,7 @@ function MonthView({
   onDateSelect,
   onServiceClick,
   tz,
+  typeLabels,
 }: {
   currentDate: Date;
   services: Service[];
@@ -354,6 +355,7 @@ function WeekView({
   onDateSelect,
   onServiceClick,
   tz,
+  typeLabels,
 }: {
   currentDate: Date;
   services: Service[];
