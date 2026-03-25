@@ -38,6 +38,8 @@ export default function ExecutarServico() {
     isLoading,
     reportId,
     autoSave,
+    forceSave,
+    savingStatus,
     saveEquipmentData,
     completeEquipment,
     allCompleted,
