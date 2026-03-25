@@ -65,7 +65,7 @@ export interface Service {
   payment_notes: string | null;
   entry_date: string | null;
   exit_date: string | null;
-  estimated_duration: string | null;
+  estimated_duration?: string | null;
   created_at: string;
   updated_at: string;
   client?: Client;
