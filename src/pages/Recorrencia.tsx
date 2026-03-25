@@ -10,6 +10,7 @@ import { ptBR } from "date-fns/locale";
 import { AppLayout } from "@/components/layout";
 import { PageTutorialBanner } from "@/components/onboarding";
 import { usePaginatedRecurrence, useRecurrenceStats, useRecurrenceConfig, RecurrenceClient, RecurrenceVisualStage, RecurrenceStage } from "@/hooks/useRecurrence";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -267,7 +268,7 @@ function ClientTimeline({ client }: { client: RecurrenceClient }) {
 }
 
 /* ─── Client Card ─── */
-function ClientCard({ client, onWhatsApp }: { client: RecurrenceClient; onWhatsApp: (c: RecurrenceClient) => void }) {
+function ClientCard({ client, onWhatsApp, typeLabels }: { client: RecurrenceClient; onWhatsApp: (c: RecurrenceClient) => void; typeLabels: Record<string, string> }) {
   const stage = stageConfig[client.stage];
   const StageIcon = stage.icon;
   const isFuturo = client.stage === "futuro";
@@ -324,7 +325,7 @@ function ClientCard({ client, onWhatsApp }: { client: RecurrenceClient; onWhatsA
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <RefreshCw className="h-3 w-3" />
-                {client.lastServiceTypeFriendly}
+                {typeLabels[client.lastServiceType] || client.lastServiceTypeFriendly}
               </span>
               <span>Último: {format(new Date(client.lastServiceDate), "dd/MM/yyyy", { locale: ptBR })}</span>
               <span>Próximo: {format(client.recurrenceDate, "dd/MM/yyyy", { locale: ptBR })}</span>
@@ -379,6 +380,7 @@ export default function Recorrencia() {
 
   const { data: statsData, isLoading: statsLoading } = useRecurrenceStats();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePaginatedRecurrence(filter);
+  const { typeLabels } = useServiceTypes();
 
   const stats = statsData ?? { totalFuture: 0, totalProximo: 0, totalPronto: 0, totalActive: 0, potentialRevenue: 0, revenue60Days: 0, convertedThisMonth: 0 };
   const clients = data?.pages.flatMap(p => p.clients) ?? [];
@@ -464,7 +466,7 @@ export default function Recorrencia() {
                 </Card>
               )}
               {clients.map((client) => (
-                <ClientCard key={client.entryId} client={client} onWhatsApp={handleWhatsApp} />
+                <ClientCard key={client.entryId} client={client} onWhatsApp={handleWhatsApp} typeLabels={typeLabels} />
               ))}
 
               {hasNextPage && (

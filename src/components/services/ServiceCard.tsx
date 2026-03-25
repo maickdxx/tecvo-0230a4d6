@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/context-menu";
 import { ServiceStatusBadge } from "./ServiceStatusBadge";
 import type { Service, ServiceStatus } from "@/hooks/useServices";
-import { SERVICE_TYPE_LABELS } from "@/hooks/useServices";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 
 interface ServiceCardProps {
   service: Service;
@@ -32,6 +32,7 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote, onServiceOrder }: ServiceCardProps) {
+  const { typeLabels } = useServiceTypes();
   const tz = useOrgTimezone();
   const formattedDate = service.scheduled_date
     ? formatDateInTz(service.scheduled_date, tz)
@@ -125,7 +126,7 @@ export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote
                   <ServiceStatusBadge status={service.status} />
                   {service.service_type && (
                     <Badge variant="outline" className="text-[10px] font-medium">
-                      {SERVICE_TYPE_LABELS[service.service_type] || service.service_type}
+                      {typeLabels[service.service_type] || service.service_type}
                     </Badge>
                   )}
                 </div>

@@ -61,7 +61,8 @@ import {
 } from "lucide-react";
 import { formatDateTimeInTz, formatDateInTz, formatTimeInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
-import { useServices, SERVICE_STATUS_LABELS, SERVICE_TYPE_LABELS } from "@/hooks/useServices";
+import { useServices, SERVICE_STATUS_LABELS } from "@/hooks/useServices";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 import type { ServiceStatus } from "@/hooks/useServices";
 import { useServicePDFSend } from "@/hooks/useServicePDFSend";
 import { useServiceSignatures } from "@/hooks/useServiceSignatures";
@@ -179,6 +180,7 @@ export default function OrdemServicoDetalhes() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
+  const { typeLabels } = useServiceTypes();
 
   const service = services.find(s => s.id === id);
   const { laudos, laudoCount } = useServiceLaudos(id);
@@ -516,7 +518,7 @@ export default function OrdemServicoDetalhes() {
         {/* Service info */}
         <SectionCard icon={FileText} title="Informações do Serviço">
           {service.service_type && (
-            <InfoRow label="Tipo de Serviço" value={SERVICE_TYPE_LABELS[service.service_type] || service.service_type} />
+            <InfoRow label="Tipo de Serviço" value={typeLabels[service.service_type] || service.service_type} />
           )}
           {(service.scheduled_date || service.entry_date) && (
             <InfoRow

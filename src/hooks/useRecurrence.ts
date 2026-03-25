@@ -59,14 +59,7 @@ export interface RecurrenceConfig {
   message12Months: string;
 }
 
-const SERVICE_TYPE_LABELS: Record<string, string> = {
-  instalacao: "Instalação", installation: "Instalação",
-  limpeza: "Limpeza", cleaning: "Limpeza",
-  manutencao: "Manutenção", maintenance: "Manutenção",
-  contratos: "Contratos", maintenance_contract: "Contratos",
-  outros: "Outros", other: "Outros",
-  reparo: "Reparo", repair: "Reparo",
-};
+// Removed hardcoded SERVICE_TYPE_LABELS - labels are now managed in service_types table
 
 function getVisualStage(daysUntil: number): RecurrenceVisualStage {
   if (daysUntil <= 0) return "pronto";
@@ -93,7 +86,7 @@ function mapEntry(entry: any): RecurrenceClient | null {
     phone: client.phone,
     whatsapp: client.whatsapp,
     lastServiceType: entry.source_service_type,
-    lastServiceTypeFriendly: SERVICE_TYPE_LABELS[entry.source_service_type] || entry.source_service_type,
+    lastServiceTypeFriendly: entry.source_service_type, // Fallback to slug, UI should map using useServiceTypes
     lastServiceDate: entry.source_completed_date,
     lastServiceValue: entry.source_value,
     daysSinceLastService: daysSince,

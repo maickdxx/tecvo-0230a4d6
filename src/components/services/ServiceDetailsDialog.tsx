@@ -42,7 +42,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { Service, ServiceStatus } from "@/hooks/useServices";
-import { SERVICE_TYPE_LABELS } from "@/hooks/useServices";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 import { ServiceCompleteDialog } from "./ServiceCompleteDialog";
 import {
   AlertDialog,
@@ -158,7 +158,7 @@ export function ServiceDetailsDialog({
   const [showWhatsappConfirm, setShowWhatsappConfirm] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const { sendOSViaWhatsApp, sending: sendingPDF } = useServicePDFSend();
-
+  const { typeLabels } = useServiceTypes();
   const { user } = useAuth();
   const { isEmployee } = useUserRole();
   const { paymentMethods, isLoading: isLoadingPaymentMethods, formatFee } = usePaymentMethods();
@@ -384,7 +384,7 @@ export function ServiceDetailsDialog({
             {/* Date & Technician & Value */}
             <div className="rounded-xl bg-muted/20 p-4">
               {service.service_type && (
-                <InfoRow label="Tipo de Serviço" value={SERVICE_TYPE_LABELS[service.service_type] || service.service_type} />
+                <InfoRow label="Tipo de Serviço" value={typeLabels[service.service_type] || service.service_type} />
               )}
               {(service.scheduled_date || service.entry_date) && (
                 <InfoRow
