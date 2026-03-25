@@ -5521,7 +5521,7 @@ export type Database = {
         Args: {
           p_ip_address?: string
           p_signature_url: string
-          p_signer_name?: string
+          p_signer_name: string
           p_token: string
         }
         Returns: boolean
