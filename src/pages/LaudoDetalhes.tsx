@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout";
+import { useReportPhotos, PHOTO_CATEGORY_LABELS, type PhotoCategory } from "@/hooks/useReportPhotos";
+import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +54,7 @@ export default function LaudoDetalhes() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { report, isLoading } = useTechnicalReport(id);
+  const { photos } = useReportPhotos(id);
   const { remove } = useTechnicalReportMutations();
   const { organization } = useOrganization();
   const tz = useOrgTimezone();
@@ -90,6 +93,7 @@ export default function LaudoDetalhes() {
     try {
       await generateReportPDF({
         report,
+        photos,
         organizationName: organization?.name || "Minha Empresa",
         organizationCnpj: organization?.cnpj_cpf || undefined,
         organizationPhone: organization?.phone || undefined,
@@ -287,6 +291,34 @@ export default function LaudoDetalhes() {
         {report.observations && (
           <SectionCard icon={MessageSquare} title="Observações Finais">
             <p className="text-sm whitespace-pre-wrap">{report.observations}</p>
+          </SectionCard>
+        )}
+
+        {/* Photos */}
+        {photos.length > 0 && (
+          <SectionCard icon={Camera} title="Evidências Fotográficas">
+            {(["before", "problem", "after"] as PhotoCategory[]).map((cat) => {
+              const catPhotos = photos.filter((p) => p.category === cat);
+              if (catPhotos.length === 0) return null;
+              return (
+                <div key={cat} className="mb-3 last:mb-0">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                    {PHOTO_CATEGORY_LABELS[cat]} ({catPhotos.length})
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {catPhotos.map((photo) => (
+                      <div key={photo.id} className="rounded-lg overflow-hidden border border-border aspect-square">
+                        <img
+                          src={photo.photo_url}
+                          alt={photo.caption || PHOTO_CATEGORY_LABELS[cat]}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </SectionCard>
         )}
       </div>
