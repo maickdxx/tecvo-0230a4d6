@@ -189,6 +189,95 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "resume") {
+      const { contact_id, message } = body;
+
+      const { data: execution, error: execError } = await supabase
+        .from("whatsapp_bot_executions")
+        .select("*")
+        .eq("contact_id", contact_id)
+        .in("status", ["waiting_input", "waiting_response"])
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (execError || !execution) {
+        return new Response(JSON.stringify({ success: false, message: "No execution to resume" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const e = execution as any;
+
+      await logExecution(supabase, e.id, e.current_step_id, "resumed_by_user", { message });
+
+      if (e.status === "waiting_input") {
+        const { data: step } = await supabase
+          .from("whatsapp_bot_steps")
+          .select("*")
+          .eq("id", e.current_step_id)
+          .single();
+
+        if (step) {
+          const s = step as any;
+          const config = s.config || {};
+          if (config.capture_field) {
+            const field = config.capture_field;
+            const value = message;
+            const updateData: any = {};
+            
+            if (["name", "email", "phone", "internal_note"].includes(field)) {
+              updateData[field] = value;
+            } else {
+              const { data: contact } = await supabase
+                .from("whatsapp_contacts")
+                .select("visitor_metadata")
+                .eq("id", contact_id)
+                .single();
+              const metadata = (contact as any)?.visitor_metadata || {};
+              metadata[field] = value;
+              updateData.visitor_metadata = metadata;
+            }
+
+            await supabase
+              .from("whatsapp_contacts")
+              .update(updateData)
+              .eq("id", contact_id);
+            
+            await logExecution(supabase, e.id, s.id, "input_captured", { field, value });
+          }
+        }
+      }
+
+      const { data: nextConns } = await supabase
+        .from("whatsapp_bot_connections")
+        .select("to_step_id")
+        .eq("from_step_id", e.current_step_id)
+        .eq("bot_id", e.bot_id)
+        .eq("condition_branch", "default");
+
+      const validNextConns = (nextConns || []).filter((c: any) => c.to_step_id && c.to_step_id !== e.current_step_id);
+
+      if (validNextConns.length > 0) {
+        const nextStepId = (validNextConns[0] as any).to_step_id;
+        await supabase
+          .from("whatsapp_bot_executions")
+          .update({ current_step_id: nextStepId, status: "running", wait_until: null })
+          .eq("id", e.id);
+
+        await executeStep(supabase, e.id, nextStepId, contact_id, e.bot_id, e.organization_id, 0);
+      } else {
+        await supabase
+          .from("whatsapp_bot_executions")
+          .update({ status: "completed", completed_at: new Date().toISOString(), wait_until: null })
+          .eq("id", e.id);
+      }
+
+      return new Response(JSON.stringify({ success: true, execution_id: e.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "stop") {
       const { execution_id } = body;
 
