@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { normalizePhone, normalizeJid } from "../_shared/whatsapp-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -203,23 +204,61 @@ Deno.serve(async (req) => {
               const isGroup = remoteJid.includes("@g.us");
               const fromMe = evoMsg.key.fromMe || false;
 
-              // Find or create contact, ALWAYS scoped to the same channel.
-              const { data: contact } = await supabase
-                .from("whatsapp_contacts")
-                .select("id, is_blocked")
-                .eq("organization_id", channel.organization_id)
-                .eq("channel_id", channel.id)
-                .eq("whatsapp_id", remoteJid)
-                .maybeSingle();
+              // Find or create contact — Cross-channel re-adoption
+              let existingContact: any = null;
+              {
+                // Try JID match first
+                const { data: idMatch } = await supabase
+                  .from("whatsapp_contacts")
+                  .select("id, is_blocked, channel_id, whatsapp_id")
+                  .eq("organization_id", channel.organization_id)
+                  .eq("whatsapp_id", remoteJid)
+                  .maybeSingle();
+                
+                if (idMatch) {
+                  existingContact = idMatch;
+                } else if (!isGroup) {
+                  // Fallback to normalized phone
+                  const phoneDigits = normalizePhone(remoteJid);
+                  const { data: phoneMatch } = await supabase
+                    .from("whatsapp_contacts")
+                    .select("id, is_blocked, channel_id, whatsapp_id")
+                    .eq("organization_id", channel.organization_id)
+                    .eq("normalized_phone", phoneDigits)
+                    .eq("is_group", false)
+                    .maybeSingle();
+                  
+                  if (phoneMatch) {
+                    existingContact = phoneMatch;
+                    // Sync JID if needed
+                    if (phoneMatch.whatsapp_id !== remoteJid) {
+                      await supabase.from("whatsapp_contacts").update({ whatsapp_id: remoteJid }).eq("id", phoneMatch.id);
+                    }
+                  }
+                }
+              }
 
-              if (contact?.is_blocked) continue;
+              if (existingContact?.is_blocked) continue;
 
               let contactId: string;
 
-              if (contact) {
-                contactId = contact.id;
+              if (existingContact) {
+                contactId = existingContact.id;
+                // Reassign channel if this active channel received it
+                if (existingContact.channel_id !== channel.id) {
+                  await supabase.from("whatsapp_contacts").update({ channel_id: channel.id }).eq("id", contactId);
+                  // Log transition
+                  await supabase.from("whatsapp_channel_transitions").insert({
+                    organization_id: channel.organization_id,
+                    contact_id: contactId,
+                    previous_channel_id: existingContact.channel_id,
+                    new_channel_id: channel.id,
+                    reason: "sync_fallback_adoption",
+                    metadata: { message_id: evoMsg.key.id }
+                  });
+                }
               } else {
-                const normalizedPhone = phoneNumber.replace(/\D/g, "");
+                const normalizedPhone = normalizePhone(remoteJid);
                 const { data: newContact, error: contactErr } = await supabase
                   .from("whatsapp_contacts")
                   .insert({
