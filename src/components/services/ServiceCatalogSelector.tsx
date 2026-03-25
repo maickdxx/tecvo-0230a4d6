@@ -59,6 +59,8 @@ export function ServiceCatalogSelector({
   onServiceTypeDetected,
 }: ServiceCatalogSelectorProps) {
   const { activeServices, isLoading } = useCatalogServices();
+  const { organizationId } = useAuth();
+  const queryClient = useQueryClient();
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [newItem, setNewItem] = useState({
     description: "",
@@ -68,6 +70,7 @@ export function ServiceCatalogSelector({
     discount_type: "percentage" as "percentage" | "fixed",
   });
 
+  const [selectedCatalogServiceId, setSelectedCatalogServiceId] = useState<string | null>(null);
   const [selectedCatalogServiceType, setSelectedCatalogServiceType] = useState<string | null>(null);
 
   const handleSelectFromCatalog = (serviceId: string) => {
