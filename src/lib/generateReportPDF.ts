@@ -258,122 +258,100 @@ export async function generateReportPDF({
 
   yPos += 40;
 
-  // ========== EXECUTIVE STATUS ==========
-  drawSectionTitle("Diagnóstico e Status Geral", "Resumo visual das condições identificadas");
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  const summaryText = report.diagnosis || "Relatório de inspeção técnica detalhada para avaliação das condições operacionais, integridade física e performance do sistema de climatização.";
-  const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 95);
-  const boxHeight = Math.max(35, summaryLines.length * 5.5 + 18);
-  
-  ensureSpace(boxHeight + 10);
-  
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
-  doc.setLineWidth(0.1);
-  doc.roundedRect(margin, yPos, contentWidth, boxHeight, 2, 2, "FD");
-
-  // Vertical Divider
-  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
-  doc.line(margin + 85, yPos + 5, margin + 85, yPos + boxHeight - 5);
-
-  doc.setFontSize(7.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
-  doc.text("STATUS ESTRUTURAL", margin + 8, yPos + 9);
-  drawStatusBadge(report, margin + 8, yPos + 18, "structural");
-
-  doc.text("CONDIÇÃO DE LIMPEZA", margin + 8, yPos + 27);
-  drawStatusBadge(report, margin + 8, yPos + 36, "cleanliness");
-
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
-  doc.text("DIAGNÓSTICO INICIAL", margin + 92, yPos + 9);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-  doc.setFontSize(9);
-  doc.text(summaryLines, margin + 92, yPos + 16);
-
-  yPos += boxHeight + 12;
-
   // ========== EQUIPMENT SPECIFICATIONS ==========
   const hasEquipmentData = report.equipment_type || report.equipment_brand || report.equipment_model || report.capacity_btus || report.equipment_location || report.serial_number;
   
   if (hasEquipmentData) {
-    drawSectionTitle("Informações do Ativo", "Dados técnicos e localização do equipamento");
-    ensureSpace(40);
+    drawSectionTitle("Identificação do Ativo", "Informações técnicas do equipamento");
+    ensureSpace(30);
     
     const colW = contentWidth / 3;
     let currentY = yPos;
     let maxH = 0;
     
-    maxH = Math.max(maxH, drawInfoBlock("Tipo", report.equipment_type, margin, currentY, colW - 8));
-    maxH = Math.max(maxH, drawInfoBlock("Fabricante / Modelo", [report.equipment_brand, report.equipment_model].filter(Boolean).join(" / "), margin + colW, currentY, colW - 8));
-    maxH = Math.max(maxH, drawInfoBlock("Capacidade Nominal", report.capacity_btus ? `${report.capacity_btus} BTUs` : null, margin + colW * 2, currentY, colW - 8));
+    maxH = Math.max(maxH, drawInfoBlock("Tipo", report.equipment_type, margin, currentY, colW - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Fabricante / Modelo", [report.equipment_brand, report.equipment_model].filter(Boolean).join(" / "), margin + colW, currentY, colW - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Capacidade Nominal", report.capacity_btus ? `${report.capacity_btus} BTUs` : null, margin + colW * 2, currentY, colW - 5));
     
     currentY += maxH + 4;
     maxH = 0;
     
-    maxH = Math.max(maxH, drawInfoBlock("Ambiente / Localização", report.equipment_location, margin, currentY, colW * 2 - 8));
-    maxH = Math.max(maxH, drawInfoBlock("Nº de Série / Patrimônio", report.serial_number, margin + colW * 2, currentY, colW - 8));
+    maxH = Math.max(maxH, drawInfoBlock("Ambiente / Localização", report.equipment_location, margin, currentY, colW * 2 - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Nº de Série / Patrimônio", report.serial_number, margin + colW * 2, currentY, colW - 5));
 
-    yPos = currentY + maxH + 12;
+    yPos = currentY + maxH + 8;
   }
 
   // ========== INSPECTION CHECKLIST ==========
   const checklist = (report.inspection_checklist as string[]) || [];
   if (checklist.length > 0) {
-    drawSectionTitle("Checklist de Conformidade", "Itens verificados durante a inspeção");
-    ensureSpace(50);
+    drawSectionTitle("Inspeção e Conformidade", "Critérios de verificação e estado identificado");
+    ensureSpace(35);
     
     const checkedItems = INSPECTION_ITEMS.filter((i) => checklist.includes(i.key));
-    const itemsPerCol = Math.ceil(checkedItems.length / 3);
+    const itemsPerCol = Math.ceil(checkedItems.length / 2);
     
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     checkedItems.forEach((item, index) => {
       const col = Math.floor(index / itemsPerCol);
       const row = index % itemsPerCol;
-      const x = margin + col * (contentWidth / 3);
-      const y = yPos + row * 6;
+      const x = margin + col * (contentWidth / 2);
+      const y = yPos + row * 5;
       
-      ensureSpace(10);
+      ensureSpace(8);
       
       doc.setFillColor(colors.success.r, colors.success.g, colors.success.b);
-      doc.circle(x + 1.5, y + 1.2, 1.2, "F");
+      doc.circle(x + 1.2, y + 1.1, 1, "F");
       
       doc.setFont("helvetica", "normal");
       doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-      doc.text(item.label, x + 5, y + 2);
+      doc.text(item.label + " [OK]", x + 4, y + 2);
     });
     
-    yPos += itemsPerCol * 6 + 8;
+    yPos += itemsPerCol * 5 + 8;
   }
 
-  // ========== TECHNICAL DIAGNOSIS ==========
-  if (report.diagnosis) {
-    drawSectionTitle("Diagnóstico Técnico", "Análise detalhada das inconformidades");
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    
-    const padding = 8;
-    const diagLines = doc.splitTextToSize(report.diagnosis, contentWidth - (padding * 2));
-    const boxHeight = diagLines.length * 5.5 + (padding * 2);
-    
-    ensureSpace(boxHeight + 10);
-    
-    doc.setFillColor(255, 248, 248); // Subtle red tint
-    doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
-    doc.setLineWidth(0.2);
-    doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.5, 1.5, "FD");
-    
-    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    doc.text(diagLines, margin + padding, yPos + padding + 4);
-    
-    yPos += boxHeight + 12;
+  // ========== DIAGNOSIS & IMPACT ==========
+  drawSectionTitle("Diagnóstico Técnico", "Análise das condições e impactos operacionais");
+  
+  // Dynamic Diagnosis logic
+  let diagText = report.diagnosis;
+  if (!diagText && checklist.length > 0) {
+    const mainItems = INSPECTION_ITEMS.filter(i => checklist.includes(i.key)).map(i => i.label.toLowerCase());
+    diagText = `Inspeção técnica realizada com verificação de ${mainItems.slice(0, 3).join(", ")} e outros itens de controle. `;
+    if (report.equipment_working === "no") {
+      diagText += "Identificada interrupção no funcionamento normal do sistema. ";
+    } else if (report.equipment_working === "partial") {
+      diagText += "Identificada performance reduzida ou funcionamento intermitente. ";
+    } else {
+      diagText += "Equipamento em operação, porém com pontos de atenção identificados. ";
+    }
   }
+  diagText = diagText || "Não foram registradas anomalias durante a inspeção visual preliminar.";
+
+  const impactText = report.equipment_working === "no" 
+    ? "Impacto Crítico: Parada total do sistema, comprometendo o ambiente/processo."
+    : report.equipment_working === "partial"
+    ? "Impacto Moderado: Operação ineficiente, aumento de consumo energético e risco de parada."
+    : "Impacto Baixo: Requer manutenção preventiva para evitar falhas futuras.";
+
+  const fullDiagText = `${diagText}\n\nIMPACTO IDENTIFICADO: ${impactText}`;
+  const diagLines = doc.splitTextToSize(fullDiagText, contentWidth - 12);
+  const diagBoxH = diagLines.length * 5 + 12;
+  
+  ensureSpace(diagBoxH + 10);
+  
+  doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.setLineWidth(0.1);
+  doc.roundedRect(margin, yPos, contentWidth, diagBoxH, 1, 1, "FD");
+
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+  doc.text(diagLines, margin + 6, yPos + 7);
+  
+  yPos += diagBoxH + 10;
 
   // ========== RECOMMENDATIONS & RISKS ==========
   if (report.recommendation || report.risks) {
