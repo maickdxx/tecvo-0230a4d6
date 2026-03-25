@@ -174,6 +174,31 @@ export default function LaudosTecnicos() {
     }
   };
 
+  const getCleanlinessBadge = (status: string | null) => {
+    switch (status) {
+      case "clean":
+        return (
+          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1.5 font-medium hover:bg-emerald-500/20 transition-colors">
+            <CheckCircle2 className="h-3 w-3" /> Limpo
+          </Badge>
+        );
+      case "dirty":
+        return (
+          <Badge className="bg-rose-500/10 text-rose-600 border-rose-200 gap-1.5 font-medium hover:bg-rose-500/20 transition-colors">
+            <AlertCircle className="h-3 w-3" /> Sujo
+          </Badge>
+        );
+      case "needs_cleaning":
+        return (
+          <Badge className="bg-amber-500/10 text-amber-600 border-amber-200 gap-1.5 font-medium hover:bg-amber-500/20 transition-colors">
+            <AlertTriangle className="h-3 w-3" /> Necessita Limpeza
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
