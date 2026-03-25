@@ -34,7 +34,7 @@ function getWeatherAlert(days: DayForecast[]): WeatherAlert {
   const rainyDays = days.filter((d) => d.precipProbability > 60).length;
 
   if (avgMax > 30) {
-    return { message: "Previsão de calor — boa semana para limpezas e instalações.", type: "heat" };
+    return { message: "Previsão de calor — boa semana para novos serviços e manutenções.", type: "heat" };
   }
   if (rainyDays >= 3) {
     return { message: "Previsão de chuva — avalie serviços externos agendados.", type: "rain" };
