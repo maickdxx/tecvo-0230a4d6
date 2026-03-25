@@ -113,6 +113,34 @@ export function TechnicalReportForm({
   };
 
   const handleFormSubmit = async (data: TechnicalReportFormData) => {
+    // Validação de consistência
+    if (data.equipment_condition === "good" && data.cleanliness_status === "dirty" && !data.observations) {
+      toast({
+        variant: "destructive",
+        title: "Inconsistência técnica",
+        description: "Equipamento em 'Perfeito estado' mas marcado como 'Sujo'. Por favor, adicione contexto nas observações.",
+      });
+      return;
+    }
+
+    if (!data.diagnosis || data.diagnosis.length < 10) {
+      toast({
+        variant: "destructive",
+        title: "Diagnóstico incompleto",
+        description: "O diagnóstico técnico deve ser mais detalhado para validade jurídica.",
+      });
+      return;
+    }
+
+    if (!data.conclusion || data.conclusion.length < 10) {
+      toast({
+        variant: "destructive",
+        title: "Conclusão obrigatória",
+        description: "A conclusão técnica é obrigatória e deve informar o status final.",
+      });
+      return;
+    }
+
     await onSubmit({
       ...data,
       inspection_checklist: checklist,
