@@ -293,7 +293,7 @@ export default function LaudoDetalhes() {
 
         {/* Conclusion */}
         {report.conclusion && (
-          <SectionCard icon={FileText} title="CONCLUSÃO TÉCNICA APÓS INTERVENÇÃO">
+          <SectionCard icon={ClipboardCheck} title="CONCLUSÃO E STATUS PÓS-INTERVENÇÃO">
             <p className="text-sm whitespace-pre-wrap">{report.conclusion}</p>
           </SectionCard>
         )}
