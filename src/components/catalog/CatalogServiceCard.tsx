@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Package } from "lucide-react";
+import { Pencil, Trash2, Package, Clock, ListChecks, Tag } from "lucide-react";
 import type { CatalogService } from "@/hooks/useCatalogServices";
 
 interface CatalogServiceCardProps {
@@ -40,19 +40,37 @@ export function CatalogServiceCard({
                   </Badge>
                 )}
               </div>
+              {service.category && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                  <Tag className="h-3 w-3" />
+                  {service.category}
+                </div>
+              )}
               {service.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1 mt-0.5">
+                <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
                   {service.description}
                 </p>
               )}
-              <div className="flex items-center gap-3 mt-2">
-                <span className="text-sm font-semibold text-primary">
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
+                <span className="text-sm font-bold text-primary">
                   {formatCurrency(service.unit_price)}
                 </span>
                 {service.default_discount > 0 && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="secondary" className="text-[10px] h-4 bg-emerald-50 text-emerald-700 border-emerald-100">
                     -{service.default_discount}% desc.
                   </Badge>
+                )}
+                {service.estimated_duration && (
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded">
+                    <Clock className="h-3 w-3" />
+                    {service.estimated_duration}
+                  </div>
+                )}
+                {service.standard_checklist && service.standard_checklist.length > 0 && (
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded">
+                    <ListChecks className="h-3 w-3" />
+                    {service.standard_checklist.length} itens
+                  </div>
                 )}
               </div>
             </div>

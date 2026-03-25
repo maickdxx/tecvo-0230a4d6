@@ -42,6 +42,7 @@ interface EquipmentReportFormProps {
   onAutoSave: (equipmentId: string, data: Partial<EquipmentReportData>) => void;
   onSave: (equipmentId: string, data: Partial<EquipmentReportData>) => Promise<void>;
   onComplete: (equipmentId: string) => Promise<void>;
+  standardChecklist?: string[];
 }
 
 const SERVICE_TYPES = [
@@ -143,6 +144,7 @@ export function EquipmentReportForm({
   onAutoSave,
   onSave,
   onComplete,
+  standardChecklist = [],
 }: EquipmentReportFormProps) {
   const rd = equipment.reportData;
   const [step, setStep] = useState(1);
@@ -241,9 +243,11 @@ export function EquipmentReportForm({
     }
   };
 
-  const checklistItems = serviceType
-    ? CHECKLIST_BY_TYPE[serviceType] || DEFAULT_CHECKLIST
-    : DEFAULT_CHECKLIST;
+  const checklistItems = standardChecklist.length > 0
+    ? standardChecklist.map(item => ({ key: item, label: item }))
+    : (serviceType
+      ? CHECKLIST_BY_TYPE[serviceType] || DEFAULT_CHECKLIST
+      : DEFAULT_CHECKLIST);
 
   return (
     <div className="flex flex-col h-full bg-background pb-24">

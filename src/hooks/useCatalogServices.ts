@@ -13,6 +13,11 @@ export interface CatalogService {
   notes: string | null;
   is_active: boolean;
   service_type: string | null;
+  category: string | null;
+  estimated_duration: string | null;
+  checklist_id: string | null;
+  standard_checklist: string[];
+  is_non_standard: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +30,11 @@ export interface CatalogServiceFormData {
   notes?: string;
   is_active?: boolean;
   service_type?: string;
+  category?: string;
+  estimated_duration?: string;
+  checklist_id?: string;
+  standard_checklist?: string[];
+  is_non_standard?: boolean;
 }
 
 export function useCatalogServices() {

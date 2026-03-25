@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Clock, ListChecks } from "lucide-react";
 import type { CatalogService, CatalogServiceFormData } from "@/hooks/useCatalogServices";
 import { useServiceTypes } from "@/hooks/useServiceTypes";
+import { Badge } from "@/components/ui/badge";
 
 interface CatalogServiceFormProps {
   service?: CatalogService | null;
@@ -31,7 +32,12 @@ export function CatalogServiceForm({
     notes: "",
     is_active: true,
     service_type: "",
+    category: "",
+    estimated_duration: "01:00",
+    standard_checklist: [],
   });
+
+  const [newChecklistItem, setNewChecklistItem] = useState("");
 
   useEffect(() => {
     if (service) {
@@ -43,9 +49,28 @@ export function CatalogServiceForm({
         notes: service.notes || "",
         is_active: service.is_active,
         service_type: service.service_type || "",
+        category: service.category || "",
+        estimated_duration: service.estimated_duration || "01:00",
+        standard_checklist: service.standard_checklist || [],
       });
     }
   }, [service]);
+
+  const addChecklistItem = () => {
+    if (!newChecklistItem.trim()) return;
+    setFormData(prev => ({
+      ...prev,
+      standard_checklist: [...(prev.standard_checklist || []), newChecklistItem.trim()]
+    }));
+    setNewChecklistItem("");
+  };
+
+  const removeChecklistItem = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      standard_checklist: (prev.standard_checklist || []).filter((_, i) => i !== index)
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,15 +109,83 @@ export function CatalogServiceForm({
         </Select>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="category" className="flex items-center gap-2">
+            Categoria
+          </Label>
+          <Input
+            id="category"
+            value={formData.category}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            placeholder="Ex: Ar Condicionado"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="estimated_duration" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Tempo Estimado (HH:mm)
+          </Label>
+          <Input
+            id="estimated_duration"
+            type="time"
+            value={formData.estimated_duration}
+            onChange={(e) => setFormData({ ...formData, estimated_duration: e.target.value })}
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <Label htmlFor="description">Descrição</Label>
+        <Label htmlFor="description">Descrição Detalhada</Label>
         <Textarea
           id="description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Detalhes do serviço..."
-          rows={2}
+          placeholder="Descreva detalhadamente o serviço..."
+          rows={3}
         />
+      </div>
+
+      <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+        <Label className="flex items-center gap-2">
+          <ListChecks className="h-4 w-4" />
+          Checklist Padrão
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            value={newChecklistItem}
+            onChange={(e) => setNewChecklistItem(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addChecklistItem();
+              }
+            }}
+            placeholder="Adicionar item ao checklist..."
+          />
+          <Button type="button" size="icon" variant="outline" onClick={addChecklistItem}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="space-y-2 mt-2">
+          {formData.standard_checklist?.map((item, index) => (
+            <div key={index} className="flex items-center justify-between gap-2 bg-background p-2 rounded border">
+              <span className="text-sm">{item}</span>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 text-destructive"
+                onClick={() => removeChecklistItem(index)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+          {(!formData.standard_checklist || formData.standard_checklist.length === 0) && (
+            <p className="text-xs text-muted-foreground italic">Nenhum item adicionado ao checklist.</p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

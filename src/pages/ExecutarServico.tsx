@@ -44,6 +44,7 @@ export default function ExecutarServico() {
     completedCount,
     totalCount,
     invalidate,
+    standardChecklist,
   } = useServiceExecutionMode(serviceId);
 
   const { updateStatus } = useServices({ skipQuery: true });
@@ -163,6 +164,7 @@ export default function ExecutarServico() {
               await completeEquipment(eqId);
               setSelectedEquipmentId(null);
             }}
+            standardChecklist={standardChecklist}
           />
         ) : (
           <div className="space-y-6">

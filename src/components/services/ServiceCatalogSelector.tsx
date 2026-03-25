@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Trash2, Save, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -36,6 +41,8 @@ export interface ServiceItemLocal {
   discount: number;
   discount_type: "percentage" | "fixed";
   catalog_service_type?: string;
+  catalog_service_id?: string;
+  is_non_standard?: boolean;
 }
 
 interface ServiceCatalogSelectorProps {
@@ -52,6 +59,8 @@ export function ServiceCatalogSelector({
   onServiceTypeDetected,
 }: ServiceCatalogSelectorProps) {
   const { activeServices, isLoading } = useCatalogServices();
+  const { organizationId } = useAuth();
+  const queryClient = useQueryClient();
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [newItem, setNewItem] = useState({
     description: "",
@@ -61,12 +70,14 @@ export function ServiceCatalogSelector({
     discount_type: "percentage" as "percentage" | "fixed",
   });
 
+  const [selectedCatalogServiceId, setSelectedCatalogServiceId] = useState<string | null>(null);
   const [selectedCatalogServiceType, setSelectedCatalogServiceType] = useState<string | null>(null);
 
   const handleSelectFromCatalog = (serviceId: string) => {
     if (serviceId === "manual") {
       setNewItem({ description: "", quantity: "1", unit_price: "", discount: "0", discount_type: "percentage" });
       setSelectedCatalogServiceType(null);
+      setSelectedCatalogServiceId(null);
       return;
     }
     const service = activeServices.find((s) => s.id === serviceId);
@@ -79,6 +90,7 @@ export function ServiceCatalogSelector({
         discount_type: "percentage",
       });
       setSelectedCatalogServiceType(service.service_type);
+      setSelectedCatalogServiceId(service.id);
       onServiceTypeDetected?.(service.service_type);
     }
   };
@@ -94,11 +106,51 @@ export function ServiceCatalogSelector({
       discount: parseFloat(newItem.discount) || 0,
       discount_type: newItem.discount_type,
       catalog_service_type: selectedCatalogServiceType || undefined,
+      catalog_service_id: selectedCatalogServiceId || undefined,
+      is_non_standard: !selectedCatalogServiceId,
     };
 
     onItemsChange([...items, newItemData]);
     setNewItem({ description: "", quantity: "1", unit_price: "", discount: "0", discount_type: "percentage" });
     setSelectedCatalogServiceType(null);
+    setSelectedCatalogServiceId(null);
+  };
+
+  const saveToCatalog = async (item: ServiceItemLocal) => {
+    if (!organizationId) return;
+
+    try {
+      const { error } = await supabase
+        .from("catalog_services")
+        .insert({
+          name: item.description,
+          unit_price: item.unit_price,
+          organization_id: organizationId,
+          service_type: item.catalog_service_type || "other",
+          is_active: true,
+        });
+
+      if (error) throw error;
+
+      // Update the item in the list to be linked to the new catalog service
+      const updatedItems = items.map(i =>
+        i.id === item.id ? { ...i, is_non_standard: false } : i
+      );
+      onItemsChange(updatedItems);
+
+      queryClient.invalidateQueries({ queryKey: ["catalog-services"] });
+
+      toast({
+        title: "Salvo no catálogo",
+        description: `O serviço "${item.description}" foi adicionado ao seu catálogo.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar no catálogo",
+        description: (error as Error).message,
+      });
+    }
   };
 
   const handleRemoveItem = (id: string) => {
@@ -160,7 +212,30 @@ export function ServiceCatalogSelector({
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.description}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{item.description}</span>
+                      {item.is_non_standard && (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] h-4 border-amber-500 text-amber-600 bg-amber-50 gap-1 font-normal">
+                            <AlertCircle className="h-3 w-3" />
+                            Serviço não padronizado
+                          </Badge>
+                          {!disabled && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-1.5 text-[10px] text-primary hover:bg-primary/10 gap-1"
+                              onClick={() => saveToCatalog(item)}
+                            >
+                              <Save className="h-3 w-3" />
+                              Adicionar ao Catálogo
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-center">{item.quantity}</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(item.unit_price)}
