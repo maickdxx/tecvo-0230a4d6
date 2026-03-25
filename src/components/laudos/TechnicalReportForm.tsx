@@ -327,11 +327,11 @@ export function TechnicalReportForm({
 
       {/* 8. Equipment Condition */}
       <Card>
-        <SectionHeader icon={ShieldAlert} title="Classificação do Equipamento" />
+        <SectionHeader icon={ShieldAlert} title="Status Estrutural e Limpeza" />
         <CardContent className="px-4 pb-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>Estado do Equipamento</Label>
+              <Label>Condição Estrutural</Label>
               <Select
                 value={watch("equipment_condition") || ""}
                 onValueChange={(v) => setValue("equipment_condition", v)}
@@ -339,6 +339,20 @@ export function TechnicalReportForm({
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(EQUIPMENT_CONDITIONS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Condição de Limpeza</Label>
+              <Select
+                value={watch("cleanliness_status") || "clean"}
+                onValueChange={(v) => setValue("cleanliness_status", v)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CLEANLINESS_STATUS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -358,22 +372,37 @@ export function TechnicalReportForm({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={watch("needs_quote")}
-              onCheckedChange={(v) => setValue("needs_quote", !!v)}
-            />
-            <Label className="cursor-pointer">Necessita orçamento?</Label>
+            <div className="flex items-end pb-1.5">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="needs_quote"
+                  checked={watch("needs_quote")}
+                  onCheckedChange={(v) => setValue("needs_quote", !!v)}
+                />
+                <Label htmlFor="needs_quote" className="cursor-pointer">Necessita orçamento?</Label>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 9. Recommendation */}
+      {/* 9. Interventions */}
       <Card>
-        <SectionHeader icon={MessageSquare} title="Recomendação Técnica" />
+        <SectionHeader icon={Wrench} title="Intervenções Realizadas" />
         <CardContent className="px-4 pb-4">
-          <Textarea rows={3} placeholder="Ex: Limpeza técnica, troca de peça, substituição..." {...register("recommendation")} />
+          <Textarea 
+            rows={3} 
+            placeholder="O que foi feito nesta visita? Ex: Limpeza de filtros, reaperto de conexões..." 
+            {...register("interventions_performed")} 
+          />
+        </CardContent>
+      </Card>
+
+      {/* 10. Recommendation */}
+      <Card>
+        <SectionHeader icon={MessageSquare} title="Recomendações de Segurança / Ação" />
+        <CardContent className="px-4 pb-4">
+          <Textarea rows={3} placeholder="Recomendações técnicas para o cliente..." {...register("recommendation")} />
         </CardContent>
       </Card>
 
