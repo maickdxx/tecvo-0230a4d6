@@ -158,7 +158,7 @@ export function ServiceDetailsDialog({
   const [showWhatsappConfirm, setShowWhatsappConfirm] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const { sendOSViaWhatsApp, sending: sendingPDF } = useServicePDFSend();
-
+  const { typeLabels } = useServiceTypes();
   const { user } = useAuth();
   const { isEmployee } = useUserRole();
   const { paymentMethods, isLoading: isLoadingPaymentMethods, formatFee } = usePaymentMethods();

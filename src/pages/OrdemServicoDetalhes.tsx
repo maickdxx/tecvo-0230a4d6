@@ -180,6 +180,7 @@ export default function OrdemServicoDetalhes() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
+  const { typeLabels } = useServiceTypes();
 
   const service = services.find(s => s.id === id);
   const { laudos, laudoCount } = useServiceLaudos(id);
