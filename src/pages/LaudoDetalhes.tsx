@@ -181,19 +181,31 @@ export default function LaudoDetalhes() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Client */}
-          <SectionCard icon={User} title="Cliente">
-            <p className="text-sm font-bold">{report.client?.name || "—"}</p>
-            <InfoRow label="Telefone" value={report.client?.phone} />
-            <InfoRow label="Endereço" value={[report.client?.address, report.client?.city].filter(Boolean).join(", ")} />
+          {/* Executing Company */}
+          <SectionCard icon={FileText} title="Empresa Responsável">
+            <p className="text-sm font-bold">{organization?.name || "—"}</p>
+            <InfoRow label="CNPJ" value={organization?.cnpj_cpf} />
+            <InfoRow label="Telefone" value={organization?.phone} />
+            <InfoRow label="E-mail" value={organization?.email} />
+            <InfoRow label="Endereço" value={[organization?.address, organization?.city, organization?.state].filter(Boolean).join(", ")} />
           </SectionCard>
 
-          {/* Info */}
-          <SectionCard icon={FileText} title="Emissão">
-            <InfoRow label="Data" value={formatDateInTz(report.report_date, tz)} />
-            <InfoRow label="Técnico" value={report.technician_profile?.full_name || report.responsible_technician_name} />
+          {/* Client */}
+          <SectionCard icon={User} title="Contratante (Cliente)">
+            <p className="text-sm font-bold">{report.client?.name || "—"}</p>
+            <InfoRow label="Telefone" value={report.client?.phone} />
+            <InfoRow label="E-mail" value={report.client?.email} />
+            <InfoRow label="Endereço" value={[report.client?.address, report.client?.city, report.client?.state].filter(Boolean).join(", ")} />
           </SectionCard>
         </div>
+
+        {/* Issuance Info */}
+        <SectionCard icon={ClipboardCheck} title="Dados de Emissão">
+          <div className="grid grid-cols-2 gap-4">
+            <InfoRow label="Data" value={formatDateInTz(report.report_date, tz)} />
+            <InfoRow label="Técnico" value={report.technician_profile?.full_name || report.responsible_technician_name} />
+          </div>
+        </SectionCard>
 
         {/* Equipment */}
         {(report.equipment_type || report.equipment_brand) && (
