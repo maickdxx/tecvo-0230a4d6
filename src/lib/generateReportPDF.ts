@@ -329,33 +329,26 @@ export async function generateReportPDF({
     ensureSpace(50);
     
     const checkedItems = INSPECTION_ITEMS.filter((i) => checklist.includes(i.key));
-    const itemsPerCol = Math.ceil(checkedItems.length / 2);
+    const itemsPerCol = Math.ceil(checkedItems.length / 3);
     
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     checkedItems.forEach((item, index) => {
       const col = Math.floor(index / itemsPerCol);
       const row = index % itemsPerCol;
-      const x = margin + col * (contentWidth / 2);
-      const y = yPos + row * 8;
+      const x = margin + col * (contentWidth / 3);
+      const y = yPos + row * 6;
       
       ensureSpace(10);
       
-      // Premium Checkmark Icon
       doc.setFillColor(colors.success.r, colors.success.g, colors.success.b);
-      doc.setDrawColor(colors.success.r, colors.success.g, colors.success.b);
-      doc.circle(x + 2, y + 1.5, 1.8, "F");
-      
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.4);
-      doc.line(x + 1.2, y + 1.5, x + 1.8, y + 2.1);
-      doc.line(x + 1.8, y + 2.1, x + 2.8, y + 1.1);
+      doc.circle(x + 1.5, y + 1.2, 1.2, "F");
       
       doc.setFont("helvetica", "normal");
       doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-      doc.text(item.label, x + 7, y + 2.5);
+      doc.text(item.label, x + 5, y + 2);
     });
     
-    yPos += itemsPerCol * 8 + 12;
+    yPos += itemsPerCol * 6 + 8;
   }
 
   // ========== TECHNICAL DIAGNOSIS ==========
