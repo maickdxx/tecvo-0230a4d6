@@ -150,7 +150,7 @@ export function ServiceCatalogSelector({
     if (!organizationId) return;
 
     try {
-      const { error } = await supabase
+      const { data: newService, error } = await supabase
         .from("catalog_services")
         .insert({
           name: item.name,
@@ -162,13 +162,15 @@ export function ServiceCatalogSelector({
           category: item.category,
           standard_checklist: item.standard_checklist,
           is_active: true,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       // Update the item in the list to be linked to the new catalog service
       const updatedItems = items.map(i =>
-        i.id === item.id ? { ...i, is_non_standard: false } : i
+        i.id === item.id ? { ...i, is_non_standard: false, catalog_service_id: newService.id } : i
       );
       onItemsChange(updatedItems);
 
