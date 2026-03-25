@@ -226,12 +226,12 @@ export default function LaudoDetalhes() {
 
         {/* Diagnosis */}
         <SectionCard icon={Stethoscope} title="Diagnóstico Técnico">
-          <p className="text-sm whitespace-pre-wrap text-foreground leading-relaxed">
+          <p className="text-sm whitespace-pre-wrap text-foreground leading-relaxed break-words overflow-hidden">
             {report.diagnosis || "Inspeção técnica detalhada realizada para avaliação das condições operacionais."}
           </p>
-          <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
-            <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-1">Impacto Identificado</p>
-            <p className="text-sm">
+          <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/10">
+            <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-1.5">Impacto Identificado</p>
+            <p className="text-sm break-words">
               {report.equipment_working === "no" 
                 ? "Impacto Crítico: Parada total do sistema, comprometendo o ambiente/processo."
                 : report.equipment_working === "partial"
