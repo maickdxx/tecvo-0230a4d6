@@ -23,6 +23,7 @@ import {
 
 interface ReportPhotoUploaderProps {
   reportId: string;
+  equipmentId?: string;
 }
 
 const CATEGORY_ICONS: Record<PhotoCategory, string> = {
