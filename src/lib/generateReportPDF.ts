@@ -21,6 +21,12 @@ interface ReportPDFData {
   organizationCity?: string;
   organizationState?: string;
   timezone?: string;
+  signature?: {
+    signature_url: string | null;
+    signer_name: string | null;
+    signed_at: string | null;
+    ip_address: string | null;
+  } | null;
 }
 
 async function loadImageAsBase64(url: string): Promise<string | null> {
