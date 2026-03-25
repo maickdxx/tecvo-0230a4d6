@@ -164,6 +164,7 @@ export default function ExecutarServico() {
               await completeEquipment(eqId);
               setSelectedEquipmentId(null);
             }}
+            standardChecklist={standardChecklist}
           />
         ) : (
           <div className="space-y-6">
