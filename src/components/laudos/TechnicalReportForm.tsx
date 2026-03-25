@@ -125,20 +125,29 @@ export function TechnicalReportForm({
       return;
     }
 
-    if (!data.diagnosis || data.diagnosis.length < 10) {
+    if (!data.diagnosis || data.diagnosis.length < 5) {
       toast({
         variant: "destructive",
-        title: "Diagnóstico incompleto",
-        description: "O diagnóstico técnico deve ser mais detalhado para validade jurídica.",
+        title: "Diagnóstico técnico",
+        description: "Por favor, detalhe o diagnóstico.",
       });
       return;
     }
 
-    if (!data.conclusion || data.conclusion.length < 10) {
+    if (!data.interventions_performed || data.interventions_performed.length < 5) {
       toast({
         variant: "destructive",
-        title: "Conclusão obrigatória",
-        description: "A conclusão técnica é obrigatória e deve informar o status final.",
+        title: "Serviços executados",
+        description: "Descreva o que foi feito nesta visita.",
+      });
+      return;
+    }
+
+    if (!data.conclusion || data.conclusion.length < 5) {
+      toast({
+        variant: "destructive",
+        title: "Status Pós-Intervenção",
+        description: "Informe a condição final de entrega.",
       });
       return;
     }
