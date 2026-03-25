@@ -641,6 +641,7 @@ export function useServices(options?: UseServicesOptions | string) {
       if (status === "completed") {
         updateData.completed_date = new Date().toISOString();
         updateData.operational_status = "completed";
+        trackFBCustomEvent("FinishOS");
         if (paymentMethod) {
           updateData.payment_method = paymentMethod;
         }
