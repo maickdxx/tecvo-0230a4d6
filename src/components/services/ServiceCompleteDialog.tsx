@@ -277,7 +277,7 @@ export function ServiceCompleteDialog({
                 signerNameLabel="Nome do cliente"
                 signerNamePlaceholder="Nome de quem está assinando"
                 defaultSignerName={signerName}
-                onSave={(_, name) => setSignerName(name)}
+                onSave={(_, name) => { setSignerName(name); setHasSignatureDrawn(true); }}
               />
             </div>
 
@@ -290,7 +290,7 @@ export function ServiceCompleteDialog({
                 <Button variant="outline" onClick={() => setStep("payment")}>
                   Voltar
                 </Button>
-                <Button onClick={handleSignAndConfirm} disabled={!signatureRef.current?.hasDrawn || isSubmitting}>
+                <Button onClick={handleSignAndConfirm} disabled={!hasSignatureDrawn || isSubmitting}>
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
