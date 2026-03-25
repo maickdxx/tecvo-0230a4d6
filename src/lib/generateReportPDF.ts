@@ -202,8 +202,9 @@ export async function generateReportPDF({
   doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
   doc.text(`LAUDO Nº: ${report.report_number.toString().padStart(4, "0")}`, headerTextX, yPos + 15);
   
+  const cityState = [organizationCity, organizationState].filter(Boolean).join(" - ");
   const reportDate = report.report_date ? format(new Date(report.report_date), "dd/MM/yyyy", { locale: ptBR }) : "---";
-  doc.text(`DATA DE EMISSÃO: ${reportDate}`, headerTextX, yPos + 20);
+  doc.text(`${cityState ? cityState + ", " : ""}DATA DE EMISSÃO: ${reportDate}`, headerTextX, yPos + 20);
 
   if (report.service?.quote_number) {
     doc.text(`VINCULADO À OS: #${report.service.quote_number.toString().padStart(4, "0")}`, headerTextX, yPos + 25);
