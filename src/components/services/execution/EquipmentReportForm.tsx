@@ -108,6 +108,9 @@ const DEFAULT_CHECKLIST = [
   { key: "limpeza_basica", label: "Limpeza básica" },
 ];
 
+// Service types that require before/after photos
+const PHOTO_REQUIRED_TYPES = ["limpeza", "pmoc"];
+
 export function EquipmentReportForm({
   equipment,
   reportId,
