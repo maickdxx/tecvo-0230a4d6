@@ -246,17 +246,29 @@ export async function generateReportPDF({
 
   yPos += 45;
 
+  // ========== EXECUTING COMPANY DATA ==========
+  doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.setLineWidth(0.1);
+  doc.roundedRect(margin, yPos, contentWidth, 22, 1.5, 1.5, "FD");
+
+  drawInfoBlock("Empresa Responsável", organizationName, margin + 6, yPos + 8, contentWidth / 2 - 12);
+  drawInfoBlock("CNPJ", organizationCnpj, margin + contentWidth / 2 + 6, yPos + 8, contentWidth / 2 - 12);
+  drawInfoBlock("Endereço", [organizationAddress, organizationCity, organizationState].filter(Boolean).join(", "), margin + 6, yPos + 16, contentWidth - 12);
+  
+  yPos += 28;
+
   // ========== CLIENT DATA ==========
   doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
   doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
   doc.setLineWidth(0.1);
   doc.roundedRect(margin, yPos, contentWidth, 28, 1.5, 1.5, "FD");
 
-  drawInfoBlock("Contratante", report.client?.name, margin + 6, yPos + 8, contentWidth / 2 - 12);
+  drawInfoBlock("Contratante (Cliente)", report.client?.name, margin + 6, yPos + 8, contentWidth / 2 - 12);
   drawInfoBlock("Local da Prestação", [report.client?.address, report.client?.city, report.client?.state].filter(Boolean).join(", "), margin + 6, yPos + 19, contentWidth - 12);
   drawInfoBlock("Identificação / Contato", [report.client?.phone, report.client?.email].filter(Boolean).join(" | "), margin + contentWidth / 2 + 6, yPos + 8, contentWidth / 2 - 12);
 
-  yPos += 40;
+  yPos += 36;
 
   // ========== EQUIPMENT SPECIFICATIONS ==========
   const hasEquipmentData = report.equipment_type || report.equipment_brand || report.equipment_model || report.capacity_btus || report.equipment_location || report.serial_number;
