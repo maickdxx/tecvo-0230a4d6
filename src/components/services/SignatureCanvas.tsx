@@ -50,6 +50,7 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
   showConfirmButton = false,
   confirmLabel = "Confirmar Assinatura",
   disabled = false,
+  onDrawChange,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
