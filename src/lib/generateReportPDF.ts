@@ -259,11 +259,11 @@ export async function generateReportPDF({
   yPos += 40;
 
   // ========== EXECUTIVE STATUS ==========
-  drawSectionTitle("Status Geral do Equipamento", "Resumo visual das condições identificadas");
+  drawSectionTitle("Diagnóstico e Status Geral", "Resumo visual das condições identificadas");
   
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
-  const summaryText = report.visit_reason || "Relatório de inspeção técnica detalhada para avaliação das condições operacionais, integridade física e performance do sistema de climatização, visando garantir a eficiência energética e a vida útil do patrimônio.";
+  const summaryText = report.diagnosis || "Relatório de inspeção técnica detalhada para avaliação das condições operacionais, integridade física e performance do sistema de climatização.";
   const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 95);
   const boxHeight = Math.max(35, summaryLines.length * 5.5 + 18);
   
@@ -278,17 +278,23 @@ export async function generateReportPDF({
   doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
   doc.line(margin + 85, yPos + 5, margin + 85, yPos + boxHeight - 5);
 
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
-  doc.text("CLASSIFICAÇÃO TÉCNICA", margin + 8, yPos + 10);
-  
-  drawStatusBadge(report, margin + 8, yPos + 22);
+  doc.text("STATUS ESTRUTURAL", margin + 8, yPos + 9);
+  drawStatusBadge(report, margin + 8, yPos + 18, "structural");
 
+  doc.text("CONDIÇÃO DE LIMPEZA", margin + 8, yPos + 27);
+  drawStatusBadge(report, margin + 8, yPos + 36, "cleanliness");
+
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+  doc.text("DIAGNÓSTICO INICIAL", margin + 92, yPos + 9);
+  
   doc.setFont("helvetica", "normal");
   doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
   doc.setFontSize(9);
-  doc.text(summaryLines, margin + 92, yPos + 10);
+  doc.text(summaryLines, margin + 92, yPos + 16);
 
   yPos += boxHeight + 12;
 
