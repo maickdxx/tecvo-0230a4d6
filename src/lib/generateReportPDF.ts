@@ -220,10 +220,19 @@ export async function generateReportPDF({
 
   // ========== EXECUTIVE SUMMARY ==========
   drawSectionTitle("Resumo Executivo");
-  ensureSpace(40);
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const summaryText = report.visit_reason || "Relatório técnico detalhado das condições de funcionamento e integridade do equipamento de climatização após inspeção técnica realizada no local.";
+  const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 85);
+  const boxHeight = Math.max(25, summaryLines.length * 5 + 10);
+  
+  ensureSpace(boxHeight + 10);
   
   doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
-  doc.roundedRect(margin, yPos, contentWidth, 25, 1, 1, "FD");
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.setLineWidth(0.1);
+  doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1, 1, "FD");
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
@@ -237,11 +246,9 @@ export async function generateReportPDF({
   doc.setFont("helvetica", "normal");
   doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
   doc.setFontSize(9);
-  const summaryText = report.visit_reason || "Relatório técnico detalhado das condições de funcionamento e integridade do equipamento de climatização após inspeção técnica realizada no local.";
-  const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 85);
   doc.text(summaryLines, margin + 80, yPos + 7);
 
-  yPos += 35;
+  yPos += boxHeight + 10;
 
   // ========== EQUIPMENT INFO ==========
   drawSectionTitle("Dados do Equipamento");
@@ -294,21 +301,24 @@ export async function generateReportPDF({
   // ========== DIAGNOSIS & PROBLEM ==========
   if (report.diagnosis) {
     drawSectionTitle("Diagnóstico Técnico e Problemas Identificados");
-    ensureSpace(25);
-    
-    doc.setFillColor(255, 245, 245); // Light Red Background for highlight
-    doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
-    doc.setLineWidth(0.1);
-    
-    const diagLines = doc.splitTextToSize(report.diagnosis, contentWidth - 10);
-    const boxHeight = diagLines.length * 5 + 10;
-    
-    doc.roundedRect(margin, yPos - 5, contentWidth, boxHeight, 1, 1, "FD");
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
+    
+    const padding = 6;
+    const diagLines = doc.splitTextToSize(report.diagnosis, contentWidth - (padding * 2));
+    const boxHeight = diagLines.length * 5 + (padding * 2);
+    
+    ensureSpace(boxHeight + 5);
+    
+    doc.setFillColor(255, 245, 245);
+    doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
+    doc.setLineWidth(0.2);
+    
+    doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1, 1, "FD");
+    
     doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    doc.text(diagLines, margin + 5, yPos + 2);
+    doc.text(diagLines, margin + padding, yPos + padding + 3.5);
     
     yPos += boxHeight + 10;
   }
@@ -345,23 +355,26 @@ export async function generateReportPDF({
   // ========== RECOMMENDATIONS ==========
   if (report.recommendation) {
     drawSectionTitle("Recomendações e Plano de Ação");
-    ensureSpace(25);
-    
-    doc.setFillColor(245, 250, 255); // Light Blue Background
-    doc.setDrawColor(colors.accent.r, colors.accent.g, colors.accent.b);
-    doc.setLineWidth(0.1);
-    
-    const recLines = doc.splitTextToSize(report.recommendation, contentWidth - 10);
-    const recBoxHeight = recLines.length * 5 + 10;
-    
-    doc.roundedRect(margin, yPos - 5, contentWidth, recBoxHeight, 1, 1, "FD");
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    doc.text(recLines, margin + 5, yPos + 2);
     
-    yPos += recBoxHeight + 15;
+    const padding = 6;
+    const recLines = doc.splitTextToSize(report.recommendation, contentWidth - (padding * 2));
+    const recBoxHeight = recLines.length * 5 + (padding * 2);
+    
+    ensureSpace(recBoxHeight + 5);
+    
+    doc.setFillColor(245, 250, 255); // Light Blue Background
+    doc.setDrawColor(colors.accent.r, colors.accent.g, colors.accent.b);
+    doc.setLineWidth(0.2);
+    
+    doc.roundedRect(margin, yPos, contentWidth, recBoxHeight, 1, 1, "FD");
+    
+    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    doc.text(recLines, margin + padding, yPos + padding + 3.5);
+    
+    yPos += recBoxHeight + 10;
   }
 
   // ========== PHOTOS ==========
