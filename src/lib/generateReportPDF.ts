@@ -254,19 +254,28 @@ export async function generateReportPDF({
   yPos += boxHeight + 10;
 
   // ========== EQUIPMENT INFO ==========
-  drawSectionTitle("Dados do Equipamento");
-  ensureSpace(35);
+  const hasEquipmentData = report.equipment_type || report.equipment_brand || report.equipment_model || report.capacity_btus || report.equipment_location || report.serial_number;
   
-  const colW = contentWidth / 3;
-  drawInfoBlock("Tipo de Equipamento", report.equipment_type, margin, yPos, colW - 5);
-  drawInfoBlock("Marca / Modelo", [report.equipment_brand, report.equipment_model].filter(Boolean).join(" / "), margin + colW, yPos, colW - 5);
-  drawInfoBlock("Capacidade", report.capacity_btus ? `${report.capacity_btus} BTUs` : "---", margin + colW * 2, yPos, colW - 5);
-  
-  yPos += 14;
-  drawInfoBlock("Localização Técnica", report.equipment_location, margin, yPos, colW * 2 - 5);
-  drawInfoBlock("Número de Série", report.serial_number, margin + colW * 2, yPos, colW - 5);
+  if (hasEquipmentData) {
+    drawSectionTitle("Especificações do Equipamento");
+    ensureSpace(35);
+    
+    const colW = contentWidth / 3;
+    let currentY = yPos;
+    let maxH = 0;
+    
+    maxH = Math.max(maxH, drawInfoBlock("Tipo de Equipamento", report.equipment_type, margin, currentY, colW - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Marca / Modelo", [report.equipment_brand, report.equipment_model].filter(Boolean).join(" / "), margin + colW, currentY, colW - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Capacidade", report.capacity_btus ? `${report.capacity_btus} BTUs` : null, margin + colW * 2, currentY, colW - 5));
+    
+    currentY += maxH + 5;
+    maxH = 0;
+    
+    maxH = Math.max(maxH, drawInfoBlock("Localização Técnica", report.equipment_location, margin, currentY, colW * 2 - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Número de Série", report.serial_number, margin + colW * 2, currentY, colW - 5));
 
-  yPos += 20;
+    yPos = currentY + maxH + 10;
+  }
 
   // ========== CHECKLIST ==========
   const checklist = (report.inspection_checklist as string[]) || [];
