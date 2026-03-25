@@ -136,6 +136,7 @@ export function ServiceCompleteDialog({
     if (!open) {
       setStep("payment");
       setSignerName("");
+      setHasSignatureDrawn(false);
     }
     onOpenChange(open);
   };
