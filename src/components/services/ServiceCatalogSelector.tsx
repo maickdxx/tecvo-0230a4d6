@@ -67,11 +67,13 @@ export function ServiceCatalogSelector({
   const queryClient = useQueryClient();
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [newItem, setNewItem] = useState({
+    name: "",
     description: "",
     quantity: "1",
     unit_price: "",
     discount: "0",
     discount_type: "percentage" as "percentage" | "fixed",
+    estimated_duration: "",
   });
 
   const [selectedCatalogServiceId, setSelectedCatalogServiceId] = useState<string | null>(null);
