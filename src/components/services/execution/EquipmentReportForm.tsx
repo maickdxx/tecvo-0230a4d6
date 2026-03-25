@@ -151,6 +151,7 @@ export function EquipmentReportForm({
   standardChecklist = [],
 }: EquipmentReportFormProps) {
   const rd = equipment.reportData;
+  const isCompleted = rd?.status === "completed";
   const [step, setStep] = useState(1);
   const [serviceType, setServiceType] = useState(rd?.service_type_performed || "");
   const [problem, setProblem] = useState(rd?.problem_identified || "");
@@ -160,6 +161,9 @@ export function EquipmentReportForm({
   const [isCompleting, setIsCompleting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isListening, setIsListening] = useState(false);
+
+  const { photos } = useReportPhotos(reportId || undefined, equipment.id);
+  const totalSteps = 4;
 
   // Auto-save useEffect
   useEffect(() => {
@@ -182,11 +186,8 @@ export function EquipmentReportForm({
         checklist,
       });
     }
-  }, [serviceType, problem, workPerformed, observations, checklist]);
+  }, [serviceType, problem, workPerformed, observations, checklist, equipment.id, isCompleted, onAutoSave, rd]);
 
-  const { photos } = useReportPhotos(reportId || undefined, equipment.id);
-  const isCompleted = rd?.status === "completed";
-  const totalSteps = 4;
 
   const validateStep = (currentStep: number) => {
     const errors: string[] = [];
