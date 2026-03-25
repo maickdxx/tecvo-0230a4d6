@@ -61,23 +61,23 @@ export async function generateReportPDF({
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20; // Increased margin for premium feel
+  const margin = 15; // Reduced margin to increase density
   const contentWidth = pageWidth - margin * 2;
   let yPos = margin;
-  const FOOTER_RESERVED = 25;
+  const FOOTER_RESERVED = 20;
   const usableHeight = pageHeight - FOOTER_RESERVED;
 
-  // Premium Color Palette
+  // Premium Color Palette - Tecvo Professional
   const colors = {
     primary: { r: 10, g: 30, b: 60 },      // Deep Navy Blue
     accent: { r: 0, g: 100, b: 200 },      // Tech Blue
     success: { r: 30, g: 150, b: 80 },     // Professional Green
     warning: { r: 230, g: 150, b: 0 },     // Amber
     danger: { r: 190, g: 30, b: 45 },      // Deep Red
-    textMain: { r: 40, g: 45, b: 50 },     // Dark Gray/Black
-    textMuted: { r: 120, g: 130, b: 140 }, // Muted Slate
-    bgLight: { r: 245, g: 247, b: 250 },   // Very Light Slate
-    border: { r: 210, g: 215, b: 220 },    // Subtle Border
+    textMain: { r: 25, g: 30, b: 35 },     // Near Black
+    textMuted: { r: 100, g: 110, b: 120 }, // Muted Slate
+    bgLight: { r: 248, g: 250, b: 252 },   // Extra Light Slate
+    border: { r: 220, g: 225, b: 230 },    // Subtle Border
   };
 
   const ensureSpace = (needed: number) => {
