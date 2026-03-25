@@ -113,28 +113,28 @@ export async function generateReportPDF({
   };
 
   const drawSectionTitle = (title: string, subtitle?: string) => {
-    ensureSpace(20);
-    doc.setFontSize(11);
+    ensureSpace(15); // Reduced from 20
+    doc.setFontSize(10); // Slightly smaller
     doc.setFont("helvetica", "bold");
     doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
     doc.text(title.toUpperCase(), margin, yPos + 5);
     
     if (subtitle) {
-      doc.setFontSize(8);
+      doc.setFontSize(7.5); // Slightly smaller
       doc.setFont("helvetica", "normal");
       doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
-      doc.text(subtitle, margin, yPos + 9);
+      doc.text(subtitle, margin, yPos + 8.5);
     }
     
     doc.setDrawColor(colors.accent.r, colors.accent.g, colors.accent.b);
-    doc.setLineWidth(0.8);
-    doc.line(margin, yPos + 11, margin + 15, yPos + 11);
+    doc.setLineWidth(0.6); // Slightly thinner
+    doc.line(margin, yPos + 10, margin + 12, yPos + 10);
     
     doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
     doc.setLineWidth(0.1);
-    doc.line(margin + 15, yPos + 11, pageWidth - margin, yPos + 11);
+    doc.line(margin + 12, yPos + 10, pageWidth - margin, yPos + 10);
     
-    yPos += 18;
+    yPos += 14; // Reduced from 18
   };
 
   const drawInfoBlock = (label: string, value: string | null | undefined, x: number, y: number, width: number, forceShow: boolean = false) => {
