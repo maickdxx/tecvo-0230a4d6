@@ -450,11 +450,11 @@ export async function generateReportPDF({
           if (data) {
             doc.addImage(data, "JPEG", x, yPos, imgW, imgH, undefined, "MEDIUM");
             
-            // Add a small label for each photo if there's a description
-            if (p.description) {
+            // Add a small label for each photo if there's a caption
+            if (p.caption) {
               doc.setFontSize(7);
               doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
-              doc.text(p.description, x, yPos + imgH + 4);
+              doc.text(p.caption, x, yPos + imgH + 4);
             }
           }
         } catch {
