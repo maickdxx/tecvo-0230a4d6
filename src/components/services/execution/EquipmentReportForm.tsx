@@ -243,9 +243,11 @@ export function EquipmentReportForm({
     }
   };
 
-  const checklistItems = serviceType
-    ? CHECKLIST_BY_TYPE[serviceType] || DEFAULT_CHECKLIST
-    : DEFAULT_CHECKLIST;
+  const checklistItems = standardChecklist.length > 0
+    ? standardChecklist.map(item => ({ key: item, label: item }))
+    : (serviceType
+      ? CHECKLIST_BY_TYPE[serviceType] || DEFAULT_CHECKLIST
+      : DEFAULT_CHECKLIST);
 
   return (
     <div className="flex flex-col h-full bg-background pb-24">
