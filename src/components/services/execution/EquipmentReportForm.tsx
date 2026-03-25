@@ -144,6 +144,7 @@ export function EquipmentReportForm({
   onAutoSave,
   onSave,
   onComplete,
+  standardChecklist = [],
 }: EquipmentReportFormProps) {
   const rd = equipment.reportData;
   const [step, setStep] = useState(1);
