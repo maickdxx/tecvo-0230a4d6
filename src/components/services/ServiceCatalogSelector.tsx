@@ -81,7 +81,15 @@ export function ServiceCatalogSelector({
 
   const handleSelectFromCatalog = (serviceId: string) => {
     if (serviceId === "manual") {
-      setNewItem({ description: "", quantity: "1", unit_price: "", discount: "0", discount_type: "percentage" });
+      setNewItem({ 
+        name: "", 
+        description: "", 
+        quantity: "1", 
+        unit_price: "", 
+        discount: "0", 
+        discount_type: "percentage",
+        estimated_duration: "",
+      });
       setSelectedCatalogServiceType(null);
       setSelectedCatalogServiceId(null);
       return;
@@ -89,24 +97,27 @@ export function ServiceCatalogSelector({
     const service = activeServices.find((s) => s.id === serviceId);
     if (service) {
       setNewItem({
-        description: service.name,
+        name: service.name,
+        description: service.description || "",
         quantity: "1",
         unit_price: service.unit_price.toString(),
         discount: service.default_discount?.toString() || "0",
         discount_type: "percentage",
+        estimated_duration: service.estimated_duration || "",
       });
       setSelectedCatalogServiceType(service.service_type);
       setSelectedCatalogServiceId(service.id);
-      onServiceTypeDetected?.(service.service_type);
+      onServiceTypeDetected?.(service.service_type || "");
     }
   };
 
   const handleAddItem = () => {
-    if (!newItem.description || !newItem.unit_price) return;
+    if (!newItem.name || !newItem.unit_price) return;
 
     const newItemData: ServiceItemLocal = {
       id: crypto.randomUUID(),
-      description: newItem.description,
+      name: newItem.name,
+      description: newItem.description || newItem.name,
       quantity: parseFloat(newItem.quantity) || 1,
       unit_price: parseFloat(newItem.unit_price) || 0,
       discount: parseFloat(newItem.discount) || 0,
@@ -114,10 +125,23 @@ export function ServiceCatalogSelector({
       catalog_service_type: selectedCatalogServiceType || undefined,
       catalog_service_id: selectedCatalogServiceId || undefined,
       is_non_standard: !selectedCatalogServiceId,
+      estimated_duration: newItem.estimated_duration || undefined,
+      category: selectedCatalogServiceType || undefined,
+      standard_checklist: selectedCatalogServiceId 
+        ? activeServices.find(s => s.id === selectedCatalogServiceId)?.standard_checklist 
+        : undefined,
     };
 
     onItemsChange([...items, newItemData]);
-    setNewItem({ description: "", quantity: "1", unit_price: "", discount: "0", discount_type: "percentage" });
+    setNewItem({ 
+      name: "", 
+      description: "", 
+      quantity: "1", 
+      unit_price: "", 
+      discount: "0", 
+      discount_type: "percentage",
+      estimated_duration: "",
+    });
     setSelectedCatalogServiceType(null);
     setSelectedCatalogServiceId(null);
   };
