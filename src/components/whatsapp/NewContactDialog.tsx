@@ -43,17 +43,19 @@ export function NewContactDialog({ open, onOpenChange, channelId, onCreated }: N
 
     setSaving(true);
     try {
-      // Check if contact already exists in THIS channel only
+      // Check if contact already exists in THIS organization (across any channel)
       const { data: existing } = await supabase
         .from("whatsapp_contacts")
-        .select("id")
+        .select("id, channel_id")
         .eq("organization_id", organization.id)
-        .eq("channel_id", channelId)
         .eq("normalized_phone", normalized)
         .maybeSingle();
 
       if (existing) {
-        toast.info("Já existe uma conversa deste número neste canal");
+        const channelMsg = existing.channel_id === channelId 
+          ? "Já existe uma conversa deste número neste canal"
+          : "Este contato já existe em outro canal da organização, abrindo conversa anterior";
+        toast.info(channelMsg);
         onCreated(existing.id);
         onOpenChange(false);
         resetForm();
