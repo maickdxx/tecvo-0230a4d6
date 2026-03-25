@@ -33,6 +33,8 @@ interface SignatureCanvasProps {
   confirmLabel?: string;
   /** Disabled state */
   disabled?: boolean;
+  /** Called when drawing state changes */
+  onDrawChange?: (hasDrawn: boolean) => void;
 }
 
 export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasProps>(({
