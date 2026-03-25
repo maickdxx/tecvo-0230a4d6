@@ -19,6 +19,7 @@ import {
   Camera,
   Save,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { ReportPhotoUploader } from "@/components/laudos/ReportPhotoUploader";
 import { useReportPhotos } from "@/hooks/useReportPhotos";
