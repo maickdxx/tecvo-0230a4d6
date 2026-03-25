@@ -32,6 +32,7 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote, onServiceOrder }: ServiceCardProps) {
+  const { typeLabels } = useServiceTypes();
   const tz = useOrgTimezone();
   const formattedDate = service.scheduled_date
     ? formatDateInTz(service.scheduled_date, tz)
