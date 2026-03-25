@@ -220,10 +220,19 @@ export async function generateReportPDF({
 
   // ========== EXECUTIVE SUMMARY ==========
   drawSectionTitle("Resumo Executivo");
-  ensureSpace(40);
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const summaryText = report.visit_reason || "Relatório técnico detalhado das condições de funcionamento e integridade do equipamento de climatização após inspeção técnica realizada no local.";
+  const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 85);
+  const boxHeight = Math.max(25, summaryLines.length * 5 + 10);
+  
+  ensureSpace(boxHeight + 10);
   
   doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
-  doc.roundedRect(margin, yPos, contentWidth, 25, 1, 1, "FD");
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.setLineWidth(0.1);
+  doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1, 1, "FD");
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
@@ -237,11 +246,9 @@ export async function generateReportPDF({
   doc.setFont("helvetica", "normal");
   doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
   doc.setFontSize(9);
-  const summaryText = report.visit_reason || "Relatório técnico detalhado das condições de funcionamento e integridade do equipamento de climatização após inspeção técnica realizada no local.";
-  const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 85);
   doc.text(summaryLines, margin + 80, yPos + 7);
 
-  yPos += 35;
+  yPos += boxHeight + 10;
 
   // ========== EQUIPMENT INFO ==========
   drawSectionTitle("Dados do Equipamento");
