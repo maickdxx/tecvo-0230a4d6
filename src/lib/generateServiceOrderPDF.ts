@@ -93,24 +93,26 @@ export async function generateServiceOrderPDF({
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15;
+  const margin = 14;
   const contentWidth = pageWidth - margin * 2;
   let yPos = margin;
 
-  const FOOTER_RESERVED = 18; // space reserved for footer
+  const FOOTER_RESERVED = 16;
   const usableHeight = pageHeight - FOOTER_RESERVED;
 
-  // Premium color palette
+  // ── Premium color palette ──
   const primary = { r: 25, g: 95, b: 170 };
+  const primaryDark = { r: 18, g: 70, b: 130 };
   const primaryLight = { r: 235, g: 244, b: 255 };
-  const textDark = { r: 33, g: 37, b: 41 };
-  const textMuted = { r: 108, g: 117, b: 125 };
-  const borderLight = { r: 222, g: 226, b: 230 };
+  const textDark = { r: 30, g: 34, b: 38 };
+  const textMuted = { r: 100, g: 110, b: 120 };
+  const borderLight = { r: 215, g: 220, b: 228 };
+  const rowEven = { r: 248, g: 249, b: 252 };
+  const totalBg = { r: 20, g: 80, b: 150 };
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  /** Check if we need a new page; if so, add one and reset yPos */
   const ensureSpace = (needed: number) => {
     if (yPos + needed > usableHeight) {
       doc.addPage();
@@ -118,636 +120,573 @@ export async function generateServiceOrderPDF({
     }
   };
 
-  const drawClientField = (label: string, value: string | null | undefined, x: number, y: number) => {
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text(label, x, y);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(textDark.r, textDark.g, textDark.b);
-    doc.text(value || "", x + doc.getTextWidth(label) + 2, y);
-  };
-
-  const drawSectionLabel = (title: string) => {
-    ensureSpace(12);
-    const labelHeight = 7;
-    doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
-    doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-    doc.setLineWidth(0.3);
-    doc.rect(margin, yPos, contentWidth, labelHeight, "FD");
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(primary.r, primary.g, primary.b);
-    doc.text(title, margin + 4, yPos + 5);
-    yPos += labelHeight;
-  };
-
   const halfWidth = contentWidth / 2;
   const leftX = margin + 4;
   const rightX = margin + halfWidth + 4;
 
-  // ===================== HEADER =====================
-  const headerHeight = 30;
-  
-  doc.setFillColor(primary.r, primary.g, primary.b);
-  doc.rect(margin, yPos, contentWidth, 3, "F");
-  yPos += 3;
+  // ── Helper: draw a field label + value ──
+  const drawField = (label: string, value: string | null | undefined, x: number, y: number, maxW?: number) => {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    doc.setFontSize(7.5);
+    doc.text(label, x, y);
+    const labelW = doc.getTextWidth(label);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(textDark.r, textDark.g, textDark.b);
+    doc.setFontSize(8);
+    const val = value || "—";
+    if (maxW) {
+      const truncated = doc.getTextWidth(val) > maxW - labelW - 4
+        ? val.substring(0, Math.floor((maxW - labelW - 8) / doc.getTextWidth("a"))) + "..."
+        : val;
+      doc.text(truncated, x + labelW + 2, y);
+    } else {
+      doc.text(val, x + labelW + 2, y);
+    }
+  };
 
-  doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
+  // ── Helper: section title bar ──
+  const drawSectionTitle = (title: string) => {
+    ensureSpace(14);
+    yPos += 3;
+    // Accent bar
+    doc.setFillColor(primary.r, primary.g, primary.b);
+    doc.rect(margin, yPos, 3, 8, "F");
+    // Background
+    doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
+    doc.rect(margin + 3, yPos, contentWidth - 3, 8, "F");
+    // Border
+    doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
+    doc.setLineWidth(0.2);
+    doc.rect(margin, yPos, contentWidth, 8, "S");
+    // Text
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(primary.r, primary.g, primary.b);
+    doc.text(title, margin + 7, yPos + 5.5);
+    yPos += 10;
+  };
+
+  // ═══════════════════════════════════════════
+  //  HEADER — Logo + Company Info
+  // ═══════════════════════════════════════════
+  const headerH = 32;
+  // Top accent line
+  doc.setFillColor(primary.r, primary.g, primary.b);
+  doc.rect(margin, yPos, contentWidth, 2.5, "F");
+  yPos += 2.5;
+
+  doc.setFillColor(255, 255, 255);
   doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
   doc.setLineWidth(0.3);
-  doc.rect(margin, yPos, contentWidth, headerHeight, "FD");
+  doc.rect(margin, yPos, contentWidth, headerH, "FD");
 
-  let logoWidth = 0;
+  let logoEndX = margin + 6;
   if (organizationLogo) {
     const logoData = await loadImageAsBase64(organizationLogo);
     if (logoData) {
       try {
-        doc.addImage(logoData, "PNG", margin + 4, yPos + 3, 24, 24);
-        logoWidth = 30;
+        doc.addImage(logoData, "PNG", margin + 5, yPos + 3, 26, 26);
+        logoEndX = margin + 34;
       } catch {
-        logoWidth = 0;
+        /* ignore */
       }
     }
   }
 
-  const textStartX = margin + 5 + logoWidth;
-  doc.setFontSize(13);
+  // Company name
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(textDark.r, textDark.g, textDark.b);
-  doc.text(organizationName, textStartX, yPos + 8);
+  doc.text(organizationName, logoEndX, yPos + 9);
 
+  // Company details (2 lines)
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-  let infoY = yPos + 13;
-  
-  const companyDetails: string[] = [];
-  if (organizationCnpj) companyDetails.push(`CNPJ: ${organizationCnpj}`);
-  if (organizationPhone) companyDetails.push(organizationPhone);
-  if (organizationEmail) companyDetails.push(organizationEmail);
-  
-  if (companyDetails.length > 0) {
-    doc.text(companyDetails.join("  •  "), textStartX, infoY);
-    infoY += 4;
-  }
 
-  const addressParts: string[] = [];
-  if (organizationAddress) addressParts.push(organizationAddress);
-  if (organizationCity) addressParts.push(organizationCity);
-  if (organizationState) addressParts.push(organizationState);
-  if (organizationZipCode) addressParts.push(`CEP ${organizationZipCode}`);
-  
-  if (addressParts.length > 0) {
-    const addressLine = addressParts.join(" - ");
-    const truncated = addressLine.length > 90 ? addressLine.substring(0, 90) + "..." : addressLine;
-    doc.text(truncated, textStartX, infoY);
-    infoY += 4;
+  const line1Parts: string[] = [];
+  if (organizationCnpj) line1Parts.push(`CNPJ: ${organizationCnpj}`);
+  if (organizationPhone) line1Parts.push(organizationPhone);
+  if (organizationEmail) line1Parts.push(organizationEmail);
+  if (line1Parts.length) doc.text(line1Parts.join("  ·  "), logoEndX, yPos + 15);
+
+  const line2Parts: string[] = [];
+  if (organizationAddress) line2Parts.push(organizationAddress);
+  if (organizationCity) line2Parts.push(organizationCity);
+  if (organizationState) line2Parts.push(organizationState);
+  if (organizationZipCode) line2Parts.push(`CEP ${organizationZipCode}`);
+  if (line2Parts.length) {
+    const addr = line2Parts.join(" – ");
+    const maxAddrW = pageWidth - margin - logoEndX - 6;
+    const truncAddr = doc.getTextWidth(addr) > maxAddrW ? addr.substring(0, 85) + "..." : addr;
+    doc.text(truncAddr, logoEndX, yPos + 20);
   }
 
   if (organizationWebsite) {
-    doc.text(organizationWebsite, textStartX, infoY);
+    doc.setTextColor(primary.r, primary.g, primary.b);
+    doc.text(organizationWebsite, logoEndX, yPos + 25);
   }
 
-  yPos += headerHeight + 6;
+  yPos += headerH + 5;
 
-  // ===================== DOCUMENT TITLE =====================
+  // ═══════════════════════════════════════════
+  //  DOCUMENT TITLE — "ORDEM DE SERVIÇO Nº XXXX"
+  // ═══════════════════════════════════════════
+  const titleH = 16;
   doc.setFillColor(primary.r, primary.g, primary.b);
-  doc.rect(margin, yPos, contentWidth, 14, "F");
-  
-  doc.setFontSize(14);
+  doc.roundedRect(margin, yPos, contentWidth, titleH, 1.5, 1.5, "F");
+
+  // Subtle darker stripe at bottom
+  doc.setFillColor(primaryDark.r, primaryDark.g, primaryDark.b);
+  doc.rect(margin, yPos + titleH - 2, contentWidth, 2, "F");
+
+  const osNumber = service.quote_number?.toString().padStart(4, "0") || "0001";
+  doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text(
-    `ORDEM DE SERVIÇO Nº ${service.quote_number?.toString().padStart(4, "0") || "0001"}`,
-    margin + 5,
-    yPos + 9.5
-  );
-  
+  doc.text(`ORDEM DE SERVIÇO  Nº ${osNumber}`, margin + 8, yPos + 10.5);
+
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(format(new Date(), "dd/MM/yyyy"), pageWidth - margin - 5, yPos + 9.5, { align: "right" });
+  doc.text(format(new Date(), "dd/MM/yyyy"), pageWidth - margin - 8, yPos + 10.5, { align: "right" });
 
-  yPos += 18;
-  
-  // Linha decorativa fina abaixo do título
-  doc.setDrawColor(primary.r, primary.g, primary.b);
-  doc.setLineWidth(0.3);
-  doc.line(margin, yPos - 1, pageWidth - margin, yPos - 1);
-  yPos += 3;
+  yPos += titleH + 6;
 
-  // ===================== EXECUTION PERIOD =====================
+  // ═══════════════════════════════════════════
+  //  EXECUTION PERIOD
+  // ═══════════════════════════════════════════
   const hasEntry = orderData.entryDate && orderData.entryTime;
   const hasExit = orderData.exitDate && orderData.exitTime;
-  
-  if (hasEntry || hasExit) {
-    drawSectionLabel("PERÍODO DE EXECUÇÃO");
-    
-    doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-    doc.rect(margin, yPos, contentWidth, 8);
-    doc.setFontSize(8);
-    
-    if (hasEntry) {
-      drawClientField("Entrada: ", `${orderData.entryDate} às ${orderData.entryTime}`, leftX, yPos + 5.5);
-    }
-    if (hasExit) {
-      drawClientField("Saída: ", `${orderData.exitDate} às ${orderData.exitTime}`, rightX, yPos + 5.5);
-    }
 
+  if (hasEntry || hasExit) {
+    drawSectionTitle("PERÍODO DE EXECUÇÃO");
+    doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
+    doc.setLineWidth(0.2);
+    doc.rect(margin, yPos, contentWidth, 9, "S");
+
+    doc.setFontSize(8);
+    if (hasEntry) drawField("Entrada:", `${orderData.entryDate} às ${orderData.entryTime}`, leftX, yPos + 6);
+    if (hasExit) drawField("Saída:", `${orderData.exitDate} às ${orderData.exitTime}`, rightX, yPos + 6);
     yPos += 12;
   }
 
-  // ===================== CLIENT DATA =====================
-  drawSectionLabel("DADOS DO CLIENTE");
+  // ═══════════════════════════════════════════
+  //  CLIENT DATA
+  // ═══════════════════════════════════════════
+  drawSectionTitle("DADOS DO CLIENTE");
 
-  // Always show all fields, even when empty
-  const docLabel = service.client?.person_type === "pj" ? "CNPJ/CPF: " : "CNPJ/CPF: ";
-  
-  // Prioritize OS-specific address fields over client address (OS is a frozen document)
-  const hasServiceAddress = service.service_street || service.service_city;
-  const clientAddress = hasServiceAddress
+  // Build address
+  const hasServiceAddr = service.service_street || service.service_city;
+  const clientAddr = hasServiceAddr
     ? [service.service_street, service.service_number, service.service_complement, service.service_neighborhood].filter(Boolean).join(", ")
-    : (service.client?.address || 
-       [service.client?.street, service.client?.number, service.client?.complement, service.client?.neighborhood].filter(Boolean).join(", "));
-  const clientCity = hasServiceAddress ? (service.service_city || "") : (service.client?.city || "");
-  const clientState = hasServiceAddress ? (service.service_state || "") : (service.client?.state || "");
-  const clientZipCode = hasServiceAddress ? (service.service_zip_code || "") : (service.client?.zip_code || "");
+    : (service.client?.address || [service.client?.street, service.client?.number, service.client?.complement, service.client?.neighborhood].filter(Boolean).join(", "));
+  const clientCity = hasServiceAddr ? (service.service_city || "") : (service.client?.city || "");
+  const clientState = hasServiceAddr ? (service.service_state || "") : (service.client?.state || "");
+  const clientZip = hasServiceAddr ? (service.service_zip_code || "") : (service.client?.zip_code || "");
 
-  // Calculate how many lines the address needs
+  // Calculate address multiline height
   doc.setFontSize(8);
-  const addressLabelWidth = doc.getTextWidth("Endereço: ");
-  const leftColMaxWidth = halfWidth - 8;
-  const addressValueMaxWidth = leftColMaxWidth - addressLabelWidth;
-  const addressLines = doc.splitTextToSize(clientAddress || "", addressValueMaxWidth);
-  const addressRowH = Math.max(7, 4 + addressLines.length * 3.5);
+  const addrLabelW = doc.getTextWidth("Endereço: ");
+  const addrMaxW = halfWidth - 10;
+  const addrLines = doc.splitTextToSize(clientAddr || "", addrMaxW - addrLabelW);
+  const addrRowH = Math.max(8, 4 + addrLines.length * 3.5);
 
-  const clientRowDefs = [
-    { left: { label: "Cliente: ", value: service.client?.name || "" }, right: { label: docLabel, value: service.client?.document || "" }, height: 7 },
-    { left: { label: "Endereço: ", value: clientAddress || "", multiline: true }, right: { label: "CEP: ", value: clientZipCode }, height: addressRowH },
-    { left: { label: "Cidade: ", value: clientCity }, right: { label: "Estado: ", value: clientState }, height: 7 },
-    { left: { label: "Telefone: ", value: service.client?.phone || "" }, right: { label: "E-mail: ", value: service.client?.email || "" }, height: 7 },
+  const rows = [
+    { lLabel: "Cliente:", lVal: service.client?.name || "", rLabel: "CNPJ/CPF:", rVal: service.client?.document || "", h: 8 },
+    { lLabel: "Endereço:", lVal: clientAddr || "", rLabel: "CEP:", rVal: clientZip, h: addrRowH, multiline: true },
+    { lLabel: "Cidade:", lVal: clientCity, rLabel: "Estado:", rVal: clientState, h: 8 },
+    { lLabel: "Telefone:", lVal: service.client?.phone || "", rLabel: "E-mail:", rVal: service.client?.email || "", h: 8 },
   ];
 
-  const clientBoxHeight = clientRowDefs.reduce((sum, r) => sum + r.height, 0);
+  const boxH = rows.reduce((s, r) => s + r.h, 0);
+  ensureSpace(boxH + 4);
 
   doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-  doc.setLineWidth(0.3);
-  doc.rect(margin, yPos, contentWidth, clientBoxHeight);
-  doc.line(margin + halfWidth, yPos, margin + halfWidth, yPos + clientBoxHeight);
-  let lineY = yPos;
-  for (let i = 0; i < clientRowDefs.length - 1; i++) {
-    lineY += clientRowDefs[i].height;
-    doc.line(margin, lineY, margin + contentWidth, lineY);
-  }
+  doc.setLineWidth(0.2);
+  doc.rect(margin, yPos, contentWidth, boxH, "S");
+  doc.line(margin + halfWidth, yPos, margin + halfWidth, yPos + boxH);
 
-  doc.setFontSize(8);
   let cellY = yPos;
-  for (let i = 0; i < clientRowDefs.length; i++) {
-    const row = clientRowDefs[i];
-    const textY = cellY + 5;
-    if (row.left.label) {
-      if ((row.left as any).multiline) {
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-        doc.text(row.left.label, leftX, textY);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(textDark.r, textDark.g, textDark.b);
-        const valLines = doc.splitTextToSize(row.left.value, addressValueMaxWidth);
-        doc.text(valLines, leftX + addressLabelWidth + 2, textY);
-      } else {
-        drawClientField(row.left.label, row.left.value, leftX, textY);
-      }
+  rows.forEach((row, i) => {
+    if (i > 0) doc.line(margin, cellY, margin + contentWidth, cellY);
+    const ty = cellY + 5.5;
+    if (row.multiline) {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+      doc.text(row.lLabel, leftX, ty);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+      doc.text(addrLines, leftX + addrLabelW + 2, ty);
+    } else {
+      drawField(row.lLabel, row.lVal, leftX, ty);
     }
-    if (row.right.label) drawClientField(row.right.label, row.right.value, rightX, textY);
-    cellY += row.height;
-  }
+    drawField(row.rLabel, row.rVal, rightX, ty);
+    cellY += row.h;
+  });
 
-  yPos += clientBoxHeight + 4;
+  yPos += boxH + 5;
 
-  // ===================== EQUIPMENT =====================
-  const normalizedEquipment = (equipmentList || [])
-    .map((equipment) => ({
-      id: equipment.id,
-      name: equipment.name?.trim() || "",
-      brand: equipment.brand?.trim() || "",
-      model: equipment.model?.trim() || "",
-      serial_number: equipment.serial_number?.trim() || "",
-      conditions: equipment.conditions?.trim() || "",
-      defects: equipment.defects?.trim() || "",
-      solution: equipment.solution?.trim() || "",
-      technical_report: equipment.technical_report?.trim() || "",
-      warranty_terms: equipment.warranty_terms?.trim() || "",
+  // ═══════════════════════════════════════════
+  //  EQUIPMENT
+  // ═══════════════════════════════════════════
+  const normalized = (equipmentList || [])
+    .map(e => ({
+      name: e.name?.trim() || "", brand: e.brand?.trim() || "", model: e.model?.trim() || "",
+      serial_number: e.serial_number?.trim() || "", conditions: e.conditions?.trim() || "",
+      defects: e.defects?.trim() || "", solution: e.solution?.trim() || "",
+      technical_report: e.technical_report?.trim() || "", warranty_terms: e.warranty_terms?.trim() || "",
     }))
-    .filter((equipment) =>
-      Boolean(
-        equipment.name ||
-          equipment.brand ||
-          equipment.model ||
-          equipment.serial_number ||
-          equipment.conditions ||
-          equipment.defects ||
-          equipment.solution ||
-          equipment.technical_report ||
-          equipment.warranty_terms
-      )
-    );
+    .filter(e => e.name || e.brand || e.model || e.serial_number || e.conditions || e.defects || e.solution || e.technical_report || e.warranty_terms);
 
-  const legacyEquipment: ServiceOrderEquipment[] =
+  const legacy: ServiceOrderEquipment[] =
     orderData.equipmentType || orderData.equipmentBrand || orderData.equipmentModel
-      ? [
-          {
-            name: orderData.equipmentType,
-            brand: orderData.equipmentBrand,
-            model: orderData.equipmentModel,
-            serial_number: "",
-            conditions: "",
-            defects: "",
-            solution: "",
-            technical_report: "",
-            warranty_terms: "",
-          },
-        ]
+      ? [{ name: orderData.equipmentType, brand: orderData.equipmentBrand, model: orderData.equipmentModel }]
       : [];
 
-  const equipmentToRender = normalizedEquipment.length > 0 ? normalizedEquipment : legacyEquipment;
+  const equipRender = normalized.length > 0 ? normalized : legacy;
 
-  if (equipmentToRender.length > 0) {
-    drawSectionLabel("EQUIPAMENTOS");
+  if (equipRender.length > 0) {
+    drawSectionTitle("EQUIPAMENTOS");
 
-    equipmentToRender.forEach((equipment, index) => {
-      const equipmentTitle = equipment.name || `Equipamento ${String(index + 1).padStart(2, "0")}`;
+    equipRender.forEach((eq, idx) => {
+      const eqTitle = eq.name || `Equipamento ${String(idx + 1).padStart(2, "0")}`;
+      const textAreaW = contentWidth - 8;
+      const headerRowH = 13;
 
-      // Calculate total height needed for this equipment block
-      const textAreaWidth = contentWidth - 8;
-      const headerRowHeight = 12;
-      
-      const detailSections: Array<{ label: string; text: string; lines: string[] }> = [];
-      const detailFields: Array<[string, string]> = [
-        ["Condições", equipment.conditions || ""],
-        ["Defeitos", equipment.defects || ""],
-        ["Solução", equipment.solution || ""],
-        ["Laudo técnico", equipment.technical_report || ""],
-        ["Termos de garantia", equipment.warranty_terms || ""],
+      const details: Array<{ label: string; lines: string[] }> = [];
+      const fields: [string, string][] = [
+        ["Condições", eq.conditions || ""], ["Defeitos", eq.defects || ""],
+        ["Solução", eq.solution || ""], ["Laudo técnico", eq.technical_report || ""],
+        ["Termos de garantia", eq.warranty_terms || ""],
       ];
-      
-      detailFields.forEach(([label, text]) => {
-        if (text) {
-          const lines = doc.setFontSize(8).splitTextToSize(text, textAreaWidth);
-          detailSections.push({ label, text, lines });
-        }
+      fields.forEach(([label, text]) => {
+        if (text) details.push({ label, lines: doc.setFontSize(8).splitTextToSize(text, textAreaW) });
       });
 
-      let blockHeight = headerRowHeight;
-      detailSections.forEach((section) => {
-        blockHeight += 5 + section.lines.length * 3.5 + 2;
-      });
-      blockHeight += 2; // bottom padding
+      let blockH = headerRowH;
+      details.forEach(s => { blockH += 5 + s.lines.length * 3.5 + 2; });
+      blockH += 2;
 
-      // Page break check
-      if (yPos + blockHeight > pageHeight - 40) {
-        doc.addPage();
-        yPos = margin;
-        drawSectionLabel("EQUIPAMENTOS (CONT.)");
+      if (yPos + blockH > usableHeight) {
+        doc.addPage(); yPos = margin;
+        drawSectionTitle("EQUIPAMENTOS (CONT.)");
       }
 
-      // --- Header row: Name | Brand | Model | Serial ---
+      // Header row
+      const col1 = contentWidth * 0.35, col2 = contentWidth * 0.25, col3 = contentWidth * 0.25, col4 = contentWidth * 0.15;
+      doc.setFillColor(rowEven.r, rowEven.g, rowEven.b);
       doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-      doc.setLineWidth(0.3);
-      doc.rect(margin, yPos, contentWidth, headerRowHeight);
+      doc.setLineWidth(0.2);
+      doc.rect(margin, yPos, contentWidth, headerRowH, "FD");
 
-      const col1W = contentWidth * 0.35;
-      const col2W = contentWidth * 0.25;
-      const col3W = contentWidth * 0.25;
-      const col4W = contentWidth * 0.15;
+      doc.setFontSize(6.5); doc.setFont("helvetica", "bold"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+      doc.text("EQUIPAMENTO", margin + 3, yPos + 4);
+      doc.text("MARCA", margin + col1 + 3, yPos + 4);
+      doc.text("MODELO", margin + col1 + col2 + 3, yPos + 4);
+      doc.text("SÉRIE", margin + col1 + col2 + col3 + 3, yPos + 4);
 
-      // Column headers
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-      doc.text("Nome do equipamento", margin + 3, yPos + 4);
-      doc.text("Marca", margin + col1W + 3, yPos + 4);
-      doc.text("Modelo", margin + col1W + col2W + 3, yPos + 4);
-      doc.text("Série", margin + col1W + col2W + col3W + 3, yPos + 4);
+      doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+      doc.text(eqTitle, margin + 3, yPos + 10);
+      doc.text(eq.brand || "—", margin + col1 + 3, yPos + 10);
+      doc.text(eq.model || "—", margin + col1 + col2 + 3, yPos + 10);
+      doc.text(eq.serial_number || "—", margin + col1 + col2 + col3 + 3, yPos + 10);
 
-      // Column values
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(textDark.r, textDark.g, textDark.b);
-      doc.text(equipmentTitle, margin + 3, yPos + 9);
-      doc.text(equipment.brand || "", margin + col1W + 3, yPos + 9);
-      doc.text(equipment.model || "", margin + col1W + col2W + 3, yPos + 9);
-      doc.text(equipment.serial_number || "", margin + col1W + col2W + col3W + 3, yPos + 9);
+      // Vertical lines
+      [col1, col1 + col2, col1 + col2 + col3].forEach(x => doc.line(margin + x, yPos, margin + x, yPos + headerRowH));
 
-      // Vertical column lines
-      doc.line(margin + col1W, yPos, margin + col1W, yPos + headerRowHeight);
-      doc.line(margin + col1W + col2W, yPos, margin + col1W + col2W, yPos + headerRowHeight);
-      doc.line(margin + col1W + col2W + col3W, yPos, margin + col1W + col2W + col3W, yPos + headerRowHeight);
+      let sY = yPos + headerRowH;
 
-      let sectionY = yPos + headerRowHeight;
-
-      // --- Detail sections (Condições, Defeitos, Solução, Laudo, Garantia) ---
-      detailSections.forEach((section) => {
-        const sectionHeight = 5 + section.lines.length * 3.5 + 2;
-
-        // Page break for individual section
-        if (sectionY + sectionHeight > pageHeight - 20) {
-          doc.addPage();
-          sectionY = margin;
-        }
-
+      details.forEach(section => {
+        const sH = 5 + section.lines.length * 3.5 + 2;
+        if (sY + sH > usableHeight) { doc.addPage(); sY = margin; }
         doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-        doc.rect(margin, sectionY, contentWidth, sectionHeight);
-
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(textDark.r, textDark.g, textDark.b);
-        doc.text(section.label, margin + 3, sectionY + 4.5);
-
-        doc.setFont("helvetica", "normal");
-        doc.text(section.lines, margin + 3, sectionY + 4.5 + 4);
-
-        sectionY += sectionHeight;
+        doc.rect(margin, sY, contentWidth, sH, "S");
+        doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(primary.r, primary.g, primary.b);
+        doc.text(section.label, margin + 4, sY + 4.5);
+        doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b); doc.setFontSize(8);
+        doc.text(section.lines, margin + 4, sY + 9);
+        sY += sH;
       });
 
-      yPos = sectionY + 4;
+      yPos = sY + 3;
     });
-
     yPos += 2;
   }
 
-  // ===================== SOLUTION / DESCRIPTION =====================
+  // ═══════════════════════════════════════════
+  //  SOLUTION / DESCRIPTION
+  // ═══════════════════════════════════════════
   if (orderData.solution) {
-    const solutionLines = doc.setFontSize(8).splitTextToSize(orderData.solution, contentWidth - 8);
-    const solutionHeight = Math.max(solutionLines.length * 4 + 6, 12);
-
-    drawSectionLabel("DESCRIÇÃO DO SERVIÇO");
-
-    // If it doesn't fit, go to new page
-    ensureSpace(solutionHeight + 4);
-
-    doc.setFillColor(248, 249, 250);
+    const solLines = doc.setFontSize(8).splitTextToSize(orderData.solution, contentWidth - 10);
+    const solH = Math.max(solLines.length * 4 + 8, 14);
+    drawSectionTitle("DESCRIÇÃO DO SERVIÇO");
+    ensureSpace(solH + 2);
+    doc.setFillColor(rowEven.r, rowEven.g, rowEven.b);
     doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-    doc.rect(margin, yPos, contentWidth, solutionHeight, "FD");
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(textDark.r, textDark.g, textDark.b);
-    doc.text(solutionLines, margin + 4, yPos + 5);
-
-    yPos += solutionHeight + 4;
+    doc.rect(margin, yPos, contentWidth, solH, "FD");
+    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+    doc.text(solLines, margin + 5, yPos + 6);
+    yPos += solH + 4;
   }
 
-  // ===================== SERVICES TABLE =====================
-  drawSectionLabel("SERVIÇOS");
+  // ═══════════════════════════════════════════
+  //  SERVICES TABLE
+  // ═══════════════════════════════════════════
+  drawSectionTitle("SERVIÇOS E PEÇAS");
 
-  const colWidths = [10, 72, 16, 28, 22, 32];
-  
+  const colW = [10, 70, 16, 28, 22, 34];
+
   const drawTableHeader = () => {
     doc.setFillColor(primary.r, primary.g, primary.b);
-    doc.rect(margin, yPos, contentWidth, 7, "F");
-    
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(255, 255, 255);
-    
-    let colX = margin;
-    const headers = ["#", "DESCRIÇÃO", "QTD", "VR. UNIT", "DESC", "SUBTOTAL"];
+    doc.roundedRect(margin, yPos, contentWidth, 8, 0.5, 0.5, "F");
+    doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
+    const headers = ["#", "DESCRIÇÃO", "QTD", "VR. UNIT.", "DESC.", "SUBTOTAL"];
+    let cx = margin;
     headers.forEach((h, i) => {
       const align = i >= 2 ? "right" : "left";
-      const textX = align === "right" ? colX + colWidths[i] - 3 : colX + 3;
-      doc.text(h, textX, yPos + 5, { align: align as "left" | "right" });
-      colX += colWidths[i];
+      const tx = align === "right" ? cx + colW[i] - 3 : cx + 3;
+      doc.text(h, tx, yPos + 5.5, { align: align as any });
+      cx += colW[i];
     });
-
-    yPos += 7;
+    yPos += 8;
   };
 
   drawTableHeader();
 
-  doc.setTextColor(textDark.r, textDark.g, textDark.b);
   let grandTotal = 0;
   let totalDiscount = 0;
 
   if (items.length > 0) {
     items.forEach((item, index) => {
       const discount = item.discount || 0;
-      const discountAmount = item.discount_type === "percentage" 
-        ? (item.quantity * item.unit_price * discount / 100) 
+      const discAmt = item.discount_type === "percentage"
+        ? (item.quantity * item.unit_price * discount / 100)
         : discount;
-      const itemTotal = item.quantity * item.unit_price - discountAmount;
+      const itemTotal = item.quantity * item.unit_price - discAmt;
       grandTotal += itemTotal;
-      totalDiscount += discountAmount;
+      totalDiscount += discAmt;
 
-      const rowHeight = 7;
+      // Word-wrap description
+      const descMaxW = colW[1] - 6;
+      doc.setFontSize(7.5);
+      const descLines = doc.splitTextToSize(item.description, descMaxW);
+      const rowH = Math.max(8, descLines.length * 3.5 + 4);
 
-      // Page break check for each row
-      if (yPos + rowHeight > usableHeight) {
-        doc.addPage();
-        yPos = margin;
+      if (yPos + rowH > usableHeight) {
+        doc.addPage(); yPos = margin;
         drawTableHeader();
       }
 
-      const isEven = index % 2 === 0;
-      
-      if (isEven) {
-        doc.setFillColor(248, 249, 250);
-        doc.rect(margin, yPos, contentWidth, rowHeight, "F");
+      if (index % 2 === 0) {
+        doc.setFillColor(rowEven.r, rowEven.g, rowEven.b);
+        doc.rect(margin, yPos, contentWidth, rowH, "F");
       }
-      
       doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
       doc.setLineWidth(0.1);
-      doc.line(margin, yPos + rowHeight, margin + contentWidth, yPos + rowHeight);
+      doc.line(margin, yPos + rowH, margin + contentWidth, yPos + rowH);
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
-      doc.setTextColor(textDark.r, textDark.g, textDark.b);
-      
-      let colX = margin;
-      doc.text((index + 1).toString(), colX + 3, yPos + 5);
-      colX += colWidths[0];
-      
-      const descTruncated = item.description.length > 65 ? item.description.substring(0, 65) + "..." : item.description;
-      doc.text(descTruncated, colX + 3, yPos + 5);
-      colX += colWidths[1];
-      
-      doc.text(item.quantity.toFixed(2).replace(".", ","), colX + colWidths[2] - 3, yPos + 5, { align: "right" });
-      colX += colWidths[2];
-      
-      doc.text(formatCurrency(item.unit_price), colX + colWidths[3] - 3, yPos + 5, { align: "right" });
-      colX += colWidths[3];
-      
-      doc.text(discountAmount > 0 ? formatCurrency(discountAmount) : "-", colX + colWidths[4] - 3, yPos + 5, { align: "right" });
-      colX += colWidths[4];
-      
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+      const midY = yPos + (rowH / 2) + 1;
+      let cx = margin;
+
+      // # column
+      doc.text((index + 1).toString(), cx + 3, midY);
+      cx += colW[0];
+
+      // Description with word-wrap
+      const descStartY = yPos + 4;
+      doc.text(descLines, cx + 3, descStartY);
+      cx += colW[1];
+
+      // Numeric columns (vertically centered)
+      doc.text(item.quantity.toFixed(2).replace(".", ","), cx + colW[2] - 3, midY, { align: "right" });
+      cx += colW[2];
+      doc.text(formatCurrency(item.unit_price), cx + colW[3] - 3, midY, { align: "right" });
+      cx += colW[3];
+      doc.text(discAmt > 0 ? formatCurrency(discAmt) : "—", cx + colW[4] - 3, midY, { align: "right" });
+      cx += colW[4];
       doc.setFont("helvetica", "bold");
-      doc.text(formatCurrency(itemTotal), colX + colWidths[5] - 3, yPos + 5, { align: "right" });
+      doc.text(formatCurrency(itemTotal), cx + colW[5] - 3, midY, { align: "right" });
 
-      yPos += rowHeight;
+      yPos += rowH;
     });
   } else {
-    const rowHeight = 7;
-    doc.setFillColor(248, 249, 250);
-    doc.rect(margin, yPos, contentWidth, rowHeight, "F");
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(7.5);
-    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text("Nenhum item cadastrado", margin + 5, yPos + 5);
-    yPos += rowHeight;
+    doc.setFillColor(rowEven.r, rowEven.g, rowEven.b);
+    doc.rect(margin, yPos, contentWidth, 8, "F");
+    doc.setFont("helvetica", "italic"); doc.setFontSize(7.5); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    doc.text("Nenhum item cadastrado", margin + 5, yPos + 5.5);
+    yPos += 8;
     grandTotal = service.value || 0;
   }
 
-  // Total summary
-  ensureSpace(25);
-  yPos += 2;
-  const summaryX = margin + contentWidth - 70;
-  const summaryWidth = 70;
-  
+  // ── Total summary block ──
+  ensureSpace(28);
+  yPos += 3;
+  const sumW = 80;
+  const sumX = margin + contentWidth - sumW;
+
   if (totalDiscount > 0) {
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    doc.text("Subtotal:", sumX, yPos + 4);
+    doc.setTextColor(textDark.r, textDark.g, textDark.b);
+    doc.text(formatCurrency(grandTotal + totalDiscount), sumX + sumW, yPos + 4, { align: "right" });
+    yPos += 6;
     doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text("Serviços:", summaryX, yPos + 4);
-    doc.text(formatCurrency(grandTotal + totalDiscount), summaryX + summaryWidth, yPos + 4, { align: "right" });
-    yPos += 5;
-    
-    doc.text("Desconto:", summaryX, yPos + 4);
-    doc.setTextColor(220, 53, 69);
-    doc.text(`- ${formatCurrency(totalDiscount)}`, summaryX + summaryWidth, yPos + 4, { align: "right" });
-    yPos += 5;
+    doc.text("Desconto:", sumX, yPos + 4);
+    doc.setTextColor(200, 40, 40);
+    doc.text(`– ${formatCurrency(totalDiscount)}`, sumX + sumW, yPos + 4, { align: "right" });
+    yPos += 6;
+    // Separator line
+    doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
+    doc.line(sumX, yPos, sumX + sumW, yPos);
+    yPos += 2;
   }
 
-  doc.setFillColor(primary.r, primary.g, primary.b);
-  doc.rect(summaryX - 3, yPos, summaryWidth + 6, 12, "F");
-  doc.setDrawColor(primary.r - 10, primary.g - 10, primary.b - 10);
-  doc.setLineWidth(0.3);
-  doc.rect(summaryX - 3, yPos, summaryWidth + 6, 12, "S");
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text("TOTAL", summaryX, yPos + 8);
-  doc.text(formatCurrency(grandTotal), summaryX + summaryWidth, yPos + 8, { align: "right" });
+  // Total box
+  const totalBoxH = 14;
+  doc.setFillColor(totalBg.r, totalBg.g, totalBg.b);
+  doc.roundedRect(sumX - 2, yPos, sumW + 4, totalBoxH, 2, 2, "F");
+  doc.setFontSize(13); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
+  doc.text("TOTAL", sumX + 4, yPos + 10);
+  doc.text(formatCurrency(grandTotal), sumX + sumW - 2, yPos + 10, { align: "right" });
 
-  yPos += 18;
+  yPos += totalBoxH + 6;
 
-  // ===================== PAYMENT DATA =====================
+  // ═══════════════════════════════════════════
+  //  PAYMENT DATA
+  // ═══════════════════════════════════════════
   const hasPayment = orderData.paymentMethod || orderData.paymentDueDate || orderData.paymentNotes;
   if (hasPayment) {
-    const paymentHeight = orderData.paymentNotes ? 14 : 8;
-    ensureSpace(paymentHeight + 12);
-    drawSectionLabel("DADOS DO PAGAMENTO");
-
+    const payH = orderData.paymentNotes ? 16 : 10;
+    ensureSpace(payH + 14);
+    drawSectionTitle("DADOS DO PAGAMENTO");
     doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
-    doc.rect(margin, yPos, contentWidth, paymentHeight);
-
+    doc.rect(margin, yPos, contentWidth, payH, "S");
     doc.setFontSize(8);
-    drawClientField("Vencimento: ", orderData.paymentDueDate || undefined, leftX, yPos + 5.5);
-    drawClientField("Forma: ", orderData.paymentMethod || undefined, rightX, yPos + 5.5);
-    
+    drawField("Vencimento:", orderData.paymentDueDate || undefined, leftX, yPos + 6);
+    drawField("Forma:", orderData.paymentMethod || undefined, rightX, yPos + 6);
     if (orderData.paymentNotes) {
-      drawClientField("Obs: ", orderData.paymentNotes.length > 70 ? orderData.paymentNotes.substring(0, 70) + "..." : orderData.paymentNotes, leftX, yPos + 11.5);
+      drawField("Obs:", orderData.paymentNotes.length > 80 ? orderData.paymentNotes.substring(0, 80) + "..." : orderData.paymentNotes, leftX, yPos + 12);
     }
-
-    yPos += paymentHeight + 10;
-  } else {
-    yPos += 10;
+    yPos += payH + 5;
   }
 
-  // ===================== SIGNATURES =====================
-  // Signatures always go at the bottom of the page
+  // ═══════════════════════════════════════════
+  //  NOTES / OBSERVAÇÕES
+  // ═══════════════════════════════════════════
+  const notes = (service as any).notes || "";
+  if (notes) {
+    doc.setFontSize(8);
+    const noteLines = doc.splitTextToSize(notes, contentWidth - 10);
+    const noteH = Math.max(noteLines.length * 4 + 8, 14);
+    drawSectionTitle("OBSERVAÇÕES");
+    ensureSpace(noteH + 2);
+    doc.setFillColor(255, 252, 240);
+    doc.setDrawColor(230, 200, 100);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, yPos, contentWidth, noteH, "FD");
+    // Accent left bar
+    doc.setFillColor(230, 180, 50);
+    doc.rect(margin, yPos, 3, noteH, "F");
+    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+    doc.text(noteLines, margin + 7, yPos + 6);
+    yPos += noteH + 5;
+  }
+
+  // ═══════════════════════════════════════════
+  //  SIGNATURES
+  // ═══════════════════════════════════════════
   const needsClause = organizationSignature && autoSignatureOS;
-  const signatureBlockHeight = needsClause ? 45 : 30;
-  ensureSpace(signatureBlockHeight);
+  const sigBlockH = needsClause ? 50 : 35;
+  ensureSpace(sigBlockH);
 
-  // Position signatures near the bottom of the current page (above footer)
-  const signatureBottomY = pageHeight - FOOTER_RESERVED - (needsClause ? 18 : 8);
-  yPos = signatureBottomY - 4; // line position
+  // Push signatures to near-bottom
+  const sigBottomY = usableHeight - (needsClause ? 20 : 6);
+  if (yPos < sigBottomY - 22) yPos = sigBottomY - 22;
 
-  const signatureWidth = 65;
-  const leftSignX = margin + 20;
-  const rightSignX = pageWidth - margin - signatureWidth - 20;
+  const signatureWidth = 68;
+  const leftSignX = margin + 18;
+  const rightSignX = pageWidth - margin - signatureWidth - 18;
 
-  // Draw organization signature image above the right signature line
-  if (organizationSignature && autoSignatureOS) {
-    try {
-      const sigBase64 = await loadImageAsBase64(organizationSignature);
-      if (sigBase64) {
-        const maxH = 14;
-        const maxW = 55;
-        const img = new Image();
-        img.src = sigBase64;
-        await new Promise<void>((resolve) => { img.onload = () => resolve(); img.onerror = () => resolve(); });
-        const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
-        const drawW = (img.width || maxW) * ratio;
-        const drawH = (img.height || maxH) * ratio;
-        const sigX = rightSignX + (signatureWidth - drawW) / 2;
-        doc.addImage(sigBase64, "PNG", sigX, yPos - drawH - 2, drawW, drawH);
-      }
-    } catch {
-      // Ignore signature load errors
-    }
-  }
+  // Labels above signature lines
+  doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+  doc.text("ASSINATURA DO CLIENTE", leftSignX + signatureWidth / 2, yPos - 18, { align: "center" });
+  doc.text("ASSINATURA DA EMPRESA", rightSignX + signatureWidth / 2, yPos - 18, { align: "center" });
 
-  // Draw client signature image above the left signature line
+  // Draw client signature image
   if (clientSignatureUrl) {
     try {
-      const clientSigBase64 = await loadImageAsBase64(clientSignatureUrl);
-      if (clientSigBase64) {
-        const maxH = 14;
-        const maxW = 55;
+      const cSigB64 = await loadImageAsBase64(clientSignatureUrl);
+      if (cSigB64) {
+        const maxH = 16, maxW = 58;
         const img = new Image();
-        img.src = clientSigBase64;
-        await new Promise<void>((resolve) => { img.onload = () => resolve(); img.onerror = () => resolve(); });
+        img.src = cSigB64;
+        await new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); });
         const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
-        const drawW = (img.width || maxW) * ratio;
-        const drawH = (img.height || maxH) * ratio;
-        const sigX = leftSignX + (signatureWidth - drawW) / 2;
-        doc.addImage(clientSigBase64, "PNG", sigX, yPos - drawH - 2, drawW, drawH);
+        const dw = (img.width || maxW) * ratio, dh = (img.height || maxH) * ratio;
+        doc.addImage(cSigB64, "PNG", leftSignX + (signatureWidth - dw) / 2, yPos - dh - 2, dw, dh);
       }
-    } catch {
-      // Ignore
-    }
+    } catch { /* ignore */ }
   }
 
+  // Draw org signature image
+  if (organizationSignature && autoSignatureOS) {
+    try {
+      const oSigB64 = await loadImageAsBase64(organizationSignature);
+      if (oSigB64) {
+        const maxH = 16, maxW = 58;
+        const img = new Image();
+        img.src = oSigB64;
+        await new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); });
+        const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
+        const dw = (img.width || maxW) * ratio, dh = (img.height || maxH) * ratio;
+        doc.addImage(oSigB64, "PNG", rightSignX + (signatureWidth - dw) / 2, yPos - dh - 2, dw, dh);
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Signature lines
   doc.setDrawColor(textMuted.r, textMuted.g, textMuted.b);
-  doc.setLineWidth(0.3);
-  doc.setLineDashPattern([1, 1], 0);
+  doc.setLineWidth(0.4);
+  doc.setLineDashPattern([2, 1.5], 0);
   doc.line(leftSignX, yPos, leftSignX + signatureWidth, yPos);
   doc.line(rightSignX, yPos, rightSignX + signatureWidth, yPos);
   doc.setLineDashPattern([], 0);
 
+  // Names below lines
   yPos += 4;
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-  doc.text("Assinatura do cliente", leftSignX + signatureWidth / 2, yPos, { align: "center" });
-  doc.text(organizationName || "Assinatura da empresa", rightSignX + signatureWidth / 2, yPos, { align: "center" });
+  doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+  doc.text(service.client?.name || "Cliente", leftSignX + signatureWidth / 2, yPos, { align: "center" });
+  doc.text(organizationName, rightSignX + signatureWidth / 2, yPos, { align: "center" });
 
-  // Disclaimer clause when signature is present
-  if (organizationSignature && autoSignatureOS) {
-    yPos += 6;
-    doc.setFontSize(6);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+  // Disclaimer clause
+  if (needsClause) {
+    yPos += 8;
+    doc.setFontSize(6); doc.setFont("helvetica", "italic"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
     const clause = "A assinatura da empresa neste documento representa apenas a emissão formal da Ordem de Serviço e não confirma a execução do serviço, que depende da realização e aceite final do cliente.";
-    const clauseLines = doc.splitTextToSize(clause, pageWidth - margin * 2 - 10);
+    const clauseLines = doc.splitTextToSize(clause, contentWidth - 20);
     doc.text(clauseLines, pageWidth / 2, yPos, { align: "center" });
   }
 
-  // ===================== FOOTER (all pages) =====================
+  // ═══════════════════════════════════════════
+  //  FOOTER (all pages)
+  // ═══════════════════════════════════════════
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
-    const footerY = pageHeight - 10;
+    const footerY = pageHeight - 8;
+
+    // Divider line
     doc.setDrawColor(primary.r, primary.g, primary.b);
-    doc.setLineWidth(0.5);
+    doc.setLineWidth(0.4);
     doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4);
 
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text(organizationName, margin + 5, footerY);
-    doc.text(`Página ${p} de ${totalPages}`, pageWidth - margin - 5, footerY, { align: "right" });
+    doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    doc.text("Documento gerado pela Tecvo · tecvo.com.br", margin, footerY);
+    doc.text(`Página ${p} de ${totalPages}`, pageWidth - margin, footerY, { align: "right" });
   }
 
-  const fileName = `ordem-servico-${service.quote_number?.toString().padStart(4, "0") || "0001"}-${service.client?.name?.replace(/\s+/g, "_") || "cliente"}.pdf`;
+  // ── Output ──
+  const fileName = `OS-${osNumber}-${(service.client?.name || "cliente").replace(/\s+/g, "_")}.pdf`;
 
   if (returnBlob) {
     return doc.output("blob");
