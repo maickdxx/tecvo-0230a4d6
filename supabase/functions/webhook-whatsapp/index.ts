@@ -1181,6 +1181,7 @@ Deno.serve(async (req) => {
           is_group: isGroup,
           channel_id: channel.id,
           conversation_status: "novo",
+          conversion_status: "novo_contato",
           needs_resolution: true,
           is_unread: true,
           has_conversation: true,

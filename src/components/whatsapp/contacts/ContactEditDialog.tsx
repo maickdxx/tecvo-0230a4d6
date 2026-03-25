@@ -131,6 +131,7 @@ export function ContactEditDialog({ open, onOpenChange, channelId, contact, onSa
             whatsapp_id: whatsappId,
             is_group: false,
             conversation_status: "novo",
+            conversion_status: "novo_contato",
             source: "whatsapp",
             internal_note: notes.trim() || null,
             tags: selectedTags.length > 0 ? selectedTags : null,
