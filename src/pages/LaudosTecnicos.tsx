@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +44,7 @@ import {
   User,
   Wrench
 } from "lucide-react";
-import { useTechnicalReports, REPORT_STATUS_LABELS, EQUIPMENT_CONDITIONS } from "@/hooks/useTechnicalReports";
+import { useTechnicalReports, REPORT_STATUS_LABELS, EQUIPMENT_CONDITIONS, CLEANLINESS_STATUS } from "@/hooks/useTechnicalReports";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { formatDateInTz } from "@/lib/timezone";
@@ -72,9 +73,9 @@ export default function LaudosTecnicos() {
   const stats = useMemo(() => {
     return {
       total: reports.length,
-      attention: reports.filter(r => r.equipment_condition === 'regular' || r.equipment_condition === 'bad').length,
+      attention: reports.filter(r => r.equipment_condition === 'regular' || r.equipment_condition === 'bad' || r.cleanliness_status === 'dirty' || r.cleanliness_status === 'needs_cleaning').length,
       critical: reports.filter(r => r.equipment_condition === 'critical' || r.equipment_condition === 'inoperative').length,
-      working: reports.filter(r => r.equipment_condition === 'good').length,
+      working: reports.filter(r => r.equipment_condition === 'good' && r.cleanliness_status === 'clean').length,
     };
   }, [reports]);
 
@@ -113,6 +114,16 @@ export default function LaudosTecnicos() {
 
   const handlePDF = async (report: any) => {
     try {
+      let signatureData = null;
+      if (report.service_id) {
+        const { data } = await supabase
+          .from("service_signatures")
+          .select("*")
+          .eq("service_id", report.service_id)
+          .maybeSingle();
+        signatureData = data;
+      }
+
       await generateReportPDF({
         report,
         organizationName: organization?.name || "Minha Empresa",
@@ -124,6 +135,7 @@ export default function LaudosTecnicos() {
         organizationCity: organization?.city || undefined,
         organizationState: organization?.state || undefined,
         timezone: tz,
+        signature: signatureData,
       });
       toast({ title: "PDF gerado!" });
     } catch (err) {
@@ -159,6 +171,31 @@ export default function LaudosTecnicos() {
             Indeterminado
           </Badge>
         );
+    }
+  };
+
+  const getCleanlinessBadge = (status: string | null) => {
+    switch (status) {
+      case "clean":
+        return (
+          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1.5 font-medium hover:bg-emerald-500/20 transition-colors">
+            <CheckCircle2 className="h-3 w-3" /> Limpo
+          </Badge>
+        );
+      case "dirty":
+        return (
+          <Badge className="bg-rose-500/10 text-rose-600 border-rose-200 gap-1.5 font-medium hover:bg-rose-500/20 transition-colors">
+            <AlertCircle className="h-3 w-3" /> Sujo
+          </Badge>
+        );
+      case "needs_cleaning":
+        return (
+          <Badge className="bg-amber-500/10 text-amber-600 border-amber-200 gap-1.5 font-medium hover:bg-amber-500/20 transition-colors">
+            <AlertTriangle className="h-3 w-3" /> Necessita Limpeza
+          </Badge>
+        );
+      default:
+        return null;
     }
   };
 
@@ -356,6 +393,7 @@ export default function LaudosTecnicos() {
                             {report.client?.name || "Cliente não informado"}
                           </h3>
                           {getConditionBadge(report.equipment_condition)}
+                          {getCleanlinessBadge(report.cleanliness_status)}
                           <Badge variant="outline" className={cn(
                             "text-[10px] uppercase font-bold",
                             report.status === 'finalized' ? "text-primary border-primary/20 bg-primary/5" : "text-muted-foreground border-muted"

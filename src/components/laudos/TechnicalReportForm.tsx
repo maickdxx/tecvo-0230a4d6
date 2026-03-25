@@ -16,9 +16,11 @@ import {
 import { Loader2, FileText, User, Wrench, ClipboardCheck, Stethoscope, Gauge, ShieldAlert, MessageSquare } from "lucide-react";
 import { ClientCombobox } from "@/components/services/ClientCombobox";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { useToast } from "@/hooks/use-toast";
 import {
   INSPECTION_ITEMS,
   EQUIPMENT_CONDITIONS,
+  CLEANLINESS_STATUS,
   type TechnicalReportFormData,
   type TechnicalReport,
 } from "@/hooks/useTechnicalReports";
@@ -58,6 +60,7 @@ export function TechnicalReportForm({
   defaultQuoteServiceId,
   defaultClientId,
 }: TechnicalReportFormProps) {
+  const { toast } = useToast();
   const { fieldWorkers } = useTeamMembers();
   const [checklist, setChecklist] = useState<string[]>(
     (report?.inspection_checklist as string[]) || []
@@ -86,8 +89,10 @@ export function TechnicalReportForm({
       visit_reason: report?.visit_reason ?? "",
       diagnosis: report?.diagnosis ?? "",
       equipment_condition: report?.equipment_condition ?? "",
+      cleanliness_status: report?.cleanliness_status ?? "clean",
       recommendation: report?.recommendation ?? "Realizar reaperto e alinhamento da turbina e manter plano de manutenção preventiva periódica.",
       risks: report?.risks ?? "",
+      interventions_performed: report?.interventions_performed ?? "",
       conclusion: report?.conclusion ?? "Após a execução da limpeza química da evaporadora e higienização dos filtros, houve melhora no fluxo de ar e nas condições de operação do equipamento.\n\nNo entanto, ainda foi identificado leve ruído intermitente associado ao conjunto da turbina, indicando início de desgaste mecânico, o que pode impactar a performance ao longo do tempo.\n\nSTATUS ATUAL:\nEquipamento operacional com desempenho parcialmente restabelecido, porém ainda requer atenção para ajuste mecânico futuro.",
       observations: report?.observations ?? "",
       needs_quote: report?.needs_quote ?? false,
@@ -110,6 +115,34 @@ export function TechnicalReportForm({
   };
 
   const handleFormSubmit = async (data: TechnicalReportFormData) => {
+    // Validação de consistência
+    if (data.equipment_condition === "good" && data.cleanliness_status === "dirty" && !data.observations) {
+      toast({
+        variant: "destructive",
+        title: "Inconsistência técnica",
+        description: "Equipamento em 'Perfeito estado' mas marcado como 'Sujo'. Por favor, adicione contexto nas observações.",
+      });
+      return;
+    }
+
+    if (!data.diagnosis || data.diagnosis.length < 10) {
+      toast({
+        variant: "destructive",
+        title: "Diagnóstico incompleto",
+        description: "O diagnóstico técnico deve ser mais detalhado para validade jurídica.",
+      });
+      return;
+    }
+
+    if (!data.conclusion || data.conclusion.length < 10) {
+      toast({
+        variant: "destructive",
+        title: "Conclusão obrigatória",
+        description: "A conclusão técnica é obrigatória e deve informar o status final.",
+      });
+      return;
+    }
+
     await onSubmit({
       ...data,
       inspection_checklist: checklist,
@@ -257,22 +290,26 @@ export function TechnicalReportForm({
 
       {/* 7. Measurements */}
       <Card>
-        <SectionHeader icon={Gauge} title="Evidências / Medições" />
+        <SectionHeader icon={Gauge} title="Evidências / Medições Técnicas" />
         <CardContent className="px-4 pb-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { key: "pressure", label: "Pressão" },
-              { key: "temperature", label: "Temperatura" },
-              { key: "voltage_measured", label: "Tensão" },
-              { key: "current_measured", label: "Corrente" },
+              { key: "pressure", label: "Pressão", unit: "psi" },
+              { key: "temperature", label: "Temperatura", unit: "°C" },
+              { key: "voltage_measured", label: "Tensão", unit: "V" },
+              { key: "current_measured", label: "Corrente", unit: "A" },
             ].map((m) => (
               <div key={m.key}>
-                <Label>{m.label}</Label>
-                <Input
-                  value={measurements[m.key] || ""}
-                  onChange={(e) => updateMeasurement(m.key, e.target.value)}
-                  placeholder={`Informe a ${m.label.toLowerCase()}`}
-                />
+                <Label>{m.label} ({m.unit})</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    className="flex-1"
+                    value={measurements[m.key] || ""}
+                    onChange={(e) => updateMeasurement(m.key, e.target.value)}
+                    placeholder={`Ex: ${m.key === "pressure" ? "65" : m.key === "temperature" ? "12" : m.key === "voltage" ? "220" : "4.5"}`}
+                  />
+                  <span className="text-xs font-semibold text-muted-foreground w-8">{m.unit}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -282,6 +319,7 @@ export function TechnicalReportForm({
               rows={2}
               value={measurements.notes || ""}
               onChange={(e) => updateMeasurement("notes", e.target.value)}
+              placeholder="Contextualize os valores aferidos se necessário..."
             />
           </div>
         </CardContent>
@@ -289,11 +327,11 @@ export function TechnicalReportForm({
 
       {/* 8. Equipment Condition */}
       <Card>
-        <SectionHeader icon={ShieldAlert} title="Classificação do Equipamento" />
+        <SectionHeader icon={ShieldAlert} title="Status Estrutural e Limpeza" />
         <CardContent className="px-4 pb-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>Estado do Equipamento</Label>
+              <Label>Condição Estrutural</Label>
               <Select
                 value={watch("equipment_condition") || ""}
                 onValueChange={(v) => setValue("equipment_condition", v)}
@@ -301,6 +339,20 @@ export function TechnicalReportForm({
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(EQUIPMENT_CONDITIONS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Condição de Limpeza</Label>
+              <Select
+                value={watch("cleanliness_status") || "clean"}
+                onValueChange={(v) => setValue("cleanliness_status", v)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CLEANLINESS_STATUS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -320,22 +372,37 @@ export function TechnicalReportForm({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={watch("needs_quote")}
-              onCheckedChange={(v) => setValue("needs_quote", !!v)}
-            />
-            <Label className="cursor-pointer">Necessita orçamento?</Label>
+            <div className="flex items-end pb-1.5">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="needs_quote"
+                  checked={watch("needs_quote")}
+                  onCheckedChange={(v) => setValue("needs_quote", !!v)}
+                />
+                <Label htmlFor="needs_quote" className="cursor-pointer">Necessita orçamento?</Label>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 9. Recommendation */}
+      {/* 9. Interventions */}
       <Card>
-        <SectionHeader icon={MessageSquare} title="Recomendação Técnica" />
+        <SectionHeader icon={Wrench} title="Intervenções Realizadas" />
         <CardContent className="px-4 pb-4">
-          <Textarea rows={3} placeholder="Ex: Limpeza técnica, troca de peça, substituição..." {...register("recommendation")} />
+          <Textarea 
+            rows={3} 
+            placeholder="O que foi feito nesta visita? Ex: Limpeza de filtros, reaperto de conexões..." 
+            {...register("interventions_performed")} 
+          />
+        </CardContent>
+      </Card>
+
+      {/* 10. Recommendation */}
+      <Card>
+        <SectionHeader icon={MessageSquare} title="Recomendações de Segurança / Ação" />
+        <CardContent className="px-4 pb-4">
+          <Textarea rows={3} placeholder="Recomendações técnicas para o cliente..." {...register("recommendation")} />
         </CardContent>
       </Card>
 
@@ -347,11 +414,15 @@ export function TechnicalReportForm({
         </CardContent>
       </Card>
 
-      {/* 11. Conclusion */}
+      {/* 12. Conclusion */}
       <Card>
-        <SectionHeader icon={FileText} title="CONCLUSÃO TÉCNICA APÓS INTERVENÇÃO" />
+        <SectionHeader icon={ClipboardCheck} title="Conclusão e Status Pós-Intervenção (Obrigatório)" />
         <CardContent className="px-4 pb-4">
-          <Textarea rows={3} {...register("conclusion")} placeholder="Descreva a conclusão técnica após a intervenção..." />
+          <Textarea 
+            rows={4} 
+            {...register("conclusion")} 
+            placeholder="Descreva o status final do equipamento após as intervenções. Informe se houve melhora e se o equipamento está operacional." 
+          />
         </CardContent>
       </Card>
 

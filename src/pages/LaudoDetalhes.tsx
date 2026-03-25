@@ -14,7 +14,8 @@ import {
   ArrowLeft, Edit, Trash2, Download, Loader2, User, Wrench, ClipboardCheck,
   Stethoscope, Gauge, ShieldAlert, MessageSquare, FileText, Link2, CheckCircle2, XCircle,
 } from "lucide-react";
-import { useTechnicalReport, useTechnicalReportMutations, REPORT_STATUS_LABELS, EQUIPMENT_CONDITIONS, INSPECTION_ITEMS } from "@/hooks/useTechnicalReports";
+import { useTechnicalReport, useTechnicalReportMutations, REPORT_STATUS_LABELS, EQUIPMENT_CONDITIONS, CLEANLINESS_STATUS, INSPECTION_ITEMS } from "@/hooks/useTechnicalReports";
+import { useServiceSignatures } from "@/hooks/useServiceSignatures";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { formatDateInTz } from "@/lib/timezone";
@@ -58,6 +59,7 @@ export default function LaudoDetalhes() {
   const { remove } = useTechnicalReportMutations();
   const { organization } = useOrganization();
   const tz = useOrgTimezone();
+  const { signature } = useServiceSignatures(report?.service_id || undefined);
   const [showDelete, setShowDelete] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
@@ -103,6 +105,7 @@ export default function LaudoDetalhes() {
         organizationCity: organization?.city || undefined,
         organizationState: organization?.state || undefined,
         timezone: tz,
+        signature,
       });
       toast({ title: "PDF gerado!" });
     } catch (err) {
@@ -254,15 +257,23 @@ export default function LaudoDetalhes() {
         )}
 
         {/* Condition */}
-        {(conditionLabel || report.equipment_working) && (
-          <SectionCard icon={ShieldAlert} title="Classificação do Equipamento">
-            <InfoRow label="Estado" value={conditionLabel} />
+        {(conditionLabel || report.cleanliness_status || report.equipment_working) && (
+          <SectionCard icon={ShieldAlert} title="Status Estrutural e Limpeza">
+            <InfoRow label="Estado Estrutural" value={conditionLabel} />
+            <InfoRow label="Condição de Limpeza" value={report.cleanliness_status ? CLEANLINESS_STATUS[report.cleanliness_status] || report.cleanliness_status : null} />
             <InfoRow label="Funcionando" value={workingLabel} />
             {report.needs_quote && (
               <div className="flex items-center gap-1.5 text-sm text-amber-600 mt-1">
                 <XCircle className="h-3.5 w-3.5" /> Necessita orçamento
               </div>
             )}
+          </SectionCard>
+        )}
+
+        {/* Interventions */}
+        {report.interventions_performed && (
+          <SectionCard icon={Wrench} title="Intervenções Realizadas">
+            <p className="text-sm whitespace-pre-wrap">{report.interventions_performed}</p>
           </SectionCard>
         )}
 
@@ -282,7 +293,7 @@ export default function LaudoDetalhes() {
 
         {/* Conclusion */}
         {report.conclusion && (
-          <SectionCard icon={FileText} title="CONCLUSÃO TÉCNICA APÓS INTERVENÇÃO">
+          <SectionCard icon={ClipboardCheck} title="CONCLUSÃO E STATUS PÓS-INTERVENÇÃO">
             <p className="text-sm whitespace-pre-wrap">{report.conclusion}</p>
           </SectionCard>
         )}
