@@ -234,7 +234,7 @@ export const tutorialModules: TutorialModuleData[] = [
         title: "Criar um serviço recorrente",
         description: "Acesse Comercial > Recorrência para configurar serviços que se repetem automaticamente. Defina o cliente, tipo de serviço, periodicidade (mensal, trimestral, semestral, anual) e a data de início.",
         tips: [
-          "Ideal para contratos de manutenção preventiva, limpeza periódica, etc.",
+          "Ideal para contratos de manutenção, serviços periódicos e recorrentes.",
           "O sistema cria as OS automaticamente conforme a periodicidade configurada."
         ]
       },

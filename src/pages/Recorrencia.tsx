@@ -63,7 +63,7 @@ function EmptyState() {
         <div className="max-w-md space-y-2">
           <h3 className="text-xl font-semibold text-foreground">Você ainda não tem recorrências ativas</h3>
           <p className="text-sm text-muted-foreground">
-            Assim que concluir serviços de <strong>limpeza</strong> ou <strong>instalação</strong>, o sistema criará a jornada de reativação automaticamente.
+            Assim que concluir <strong>serviços configurados para gerar recorrência</strong>, o sistema criará a jornada de reativação automaticamente.
           </p>
         </div>
         <Card className="w-full max-w-lg border-dashed bg-muted/30">
@@ -235,7 +235,7 @@ function ClientTimeline({ client }: { client: RecurrenceClient }) {
     { label: "Serviço realizado", done: true, icon: CheckCircle2, color: "text-success" },
     { label: "2 meses (filtro)", done: !!client.msg2mSentAt, icon: Send, color: "text-info" },
     { label: "4 meses (reforço)", done: !!client.msg4mSentAt, icon: Send, color: "text-info" },
-    { label: "6 meses (limpeza)", done: !!client.msg6mSentAt, icon: Send, color: "text-warning" },
+    { label: "6 meses (reativação)", done: !!client.msg6mSentAt, icon: Send, color: "text-warning" },
     { label: "8 meses (reengajamento)", done: !!client.msg8mSentAt, icon: Send, color: "text-warning" },
     { label: "10 meses (reengajamento)", done: !!client.msg10mSentAt, icon: Send, color: "text-destructive" },
     { label: "12 meses (última tentativa)", done: !!client.msg12mSentAt, icon: Send, color: "text-destructive" },
@@ -397,7 +397,7 @@ export default function Recorrencia() {
     if (!number) return;
     const fullNumber = number.startsWith("55") ? number : `55${number}`;
     const message = encodeURIComponent(
-      `Olá${client.clientName ? ` ${client.clientName.split(" ")[0]}` : ""}! Já faz cerca de 6 meses do último serviço 😊\nEstá na hora da próxima manutenção preventiva. Quer agendar?`
+      `Olá${client.clientName ? ` ${client.clientName.split(" ")[0]}` : ""}! Já faz algum tempo desde o último serviço 😊\nEstá na hora da nova revisão. Quer agendar?`
     );
     window.open(`https://wa.me/${fullNumber}?text=${message}`, "_blank");
   };
@@ -422,7 +422,7 @@ export default function Recorrencia() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Recorrência</h1>
             <p className="text-sm text-muted-foreground">
-              Jornada automática de reativação — limpeza de ar-condicionado
+              Jornada automática de reativação de serviços
             </p>
           </div>
         </div>
