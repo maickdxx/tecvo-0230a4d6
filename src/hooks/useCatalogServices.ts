@@ -16,6 +16,7 @@ export interface CatalogService {
   category: string | null;
   estimated_duration: string | null;
   checklist_id: string | null;
+  standard_checklist: string[];
   is_non_standard: boolean;
   created_at: string;
   updated_at: string;
@@ -32,6 +33,7 @@ export interface CatalogServiceFormData {
   category?: string;
   estimated_duration?: string;
   checklist_id?: string;
+  standard_checklist?: string[];
   is_non_standard?: boolean;
 }
 
