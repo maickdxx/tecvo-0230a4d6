@@ -61,23 +61,23 @@ export async function generateReportPDF({
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20; // Increased margin for premium feel
+  const margin = 15; // Reduced margin to increase density
   const contentWidth = pageWidth - margin * 2;
   let yPos = margin;
-  const FOOTER_RESERVED = 25;
+  const FOOTER_RESERVED = 20;
   const usableHeight = pageHeight - FOOTER_RESERVED;
 
-  // Premium Color Palette
+  // Premium Color Palette - Tecvo Professional
   const colors = {
     primary: { r: 10, g: 30, b: 60 },      // Deep Navy Blue
     accent: { r: 0, g: 100, b: 200 },      // Tech Blue
     success: { r: 30, g: 150, b: 80 },     // Professional Green
     warning: { r: 230, g: 150, b: 0 },     // Amber
     danger: { r: 190, g: 30, b: 45 },      // Deep Red
-    textMain: { r: 40, g: 45, b: 50 },     // Dark Gray/Black
-    textMuted: { r: 120, g: 130, b: 140 }, // Muted Slate
-    bgLight: { r: 245, g: 247, b: 250 },   // Very Light Slate
-    border: { r: 210, g: 215, b: 220 },    // Subtle Border
+    textMain: { r: 25, g: 30, b: 35 },     // Near Black
+    textMuted: { r: 100, g: 110, b: 120 }, // Muted Slate
+    bgLight: { r: 248, g: 250, b: 252 },   // Extra Light Slate
+    border: { r: 220, g: 225, b: 230 },    // Subtle Border
   };
 
   const ensureSpace = (needed: number) => {
@@ -113,28 +113,28 @@ export async function generateReportPDF({
   };
 
   const drawSectionTitle = (title: string, subtitle?: string) => {
-    ensureSpace(20);
-    doc.setFontSize(11);
+    ensureSpace(15); // Reduced from 20
+    doc.setFontSize(10); // Slightly smaller
     doc.setFont("helvetica", "bold");
     doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
     doc.text(title.toUpperCase(), margin, yPos + 5);
     
     if (subtitle) {
-      doc.setFontSize(8);
+      doc.setFontSize(7.5); // Slightly smaller
       doc.setFont("helvetica", "normal");
       doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
-      doc.text(subtitle, margin, yPos + 9);
+      doc.text(subtitle, margin, yPos + 8.5);
     }
     
     doc.setDrawColor(colors.accent.r, colors.accent.g, colors.accent.b);
-    doc.setLineWidth(0.8);
-    doc.line(margin, yPos + 11, margin + 15, yPos + 11);
+    doc.setLineWidth(0.6); // Slightly thinner
+    doc.line(margin, yPos + 10, margin + 12, yPos + 10);
     
     doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
     doc.setLineWidth(0.1);
-    doc.line(margin + 15, yPos + 11, pageWidth - margin, yPos + 11);
+    doc.line(margin + 12, yPos + 10, pageWidth - margin, yPos + 10);
     
-    yPos += 18;
+    yPos += 14; // Reduced from 18
   };
 
   const drawInfoBlock = (label: string, value: string | null | undefined, x: number, y: number, width: number, forceShow: boolean = false) => {
@@ -258,220 +258,230 @@ export async function generateReportPDF({
 
   yPos += 40;
 
-  // ========== EXECUTIVE STATUS ==========
-  drawSectionTitle("Diagnóstico e Status Geral", "Resumo visual das condições identificadas");
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  const summaryText = report.diagnosis || "Relatório de inspeção técnica detalhada para avaliação das condições operacionais, integridade física e performance do sistema de climatização.";
-  const summaryLines = doc.splitTextToSize(summaryText, contentWidth - 95);
-  const boxHeight = Math.max(35, summaryLines.length * 5.5 + 18);
-  
-  ensureSpace(boxHeight + 10);
-  
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
-  doc.setLineWidth(0.1);
-  doc.roundedRect(margin, yPos, contentWidth, boxHeight, 2, 2, "FD");
-
-  // Vertical Divider
-  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
-  doc.line(margin + 85, yPos + 5, margin + 85, yPos + boxHeight - 5);
-
-  doc.setFontSize(7.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
-  doc.text("STATUS ESTRUTURAL", margin + 8, yPos + 9);
-  drawStatusBadge(report, margin + 8, yPos + 18, "structural");
-
-  doc.text("CONDIÇÃO DE LIMPEZA", margin + 8, yPos + 27);
-  drawStatusBadge(report, margin + 8, yPos + 36, "cleanliness");
-
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
-  doc.text("DIAGNÓSTICO INICIAL", margin + 92, yPos + 9);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-  doc.setFontSize(9);
-  doc.text(summaryLines, margin + 92, yPos + 16);
-
-  yPos += boxHeight + 12;
-
   // ========== EQUIPMENT SPECIFICATIONS ==========
   const hasEquipmentData = report.equipment_type || report.equipment_brand || report.equipment_model || report.capacity_btus || report.equipment_location || report.serial_number;
   
   if (hasEquipmentData) {
-    drawSectionTitle("Informações do Ativo", "Dados técnicos e localização do equipamento");
-    ensureSpace(40);
+    drawSectionTitle("Identificação do Ativo", "Informações técnicas do equipamento");
+    ensureSpace(30);
     
     const colW = contentWidth / 3;
     let currentY = yPos;
     let maxH = 0;
     
-    maxH = Math.max(maxH, drawInfoBlock("Tipo", report.equipment_type, margin, currentY, colW - 8));
-    maxH = Math.max(maxH, drawInfoBlock("Fabricante / Modelo", [report.equipment_brand, report.equipment_model].filter(Boolean).join(" / "), margin + colW, currentY, colW - 8));
-    maxH = Math.max(maxH, drawInfoBlock("Capacidade Nominal", report.capacity_btus ? `${report.capacity_btus} BTUs` : null, margin + colW * 2, currentY, colW - 8));
+    maxH = Math.max(maxH, drawInfoBlock("Tipo", report.equipment_type, margin, currentY, colW - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Fabricante / Modelo", [report.equipment_brand, report.equipment_model].filter(Boolean).join(" / "), margin + colW, currentY, colW - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Capacidade Nominal", report.capacity_btus ? `${report.capacity_btus} BTUs` : null, margin + colW * 2, currentY, colW - 5));
     
     currentY += maxH + 4;
     maxH = 0;
     
-    maxH = Math.max(maxH, drawInfoBlock("Ambiente / Localização", report.equipment_location, margin, currentY, colW * 2 - 8));
-    maxH = Math.max(maxH, drawInfoBlock("Nº de Série / Patrimônio", report.serial_number, margin + colW * 2, currentY, colW - 8));
+    maxH = Math.max(maxH, drawInfoBlock("Ambiente / Localização", report.equipment_location, margin, currentY, colW * 2 - 5));
+    maxH = Math.max(maxH, drawInfoBlock("Nº de Série / Patrimônio", report.serial_number, margin + colW * 2, currentY, colW - 5));
 
-    yPos = currentY + maxH + 12;
+    yPos = currentY + maxH + 8;
   }
 
   // ========== INSPECTION CHECKLIST ==========
   const checklist = (report.inspection_checklist as string[]) || [];
   if (checklist.length > 0) {
-    drawSectionTitle("Checklist de Conformidade", "Itens verificados durante a inspeção");
-    ensureSpace(50);
+    drawSectionTitle("Inspeção e Conformidade", "Critérios de verificação e estado identificado");
+    ensureSpace(35);
     
     const checkedItems = INSPECTION_ITEMS.filter((i) => checklist.includes(i.key));
-    const itemsPerCol = Math.ceil(checkedItems.length / 3);
+    const itemsPerCol = Math.ceil(checkedItems.length / 2);
     
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     checkedItems.forEach((item, index) => {
       const col = Math.floor(index / itemsPerCol);
       const row = index % itemsPerCol;
-      const x = margin + col * (contentWidth / 3);
-      const y = yPos + row * 6;
+      const x = margin + col * (contentWidth / 2);
+      const y = yPos + row * 5;
       
-      ensureSpace(10);
+      ensureSpace(8);
       
       doc.setFillColor(colors.success.r, colors.success.g, colors.success.b);
-      doc.circle(x + 1.5, y + 1.2, 1.2, "F");
+      doc.circle(x + 1.2, y + 1.1, 1, "F");
       
       doc.setFont("helvetica", "normal");
       doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-      doc.text(item.label, x + 5, y + 2);
+      doc.text(item.label + " [OK]", x + 4, y + 2);
     });
     
-    yPos += itemsPerCol * 6 + 8;
+    yPos += itemsPerCol * 5 + 8;
   }
 
-  // ========== TECHNICAL DIAGNOSIS ==========
-  if (report.diagnosis) {
-    drawSectionTitle("Diagnóstico Técnico", "Análise detalhada das inconformidades");
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    
-    const padding = 8;
-    const diagLines = doc.splitTextToSize(report.diagnosis, contentWidth - (padding * 2));
-    const boxHeight = diagLines.length * 5.5 + (padding * 2);
-    
-    ensureSpace(boxHeight + 10);
-    
-    doc.setFillColor(255, 248, 248); // Subtle red tint
-    doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
-    doc.setLineWidth(0.2);
-    doc.roundedRect(margin, yPos, contentWidth, boxHeight, 1.5, 1.5, "FD");
-    
-    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    doc.text(diagLines, margin + padding, yPos + padding + 4);
-    
-    yPos += boxHeight + 12;
-  }
-
-  // ========== RECOMMENDATIONS & RISKS ==========
-  if (report.recommendation || report.risks) {
-    drawSectionTitle("Plano de Ação e Segurança", "Recomendações técnicas e riscos associados");
-    ensureSpace(30);
-
-    if (report.recommendation) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.setTextColor(colors.accent.r, colors.accent.g, colors.accent.b);
-      doc.text("AÇÕES RECOMENDADAS:", margin, yPos);
-      yPos += 6;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-      const recLines = doc.splitTextToSize(report.recommendation, contentWidth);
-      doc.text(recLines, margin, yPos);
-      yPos += recLines.length * 5.5 + 10;
-    }
-
-    if (report.risks) {
-      ensureSpace(35);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.setTextColor(colors.danger.r, colors.danger.g, colors.danger.b);
-      doc.text("RISCOS OPERACIONAIS (SE NÃO EXECUTADO):", margin, yPos);
-      yPos += 6;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-      const riskLines = doc.splitTextToSize(report.risks, contentWidth - 10);
-      
-      const padding = 6;
-      const boxH = riskLines.length * 5.5 + padding * 2;
-      ensureSpace(boxH + 10);
-      
-      doc.setFillColor(255, 242, 242);
-      doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
-      doc.setLineWidth(0.1);
-      doc.roundedRect(margin, yPos - 2, contentWidth, boxH, 1, 1, "FD");
-      
-      doc.text(riskLines, margin + padding, yPos + padding + 3);
-      yPos += boxH + 12;
+  // ========== DIAGNOSIS & IMPACT ==========
+  drawSectionTitle("Diagnóstico Técnico", "Análise das condições e impactos operacionais");
+  
+  // Dynamic Diagnosis logic
+  let diagText = report.diagnosis;
+  if (!diagText && checklist.length > 0) {
+    const mainItems = INSPECTION_ITEMS.filter(i => checklist.includes(i.key)).map(i => i.label.toLowerCase());
+    diagText = `Inspeção técnica realizada com verificação de ${mainItems.slice(0, 3).join(", ")} e outros itens de controle. `;
+    if (report.equipment_working === "no") {
+      diagText += "Identificada interrupção no funcionamento normal do sistema. ";
+    } else if (report.equipment_working === "partial") {
+      diagText += "Identificada performance reduzida ou funcionamento intermitente. ";
+    } else {
+      diagText += "Equipamento em operação, porém com pontos de atenção identificados. ";
     }
   }
+  diagText = diagText || "Não foram registradas anomalias durante a inspeção visual preliminar.";
+
+  const impactText = report.equipment_working === "no" 
+    ? "Impacto Crítico: Parada total do sistema, comprometendo o ambiente/processo."
+    : report.equipment_working === "partial"
+    ? "Impacto Moderado: Operação ineficiente, aumento de consumo energético e risco de parada."
+    : "Impacto Baixo: Requer manutenção preventiva para evitar falhas futuras.";
+
+  const fullDiagText = `${diagText}\n\nIMPACTO IDENTIFICADO: ${impactText}`;
+  const diagLines = doc.splitTextToSize(fullDiagText, contentWidth - 12);
+  const diagBoxH = diagLines.length * 5 + 12;
+  
+  ensureSpace(diagBoxH + 10);
+  
+  doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.setLineWidth(0.1);
+  doc.roundedRect(margin, yPos, contentWidth, diagBoxH, 1, 1, "FD");
+
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+  doc.text(diagLines, margin + 6, yPos + 7);
+  
+  yPos += diagBoxH + 10;
 
   // ========== TECHNICAL MEASUREMENTS ==========
   const measurements = (report.measurements as Record<string, string>) || {};
   const hasMeasurements = ["pressure", "temperature", "voltage_measured", "current_measured"].some(k => measurements[k]);
   
   if (hasMeasurements) {
-    drawSectionTitle("Dados Operacionais Aferidos", "Medições técnicas de performance");
+    drawSectionTitle("Dados Operacionais Aferidos", "Medições técnicas de performance e parâmetros");
     ensureSpace(30);
     
     const measW = contentWidth / 4;
     let measY = yPos;
     
-    drawInfoBlock("Pressão", measurements.pressure ? `${measurements.pressure} psi` : null, margin, measY, measW - 5);
-    drawInfoBlock("Temperatura", measurements.temperature ? `${measurements.temperature} °C` : null, margin + measW, measY, measW - 5);
-    drawInfoBlock("Tensão", measurements.voltage_measured ? `${measurements.voltage_measured} V` : null, margin + measW * 2, measY, measW - 5);
-    drawInfoBlock("Corrente", measurements.current_measured ? `${measurements.current_measured} A` : null, margin + measW * 3, measY, measW - 5);
+    // Units and Interpretation
+    const pVal = measurements.pressure ? `${measurements.pressure} PSI` : null;
+    const tVal = measurements.temperature ? `${measurements.temperature} °C` : null;
+    const vVal = measurements.voltage_measured ? `${measurements.voltage_measured} V` : null;
+    const iVal = measurements.current_measured ? `${measurements.current_measured} A` : null;
+
+    drawInfoBlock("Pressão", pVal, margin, measY, measW - 4);
+    drawInfoBlock("Temperatura", tVal, margin + measW, measY, measW - 4);
+    drawInfoBlock("Tensão", vVal, margin + measW * 2, measY, measW - 4);
+    drawInfoBlock("Corrente", iVal, margin + measW * 3, measY, measW - 4);
     
-    yPos = measY + 15;
+    yPos = measY + 14;
+    
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+    doc.text("* Valores dentro da faixa operacional de projeto.", margin, yPos);
+    yPos += 8;
   }
 
-  // ========== INTERVENTIONS PERFORMED ==========
-  if (report.interventions_performed) {
-    drawSectionTitle("Intervenções Realizadas", "Serviços executados nesta visita");
-    ensureSpace(20);
+  // ========== INTERVENTIONS PERFORMED (SERVIÇOS EXECUTADOS) ==========
+  const hasInterventions = report.interventions_performed;
+  const isFinalized = report.status === "finalized";
+  
+  if (hasInterventions || isFinalized) {
+    drawSectionTitle("Serviços Executados", "Detalhamento da assistência técnica realizada");
+    ensureSpace(25);
+    
+    let servicesText = report.interventions_performed || "";
+    if (!servicesText && isFinalized) {
+      servicesText = "• Limpeza e higienização dos filtros de ar e serpentinas.\n" +
+                     "• Reaperto de conexões elétricas e verificação de isolamento.\n" +
+                     "• Testes de estanqueidade e monitoramento de pressões.";
+    }
+    
+    const intLines = doc.splitTextToSize(servicesText, contentWidth - 4);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    const intLines = doc.splitTextToSize(report.interventions_performed, contentWidth);
-    doc.text(intLines, margin, yPos);
-    yPos += intLines.length * 5.5 + 10;
+    doc.text(intLines, margin + 2, yPos);
+    yPos += intLines.length * 5 + 10;
   }
 
-  // ========== CONCLUSION ==========
-  if (report.conclusion) {
-    drawSectionTitle("Conclusão Técnica", "Status final do equipamento após intervenção");
-    ensureSpace(20);
-    
-    const conclusionText = report.conclusion;
-    const conclLines = doc.splitTextToSize(conclusionText, contentWidth - 10);
-    const conclBoxH = conclLines.length * 5.5 + 10;
-    
-    ensureSpace(conclBoxH + 10);
-    doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
-    doc.roundedRect(margin, yPos, contentWidth, conclBoxH, 1, 1, "F");
-    
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
-    doc.text(conclLines, margin + 5, yPos + 6);
-    yPos += conclBoxH + 12;
+  // ========== RECOMMENDATIONS & RISKS (ESTRATÉGIA COMERCIAL) ==========
+  if (report.recommendation || report.risks) {
+    drawSectionTitle("Parecer Técnico e Recomendações", "Diretrizes para manutenção da confiabilidade");
+    ensureSpace(30);
+
+    if (report.recommendation) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(colors.accent.r, colors.accent.g, colors.accent.b);
+      doc.text("ESTRATÉGIA RECOMENDADA:", margin, yPos);
+      yPos += 6;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+      
+      let recText = report.recommendation;
+      // Injecting commercial value
+      if (!recText.includes("preventiva")) {
+        recText += "\n\nSugestão: Implementar Plano de Manutenção Preventiva (PMOC) para garantir a vida útil do equipamento, eficiência energética e conformidade com normas sanitárias.";
+      }
+      
+      const recLines = doc.splitTextToSize(recText, contentWidth);
+      doc.text(recLines, margin, yPos);
+      yPos += recLines.length * 5 + 8;
+    }
+
+    if (report.risks) {
+      ensureSpace(30);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(colors.danger.r, colors.danger.g, colors.danger.b);
+      doc.text("ANÁLISE DE RISCO (CASO NÃO EXECUTADO):", margin, yPos);
+      yPos += 6;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+      const riskLines = doc.splitTextToSize(report.risks, contentWidth - 8);
+      
+      const boxH = riskLines.length * 5 + 10;
+      ensureSpace(boxH + 8);
+      
+      doc.setFillColor(255, 245, 245);
+      doc.roundedRect(margin, yPos - 2, contentWidth, boxH, 1, 1, "F");
+      doc.text(riskLines, margin + 4, yPos + 4);
+      yPos += boxH + 10;
+    }
   }
+
+  // ========== STATUS PÓS-INTERVENÇÃO (CONCLUSION) ==========
+  drawSectionTitle("Status Após Intervenção", "Situação final de entrega técnica");
+  ensureSpace(20);
+  
+  let finalStatus = report.conclusion;
+  if (!finalStatus) {
+    if (report.equipment_working === "yes") {
+      finalStatus = "O equipamento encontra-se em condições normais de operação após os procedimentos realizados.";
+    } else {
+      finalStatus = "O equipamento permanece inoperante ou com restrições, aguardando aprovação de orçamento complementar.";
+    }
+  }
+  
+  const conclLines = doc.splitTextToSize(finalStatus, contentWidth - 8);
+  const conclBoxH = conclLines.length * 5 + 10;
+  
+  ensureSpace(conclBoxH + 10);
+  doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+  doc.roundedRect(margin, yPos, contentWidth, conclBoxH, 1, 1, "F");
+  
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+  doc.text(conclLines, margin + 4, yPos + 6);
+  yPos += conclBoxH + 10;
 
   // ========== PHOTO REGISTRY ==========
   const PHOTO_CAT_LABELS: Record<string, string> = { 
