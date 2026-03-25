@@ -14,7 +14,8 @@ import {
   ArrowLeft, Edit, Trash2, Download, Loader2, User, Wrench, ClipboardCheck,
   Stethoscope, Gauge, ShieldAlert, MessageSquare, FileText, Link2, CheckCircle2, XCircle,
 } from "lucide-react";
-import { useTechnicalReport, useTechnicalReportMutations, REPORT_STATUS_LABELS, EQUIPMENT_CONDITIONS, INSPECTION_ITEMS } from "@/hooks/useTechnicalReports";
+import { useTechnicalReport, useTechnicalReportMutations, REPORT_STATUS_LABELS, EQUIPMENT_CONDITIONS, CLEANLINESS_STATUS, INSPECTION_ITEMS } from "@/hooks/useTechnicalReports";
+import { useServiceSignatures } from "@/hooks/useServiceSignatures";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { formatDateInTz } from "@/lib/timezone";
