@@ -2811,6 +2811,54 @@ export type Database = {
         }
         Relationships: []
       }
+      technical_report_photos: {
+        Row: {
+          caption: string | null
+          category: string
+          created_at: string
+          id: string
+          organization_id: string
+          photo_url: string
+          report_id: string
+          sort_order: number
+        }
+        Insert: {
+          caption?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          photo_url: string
+          report_id: string
+          sort_order?: number
+        }
+        Update: {
+          caption?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          photo_url?: string
+          report_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_report_photos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technical_report_photos_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "technical_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technical_reports: {
         Row: {
           capacity_btus: string | null
