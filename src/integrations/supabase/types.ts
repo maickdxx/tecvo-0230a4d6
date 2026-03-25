@@ -2549,6 +2549,7 @@ export type Database = {
       service_types: {
         Row: {
           created_at: string | null
+          generates_recurrence: boolean | null
           id: string
           is_default: boolean | null
           name: string
@@ -2557,6 +2558,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          generates_recurrence?: boolean | null
           id?: string
           is_default?: boolean | null
           name: string
@@ -2565,6 +2567,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          generates_recurrence?: boolean | null
           id?: string
           is_default?: boolean | null
           name?: string
