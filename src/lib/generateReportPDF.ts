@@ -427,31 +427,50 @@ export async function generateReportPDF({
   const hasMeasurements = ["pressure", "temperature", "voltage_measured", "current_measured"].some(k => measurements[k]);
   
   if (hasMeasurements) {
-    drawSectionTitle("Dados Operacionais", "Aferições técnicas de performance");
-    ensureSpace(35);
+    drawSectionTitle("Dados Operacionais Aferidos", "Medições técnicas de performance");
+    ensureSpace(30);
     
     const measW = contentWidth / 4;
     let measY = yPos;
-    let maxMH = 0;
     
-    maxMH = Math.max(maxMH, drawInfoBlock("Pressão de Sucção", measurements.pressure, margin, measY, measW - 8));
-    maxMH = Math.max(maxMH, drawInfoBlock("Temp. de Saída", measurements.temperature, margin + measW, measY, measW - 8));
-    maxMH = Math.max(maxMH, drawInfoBlock("Tensão Elétrica", measurements.voltage_measured, margin + measW * 2, measY, measW - 8));
-    maxMH = Math.max(maxMH, drawInfoBlock("Corrente Nominal", measurements.current_measured, margin + measW * 3, measY, measW - 8));
+    drawInfoBlock("Pressão", measurements.pressure ? `${measurements.pressure} psi` : null, margin, measY, measW - 5);
+    drawInfoBlock("Temperatura", measurements.temperature ? `${measurements.temperature} °C` : null, margin + measW, measY, measW - 5);
+    drawInfoBlock("Tensão", measurements.voltage_measured ? `${measurements.voltage_measured} V` : null, margin + measW * 2, measY, measW - 5);
+    drawInfoBlock("Corrente", measurements.current_measured ? `${measurements.current_measured} A` : null, margin + measW * 3, measY, measW - 5);
     
-    yPos = measY + maxMH + 12;
+    yPos = measY + 15;
   }
 
-  // ========== SERVICES PERFORMED ==========
-  if (report.conclusion) {
-    drawSectionTitle("Conclusão dos Serviços", "Intervenções realizadas nesta visita");
-    ensureSpace(25);
+  // ========== INTERVENTIONS PERFORMED ==========
+  if (report.interventions_performed) {
+    drawSectionTitle("Intervenções Realizadas", "Serviços executados nesta visita");
+    ensureSpace(20);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    const conclusionLines = doc.splitTextToSize(report.conclusion, contentWidth);
-    doc.text(conclusionLines, margin, yPos);
-    yPos += conclusionLines.length * 5.5 + 12;
+    const intLines = doc.splitTextToSize(report.interventions_performed, contentWidth);
+    doc.text(intLines, margin, yPos);
+    yPos += intLines.length * 5.5 + 10;
+  }
+
+  // ========== CONCLUSION ==========
+  if (report.conclusion) {
+    drawSectionTitle("Conclusão Técnica", "Status final do equipamento após intervenção");
+    ensureSpace(20);
+    
+    const conclusionText = report.conclusion;
+    const conclLines = doc.splitTextToSize(conclusionText, contentWidth - 10);
+    const conclBoxH = conclLines.length * 5.5 + 10;
+    
+    ensureSpace(conclBoxH + 10);
+    doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+    doc.roundedRect(margin, yPos, contentWidth, conclBoxH, 1, 1, "F");
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+    doc.text(conclLines, margin + 5, yPos + 6);
+    yPos += conclBoxH + 12;
   }
 
   // ========== PHOTO REGISTRY ==========
