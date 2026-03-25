@@ -11,21 +11,27 @@ import { trackFBCustomEvent } from "@/lib/fbPixel";
 export type ServiceType = string;
 
 const serviceTypeSlugToEnum: Record<string, string> = {
+  // Portuguese slugs (frontend)
   instalacao: "installation",
   manutencao: "maintenance",
   limpeza: "cleaning",
   contratos: "maintenance_contract",
+  reparo: "repair",
+  pmoc: "pmoc",
+  visita: "visit",
+  orcamento: "quote",
+  desinstalacao: "uninstallation",
   outros: "other",
+  // English slugs / DB enum values (for compatibility)
   installation: "installation",
   maintenance: "maintenance",
   cleaning: "cleaning",
   repair: "repair",
   maintenance_contract: "maintenance_contract",
-  
   visit: "visit",
   quote: "quote",
-  other: "other",
   uninstallation: "uninstallation",
+  other: "other",
 };
 export type ServiceStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
@@ -113,23 +119,28 @@ export interface UseServicesOptions {
 
 /** @deprecated Use useServiceTypes().typeLabels instead for dynamic labels */
 export const SERVICE_TYPE_LABELS: Record<string, string> = {
-  // New Portuguese slugs (primary)
+  // Portuguese slugs
   instalacao: "Instalação",
   limpeza: "Limpeza",
   manutencao: "Manutenção",
   contratos: "Contratos",
-  outros: "Outros",
   reparo: "Reparo",
-  // Legacy English slugs (backward compat)
+  pmoc: "PMOC",
+  visita: "Visita Técnica",
+  orcamento: "Orçamento",
+  desinstalacao: "Desinstalação",
+  outros: "Outros",
+  // English slugs / DB enum values
   installation: "Instalação",
   cleaning: "Limpeza",
   maintenance: "Manutenção",
+  repair: "Reparo",
   maintenance_contract: "Contratos",
+  pmoc_db: "PMOC", // if needed
   visit: "Visita Técnica",
   quote: "Orçamento",
+  uninstallation: "Desinstalação",
   other: "Outros",
-  repair: "Reparo",
-  
 };
 
 export const SERVICE_STATUS_LABELS: Record<ServiceStatus, string> = {
