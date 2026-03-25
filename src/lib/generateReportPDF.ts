@@ -382,6 +382,26 @@ export async function generateReportPDF({
     }
   }
 
+  // ========== MEASUREMENTS ==========
+  const measurements = (report.measurements as Record<string, string>) || {};
+  const hasMeasurements = ["pressure", "temperature", "voltage_measured", "current_measured"].some(k => measurements[k]);
+  
+  if (hasMeasurements) {
+    drawSectionTitle("Dados Técnicos e Medições");
+    ensureSpace(30);
+    
+    const measW = contentWidth / 4;
+    let measY = yPos;
+    let maxMH = 0;
+    
+    maxMH = Math.max(maxMH, drawInfoBlock("Pressão", measurements.pressure, margin, measY, measW - 5));
+    maxMH = Math.max(maxMH, drawInfoBlock("Temperatura", measurements.temperature, margin + measW, measY, measW - 5));
+    maxMH = Math.max(maxMH, drawInfoBlock("Tensão", measurements.voltage_measured, margin + measW * 2, measY, measW - 5));
+    maxMH = Math.max(maxMH, drawInfoBlock("Corrente", measurements.current_measured, margin + measW * 3, measY, measW - 5));
+    
+    yPos = measY + maxMH + 10;
+  }
+
   // ========== SERVICE PERFORMED ==========
   if (report.conclusion) {
     drawSectionTitle("Serviços Realizados na Visita");
@@ -395,20 +415,20 @@ export async function generateReportPDF({
   }
 
   // ========== PHOTOS ==========
-  const PHOTO_CAT_LABELS: Record<string, string> = { before: "Antes", problem: "Problema Identificado", after: "Depois" };
+  const PHOTO_CAT_LABELS: Record<string, string> = { before: "1. ESTADO INICIAL (ANTES)", problem: "2. PROBLEMA IDENTIFICADO", after: "3. SERVIÇO CONCLUÍDO (DEPOIS)" };
   const categories: Array<"before" | "problem" | "after"> = ["before", "problem", "after"];
   
   const hasPhotos = photos.length > 0;
   if (hasPhotos) {
-    drawSectionTitle("Registro Fotográfico (Evidências)");
+    drawSectionTitle("Evidências Fotográficas");
     
     for (const cat of categories) {
-      const catPhotos = photos.filter(p => p.category === cat).slice(0, 2);
+      const catPhotos = photos.filter(p => p.category === cat).slice(0, 4);
       if (catPhotos.length === 0) continue;
 
-      ensureSpace(20);
+      ensureSpace(30);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
       doc.text(PHOTO_CAT_LABELS[cat], margin, yPos);
       yPos += 6;
@@ -416,15 +436,26 @@ export async function generateReportPDF({
       const imgW = (contentWidth - 10) / 2;
       const imgH = imgW * 0.75;
       
-      ensureSpace(imgH + 10);
-      
       for (let i = 0; i < catPhotos.length; i++) {
+        if (i > 0 && i % 2 === 0) {
+          yPos += imgH + 10;
+          ensureSpace(imgH + 10);
+        }
+        
         const p = catPhotos[i];
-        const x = margin + i * (imgW + 10);
+        const x = margin + (i % 2) * (imgW + 10);
+        
         try {
           const data = await loadImageAsBase64(p.photo_url);
           if (data) {
             doc.addImage(data, "JPEG", x, yPos, imgW, imgH, undefined, "MEDIUM");
+            
+            // Add a small label for each photo if there's a description
+            if (p.description) {
+              doc.setFontSize(7);
+              doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+              doc.text(p.description, x, yPos + imgH + 4);
+            }
           }
         } catch {
           doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
@@ -433,7 +464,7 @@ export async function generateReportPDF({
           doc.text("Erro no carregamento", x + imgW / 2, yPos + imgH / 2, { align: "center" });
         }
       }
-      yPos += imgH + 10;
+      yPos += imgH + 15;
     }
   }
 
