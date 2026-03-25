@@ -348,23 +348,26 @@ export async function generateReportPDF({
   // ========== RECOMMENDATIONS ==========
   if (report.recommendation) {
     drawSectionTitle("Recomendações e Plano de Ação");
-    ensureSpace(25);
-    
-    doc.setFillColor(245, 250, 255); // Light Blue Background
-    doc.setDrawColor(colors.accent.r, colors.accent.g, colors.accent.b);
-    doc.setLineWidth(0.1);
-    
-    const recLines = doc.splitTextToSize(report.recommendation, contentWidth - 10);
-    const recBoxHeight = recLines.length * 5 + 10;
-    
-    doc.roundedRect(margin, yPos - 5, contentWidth, recBoxHeight, 1, 1, "FD");
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    doc.text(recLines, margin + 5, yPos + 2);
     
-    yPos += recBoxHeight + 15;
+    const padding = 6;
+    const recLines = doc.splitTextToSize(report.recommendation, contentWidth - (padding * 2));
+    const recBoxHeight = recLines.length * 5 + (padding * 2);
+    
+    ensureSpace(recBoxHeight + 5);
+    
+    doc.setFillColor(245, 250, 255); // Light Blue Background
+    doc.setDrawColor(colors.accent.r, colors.accent.g, colors.accent.b);
+    doc.setLineWidth(0.2);
+    
+    doc.roundedRect(margin, yPos, contentWidth, recBoxHeight, 1, 1, "FD");
+    
+    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    doc.text(recLines, margin + padding, yPos + padding + 3.5);
+    
+    yPos += recBoxHeight + 10;
   }
 
   // ========== PHOTOS ==========
