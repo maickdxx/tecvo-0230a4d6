@@ -474,6 +474,10 @@ export async function generateReportPDF({
     }
   }
   
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+  
   const conclLines = doc.splitTextToSize(finalStatus, contentWidth - 8);
   const conclBoxH = conclLines.length * 5 + 10;
   
@@ -481,9 +485,6 @@ export async function generateReportPDF({
   doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
   doc.roundedRect(margin, yPos, contentWidth, conclBoxH, 1, 1, "F");
   
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
   doc.text(conclLines, margin + 4, yPos + 6);
   yPos += conclBoxH + 10;
 
