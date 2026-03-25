@@ -303,7 +303,7 @@ export async function generateReportPDF({
 
   // ========== DIAGNOSIS & PROBLEM ==========
   if (report.diagnosis) {
-    drawSectionTitle("Diagnóstico Técnico e Problemas Identificados");
+    drawSectionTitle("Diagnóstico Técnico (O que identificamos)");
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -312,7 +312,7 @@ export async function generateReportPDF({
     const diagLines = doc.splitTextToSize(report.diagnosis, contentWidth - (padding * 2));
     const boxHeight = diagLines.length * 5 + (padding * 2);
     
-    ensureSpace(boxHeight + 5);
+    ensureSpace(boxHeight + 10);
     
     doc.setFillColor(255, 245, 245);
     doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
@@ -326,26 +326,56 @@ export async function generateReportPDF({
     yPos += boxHeight + 10;
   }
 
-  // ========== MEASUREMENTS ==========
-  const measurements = (report.measurements as Record<string, string>) || {};
-  const hasMeasurements = ["pressure", "temperature", "voltage_measured", "current_measured"].some(k => measurements[k]);
-  
-  if (hasMeasurements) {
-    drawSectionTitle("Medições e Evidências Técnicas");
+  // ========== RECOMMENDATIONS & RISKS ==========
+  if (report.recommendation || report.risks) {
+    drawSectionTitle("Plano de Ação e Recomendações");
     ensureSpace(20);
-    
-    const measW = contentWidth / 4;
-    drawInfoBlock("Pressão", measurements.pressure, margin, yPos, measW - 5);
-    drawInfoBlock("Temperatura", measurements.temperature, margin + measW, yPos, measW - 5);
-    drawInfoBlock("Tensão", measurements.voltage_measured, margin + measW * 2, yPos, measW - 5);
-    drawInfoBlock("Corrente", measurements.current_measured, margin + measW * 3, yPos, measW - 5);
-    
-    yPos += 15;
+
+    if (report.recommendation) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+      doc.text("O QUE DEVE SER FEITO:", margin, yPos);
+      yPos += 5;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+      const recLines = doc.splitTextToSize(report.recommendation, contentWidth);
+      doc.text(recLines, margin, yPos);
+      yPos += recLines.length * 5 + 8;
+    }
+
+    if (report.risks) {
+      ensureSpace(20);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(colors.danger.r, colors.danger.g, colors.danger.b);
+      doc.text("RISCO DE NÃO REALIZAÇÃO:", margin, yPos);
+      yPos += 5;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+      const riskLines = doc.splitTextToSize(report.risks, contentWidth);
+      
+      const padding = 5;
+      const boxH = riskLines.length * 5 + padding * 2;
+      ensureSpace(boxH + 5);
+      
+      doc.setFillColor(255, 240, 240);
+      doc.setDrawColor(colors.danger.r, colors.danger.g, colors.danger.b);
+      doc.setLineWidth(0.1);
+      doc.roundedRect(margin, yPos - 3, contentWidth, boxH, 1, 1, "FD");
+      
+      doc.text(riskLines, margin + padding, yPos + padding);
+      yPos += boxH + 8;
+    }
   }
 
   // ========== SERVICE PERFORMED ==========
   if (report.conclusion) {
-    drawSectionTitle("Serviços Realizados");
+    drawSectionTitle("Serviços Realizados na Visita");
     ensureSpace(20);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -353,31 +383,6 @@ export async function generateReportPDF({
     const conclusionLines = doc.splitTextToSize(report.conclusion, contentWidth);
     doc.text(conclusionLines, margin, yPos);
     yPos += conclusionLines.length * 5 + 10;
-  }
-
-  // ========== RECOMMENDATIONS ==========
-  if (report.recommendation) {
-    drawSectionTitle("Recomendações e Plano de Ação");
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    
-    const padding = 6;
-    const recLines = doc.splitTextToSize(report.recommendation, contentWidth - (padding * 2));
-    const recBoxHeight = recLines.length * 5 + (padding * 2);
-    
-    ensureSpace(recBoxHeight + 5);
-    
-    doc.setFillColor(245, 250, 255); // Light Blue Background
-    doc.setDrawColor(colors.accent.r, colors.accent.g, colors.accent.b);
-    doc.setLineWidth(0.2);
-    
-    doc.roundedRect(margin, yPos, contentWidth, recBoxHeight, 1, 1, "FD");
-    
-    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-    doc.text(recLines, margin + padding, yPos + padding + 3.5);
-    
-    yPos += recBoxHeight + 10;
   }
 
   // ========== PHOTOS ==========
