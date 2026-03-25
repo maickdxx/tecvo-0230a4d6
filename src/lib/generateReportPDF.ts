@@ -6,9 +6,11 @@ import {
   EQUIPMENT_CONDITIONS,
   type TechnicalReport,
 } from "@/hooks/useTechnicalReports";
+import type { ReportPhoto } from "@/hooks/useReportPhotos";
 
 interface ReportPDFData {
   report: TechnicalReport;
+  photos?: ReportPhoto[];
   organizationName: string;
   organizationCnpj?: string;
   organizationPhone?: string;
@@ -38,6 +40,7 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
 
 export async function generateReportPDF({
   report,
+  photos = [],
   organizationName,
   organizationCnpj,
   organizationPhone,
