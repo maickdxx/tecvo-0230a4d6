@@ -86,9 +86,9 @@ export function TechnicalReportForm({
       visit_reason: report?.visit_reason ?? "",
       diagnosis: report?.diagnosis ?? "",
       equipment_condition: report?.equipment_condition ?? "",
-      recommendation: report?.recommendation ?? "",
+      recommendation: report?.recommendation ?? "Realizar reaperto e alinhamento da turbina e manter plano de manutenção preventiva periódica.",
       risks: report?.risks ?? "",
-      conclusion: report?.conclusion ?? "",
+      conclusion: report?.conclusion ?? "Após a execução da limpeza química da evaporadora e higienização dos filtros, houve melhora no fluxo de ar e nas condições de operação do equipamento.\n\nNo entanto, ainda foi identificado leve ruído intermitente associado ao conjunto da turbina, indicando início de desgaste mecânico, o que pode impactar a performance ao longo do tempo.\n\nSTATUS ATUAL:\nEquipamento operacional com desempenho parcialmente restabelecido, porém ainda requer atenção para ajuste mecânico futuro.",
       observations: report?.observations ?? "",
       needs_quote: report?.needs_quote ?? false,
       equipment_working: report?.equipment_working ?? "yes",
@@ -349,9 +349,9 @@ export function TechnicalReportForm({
 
       {/* 11. Conclusion */}
       <Card>
-        <SectionHeader icon={FileText} title="Conclusão Final" />
+        <SectionHeader icon={FileText} title="CONCLUSÃO TÉCNICA APÓS INTERVENÇÃO" />
         <CardContent className="px-4 pb-4">
-          <Textarea rows={3} {...register("conclusion")} />
+          <Textarea rows={3} {...register("conclusion")} placeholder="Descreva a conclusão técnica após a intervenção..." />
         </CardContent>
       </Card>
 
