@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "./use-toast";
 import { useDemoMode } from "./useDemoMode";
+import { trackFBCustomEvent } from "@/lib/fbPixel";
 
 export interface Client {
   id: string;
@@ -103,6 +104,7 @@ export function useClients() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      trackFBCustomEvent("ClientCreated");
       toast({
         title: "Cliente cadastrado",
         description: "O cliente foi adicionado com sucesso",
