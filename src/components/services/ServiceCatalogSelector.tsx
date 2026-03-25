@@ -212,7 +212,30 @@ export function ServiceCatalogSelector({
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.description}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{item.description}</span>
+                      {item.is_non_standard && (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] h-4 border-amber-500 text-amber-600 bg-amber-50 gap-1 font-normal">
+                            <AlertCircle className="h-3 w-3" />
+                            Serviço não padronizado
+                          </Badge>
+                          {!disabled && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-1.5 text-[10px] text-primary hover:bg-primary/10 gap-1"
+                              onClick={() => saveToCatalog(item)}
+                            >
+                              <Save className="h-3 w-3" />
+                              Adicionar ao Catálogo
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-center">{item.quantity}</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(item.unit_price)}
