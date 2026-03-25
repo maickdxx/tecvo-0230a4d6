@@ -9,12 +9,14 @@ export interface ServiceType {
   name: string;
   slug: string;
   is_default: boolean;
+  generates_recurrence: boolean;
   created_at: string;
 }
 
 export interface ServiceTypeFormData {
   name: string;
   slug?: string;
+  generates_recurrence?: boolean;
 }
 
 function generateSlug(name: string): string {
