@@ -207,6 +207,8 @@ function buildTechnicalReportUpdatePayload(formData: Partial<TechnicalReportForm
   if ("recommendation" in formData) payload.recommendation = normalizeOptionalText(formData.recommendation);
   if ("risks" in formData) payload.risks = normalizeOptionalText(formData.risks);
   if ("conclusion" in formData) payload.conclusion = normalizeOptionalText(formData.conclusion);
+  if ("interventions_performed" in formData) payload.interventions_performed = normalizeOptionalText(formData.interventions_performed);
+  if ("cleanliness_status" in formData) payload.cleanliness_status = normalizeOptionalText(formData.cleanliness_status);
   if ("observations" in formData) payload.observations = normalizeOptionalText(formData.observations);
   if ("needs_quote" in formData) payload.needs_quote = Boolean(formData.needs_quote);
   if ("equipment_working" in formData) payload.equipment_working = formData.equipment_working || "yes";
