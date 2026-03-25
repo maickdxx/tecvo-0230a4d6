@@ -1482,53 +1482,97 @@ Deno.serve(async (req) => {
     // ── Auto-trigger bots for CUSTOMER_INBOX incoming messages ──
     if (!fromMe && isCustomerInbox && contactId) {
       try {
-        const { data: activeBots } = await supabase
-          .from("whatsapp_bots")
-          .select("id, trigger_type, trigger_config")
-          .eq("organization_id", targetOrganizationId)
-          .eq("is_active", true);
+        // 1. Check for active execution to resume or prevent duplicates
+        const { data: activeExecs } = await supabase
+          .from("whatsapp_bot_executions")
+          .select("id, status, bot_id")
+          .eq("contact_id", contactId)
+          .in("status", ["running", "waiting", "waiting_input", "waiting_response"])
+          .order("started_at", { ascending: false })
+          .limit(1);
 
-        // Determine conversation state BEFORE this message updated it
-        const previousStatus = currentContact?.conversation_status || null;
-        const isNewConversation = !currentContact || previousStatus === "resolvido" || !previousStatus;
+        const activeExec = activeExecs?.[0];
+        let botExecutionHandled = false;
 
-        for (const bot of activeBots || []) {
-          const b = bot as any;
-          let triggerMatch = false;
+        if (activeExec) {
+          if (["waiting_input", "waiting_response"].includes(activeExec.status)) {
+            // Resume the existing execution
+            const base_url2 = Deno.env.get("SUPABASE_URL")!;
+            const anon_key2 = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+            
+            fetch(`${base_url2}/functions/v1/bot-engine`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${anon_key2}`,
+              },
+              body: JSON.stringify({
+                action: "resume",
+                contact_id: contactId,
+                message: content || "[mídia]",
+              }),
+            }).catch((e: any) => console.warn("[WEBHOOK-WHATSAPP] Bot resume failed:", e.message));
 
-          if (b.trigger_type === "new_message") {
-            // Fires on every incoming message
-            triggerMatch = true;
-          } else if (b.trigger_type === "new_conversation") {
-            // Fires only for truly new conversations or reopened (was finalized)
-            // Does NOT fire when client sends another message in an active conversation
-            triggerMatch = isNewConversation;
+            console.log("[WEBHOOK-WHATSAPP] Bot execution resumed:", activeExec.id, "for contact:", contactId);
+            botExecutionHandled = true;
+          } else {
+            // It's already running or in delay wait, don't start a new one (guarantees uniqueness)
+            console.log("[WEBHOOK-WHATSAPP] Bot execution already active (skip trigger):", activeExec.id, "status:", activeExec.status);
+            botExecutionHandled = true;
           }
+        }
 
-          if (!triggerMatch) continue;
+        if (!botExecutionHandled) {
+          const { data: activeBots } = await supabase
+            .from("whatsapp_bots")
+            .select("id, trigger_type, trigger_config")
+            .eq("organization_id", targetOrganizationId)
+            .eq("is_active", true);
 
-          // Check channel filter
-          const channelIds: string[] = b.trigger_config?.channel_ids || [];
-          if (channelIds.length > 0 && !channelIds.includes(channel.id)) continue;
+          // Determine conversation state BEFORE this message updated it
+          const previousStatus = currentContact?.conversation_status || null;
+          const isNewConversation = !currentContact || previousStatus === "resolvido" || !previousStatus;
 
-          // Fire bot-engine start (fire-and-forget)
-          const base_url2 = Deno.env.get("SUPABASE_URL")!;
-          const anon_key2 = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
-          fetch(`${base_url2}/functions/v1/bot-engine`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${anon_key2}`,
-            },
-            body: JSON.stringify({
-              action: "start",
-              bot_id: b.id,
-              contact_id: contactId,
-              organization_id: targetOrganizationId,
-            }),
-          }).catch((e: any) => console.warn("[WEBHOOK-WHATSAPP] Bot trigger failed:", e.message));
+          for (const bot of activeBots || []) {
+            const b = bot as any;
+            let triggerMatch = false;
 
-          console.log("[WEBHOOK-WHATSAPP] Bot triggered:", b.id, "for contact:", contactId);
+            if (b.trigger_type === "new_message") {
+              // Fires on every incoming message
+              triggerMatch = true;
+            } else if (b.trigger_type === "new_conversation") {
+              // Fires only for truly new conversations or reopened (was finalized)
+              triggerMatch = isNewConversation;
+            }
+
+            if (!triggerMatch) continue;
+
+            // Check channel filter
+            const channelIds: string[] = b.trigger_config?.channel_ids || [];
+            if (channelIds.length > 0 && !channelIds.includes(channel.id)) continue;
+
+            // Fire bot-engine start (fire-and-forget)
+            const base_url2 = Deno.env.get("SUPABASE_URL")!;
+            const anon_key2 = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+            fetch(`${base_url2}/functions/v1/bot-engine`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${anon_key2}`,
+              },
+              body: JSON.stringify({
+                action: "start",
+                bot_id: b.id,
+                contact_id: contactId,
+                organization_id: targetOrganizationId,
+              }),
+            }).catch((e: any) => console.warn("[WEBHOOK-WHATSAPP] Bot trigger failed:", e.message));
+
+            console.log("[WEBHOOK-WHATSAPP] Bot triggered:", b.id, "for contact:", contactId);
+            
+            // Only trigger one bot per message to avoid chaos
+            break;
+          }
         }
       } catch (botErr) {
         console.warn("[WEBHOOK-WHATSAPP] Bot trigger error:", botErr);
