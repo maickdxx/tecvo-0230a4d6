@@ -152,6 +152,7 @@ export function ServiceDetailsDialog({
   onEdit,
 }: ServiceDetailsDialogProps) {
   const orgTz = useOrgTimezone();
+  const navigate = useNavigate();
   const [isUpdating, setIsUpdating] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showWhatsappConfirm, setShowWhatsappConfirm] = useState(false);
