@@ -98,7 +98,7 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
         ((reportData as any[]) || []).map((rd: any) => [rd.equipment_id, rd])
       );
 
-      return equipment.map((eq): ServiceEquipmentWithReport => ({
+      const equipment = (equipment || []).map((eq): ServiceEquipmentWithReport => ({
         id: eq.id,
         name: eq.name || "",
         brand: eq.brand || null,
@@ -123,9 +123,14 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
           : null,
         photoCount: photoCounts.get(eq.id) || 0,
       }));
+
+      return { equipment, standardChecklist };
     },
     enabled: !!serviceId && !!organizationId,
   });
+
+  const equipmentList = executionData?.equipment || [];
+  const standardChecklist = executionData?.standardChecklist || [];
 
   // Fetch or auto-create the technical report for this service
   const { data: reportId } = useQuery({
