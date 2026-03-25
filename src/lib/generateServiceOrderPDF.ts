@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Service } from "@/hooks/useServices";
 import type { ServiceItem } from "@/hooks/useServiceItems";
+import { trackFBCustomEvent } from "@/lib/fbPixel";
 
 export interface ServiceOrderData {
   entryDate: string;
