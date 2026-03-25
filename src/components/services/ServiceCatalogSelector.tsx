@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 
 export interface ServiceItemLocal {
   id: string;
+  name: string;
   description: string;
   quantity: number;
   unit_price: number;
@@ -43,6 +44,9 @@ export interface ServiceItemLocal {
   catalog_service_type?: string;
   catalog_service_id?: string;
   is_non_standard?: boolean;
+  category?: string;
+  estimated_duration?: string;
+  standard_checklist?: any;
 }
 
 interface ServiceCatalogSelectorProps {
