@@ -98,6 +98,8 @@ export async function generateServiceOrderPDF({
   const contentWidth = pageWidth - margin * 2;
   let yPos = margin;
 
+  trackFBCustomEvent("GeneratePDF", { os_number: service.quote_number });
+
   const FOOTER_RESERVED = 16;
   const usableHeight = pageHeight - FOOTER_RESERVED;
 
