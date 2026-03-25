@@ -290,22 +290,26 @@ export function TechnicalReportForm({
 
       {/* 7. Measurements */}
       <Card>
-        <SectionHeader icon={Gauge} title="Evidências / Medições" />
+        <SectionHeader icon={Gauge} title="Evidências / Medições Técnicas" />
         <CardContent className="px-4 pb-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { key: "pressure", label: "Pressão" },
-              { key: "temperature", label: "Temperatura" },
-              { key: "voltage_measured", label: "Tensão" },
-              { key: "current_measured", label: "Corrente" },
+              { key: "pressure", label: "Pressão", unit: "psi" },
+              { key: "temperature", label: "Temperatura", unit: "°C" },
+              { key: "voltage_measured", label: "Tensão", unit: "V" },
+              { key: "current_measured", label: "Corrente", unit: "A" },
             ].map((m) => (
               <div key={m.key}>
-                <Label>{m.label}</Label>
-                <Input
-                  value={measurements[m.key] || ""}
-                  onChange={(e) => updateMeasurement(m.key, e.target.value)}
-                  placeholder={`Informe a ${m.label.toLowerCase()}`}
-                />
+                <Label>{m.label} ({m.unit})</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    className="flex-1"
+                    value={measurements[m.key] || ""}
+                    onChange={(e) => updateMeasurement(m.key, e.target.value)}
+                    placeholder={`Ex: ${m.key === "pressure" ? "65" : m.key === "temperature" ? "12" : m.key === "voltage" ? "220" : "4.5"}`}
+                  />
+                  <span className="text-xs font-semibold text-muted-foreground w-8">{m.unit}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -315,6 +319,7 @@ export function TechnicalReportForm({
               rows={2}
               value={measurements.notes || ""}
               onChange={(e) => updateMeasurement("notes", e.target.value)}
+              placeholder="Contextualize os valores aferidos se necessário..."
             />
           </div>
         </CardContent>
