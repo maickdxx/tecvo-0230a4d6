@@ -42,13 +42,13 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
       if (!serviceId || !organizationId) return { equipment: [], standardChecklist: [] };
 
       // Fetch equipment
-      const { data: equipment, error: eqError } = await supabase
+      const { data: rawEquipment, error: eqError } = await supabase
         .from("service_equipment")
         .select("id, name, brand, model, serial_number, conditions, defects, solution")
         .eq("service_id", serviceId)
         .order("created_at");
       if (eqError) throw eqError;
-      if (!equipment) return { equipment: [], standardChecklist: [] };
+      if (!rawEquipment) return { equipment: [], standardChecklist: [] };
 
       // Fetch service items to get catalog checklists
       const { data: serviceItems } = await supabase
