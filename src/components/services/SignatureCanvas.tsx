@@ -134,7 +134,10 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
     setIsDrawing(true);
-    setHasDrawn(true);
+    if (!hasDrawn) {
+      setHasDrawn(true);
+      onDrawChange?.(true);
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
