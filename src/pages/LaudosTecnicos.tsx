@@ -44,7 +44,7 @@ import {
   User,
   Wrench
 } from "lucide-react";
-import { useTechnicalReports, REPORT_STATUS_LABELS, EQUIPMENT_CONDITIONS } from "@/hooks/useTechnicalReports";
+import { useTechnicalReports, REPORT_STATUS_LABELS, EQUIPMENT_CONDITIONS, CLEANLINESS_STATUS } from "@/hooks/useTechnicalReports";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { formatDateInTz } from "@/lib/timezone";
