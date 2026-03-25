@@ -50,25 +50,32 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
       if (eqError) throw eqError;
       if (!rawEquipment) return { equipment: [], standardChecklist: [] };
 
-      // Fetch service items to get catalog checklists
+      // Fetch service items to get catalog checklists (snapshot preferred)
       const { data: serviceItems } = await supabase
         .from("service_items")
-        .select("catalog_service_id")
+        .select("catalog_service_id, standard_checklist")
         .eq("service_id", serviceId);
       
       let standardChecklist: string[] = [];
       if (serviceItems && serviceItems.length > 0) {
-        const catalogIds = serviceItems.map(si => si.catalog_service_id).filter(Boolean);
-        if (catalogIds.length > 0) {
-          const { data: catalogServices } = await supabase
-            .from("catalog_services")
-            .select("standard_checklist")
-            .in("id", catalogIds)
-            .not("standard_checklist", "is", null)
-            .limit(1);
-          
-          if (catalogServices && catalogServices.length > 0) {
-            standardChecklist = (catalogServices[0].standard_checklist as any) || [];
+        // Try to find a snapshot first
+        const snapshotItem = serviceItems.find(si => si.standard_checklist && Array.isArray(si.standard_checklist));
+        if (snapshotItem) {
+          standardChecklist = snapshotItem.standard_checklist as string[];
+        } else {
+          // Fallback to catalog if no snapshot exists
+          const catalogIds = serviceItems.map(si => si.catalog_service_id).filter(Boolean);
+          if (catalogIds.length > 0) {
+            const { data: catalogServices } = await supabase
+              .from("catalog_services")
+              .select("standard_checklist")
+              .in("id", catalogIds)
+              .not("standard_checklist", "is", null)
+              .limit(1);
+            
+            if (catalogServices && catalogServices.length > 0) {
+              standardChecklist = (catalogServices[0].standard_checklist as any) || [];
+            }
           }
         }
       }
