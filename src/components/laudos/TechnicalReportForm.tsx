@@ -349,9 +349,9 @@ export function TechnicalReportForm({
 
       {/* 11. Conclusion */}
       <Card>
-        <SectionHeader icon={FileText} title="Conclusão Final" />
+        <SectionHeader icon={FileText} title="Conclusão Técnica Após Intervenção" />
         <CardContent className="px-4 pb-4">
-          <Textarea rows={3} {...register("conclusion")} />
+          <Textarea rows={3} {...register("conclusion")} placeholder="Descreva a conclusão técnica após a intervenção..." />
         </CardContent>
       </Card>
 
