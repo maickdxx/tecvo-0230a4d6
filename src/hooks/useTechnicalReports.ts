@@ -29,6 +29,8 @@ export interface TechnicalReport {
   recommendation: string | null;
   risks: string | null;
   conclusion: string | null;
+  interventions_performed: string | null;
+  cleanliness_status: string | null;
   observations: string | null;
   needs_quote: boolean;
   equipment_working: string;
