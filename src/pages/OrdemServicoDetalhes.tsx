@@ -170,7 +170,7 @@ export default function OrdemServicoDetalhes() {
   const tz = useOrgTimezone();
   const { services, updateStatus, remove } = useServices();
   const { sendOSViaWhatsApp, sending: sendingPDF } = useServicePDFSend();
-  const { signature, createSignatureLink, isCreatingLink } = useServiceSignatures(id);
+  const { signature, createSignature, createSignatureLink, isCreatingLink } = useServiceSignatures(id);
   const { isFreePlan } = useSubscription();
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
