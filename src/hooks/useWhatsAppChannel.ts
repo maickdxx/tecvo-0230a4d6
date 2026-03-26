@@ -19,7 +19,7 @@ export function useWhatsAppChannel() {
     setLoading(true);
     const { data } = await supabase
       .from("whatsapp_channels")
-      .select("*")
+      .select("id, organization_id, name, color, phone_number, is_connected, last_connected_at, created_at, updated_at, instance_name, owner_jid, disconnected_reason, waba_id, phone_number_id, integration_type, channel_type, channel_status")
       .eq("organization_id", organization.id)
       .eq("channel_type", "CUSTOMER_INBOX")
       .neq("channel_status", "deleted")
