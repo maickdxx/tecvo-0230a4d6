@@ -47,6 +47,8 @@ import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const queryClient = useQueryClient();
   const { isPreparing } = useAutoSeedDemo();
   const { isDemoMode } = useDemoMode();
   const { showGuide, allCompleted: checklistDone } = useGuidedOnboarding();
@@ -54,6 +56,30 @@ export default function Dashboard() {
   const isActivationPhase = !isDemoMode && showGuide && !checklistDone;
   const [granularity, setGranularity] = useState<Granularity>("month");
   const [referenceDate, setReferenceDate] = useState(() => getHojeBRT());
+
+  const resetOnboardingMutation = useMutation({
+    mutationFn: async () => {
+      if (!session?.user?.id) return;
+      const { error } = await supabase
+        .from("profiles")
+        .update({ onboarding_completed: false })
+        .eq("user_id", session.user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile-onboarding", session?.user?.id] });
+      toast.success("Modo tutorial reativado");
+      navigate("/tutorial");
+    },
+    onError: () => {
+      toast.error("Erro ao reativar modo tutorial");
+    }
+  });
+
+  const handleOpenTutorial = () => {
+    resetOnboardingMutation.mutate();
+  };
 
   const periodo = useMemo(() => getPeriodoAtivo(granularity, referenceDate), [granularity, referenceDate]);
   const periodoAnterior = useMemo(() => getPeriodoAnterior(granularity, referenceDate), [granularity, referenceDate]);
