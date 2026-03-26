@@ -183,7 +183,12 @@ export function QuoteDialog({ open, onOpenChange, service }: QuoteDialogProps) {
                   <TableBody>
                     {items.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="font-medium text-sm">{item.description}</TableCell>
+                        <TableCell className="font-medium text-sm">
+                          <p>{item.name || item.description}</p>
+                          {item.name && item.description && item.name !== item.description && (
+                            <p className="text-[10px] text-muted-foreground italic font-normal">{item.description}</p>
+                          )}
+                        </TableCell>
                         <TableCell className="text-center text-sm">{item.quantity}</TableCell>
                         <TableCell className="text-right text-sm text-muted-foreground">
                           {formatCurrency(item.unit_price)}

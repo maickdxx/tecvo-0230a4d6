@@ -104,6 +104,7 @@ const formatCurrency = (value: number) =>
 
 interface ServiceItem {
   id: string;
+  name?: string;
   description: string;
   quantity: number;
   unit_price: number;
@@ -549,7 +550,10 @@ export default function OrdemServicoDetalhes() {
                 const discount = formatDiscount(item);
                 return (
                   <div key={item.id} className="rounded-lg border border-border/40 bg-muted/20 p-3">
-                    <p className="text-sm font-medium text-foreground">{item.description}</p>
+                    <p className="text-sm font-medium text-foreground">{item.name || item.description}</p>
+                    {item.name && item.description && item.name !== item.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5 italic">{item.description}</p>
+                    )}
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                       <span>{item.quantity} un × {formatCurrency(item.unit_price)}</span>
                       {discount && <span className="text-destructive">- {discount}</span>}

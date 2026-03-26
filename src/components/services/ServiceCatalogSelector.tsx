@@ -390,10 +390,10 @@ export function ServiceCatalogSelector({
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="item-desc" className="text-xs">
-                Descrição Detalhada
-              </Label>
+              <div className="space-y-1">
+                <Label htmlFor="item-desc" className="text-xs">
+                  Complemento / Detalhes do item (opcional)
+                </Label>
               <Input
                 id="item-desc"
                 placeholder="Detalhes adicionais do serviço..."

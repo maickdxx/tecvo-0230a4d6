@@ -468,11 +468,16 @@ export async function generateServiceOrderPDF({
       grandTotal += itemTotal;
       totalDiscount += discAmt;
 
-      // Word-wrap description
+      // Word-wrap description/name
       const descMaxW = colW[1] - 6;
       doc.setFontSize(7.5);
-      const descLines = doc.splitTextToSize(item.description, descMaxW);
-      const rowH = Math.max(8, descLines.length * 3.5 + 4);
+      const displayName = item.name || item.description;
+      const descLines = doc.splitTextToSize(displayName, descMaxW);
+      
+      const hasDetail = item.name && item.description && item.name !== item.description;
+      const detailLines = hasDetail ? doc.setFontSize(6.5).splitTextToSize(item.description, descMaxW) : [];
+      
+      const rowH = Math.max(8, (descLines.length + detailLines.length) * 3.5 + 4);
 
       if (yPos + rowH > usableHeight) {
         doc.addPage(); yPos = margin;
@@ -495,9 +500,18 @@ export async function generateServiceOrderPDF({
       doc.text((index + 1).toString(), cx + 3, midY);
       cx += colW[0];
 
-      // Description with word-wrap
+      // Description/Name with word-wrap
       const descStartY = yPos + 4;
+      doc.setFont("helvetica", "bold");
       doc.text(descLines, cx + 3, descStartY);
+      
+      if (hasDetail) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(6.5);
+        doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+        doc.text(detailLines, cx + 3, descStartY + (descLines.length * 3.5));
+      }
+      
       cx += colW[1];
 
       // Numeric columns (vertically centered)

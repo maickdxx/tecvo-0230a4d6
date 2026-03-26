@@ -269,7 +269,15 @@ export async function generateQuotePDF({
       grandTotal += itemTotal;
       totalDiscount += discountAmount;
 
-      const rowHeight = 7;
+      const displayName = item.name || item.description;
+      const hasDetail = item.name && item.description && item.name !== item.description;
+      const descMaxW = colWidths[1] - 6;
+      
+      doc.setFontSize(7.5);
+      const descLines = doc.splitTextToSize(displayName, descMaxW);
+      const detailLines = hasDetail ? doc.setFontSize(6.5).splitTextToSize(item.description, descMaxW) : [];
+      
+      const rowHeight = Math.max(8, (descLines.length + detailLines.length) * 3.5 + 4);
       const isEven = index % 2 === 0;
       
       if (isEven) {
@@ -288,8 +296,17 @@ export async function generateQuotePDF({
       doc.text((index + 1).toString(), colX + 3, yPos + 5);
       colX += colWidths[0];
       
-      const descTruncated = item.description.length > 40 ? item.description.substring(0, 40) + "..." : item.description;
-      doc.text(descTruncated, colX + 3, yPos + 5);
+      const descStartY = yPos + 4;
+      doc.setFont("helvetica", "bold");
+      doc.text(descLines, colX + 3, descStartY);
+      
+      if (hasDetail) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(6.5);
+        doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+        doc.text(detailLines, colX + 3, descStartY + (descLines.length * 3.5));
+      }
+      
       colX += colWidths[1];
       
       doc.text(item.quantity.toFixed(2).replace(".", ","), colX + colWidths[2] - 3, yPos + 5, { align: "right" });
