@@ -1381,7 +1381,9 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       <ConversationResolveDialog
         open={resolveDialogOpen}
         onResult={handleResolveResult}
+        loading={isResolving}
       />
+
 
       {/* Panels moved to WhatsAppInbox as inline columns */}
     </div>
