@@ -96,7 +96,7 @@ export function ServiceItemsEditor({ serviceId }: ServiceItemsEditorProps) {
             <TableBody>
               {items.map((item: ServiceItem) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.description}</TableCell>
+                  <TableCell>{item.name || item.description}</TableCell>
                   <TableCell className="text-center">{item.quantity}</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(item.unit_price)}

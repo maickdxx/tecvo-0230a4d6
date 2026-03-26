@@ -104,6 +104,7 @@ export function CreateOSModal({ open, onOpenChange, contact, linkedClient, prefi
           .insert(items.map(item => ({
             service_id: newService.id,
             organization_id: organization.id,
+            name: item.name,
             description: item.description,
             quantity: item.quantity,
             unit_price: item.unit_price,
