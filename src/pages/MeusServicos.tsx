@@ -215,12 +215,15 @@ export default function MeusServicos() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredServices.map((service) => (
-            <Card 
-              key={service.id} 
-              className="overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => handleServiceClick(service)}
-            >
+          {filteredServices.map((service) => {
+            const isLocked = !!currentOpenService && currentOpenService.id !== service.id && service.status !== "completed" && isEmployee;
+
+            return (
+              <Card 
+                key={service.id} 
+                className={`overflow-hidden transition-colors ${isLocked ? "opacity-75 bg-muted/20 grayscale-[0.2]" : "cursor-pointer hover:bg-muted/50"}`}
+                onClick={() => !isLocked && handleServiceClick(service)}
+              >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
