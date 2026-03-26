@@ -432,7 +432,6 @@ export function useServices(options?: UseServicesOptions | string) {
         organization_id: organizationId,
       };
 
-      console.log("[CREATE-OS] sanitizedData:", JSON.stringify(sanitizedData, null, 2));
       const { data: service, error } = await supabase
         .from("services")
         .insert(sanitizedData as any)
@@ -440,7 +439,6 @@ export function useServices(options?: UseServicesOptions | string) {
         .single();
 
       if (error) {
-        console.error("[CREATE-OS] Supabase error:", error.message, error.details, error.hint, error.code);
         throw error;
       }
 
