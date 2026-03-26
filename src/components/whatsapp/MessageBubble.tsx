@@ -427,13 +427,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                 <p
                   className="whitespace-pre-wrap break-words text-sm leading-relaxed [&_strong]:font-bold [&_em]:italic [&_s]:line-through"
                   dangerouslySetInnerHTML={{
-                    __html: message.content
-                      .replace(/&/g, "&amp;")
-                      .replace(/</g, "&lt;")
-                      .replace(/>/g, "&gt;")
-                      .replace(/\*([^*]+)\*/g, "<strong>$1</strong>")
-                      .replace(/_([^_]+)_/g, "<em>$1</em>")
-                      .replace(/~([^~]+)~/g, "<s>$1</s>"),
+                    __html: formatWhatsAppMessage(message.content),
                   }}
                 />
               )}
