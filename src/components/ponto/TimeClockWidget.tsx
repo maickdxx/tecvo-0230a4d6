@@ -93,7 +93,7 @@ export function TimeClockWidget({ compact = false }: TimeClockWidgetProps) {
     entryTypeLabels,
   } = useTimeClock();
 
-  const { getScheduleForEmployee } = useWorkSchedules();
+  const { getScheduleForEmployee, isWorkDay } = useWorkSchedules();
   const employeeType = (profile as any)?.employee_type || "tecnico";
   const employeeSchedule = getScheduleForEmployee(user?.id || "", employeeType);
   const orgId = (profile as any)?.organization_id;
@@ -268,7 +268,8 @@ export function TimeClockWidget({ compact = false }: TimeClockWidgetProps) {
       }
       const hasClockOut = sorted.some((e) => e.entry_type === "clock_out");
       if (hasClockOut) {
-        const om = calculateOvertimeMinutes(dayMinutes, expectedPerDay, toleranceMin, false);
+        const isNonWorkDayToday = !isWorkDay(date, user?.id || "", employeeType);
+        const om = calculateOvertimeMinutes(dayMinutes, expectedPerDay, toleranceMin, isNonWorkDayToday);
         totalOvertime += om;
         if (om > 0) dayOvertimes.push({ date, overtimeMinutes: om });
       }

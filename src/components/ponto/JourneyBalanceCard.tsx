@@ -66,7 +66,8 @@ export function JourneyBalanceCard() {
       totalWorked += Math.floor(dayMinutes);
       const hasClockOut = sorted.some((e) => e.entry_type === "clock_out");
       if (hasClockOut) {
-        const om = calculateOvertimeMinutes(dayMinutes, expectedPerDay, toleranceMin, false);
+        const isNonWorkDayToday = !isWorkDay(date, user?.id || "", employeeType);
+        const om = calculateOvertimeMinutes(dayMinutes, expectedPerDay, toleranceMin, isNonWorkDayToday);
         totalOvertime += om;
         if (om > 0) dayOvertimes.push({ date, overtimeMinutes: om });
       }
