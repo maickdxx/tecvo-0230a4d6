@@ -92,6 +92,19 @@ export function useServiceExecution() {
 
   const startAttendance = useMutation({
     mutationFn: async (serviceId: string) => {
+      // Check for already open services
+      const { data: openServices, error: checkError } = await supabase
+        .from("services")
+        .select("id, quote_number")
+        .eq("assigned_to", user!.id)
+        .in("status", ["in_progress"])
+        .neq("id", serviceId);
+
+      if (checkError) throw checkError;
+      if (openServices && openServices.length > 0) {
+        throw new Error(`Você já possui um atendimento em aberto (OS #${openServices[0].quote_number}). Finalize-o antes de iniciar outro.`);
+      }
+
       const now = new Date().toISOString();
       const { error } = await supabase
         .from("services")
