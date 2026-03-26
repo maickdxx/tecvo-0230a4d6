@@ -149,13 +149,22 @@ export default function EmployeeDashboard() {
                 </Badge>
               </div>
               {nextService.status === "scheduled" && (
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleStartService(nextService.id)}
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Iniciar Serviço
-                </Button>
+                isNextLocked ? (
+                  <div className="flex-1 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                    <span className="text-xs leading-tight text-amber-700 dark:text-amber-400">
+                      Finalize o atendimento atual para iniciar este serviço.
+                    </span>
+                  </div>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    onClick={() => handleStartService(nextService.id)}
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Iniciar Serviço
+                  </Button>
+                )
               )}
               {nextService.status === "in_progress" && (
                 <Button 
