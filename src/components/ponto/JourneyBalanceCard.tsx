@@ -4,7 +4,7 @@ import { useWorkSchedules } from "@/hooks/useWorkSchedule";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { getDatePartInTz } from "@/lib/timezone";
-import { calculateOvertimeMinutes, getEffectiveMaxDay, computePolicySummary, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig, type OvertimePolicy } from "@/lib/timeClockUtils";
+import { calculateOvertimeMinutes, calculateDeficitMinutes, getEffectiveMaxDay, computePolicySummary, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig, type OvertimePolicy } from "@/lib/timeClockUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Wallet } from "lucide-react";
@@ -34,7 +34,7 @@ export function JourneyBalanceCard() {
 
   const { policySummary, dayOvertimes } = useMemo(() => {
     if (!effectiveMonthEntries.length || !expectedPerDay) {
-      return { policySummary: computePolicySummary(overtimePolicy, 0, 0, 0), dayOvertimes: [] as Array<{ date: string; overtimeMinutes: number }> };
+      return { policySummary: computePolicySummary(overtimePolicy, 0, 0, 0, 0), dayOvertimes: [] as Array<{ date: string; overtimeMinutes: number }> };
     }
 
     const byDate = new Map<string, typeof effectiveMonthEntries>();
@@ -48,6 +48,7 @@ export function JourneyBalanceCard() {
     }
 
     let totalOvertime = 0;
+    let totalDeficit = 0;
     let totalWorked = 0;
     const dayOvertimes: Array<{ date: string; overtimeMinutes: number }> = [];
 
@@ -68,7 +69,9 @@ export function JourneyBalanceCard() {
       if (hasClockOut) {
         const isNonWorkDayToday = !isWorkDay(date, user?.id || "", employeeType);
         const om = calculateOvertimeMinutes(dayMinutes, expectedPerDay, toleranceMin, isNonWorkDayToday);
+        const dm = calculateDeficitMinutes(dayMinutes, expectedPerDay, toleranceMin, isNonWorkDayToday);
         totalOvertime += om;
+        totalDeficit += dm;
         if (om > 0) dayOvertimes.push({ date, overtimeMinutes: om });
       }
     }
@@ -86,7 +89,7 @@ export function JourneyBalanceCard() {
     }
 
     return {
-      policySummary: computePolicySummary(overtimePolicy, Math.round(totalWorked), expectedTotal, Math.round(totalOvertime)),
+      policySummary: computePolicySummary(overtimePolicy, Math.round(totalWorked), expectedTotal, Math.round(totalOvertime), Math.round(totalDeficit)),
       dayOvertimes,
     };
   }, [effectiveMonthEntries, expectedPerDay, toleranceMin, tz, user?.id, employeeType, isWorkDay, overtimePolicy, settings]);
