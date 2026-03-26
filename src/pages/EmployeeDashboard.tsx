@@ -9,7 +9,7 @@ import { ServiceCompleteDialog } from "@/components/services/ServiceCompleteDial
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, ClipboardList, Play, ArrowRight, CheckCircle2, Car } from "lucide-react";
+import { CalendarDays, Clock, ClipboardList, Play, ArrowRight, CheckCircle2, Car, Lock, AlertCircle } from "lucide-react";
 import { formatTimeInTz, formatDateInTz, getDatePartInTz, getTodayInTz, formatLongDateInTz, getHourInTz, getMinutesInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
