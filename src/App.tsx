@@ -10,6 +10,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { OfflineProvider } from "@/contexts/OfflineContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AudioProvider } from "@/contexts/AudioContext";
 import { DemoTourProvider } from "@/hooks/useDemoTour";
 import { SessionTrackerProvider } from "@/components/SessionTrackerProvider";
 import { AdminProtectedRoute } from "@/components/admin";
@@ -158,11 +159,12 @@ const App = () => (
         <BrowserRouter>
           <ScrollToTop />
           <AuthProvider>
-            <SessionTrackerProvider>
-            <DemoTourProvider>
-            <ViewModeProvider>
-            <OfflineProvider>
-            <Suspense fallback={<PageLoader />}>
+            <AudioProvider>
+              <SessionTrackerProvider>
+              <DemoTourProvider>
+              <ViewModeProvider>
+              <OfflineProvider>
+              <Suspense fallback={<PageLoader />}>
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Auth />} />
@@ -826,11 +828,12 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
               </Routes>
-            </Suspense>
-            </OfflineProvider>
-            </ViewModeProvider>
-            </DemoTourProvider>
-            </SessionTrackerProvider>
+              </Suspense>
+              </OfflineProvider>
+              </ViewModeProvider>
+              </DemoTourProvider>
+              </SessionTrackerProvider>
+            </AudioProvider>
           </AuthProvider>
           <CookieConsent />
         </BrowserRouter>
