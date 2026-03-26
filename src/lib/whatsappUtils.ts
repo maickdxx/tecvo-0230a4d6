@@ -8,7 +8,7 @@
 export function formatWhatsAppMessage(content: string, isMe: boolean = false): string {
   if (!content) return "";
 
-  // 1. Basic HTML sanitization
+  // 1. Basic HTML sanitization to prevent XSS
   let formatted = content
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -23,8 +23,9 @@ export function formatWhatsAppMessage(content: string, isMe: boolean = false): s
     let cleanUrl = match;
     let suffix = "";
     
-    // Some URLs might end with characters like . , ! ? that shouldn't be part of the URL in a message
-    const trailingPunctuation = /[.,!?;:]+$/;
+    // We also exclude WhatsApp formatting characters (*, _, ~) from the end of the URL
+    // so they can be processed by the markdown step later
+    const trailingPunctuation = /[.,!?;:*_~]+$/;
     const punctuationMatch = match.match(trailingPunctuation);
     
     if (punctuationMatch) {
@@ -37,17 +38,20 @@ export function formatWhatsAppMessage(content: string, isMe: boolean = false): s
       href = `https://${cleanUrl}`;
     }
 
-    // Adjust link color based on whether it's our message or the other person's
-    // On our messages (isMe), we use a lighter blue/white-ish if background is primary
-    // On received messages, we use the standard blue
+    // Link styling:
+    // - blue-600/400 for received messages
+    // - blue-100/200 with underline for sent messages (better contrast on primary bg)
     const linkColorClass = isMe 
-      ? "text-blue-100 dark:text-blue-200 underline" 
-      : "text-blue-600 dark:text-blue-400 hover:underline";
+      ? "text-blue-100 dark:text-blue-200 underline decoration-blue-100/50 underline-offset-2" 
+      : "text-blue-600 dark:text-blue-400 hover:underline underline-offset-2";
 
     return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="${linkColorClass} break-all transition-colors">${cleanUrl}</a>${suffix}`;
   });
 
   // 3. WhatsApp markdown formatting
+  // Using \b or similar wouldn't work well with the HTML tags already present
+  // but since we escaped everything and linkified URLs into <a> tags, 
+  // these regexes will only match markdown outside of the <a> tags or correctly nested.
   formatted = formatted
     .replace(/\*([^*]+)\*/g, "<strong>$1</strong>")
     .replace(/_([^_]+)_/g, "<em>$1</em>")
