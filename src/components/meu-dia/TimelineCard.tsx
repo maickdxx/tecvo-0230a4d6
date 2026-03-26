@@ -160,9 +160,15 @@ export function TimelineCard({
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className={`font-semibold text-foreground truncate ${isCompleted ? "text-sm" : ""}`}>
-                  {service.client?.name}
+                  {isLocked ? (service.client?.name?.split(" ")[0] || "Cliente") : service.client?.name}
                 </p>
                 <PriorityBadge priority={priority} />
+                {isLocked && (
+                  <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30 gap-1 bg-amber-50 dark:bg-amber-950/20">
+                    <Lock className="h-2.5 w-2.5" />
+                    Informações Reservadas
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {SERVICE_TYPE_LABELS[service.service_type] || service.service_type}
@@ -184,7 +190,7 @@ export function TimelineCard({
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <OperationalStatusBadge status={opStatus} />
-              {!isCompleted && (
+              {!isCompleted && !isLocked && (
                 <StatusActionMenu onSelect={(s) => onChangeStatus(service.id, s)} />
               )}
             </div>
