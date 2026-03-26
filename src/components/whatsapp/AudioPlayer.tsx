@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause, RotateCcw, RotateCw, Mic, Zap } from "lucide-react";
+import { Play, Pause, RotateCcw, RotateCw, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { useAudioGlobal } from "@/contexts/AudioContext";
