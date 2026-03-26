@@ -4725,6 +4725,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "whatsapp_chatbot_flows_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_channels_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "whatsapp_chatbot_flows_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -4991,6 +4998,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "whatsapp_contacts_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_channels_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "whatsapp_contacts_linked_client_id_fkey"
             columns: ["linked_client_id"]
             isOneToOne: false
@@ -5230,6 +5244,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "whatsapp_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_channels_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "whatsapp_messages_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
@@ -5342,6 +5363,13 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "whatsapp_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_scheduled_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_channels_safe"
             referencedColumns: ["id"]
           },
           {
@@ -5506,6 +5534,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_channels_safe: {
+        Row: {
+          channel_status: string | null
+          channel_type: string | null
+          color: string | null
+          created_at: string | null
+          disconnected_reason: string | null
+          id: string | null
+          instance_name: string | null
+          integration_type: string | null
+          is_connected: boolean | null
+          last_connected_at: string | null
+          name: string | null
+          organization_id: string | null
+          owner_jid: string | null
+          phone_number: string | null
+          phone_number_id: string | null
+          updated_at: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          channel_status?: string | null
+          channel_type?: string | null
+          color?: string | null
+          created_at?: string | null
+          disconnected_reason?: string | null
+          id?: string | null
+          instance_name?: string | null
+          integration_type?: string | null
+          is_connected?: boolean | null
+          last_connected_at?: string | null
+          name?: string | null
+          organization_id?: string | null
+          owner_jid?: string | null
+          phone_number?: string | null
+          phone_number_id?: string | null
+          updated_at?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          channel_status?: string | null
+          channel_type?: string | null
+          color?: string | null
+          created_at?: string | null
+          disconnected_reason?: string | null
+          id?: string | null
+          instance_name?: string | null
+          integration_type?: string | null
+          is_connected?: boolean | null
+          last_connected_at?: string | null
+          name?: string | null
+          organization_id?: string | null
+          owner_jid?: string | null
+          phone_number?: string | null
+          phone_number_id?: string | null
+          updated_at?: string | null
+          waba_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_channels_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
