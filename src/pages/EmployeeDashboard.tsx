@@ -115,7 +115,15 @@ export default function EmployeeDashboard() {
             <CardContent className="space-y-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="font-medium text-foreground">{nextService.client?.name}</p>
+                  <p className="font-medium text-foreground">
+                    {isNextLocked ? (nextService.client?.name?.split(" ")[0] || "Cliente") : nextService.client?.name}
+                    {isNextLocked && (
+                      <Badge variant="outline" className="ml-2 text-[10px] text-amber-600 border-amber-500/30 gap-1 bg-amber-50 dark:bg-amber-950/20">
+                        <Lock className="h-2.5 w-2.5" />
+                        Reservado
+                      </Badge>
+                    )}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {SERVICE_TYPE_LABELS[nextService.service_type]}
                   </p>
