@@ -128,8 +128,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, isMe, messageId }
 
   return (
     <div className={cn(
-      "flex flex-col gap-2 p-3 rounded-xl transition-all w-full max-w-[320px]",
-      isMe ? "bg-primary/20" : "bg-muted"
+      "flex flex-col gap-2 p-3 rounded-xl transition-all w-full max-w-[320px] relative group",
+      isMe ? "bg-primary/20" : "bg-muted",
+      isPlaying && (isMe ? "ring-2 ring-primary/40 bg-primary/25" : "ring-2 ring-primary/20 bg-muted/80")
     )}>
       <audio ref={audioRef} src={src} preload="metadata" />
       
