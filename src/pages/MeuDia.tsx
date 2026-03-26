@@ -240,6 +240,7 @@ export default function MeuDia() {
                     showDate={tab === "week"}
                     isEmployee={true}
                     isNext={service.id === nextServiceId}
+                    isLocked={!!currentOpenService && currentOpenService.id !== service.id && service.status !== "completed"}
                     onStartTravel={startTravel}
                     onStartAttendance={startAttendance}
                     onComplete={handleComplete}
