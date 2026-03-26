@@ -11,6 +11,8 @@ import {
   DollarSign,
   Clock,
   UserCircle,
+  Lock,
+  AlertCircle,
 } from "lucide-react";
 import { formatTimeInTz, formatDateInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
