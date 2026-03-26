@@ -140,7 +140,7 @@ export default function PontoFechamento() {
       const maxDay = getEffectiveMaxDay(year, month, null, null); // open period → no closure constraint
 
       // Calculate from entries
-      let totalWorked = 0, totalLates = 0, totalIncompletes = 0, totalOvertime = 0;
+      let totalWorked = 0, totalLates = 0, totalIncompletes = 0, totalOvertime = 0, totalDeficit = 0;
       let expectedDays = 0;
       const daysWorkedSet = new Set<string>();
       const dayOvertimes: Array<{ date: string; overtimeMinutes: number }> = [];

@@ -76,6 +76,7 @@ export default function PontoRelatorios() {
         totalWorkedMinutes += workedMin;
         totalBreakMinutes += breakMin;
         overtimeMinutes += calculateOvertimeMinutes(workedMin, expectedMinutes, toleranceMin, false);
+        deficitMinutes += calculateDeficitMinutes(workedMin, expectedMinutes, toleranceMin, false);
 
         if (firstClockIn && schedule.expected_clock_in) {
           const entryTime = new Date(firstClockIn);
