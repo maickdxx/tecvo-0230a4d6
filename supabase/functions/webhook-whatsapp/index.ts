@@ -4,10 +4,13 @@ import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { getTodayInTz, getTomorrowInTz, getFormattedDateTimeInTz, getCurrentMonthInTz } from "../_shared/timezone.ts";
 import { normalizePhone, normalizeJid, normalizeDigits } from "../_shared/whatsapp-utils.ts";
 
+import { getCorsHeaders } from "../_shared/cors.ts";
+
+// Webhook uses static CORS since it's called by Evolution API server, not browsers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
 // Removed legacy getBrasiliaDate / formatDateISO — now using _shared/timezone.ts
@@ -451,6 +454,17 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate webhook origin via API key
+    const webhookApiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+    const incomingKey = req.headers.get("x-api-key") || req.headers.get("apikey");
+    if (webhookApiKey && incomingKey !== webhookApiKey) {
+      console.warn("[WEBHOOK-WHATSAPP] Rejected: invalid or missing x-api-key header");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
