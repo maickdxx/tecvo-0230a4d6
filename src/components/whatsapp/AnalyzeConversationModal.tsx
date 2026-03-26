@@ -324,7 +324,8 @@ export function AnalyzeConversationModal({
         await supabase.from("service_items").insert({
           service_id: newService.id,
           organization_id: organization.id,
-          description: matchedCatalog.name,
+          name: matchedCatalog.name,
+          description: matchedCatalog.description || matchedCatalog.name,
           quantity: 1,
           unit_price: itemPrice,
           discount: itemDiscount > 0 ? itemDiscount : null,
