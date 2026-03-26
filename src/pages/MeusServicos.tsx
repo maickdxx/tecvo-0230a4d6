@@ -230,7 +230,13 @@ export default function MeusServicos() {
                     <div className="flex items-center gap-2 mb-1">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="font-semibold text-foreground">
-                        {service.client?.name || "Cliente não encontrado"}
+                        {isLocked ? (service.client?.name?.split(" ")[0] || "Cliente") : service.client?.name || "Cliente não encontrado"}
+                        {isLocked && (
+                          <Badge variant="outline" className="ml-2 text-[10px] text-amber-600 border-amber-500/30 gap-1 bg-amber-50 dark:bg-amber-950/20">
+                            <Lock className="h-2.5 w-2.5" />
+                            Reservado
+                          </Badge>
+                        )}
                       </span>
                     </div>
                     {service.scheduled_date && (() => {
