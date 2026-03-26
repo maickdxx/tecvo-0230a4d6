@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { calculateOvertimeMinutes } from "@/lib/timeClockUtils";
+import { calculateOvertimeMinutes, calculateDeficitMinutes } from "@/lib/timeClockUtils";
 import { AppLayout } from "@/components/layout";
 import { useTimeClockAdmin } from "@/hooks/useTimeClock";
 import { useWorkSchedules } from "@/hooks/useWorkSchedule";
@@ -76,7 +76,6 @@ export default function PontoRelatorios() {
         totalWorkedMinutes += workedMin;
         totalBreakMinutes += breakMin;
         overtimeMinutes += calculateOvertimeMinutes(workedMin, expectedMinutes, toleranceMin, false);
-        deficitMinutes += calculateDeficitMinutes(workedMin, expectedMinutes, toleranceMin, false);
         deficitMinutes += calculateDeficitMinutes(workedMin, expectedMinutes, toleranceMin, false);
 
         if (firstClockIn && schedule.expected_clock_in) {
