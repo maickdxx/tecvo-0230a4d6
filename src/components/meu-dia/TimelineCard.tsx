@@ -262,13 +262,13 @@ export function TimelineCard({
           {/* Action buttons */}
           {!isCompleted && (
             <div className="flex gap-2 flex-wrap pt-1">
-              {isScheduled && !isEnRoute && (
+              {isScheduled && !isEnRoute && !isLocked && (
                 <Button size={actionSize} className={`flex-1 ${isNext ? "h-11 text-base" : ""}`} onClick={() => onStartTravel(service.id)}>
                   <Car className={`mr-1 ${isNext ? "h-4 w-4" : "h-3.5 w-3.5"}`} />
                   Iniciar Deslocamento
                 </Button>
               )}
-              {isEnRoute && (
+              {isEnRoute && !isLocked && (
                 <Button size={actionSize} className={`flex-1 ${isNext ? "h-11 text-base" : ""}`} onClick={() => onStartAttendance(service.id)}>
                   <Play className={`mr-1 ${isNext ? "h-4 w-4" : "h-3.5 w-3.5"}`} />
                   Cheguei / Iniciar
@@ -280,16 +280,25 @@ export function TimelineCard({
                   Finalizar
                 </Button>
               )}
-              {addr && (
+              {addr && !isLocked && (
                 <Button variant="outline" size="sm" onClick={() => onOpenRoute(service)}>
                   <Navigation className="h-3.5 w-3.5 mr-1" />
                   Rota
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={() => onOpenDetails(service)}>
-                <Eye className="h-3.5 w-3.5 mr-1" />
-                Detalhes
-              </Button>
+              {isLocked ? (
+                <div className="flex-1 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                  <span className="text-[11px] leading-tight text-amber-700 dark:text-amber-400">
+                    Finalize o atendimento atual para liberar este serviço.
+                  </span>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => onOpenDetails(service)}>
+                  <Eye className="h-3.5 w-3.5 mr-1" />
+                  Detalhes
+                </Button>
+              )}
             </div>
           )}
 
