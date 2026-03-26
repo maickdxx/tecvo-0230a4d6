@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServices, type ServiceFormData } from "@/hooks/useServices";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useClients } from "@/hooks/useClients";
+import { useServiceTypes } from "@/hooks/useServiceTypes";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { buildTimestamp } from "@/lib/timezone";
@@ -30,8 +31,24 @@ export function ScheduleVisitModal({ open, onOpenChange, contact, linkedClient, 
   const { create, isCreating } = useServices({ documentType: "service_order" });
   const { members } = useTeamMembers();
   const { create: createClient } = useClients();
+  const { serviceTypes } = useServiceTypes();
 
   const fieldWorkers = members.filter((m) => m.field_worker);
+
+  // Resolve the best service type slug for a "visit" from the org's registered types
+  const resolvedServiceType = (() => {
+    if (!serviceTypes.length) return null;
+    // Try to find a visit-like type first
+    const visitLike = serviceTypes.find((t) =>
+      ["visita", "visita_tecnica", "visit"].includes(t.slug)
+    );
+    if (visitLike) return visitLike.slug;
+    // Fallback: use "outros" if it exists
+    const outros = serviceTypes.find((t) => t.slug === "outros");
+    if (outros) return outros.slug;
+    // Last resort: use the first available type
+    return serviceTypes[0].slug;
+  })();
 
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
@@ -126,9 +143,14 @@ export function ScheduleVisitModal({ open, onOpenChange, contact, linkedClient, 
       const timeStr = time || "08:00";
       let scheduledDate = buildTimestamp(date, `${timeStr}:00`, tz);
 
+      if (!resolvedServiceType) {
+        toast.error("Nenhum tipo de serviço cadastrado. Configure os tipos de serviço nas configurações.");
+        return;
+      }
+
       const formData: ServiceFormData = {
         client_id: clientId,
-        service_type: "visit",
+        service_type: resolvedServiceType,
         document_type: "service_order",
         status: "scheduled",
         scheduled_date: scheduledDate,
