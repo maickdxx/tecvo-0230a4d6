@@ -92,6 +92,10 @@ export default function MeusServicos() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  const currentOpenService = useMemo(() => {
+    return services.find(s => s.status === "in_progress");
+  }, [services]);
+
   const filteredServices = services
     .filter((service) => {
       if (!service.scheduled_date) return selectedDate === "all";
