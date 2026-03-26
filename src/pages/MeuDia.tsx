@@ -204,6 +204,25 @@ export default function MeuDia() {
           </div>
         )}
 
+        {/* Operational Alert for pending completion */}
+        {currentOpenService && (
+          <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/50">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  Atendimento em aberto (OS #{currentOpenService.quote_number})
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Finalize este serviço para liberar integralmente as informações do próximo.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Progress + Metrics */}
         <TechnicianMetrics {...techMetrics} />
 
