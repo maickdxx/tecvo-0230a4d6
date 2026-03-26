@@ -112,6 +112,7 @@ export function TimelineCard({
     if (isInAttendance) return "border-l-4 border-l-blue-500 ring-1 ring-blue-500/20";
     if (isEnRoute) return "border-l-4 border-l-amber-500 ring-1 ring-amber-500/20";
     if (opStatus === "problem") return "border-l-4 border-l-destructive";
+    if (isNext && isLocked) return "border-l-4 border-l-amber-500/30 opacity-80 bg-muted/20 grayscale-[0.2]";
     if (isNext) return "border-l-4 border-l-primary ring-1 ring-primary/20 shadow-md";
     return "border-l-4 border-l-muted-foreground/15";
   };
