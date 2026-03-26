@@ -272,11 +272,17 @@ export default function MeusServicos() {
                 {service.client?.address && (
                   <div className="flex items-start gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <span className="text-sm">{service.client.address}</span>
+                    <span className="text-sm">
+                      {isLocked ? (
+                        <span className="italic">{service.service_neighborhood || "Bairro não informado"} • <span className="text-[10px] text-amber-500/80">(Endereço completo disponível após finalizar serviço atual)</span></span>
+                      ) : (
+                        service.client.address
+                      )}
+                    </span>
                   </div>
                 )}
 
-                {service.client?.phone && (
+                {service.client?.phone && !isLocked && (
                   <Button
                     asChild
                     variant="outline"
@@ -288,6 +294,15 @@ export default function MeusServicos() {
                       Ligar para {service.client.phone}
                     </a>
                   </Button>
+                )}
+                
+                {isLocked && (
+                  <div className="p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                    <span className="text-[11px] leading-tight text-amber-700 dark:text-amber-400">
+                      Finalize o atendimento em andamento para liberar os detalhes deste serviço.
+                    </span>
+                  </div>
                 )}
               </CardContent>
             </Card>
