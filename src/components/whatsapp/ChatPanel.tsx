@@ -116,6 +116,8 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   const [signatureEnabled, setSignatureEnabled] = useState(true);
   const [transferOpen, setTransferOpen] = useState(false);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
+
   const { tags: orgTags, getTagByName } = useWhatsAppTags();
   
   const [linkedClientData, setLinkedClientData] = useState<any>(null);
