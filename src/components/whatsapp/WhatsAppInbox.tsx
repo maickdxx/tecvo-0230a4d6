@@ -250,6 +250,7 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
             currentUserId={user?.id}
             teamMembers={teamMembers}
             orgTags={orgTags}
+            channels={channelOptions}
             onNewContact={() => setShowNewContact(true)}
             onNewConversation={() => setShowNewConversation(true)}
             onDeleteConversation={(id) => {

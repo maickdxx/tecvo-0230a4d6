@@ -12,13 +12,23 @@ import {
 import { ConversationItem } from "./ConversationItem";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { WhatsAppTag, getTagColorStyle } from "@/hooks/useWhatsAppTags";
+import { WhatsAppTag } from "@/hooks/useWhatsAppTags";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { CONVERSION_STEPS, getConversionStep } from "./ConversionStatusSelector";
+import {
+  ConversationAdvancedFilters,
+  ActiveFilterChips,
+  applyAdvancedFilters,
+  loadFiltersFromStorage,
+  saveFiltersToStorage,
+  hasActiveFilters,
+  type AdvancedFilters,
+  EMPTY_FILTERS,
+} from "./ConversationAdvancedFilters";
 
 interface ConversationListProps {
   contacts: any[];
@@ -30,6 +40,7 @@ interface ConversationListProps {
   currentUserId?: string | null;
   teamMembers?: { user_id: string; full_name: string | null }[];
   orgTags?: WhatsAppTag[];
+  channels?: { id: string; name: string; phone_number: string }[];
   onNewContact?: () => void;
   onNewConversation?: () => void;
   onDeleteConversation?: (contactId: string) => void;
@@ -58,6 +69,7 @@ export function ConversationList({
   currentUserId,
   teamMembers = [],
   orgTags = [],
+  channels = [],
   onNewContact,
   onNewConversation,
   onDeleteConversation,
@@ -70,8 +82,8 @@ export function ConversationList({
 }: ConversationListProps) {
   const { organization } = useOrganization();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("atendendo");
-  const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [conversionFilter, setConversionFilter] = useState<ConversionFilter>(null);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(loadFiltersFromStorage);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -93,7 +105,6 @@ export function ConversationList({
     };
     fetchScheduled();
 
-    // Refresh when scheduled messages change
     const channel = supabase
       .channel("scheduled-msgs-list")
       .on("postgres_changes", {
@@ -107,7 +118,6 @@ export function ConversationList({
     return () => { supabase.removeChannel(channel); };
   }, [organization?.id]);
 
-  // Counts per status
   // "Aguardando" is an attention layer: unread messages from client, across ALL statuses (except resolvido)
   const isAguardando = (c: any) => {
     const s = c.conversation_status || "novo";
@@ -116,23 +126,23 @@ export function ConversationList({
 
   const hasUnread = (c: any) => (c.unread_count > 0 || c.is_unread);
 
-  const novasCount = contacts.filter(c => {
+  // Apply advanced filters first (before counting per status)
+  const advancedFiltered = useMemo(
+    () => applyAdvancedFilters(contacts, advancedFilters),
+    [contacts, advancedFilters]
+  );
+
+  const novasCount = advancedFiltered.filter(c => {
     const s = c.conversation_status || "novo";
     return s === "novo" && hasUnread(c);
   }).length;
-  const atendendoCount = contacts.filter(c =>
+  const atendendoCount = advancedFiltered.filter(c =>
     c.conversation_status === "atendendo" && hasUnread(c)
   ).length;
-  const aguardandoCount = contacts.filter(c => isAguardando(c)).length;
-  const finalizadoCount = contacts.filter(c => c.conversation_status === "resolvido" && hasUnread(c)).length;
+  const aguardandoCount = advancedFiltered.filter(c => isAguardando(c)).length;
+  const finalizadoCount = advancedFiltered.filter(c => c.conversation_status === "resolvido" && hasUnread(c)).length;
 
-  const toggleTagFilter = (tagName: string) => {
-    setTagFilters(prev =>
-      prev.includes(tagName) ? prev.filter(t => t !== tagName) : [...prev, tagName]
-    );
-  };
-
-  const filtered = contacts.filter((c) => {
+  const filtered = advancedFiltered.filter((c) => {
     // When searching, ignore status filter to show results across all tabs
     if (!searchTerm.trim()) {
       const status = c.conversation_status || "novo";
@@ -144,10 +154,6 @@ export function ConversationList({
     // Conversion pipeline filter
     if (conversionFilter) {
       if ((c.conversion_status || "novo_contato") !== conversionFilter) return false;
-    }
-    if (tagFilters.length > 0) {
-      const cTags: string[] = c.tags || [];
-      if (!tagFilters.some(tf => cTags.includes(tf))) return false;
     }
     return true;
   });
@@ -218,6 +224,11 @@ export function ConversationList({
   ];
 
   const allSelected = filtered.length > 0 && selectedIds.size === filtered.length;
+
+  const handleAdvancedFilterChange = useCallback((f: AdvancedFilters) => {
+    setAdvancedFilters(f);
+    setSelectedIds(new Set());
+  }, []);
 
   return (
     <>
@@ -326,8 +337,9 @@ export function ConversationList({
         ))}
       </div>
 
-      {/* Pipeline (Conversion) Filter */}
+      {/* Pipeline + Advanced Filters */}
       <div className="px-3 pb-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar">
+        {/* Pipeline filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -350,7 +362,7 @@ export function ConversationList({
             </DropdownMenuItem>
             {CONVERSION_STEPS.map((step) => {
               const StepIcon = step.icon;
-              const count = contacts.filter((c) => (c.conversion_status || "novo_contato") === step.key).length;
+              const count = advancedFiltered.filter((c) => (c.conversion_status || "novo_contato") === step.key).length;
               return (
                 <DropdownMenuItem key={step.key} onClick={() => setConversionFilter(step.key)}>
                   <StepIcon className={cn("h-4 w-4 mr-2", step.color)} />
@@ -377,30 +389,25 @@ export function ConversationList({
             <X className="h-2.5 w-2.5" />
           </button>
         )}
+
+        {/* Advanced filters button */}
+        <ConversationAdvancedFilters
+          filters={advancedFilters}
+          onChange={handleAdvancedFilterChange}
+          channels={channels}
+          teamMembers={teamMembers}
+          orgTags={orgTags}
+        />
       </div>
 
-      {/* Active tag filters display */}
-      {tagFilters.length > 0 && (
-        <div className="px-3 pb-1.5 flex items-center gap-1 flex-wrap">
-          {tagFilters.map(name => {
-            const tag = orgTags.find(t => t.name === name);
-            const style = getTagColorStyle(tag?.color || "gray");
-            return (
-              <button
-                key={name}
-                onClick={() => toggleTagFilter(name)}
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
-                  style.bg, style.text, style.border
-                )}
-              >
-                {name}
-                <X className="h-2.5 w-2.5" />
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Active advanced filter chips */}
+      <ActiveFilterChips
+        filters={advancedFilters}
+        onChange={handleAdvancedFilterChange}
+        channels={channels}
+        teamMembers={teamMembers}
+        orgTags={orgTags}
+      />
 
       {/* Divider */}
       <div className="border-b border-border" />
@@ -421,7 +428,21 @@ export function ConversationList({
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-6 text-center text-sm text-muted-foreground">
-            Nenhuma conversa encontrada
+            {hasActiveFilters(advancedFilters) ? (
+              <div className="space-y-2">
+                <p>Nenhuma conversa encontrada com os filtros aplicados</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => handleAdvancedFilterChange({ ...EMPTY_FILTERS })}
+                >
+                  Limpar filtros
+                </Button>
+              </div>
+            ) : (
+              "Nenhuma conversa encontrada"
+            )}
           </div>
         ) : (
           <>
