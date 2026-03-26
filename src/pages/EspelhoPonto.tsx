@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Loader2, HelpCircle, AlertTriangle } from "lucide-react";
-import { calculateOvertimeMinutes, getEffectiveMaxDay, computePolicySummary, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig, type OvertimePolicy } from "@/lib/timeClockUtils";
+import { calculateOvertimeMinutes, calculateDeficitMinutes, getEffectiveMaxDay, computePolicySummary, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig, type OvertimePolicy } from "@/lib/timeClockUtils";
 import { generateTimeClockPDF, type TimeClockDayRecord, type TimeClockPDFData } from "@/lib/generateTimeClockPDF";
 import { toast } from "@/hooks/use-toast";
 import { DayCalculationDetail, SummaryTooltip, type DayExplanation } from "@/components/ponto/DayCalculationDetail";
@@ -250,7 +250,7 @@ export default function EspelhoPonto() {
       };
     });
 
-    const bankBalance = totalWorked - (expectedDays * expectedPerDay);
+    const bankBalance = totalOvertime - totalDeficit;
 
     return {
       records,
@@ -261,6 +261,7 @@ export default function EspelhoPonto() {
         totalWorkedMinutes: totalWorked,
         totalExpectedMinutes: expectedDays * expectedPerDay,
         totalOvertimeMinutes: totalOvertime,
+        totalDeficitMinutes: totalDeficit,
         bankBalanceMinutes: bankBalance,
         totalLates: records.filter((r) => r.isLate).length,
         totalIncompletes: records.filter((r) => r.isIncomplete).length,
@@ -353,7 +354,7 @@ export default function EspelhoPonto() {
         {/* Policy-driven balance section */}
         {(() => {
           const policy: OvertimePolicy = (settings as any)?.overtime_policy === "pay" ? "pay" : "bank";
-          const ps = computePolicySummary(policy, summary.totalWorkedMinutes, summary.totalExpectedMinutes, summary.totalOvertimeMinutes);
+          const ps = computePolicySummary(policy, summary.totalWorkedMinutes, summary.totalExpectedMinutes, summary.totalOvertimeMinutes, summary.totalDeficitMinutes);
           
           return (
             <div className="space-y-2">
