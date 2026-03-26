@@ -193,13 +193,17 @@ export default function EmployeeDashboard() {
             {todayServices.map((service, index) => {
               const nextSvc = index < todayServices.length - 1 ? todayServices[index + 1] : null;
               const distInfo = nextSvc ? distances.get(`${service.id}->${nextSvc.id}`) : null;
+              const isLocked = !!currentOpenService && currentOpenService.id !== service.id && service.status !== "completed";
+              
               return (
                 <div key={service.id}>
-                  <Card className="overflow-hidden">
+                  <Card className={`overflow-hidden ${isLocked ? "opacity-75 bg-muted/20" : ""}`}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1 min-w-0 flex-1">
-                          <p className="font-medium text-foreground truncate">{service.client?.name}</p>
+                          <p className="font-medium text-foreground truncate">
+                            {isLocked ? (service.client?.name?.split(" ")[0] || "Cliente") : service.client?.name}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {SERVICE_TYPE_LABELS[service.service_type]}
                           </p>
