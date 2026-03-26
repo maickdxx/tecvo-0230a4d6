@@ -427,7 +427,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                 <p
                   className="whitespace-pre-wrap break-words text-sm leading-relaxed [&_strong]:font-bold [&_em]:italic [&_s]:line-through"
                   dangerouslySetInnerHTML={{
-                    __html: formatWhatsAppMessage(message.content),
+                    __html: formatWhatsAppMessage(message.content, isMe),
                   }}
                 />
               )}
