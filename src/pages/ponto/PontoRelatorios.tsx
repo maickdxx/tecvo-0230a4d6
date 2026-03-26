@@ -53,7 +53,7 @@ export default function PontoRelatorios() {
       const expectedMinutes = schedule.work_hours_per_day * 60;
 
       const days = userDays.get(p.user_id) || new Map<string, typeof effectiveEntries>();
-      let totalWorkedMinutes = 0, totalBreakMinutes = 0, lateCount = 0, incompleteCount = 0, daysWorked = 0, overtimeMinutes = 0;
+      let totalWorkedMinutes = 0, totalBreakMinutes = 0, lateCount = 0, incompleteCount = 0, daysWorked = 0, overtimeMinutes = 0, deficitMinutes = 0;
 
       for (const [, entries] of days) {
         const sorted = [...entries].sort((a, b) => a.recorded_at.localeCompare(b.recorded_at));
@@ -76,6 +76,7 @@ export default function PontoRelatorios() {
         totalWorkedMinutes += workedMin;
         totalBreakMinutes += breakMin;
         overtimeMinutes += calculateOvertimeMinutes(workedMin, expectedMinutes, toleranceMin, false);
+        deficitMinutes += calculateDeficitMinutes(workedMin, expectedMinutes, toleranceMin, false);
         deficitMinutes += calculateDeficitMinutes(workedMin, expectedMinutes, toleranceMin, false);
 
         if (firstClockIn && schedule.expected_clock_in) {
