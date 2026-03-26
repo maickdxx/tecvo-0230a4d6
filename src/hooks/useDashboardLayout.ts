@@ -17,6 +17,7 @@ export const WIDGET_LABELS: Record<string, string> = {
   motor_receita: "Motor de Receita",
   saude_empresa: "Saúde da Empresa",
   graficos_detalhados: "Gráficos Detalhados",
+  performance_tempo: "Performance de Tempo (Estimado vs Real)",
 };
 
 const DEFAULT_LAYOUT: DashboardWidget[] = Object.keys(WIDGET_LABELS).map((id) => ({
