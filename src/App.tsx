@@ -159,11 +159,12 @@ const App = () => (
         <BrowserRouter>
           <ScrollToTop />
           <AuthProvider>
-            <SessionTrackerProvider>
-            <DemoTourProvider>
-            <ViewModeProvider>
-            <OfflineProvider>
-            <Suspense fallback={<PageLoader />}>
+            <AudioProvider>
+              <SessionTrackerProvider>
+              <DemoTourProvider>
+              <ViewModeProvider>
+              <OfflineProvider>
+              <Suspense fallback={<PageLoader />}>
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Auth />} />
