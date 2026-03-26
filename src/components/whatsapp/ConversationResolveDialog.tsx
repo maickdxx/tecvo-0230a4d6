@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, SkipForward, Loader2 } from "lucide-react";
-import { useEffect } from "react";
 
 interface Props {
   open: boolean;
@@ -17,9 +16,6 @@ interface Props {
 }
 
 export function ConversationResolveDialog({ open, onResult, loading }: Props) {
-  // Handle ESC key manually if needed, but Dialog handles it.
-  // We just need to make sure onOpenChange doesn't trigger onResult(null) if we want to distinguish "Cancel" from "Skip".
-  
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && !loading && onResult(null)}>
       <DialogContent className="sm:max-w-md">
@@ -32,11 +28,11 @@ export function ConversationResolveDialog({ open, onResult, loading }: Props) {
         <div className="flex flex-col gap-2 py-2">
           <Button
             variant="outline"
-            className="justify-start gap-3 h-12 border-green-200 hover:bg-green-50 hover:border-green-400 dark:border-green-800 dark:hover:bg-green-950 disabled:opacity-50"
+            className="justify-start gap-3 h-12 border-emerald-500/20 hover:bg-emerald-500/5 hover:border-emerald-500/40 dark:border-emerald-500/20 dark:hover:bg-emerald-500/10 disabled:opacity-50"
             onClick={() => onResult("concluido")}
             disabled={loading}
           >
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
             <div className="text-left">
               <p className="font-medium text-foreground">Venda realizada</p>
               <p className="text-[11px] text-muted-foreground">Cliente fechou negócio</p>
@@ -44,11 +40,11 @@ export function ConversationResolveDialog({ open, onResult, loading }: Props) {
           </Button>
           <Button
             variant="outline"
-            className="justify-start gap-3 h-12 border-red-200 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:hover:bg-red-950 disabled:opacity-50"
+            className="justify-start gap-3 h-12 border-rose-500/20 hover:bg-rose-500/5 hover:border-rose-500/40 dark:border-rose-500/20 dark:hover:bg-rose-500/10 disabled:opacity-50"
             onClick={() => onResult("nao_convertido")}
             disabled={loading}
           >
-            <XCircle className="h-5 w-5 text-red-500" />
+            <XCircle className="h-5 w-5 text-rose-500" />
             <div className="text-left">
               <p className="font-medium text-foreground">Não convertido</p>
               <p className="text-[11px] text-muted-foreground">Cliente não fechou</p>
@@ -78,4 +74,5 @@ export function ConversationResolveDialog({ open, onResult, loading }: Props) {
     </Dialog>
   );
 }
+
 
