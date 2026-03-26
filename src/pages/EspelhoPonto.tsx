@@ -133,6 +133,7 @@ export default function EspelhoPonto() {
 
     let totalWorked = 0;
     let totalOvertime = 0;
+    let totalDeficit = 0;
     let totalDaysWorked = 0;
     const dayOvertimes: Array<{ date: string; overtimeMinutes: number }> = [];
     const expectedDays = countExpectedWorkDays(user?.id || "", employeeType, start, end, tz);
@@ -169,10 +170,12 @@ export default function EspelhoPonto() {
 
       const wm = Math.round(workedMinutes);
       const om = hasClockOut ? Math.max(0, calculateOvertimeMinutes(wm, expectedPerDay, toleranceMin, false)) : 0;
+      const dm = hasClockOut ? Math.max(0, calculateDeficitMinutes(wm, expectedPerDay, toleranceMin, false)) : 0;
 
       if (dayEntries.length > 0 && hasClockOut) {
         totalWorked += wm;
         totalOvertime += om;
+        totalDeficit += dm;
         totalDaysWorked++;
         if (om > 0) dayOvertimes.push({ date: dateStr, overtimeMinutes: om });
       }
