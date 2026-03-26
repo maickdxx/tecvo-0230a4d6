@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getDatePartInTz, getTodayInTz, formatLongDateInTz, getHourInTz, getMinutesInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, AlertCircle } from "lucide-react";
 import {
   TimelineCard,
   TimelineConnector,
