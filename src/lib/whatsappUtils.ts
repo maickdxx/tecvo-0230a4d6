@@ -5,7 +5,7 @@
  * 2. Detecting and converting URLs into clickable links
  * 3. Applying WhatsApp formatting (*bold*, _italic_, ~strikethrough~)
  */
-export function formatWhatsAppMessage(content: string): string {
+export function formatWhatsAppMessage(content: string, isMe: boolean = false): string {
   if (!content) return "";
 
   // 1. Basic HTML sanitization
@@ -23,6 +23,7 @@ export function formatWhatsAppMessage(content: string): string {
     let cleanUrl = match;
     let suffix = "";
     
+    // Some URLs might end with characters like . , ! ? that shouldn't be part of the URL in a message
     const trailingPunctuation = /[.,!?;:]+$/;
     const punctuationMatch = match.match(trailingPunctuation);
     
@@ -36,11 +37,17 @@ export function formatWhatsAppMessage(content: string): string {
       href = `https://${cleanUrl}`;
     }
 
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-500 dark:text-blue-400 hover:underline break-all transition-colors">${cleanUrl}</a>${suffix}`;
+    // Adjust link color based on whether it's our message or the other person's
+    // On our messages (isMe), we use a lighter blue/white-ish if background is primary
+    // On received messages, we use the standard blue
+    const linkColorClass = isMe 
+      ? "text-blue-100 dark:text-blue-200 underline" 
+      : "text-blue-600 dark:text-blue-400 hover:underline";
+
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="${linkColorClass} break-all transition-colors">${cleanUrl}</a>${suffix}`;
   });
 
   // 3. WhatsApp markdown formatting
-  // Note: We do this after links to avoid potential issues with links containing markdown chars
   formatted = formatted
     .replace(/\*([^*]+)\*/g, "<strong>$1</strong>")
     .replace(/_([^_]+)_/g, "<em>$1</em>")
