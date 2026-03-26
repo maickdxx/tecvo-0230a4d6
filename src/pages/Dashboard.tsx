@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from "react";
-import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
 import { GuidedOnboardingCard, PageTutorialBanner } from "@/components/onboarding";
@@ -8,6 +8,10 @@ import { ValueMilestoneBanner } from "@/components/dashboard/ValueMilestoneBanne
 import { useAutoSeedDemo } from "@/hooks/useAutoSeedDemo";
 import { useGuidedOnboarding } from "@/hooks/useGuidedOnboarding";
 import { useDemoMode } from "@/hooks/useDemoMode";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import {
   CashFlowChart,
   PaymentMethodChart,
@@ -43,6 +47,8 @@ import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const queryClient = useQueryClient();
   const { isPreparing } = useAutoSeedDemo();
   const { isDemoMode } = useDemoMode();
   const { showGuide, allCompleted: checklistDone } = useGuidedOnboarding();
@@ -50,6 +56,30 @@ export default function Dashboard() {
   const isActivationPhase = !isDemoMode && showGuide && !checklistDone;
   const [granularity, setGranularity] = useState<Granularity>("month");
   const [referenceDate, setReferenceDate] = useState(() => getHojeBRT());
+
+  const resetOnboardingMutation = useMutation({
+    mutationFn: async () => {
+      if (!session?.user?.id) return;
+      const { error } = await supabase
+        .from("profiles")
+        .update({ onboarding_completed: false })
+        .eq("user_id", session.user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile-onboarding", session?.user?.id] });
+      toast.success("Modo tutorial reativado");
+      navigate("/tutorial");
+    },
+    onError: () => {
+      toast.error("Erro ao reativar modo tutorial");
+    }
+  });
+
+  const handleOpenTutorial = () => {
+    resetOnboardingMutation.mutate();
+  };
 
   const periodo = useMemo(() => getPeriodoAtivo(granularity, referenceDate), [granularity, referenceDate]);
   const periodoAnterior = useMemo(() => getPeriodoAnterior(granularity, referenceDate), [granularity, referenceDate]);
@@ -209,6 +239,16 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-0.5">Resumo do desempenho da empresa</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 hidden md:flex"
+              onClick={handleOpenTutorial}
+              disabled={resetOnboardingMutation.isPending}
+            >
+              <BookOpen className="h-4 w-4" />
+              Ver tutorial
+            </Button>
             <DashboardCustomizeDialog />
             <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-1.5">
               <Plus className="h-3.5 w-3.5" />

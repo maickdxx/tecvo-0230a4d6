@@ -1906,6 +1906,7 @@ export type Database = {
           last_access: string | null
           notes: string | null
           notification_preferences: Json | null
+          onboarding_completed: boolean | null
           organization_id: string
           phone: string | null
           position: string | null
@@ -1939,6 +1940,7 @@ export type Database = {
           last_access?: string | null
           notes?: string | null
           notification_preferences?: Json | null
+          onboarding_completed?: boolean | null
           organization_id: string
           phone?: string | null
           position?: string | null
@@ -1972,6 +1974,7 @@ export type Database = {
           last_access?: string | null
           notes?: string | null
           notification_preferences?: Json | null
+          onboarding_completed?: boolean | null
           organization_id?: string
           phone?: string | null
           position?: string | null
