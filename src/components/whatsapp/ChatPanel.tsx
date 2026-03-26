@@ -116,6 +116,8 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   const [signatureEnabled, setSignatureEnabled] = useState(true);
   const [transferOpen, setTransferOpen] = useState(false);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
+
   const { tags: orgTags, getTagByName } = useWhatsAppTags();
   
   const [linkedClientData, setLinkedClientData] = useState<any>(null);
@@ -553,16 +555,44 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
     setResolveDialogOpen(true);
   };
 
-  const handleResolveResult = async (result: "concluido" | "nao_convertido" | null) => {
-    setResolveDialogOpen(false);
-    const updates: Record<string, any> = { conversation_status: "resolvido" };
-    if (result) {
-      updates.conversion_status = result === "concluido" ? "concluido" : "nao_convertido";
+  const handleResolveResult = async (result: "concluido" | "nao_convertido" | "skip" | null) => {
+    // If null, it was a manual close/ESC/click-outside, so just cancel
+    if (result === null) {
+      setResolveDialogOpen(false);
+      return;
     }
-    await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
-    toast.success("Conversa finalizada ✓");
-    onBack();
+
+    try {
+      setIsResolving(true);
+      const updates: Record<string, any> = { 
+        conversation_status: "resolvido"
+      };
+
+      if (result === "concluido") {
+        updates.conversion_status = "concluido";
+      } else if (result === "nao_convertido") {
+        updates.conversion_status = "nao_convertido";
+      }
+
+      const { error } = await supabase.from("whatsapp_contacts").update(updates).eq("id", contact.id);
+      
+      if (error) {
+        console.error("Erro ao finalizar conversa:", error);
+        toast.error("Erro ao finalizar conversa");
+        return;
+      }
+
+      toast.success("Conversa finalizada ✓");
+      setResolveDialogOpen(false);
+      onBack();
+    } catch (err) {
+      console.error(err);
+      toast.error("Ocorreu um erro ao finalizar");
+    } finally {
+      setIsResolving(false);
+    }
   };
+
 
   const handleRename = async () => {
     if (!newName.trim()) return;
@@ -1351,7 +1381,9 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       <ConversationResolveDialog
         open={resolveDialogOpen}
         onResult={handleResolveResult}
+        loading={isResolving}
       />
+
 
       {/* Panels moved to WhatsAppInbox as inline columns */}
     </div>
