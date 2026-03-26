@@ -247,7 +247,7 @@ export default function EmployeeDashboard() {
                           Concluir
                         </Button>
                       )}
-                      {service.status === "scheduled" && (
+                      {service.status === "scheduled" && !isLocked && (
                         <Button 
                           size="sm"
                           className="w-full mt-3" 
@@ -256,6 +256,14 @@ export default function EmployeeDashboard() {
                           <Play className="h-3.5 w-3.5 mr-1" />
                           Iniciar
                         </Button>
+                      )}
+                      {service.status === "scheduled" && isLocked && (
+                        <div className="mt-3 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-2">
+                          <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                          <span className="text-[10px] leading-tight text-amber-700 dark:text-amber-400">
+                            Liberado após concluir atual
+                          </span>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
