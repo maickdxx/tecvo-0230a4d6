@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from "react";
-import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
 import { GuidedOnboardingCard, PageTutorialBanner } from "@/components/onboarding";
@@ -8,6 +8,10 @@ import { ValueMilestoneBanner } from "@/components/dashboard/ValueMilestoneBanne
 import { useAutoSeedDemo } from "@/hooks/useAutoSeedDemo";
 import { useGuidedOnboarding } from "@/hooks/useGuidedOnboarding";
 import { useDemoMode } from "@/hooks/useDemoMode";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import {
   CashFlowChart,
   PaymentMethodChart,
