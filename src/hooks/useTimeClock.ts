@@ -238,6 +238,19 @@ export function useTimeClock() {
         throw new Error("O período está fechado. Não é possível registrar ponto.");
       }
 
+      // If clock_out, check for open services
+      if (entryType === "clock_out") {
+        const { data: openServices, error: svcError } = await supabase
+          .from("services")
+          .select("id, quote_number")
+          .eq("assigned_to", user!.id)
+          .in("status", ["in_progress"]);
+
+        if (!svcError && openServices && openServices.length > 0) {
+          throw new Error(`Você possui atendimentos em aberto (OS #${openServices.map(s => s.quote_number).join(", ")}). Finalize-os antes de encerrar sua jornada.`);
+        }
+      }
+
       // Pre-validate sequence (defense in depth — DB trigger is the authority)
       if (todayEntries.length === 0 && entryType !== "clock_in") {
         throw new Error("Primeiro registro do dia deve ser uma entrada.");

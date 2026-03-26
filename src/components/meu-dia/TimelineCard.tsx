@@ -11,6 +11,8 @@ import {
   DollarSign,
   Clock,
   UserCircle,
+  Lock,
+  AlertCircle,
 } from "lucide-react";
 import { formatTimeInTz, formatDateInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
@@ -38,6 +40,8 @@ interface Props {
   isEmployee?: boolean;
   /** Whether this is the next actionable service */
   isNext?: boolean;
+  /** Whether information should be restricted (current service is open) */
+  isLocked?: boolean;
 }
 
 function buildAddress(service: Service): string {
@@ -83,6 +87,7 @@ export function TimelineCard({
   paidAmount,
   isEmployee: isEmployeeUser,
   isNext,
+  isLocked,
 }: Props) {
   const tz = useOrgTimezone();
   const addr = buildAddress(service);
@@ -107,6 +112,7 @@ export function TimelineCard({
     if (isInAttendance) return "border-l-4 border-l-blue-500 ring-1 ring-blue-500/20";
     if (isEnRoute) return "border-l-4 border-l-amber-500 ring-1 ring-amber-500/20";
     if (opStatus === "problem") return "border-l-4 border-l-destructive";
+    if (isNext && isLocked) return "border-l-4 border-l-amber-500/30 opacity-80 bg-muted/20 grayscale-[0.2]";
     if (isNext) return "border-l-4 border-l-primary ring-1 ring-primary/20 shadow-md";
     return "border-l-4 border-l-muted-foreground/15";
   };
@@ -154,9 +160,15 @@ export function TimelineCard({
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className={`font-semibold text-foreground truncate ${isCompleted ? "text-sm" : ""}`}>
-                  {service.client?.name}
+                  {isLocked ? (service.client?.name?.split(" ")[0] || "Cliente") : service.client?.name}
                 </p>
                 <PriorityBadge priority={priority} />
+                {isLocked && (
+                  <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30 gap-1 bg-amber-50 dark:bg-amber-950/20">
+                    <Lock className="h-2.5 w-2.5" />
+                    Informações Reservadas
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {SERVICE_TYPE_LABELS[service.service_type] || service.service_type}
@@ -178,7 +190,7 @@ export function TimelineCard({
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <OperationalStatusBadge status={opStatus} />
-              {!isCompleted && (
+              {!isCompleted && !isLocked && (
                 <StatusActionMenu onSelect={(s) => onChangeStatus(service.id, s)} />
               )}
             </div>
@@ -192,15 +204,21 @@ export function TimelineCard({
             </div>
           )}
 
-          {/* Address — always prominent for non-completed */}
+          {/* Address */}
           {addr && !isCompleted && (
-            <button
-              onClick={() => onOpenRoute(service)}
-              className="text-xs text-muted-foreground flex items-start gap-1 text-left hover:text-foreground transition-colors"
-            >
+            <div className="flex items-start gap-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-              <span className="line-clamp-1">{addr}</span>
-            </button>
+              {isLocked ? (
+                <span className="italic">{service.service_neighborhood || "Bairro não informado"} • <span className="text-[10px] text-amber-500/80">(Endereço completo disponível após finalizar serviço atual)</span></span>
+              ) : (
+                <button
+                  onClick={() => onOpenRoute(service)}
+                  className="text-left hover:text-foreground transition-colors"
+                >
+                  <span className="line-clamp-1">{addr}</span>
+                </button>
+              )}
+            </div>
           )}
 
           {/* Financial + Time info */}
@@ -244,13 +262,13 @@ export function TimelineCard({
           {/* Action buttons */}
           {!isCompleted && (
             <div className="flex gap-2 flex-wrap pt-1">
-              {isScheduled && !isEnRoute && (
+              {isScheduled && !isEnRoute && !isLocked && (
                 <Button size={actionSize} className={`flex-1 ${isNext ? "h-11 text-base" : ""}`} onClick={() => onStartTravel(service.id)}>
                   <Car className={`mr-1 ${isNext ? "h-4 w-4" : "h-3.5 w-3.5"}`} />
                   Iniciar Deslocamento
                 </Button>
               )}
-              {isEnRoute && (
+              {isEnRoute && !isLocked && (
                 <Button size={actionSize} className={`flex-1 ${isNext ? "h-11 text-base" : ""}`} onClick={() => onStartAttendance(service.id)}>
                   <Play className={`mr-1 ${isNext ? "h-4 w-4" : "h-3.5 w-3.5"}`} />
                   Cheguei / Iniciar
@@ -262,16 +280,25 @@ export function TimelineCard({
                   Finalizar
                 </Button>
               )}
-              {addr && (
+              {addr && !isLocked && (
                 <Button variant="outline" size="sm" onClick={() => onOpenRoute(service)}>
                   <Navigation className="h-3.5 w-3.5 mr-1" />
                   Rota
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={() => onOpenDetails(service)}>
-                <Eye className="h-3.5 w-3.5 mr-1" />
-                Detalhes
-              </Button>
+              {isLocked ? (
+                <div className="flex-1 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                  <span className="text-[11px] leading-tight text-amber-700 dark:text-amber-400">
+                    Finalize o atendimento atual para liberar este serviço.
+                  </span>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => onOpenDetails(service)}>
+                  <Eye className="h-3.5 w-3.5 mr-1" />
+                  Detalhes
+                </Button>
+              )}
             </div>
           )}
 

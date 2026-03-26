@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getDatePartInTz, getTodayInTz, formatLongDateInTz, getHourInTz, getMinutesInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, AlertCircle } from "lucide-react";
 import {
   TimelineCard,
   TimelineConnector,
@@ -109,6 +109,10 @@ export default function MeuDia() {
       });
   }, [baseFiltered, tab, todayStr, tomorrowStr, weekEndStr, tz]);
 
+  const currentOpenService = useMemo(() => {
+    return filteredServices.find(s => s.status === "in_progress" || (s as any).operational_status === "en_route");
+  }, [filteredServices]);
+
   // Find next actionable service (first non-completed)
   const nextServiceId = useMemo(() => {
     if (tab !== "today") return null;
@@ -200,6 +204,25 @@ export default function MeuDia() {
           </div>
         )}
 
+        {/* Operational Alert for pending completion */}
+        {currentOpenService && (
+          <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/50">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  Atendimento em aberto (OS #{currentOpenService.quote_number})
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Finalize este serviço para liberar integralmente as informações do próximo.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Progress + Metrics */}
         <TechnicianMetrics {...techMetrics} />
 
@@ -236,6 +259,7 @@ export default function MeuDia() {
                     showDate={tab === "week"}
                     isEmployee={true}
                     isNext={service.id === nextServiceId}
+                    isLocked={!!currentOpenService && currentOpenService.id !== service.id && service.status !== "completed"}
                     onStartTravel={startTravel}
                     onStartAttendance={startAttendance}
                     onComplete={handleComplete}

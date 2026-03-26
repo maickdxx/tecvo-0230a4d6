@@ -656,6 +656,19 @@ export function useServices(options?: UseServicesOptions | string) {
         updateData.completed_date = new Date().toISOString();
         updateData.operational_status = "completed";
         trackFBCustomEvent("FinishOS");
+        
+        // Log completion event
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("service_execution_logs" as any).insert({
+            service_id: id,
+            organization_id: currentService.organization_id,
+            user_id: user.id,
+            event_type: "completion",
+            recorded_at: new Date().toISOString(),
+          });
+        }
+        
         if (paymentMethod) {
           updateData.payment_method = paymentMethod;
         }

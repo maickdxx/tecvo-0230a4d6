@@ -9,7 +9,7 @@ import { ServiceCompleteDialog } from "@/components/services/ServiceCompleteDial
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, ClipboardList, Play, ArrowRight, CheckCircle2, Car } from "lucide-react";
+import { CalendarDays, Clock, ClipboardList, Play, ArrowRight, CheckCircle2, Car, Lock, AlertCircle } from "lucide-react";
 import { formatTimeInTz, formatDateInTz, getDatePartInTz, getTodayInTz, formatLongDateInTz, getHourInTz, getMinutesInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
@@ -50,9 +50,15 @@ export default function EmployeeDashboard() {
   const pendingToday = todayServices.filter(s => s.status !== "completed" && s.status !== "cancelled").length;
   const { distances } = useDistanceBetweenServices(todayServices);
 
+  const currentOpenService = useMemo(() => {
+    return todayServices.find(s => s.status === "in_progress");
+  }, [todayServices]);
+
   const nextService = useMemo(() => {
     return todayServices.find(s => s.status === "scheduled" || s.status === "in_progress");
   }, [todayServices]);
+
+  const isNextLocked = !!currentOpenService && nextService && currentOpenService.id !== nextService.id;
 
   const handleStartService = (id: string) => {
     updateStatus({ id, status: "in_progress" });
@@ -109,7 +115,15 @@ export default function EmployeeDashboard() {
             <CardContent className="space-y-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="font-medium text-foreground">{nextService.client?.name}</p>
+                  <p className="font-medium text-foreground">
+                    {isNextLocked ? (nextService.client?.name?.split(" ")[0] || "Cliente") : nextService.client?.name}
+                    {isNextLocked && (
+                      <Badge variant="outline" className="ml-2 text-[10px] text-amber-600 border-amber-500/30 gap-1 bg-amber-50 dark:bg-amber-950/20">
+                        <Lock className="h-2.5 w-2.5" />
+                        Reservado
+                      </Badge>
+                    )}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {SERVICE_TYPE_LABELS[nextService.service_type]}
                   </p>
@@ -135,13 +149,22 @@ export default function EmployeeDashboard() {
                 </Badge>
               </div>
               {nextService.status === "scheduled" && (
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleStartService(nextService.id)}
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Iniciar Serviço
-                </Button>
+                isNextLocked ? (
+                  <div className="flex-1 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                    <span className="text-xs leading-tight text-amber-700 dark:text-amber-400">
+                      Finalize o atendimento atual para iniciar este serviço.
+                    </span>
+                  </div>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    onClick={() => handleStartService(nextService.id)}
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Iniciar Serviço
+                  </Button>
+                )
               )}
               {nextService.status === "in_progress" && (
                 <Button 
@@ -170,13 +193,17 @@ export default function EmployeeDashboard() {
             {todayServices.map((service, index) => {
               const nextSvc = index < todayServices.length - 1 ? todayServices[index + 1] : null;
               const distInfo = nextSvc ? distances.get(`${service.id}->${nextSvc.id}`) : null;
+              const isLocked = !!currentOpenService && currentOpenService.id !== service.id && service.status !== "completed";
+              
               return (
                 <div key={service.id}>
-                  <Card className="overflow-hidden">
+                  <Card className={`overflow-hidden ${isLocked ? "opacity-75 bg-muted/20" : ""}`}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1 min-w-0 flex-1">
-                          <p className="font-medium text-foreground truncate">{service.client?.name}</p>
+                          <p className="font-medium text-foreground truncate">
+                            {isLocked ? (service.client?.name?.split(" ")[0] || "Cliente") : service.client?.name}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {SERVICE_TYPE_LABELS[service.service_type]}
                           </p>
@@ -220,7 +247,7 @@ export default function EmployeeDashboard() {
                           Concluir
                         </Button>
                       )}
-                      {service.status === "scheduled" && (
+                      {service.status === "scheduled" && !isLocked && (
                         <Button 
                           size="sm"
                           className="w-full mt-3" 
@@ -229,6 +256,14 @@ export default function EmployeeDashboard() {
                           <Play className="h-3.5 w-3.5 mr-1" />
                           Iniciar
                         </Button>
+                      )}
+                      {service.status === "scheduled" && isLocked && (
+                        <div className="mt-3 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 flex items-center gap-2">
+                          <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                          <span className="text-[10px] leading-tight text-amber-700 dark:text-amber-400">
+                            Liberado após concluir atual
+                          </span>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
