@@ -50,9 +50,15 @@ export default function EmployeeDashboard() {
   const pendingToday = todayServices.filter(s => s.status !== "completed" && s.status !== "cancelled").length;
   const { distances } = useDistanceBetweenServices(todayServices);
 
+  const currentOpenService = useMemo(() => {
+    return todayServices.find(s => s.status === "in_progress");
+  }, [todayServices]);
+
   const nextService = useMemo(() => {
     return todayServices.find(s => s.status === "scheduled" || s.status === "in_progress");
   }, [todayServices]);
+
+  const isNextLocked = !!currentOpenService && nextService && currentOpenService.id !== nextService.id;
 
   const handleStartService = (id: string) => {
     updateStatus({ id, status: "in_progress" });
