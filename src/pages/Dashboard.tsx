@@ -15,6 +15,7 @@ import {
   CompanyHealthCard,
   DashboardSection,
 } from "@/components/dashboard";
+import { TimePerformanceDashboard } from "@/components/dashboard/TimePerformanceDashboard";
 import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBlock";
 import { ExecutiveHeroBlock } from "@/components/dashboard/ExecutiveHeroBlock";
 import { RevenueEngineBlock } from "@/components/dashboard/RevenueEngineBlock";
@@ -123,6 +124,10 @@ export default function Dashboard() {
         </div>
         <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
       </DashboardSection>
+    ) : null,
+
+    performance_tempo: canViewFinance && isVisible("performance_tempo") ? (
+      <TimePerformanceDashboard startDate={startDate} endDate={endDate} />
     ) : null,
   };
 

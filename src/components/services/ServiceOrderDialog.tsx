@@ -15,6 +15,7 @@ import {
   Building2,
   Phone,
   Mail,
+  Timer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,7 @@ import { generateServiceOrderPDF } from "@/lib/generateServiceOrderPDF";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useServiceSignatures } from "@/hooks/useServiceSignatures";
+import { TimePerformanceBadge } from "@/components/services/TimePerformanceBadge";
 import type { Service } from "@/hooks/useServices";
 import { SERVICE_STATUS_LABELS } from "@/hooks/useServices";
 import { format } from "date-fns";
@@ -347,6 +349,20 @@ export function ServiceOrderDialog({ open, onOpenChange, service }: ServiceOrder
                 {service.exit_date && (
                   <InfoRow label="Saída" value={`${formatDateInTz(service.exit_date, tz)} às ${formatTimeInTz(service.exit_date, tz)}`} />
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Time Performance */}
+          {service.status === "completed" && service.entry_date && service.exit_date && service.estimated_duration && (
+            <div className="rounded-xl bg-muted/20 p-4">
+              <SectionHeader icon={Timer} title="Performance de Tempo" />
+              <div className="pl-8 flex items-center gap-3">
+                <TimePerformanceBadge
+                  entryDate={service.entry_date}
+                  exitDate={service.exit_date}
+                  estimatedDuration={service.estimated_duration}
+                />
               </div>
             </div>
           )}

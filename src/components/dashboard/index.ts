@@ -25,4 +25,5 @@ export { ClosedPeriodServices } from "./ClosedPeriodServices";
 export { TodayBlock } from "./TodayBlock";
 export { AgendaResumo } from "./AgendaResumo";
 export { AlertasInteligentes } from "./AlertasInteligentes";
+export { TimePerformanceDashboard } from "./TimePerformanceDashboard";
 
