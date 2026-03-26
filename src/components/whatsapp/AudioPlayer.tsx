@@ -200,17 +200,18 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, isMe, messageId }
 
         <div className="flex flex-col items-center gap-1 opacity-40">
            <Mic className="h-3 w-3" />
-           <div className="flex items-center gap-0.5 h-3">
-             {[1, 2, 3].map(i => (
+           <div className="flex items-end gap-[1px] h-4">
+             {[1, 2, 3, 4, 5].map(i => (
                <div 
                  key={i} 
                  className={cn(
                    "w-0.5 bg-current rounded-full transition-all duration-300",
-                   isPlaying ? "animate-pulse" : "h-1"
+                   isPlaying ? "animate-bounce" : "h-1"
                  )}
                  style={{ 
-                   height: isPlaying ? `${Math.random() * 8 + 4}px` : "4px",
-                   animationDelay: `${i * 0.1}s`
+                   height: isPlaying ? "100%" : "4px",
+                   animationDuration: "0.8s",
+                   animationDelay: `${i * 0.15}s`
                  }}
                />
              ))}
