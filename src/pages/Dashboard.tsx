@@ -239,6 +239,16 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-0.5">Resumo do desempenho da empresa</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 hidden md:flex"
+              onClick={handleOpenTutorial}
+              disabled={resetOnboardingMutation.isPending}
+            >
+              <BookOpen className="h-4 w-4" />
+              Ver tutorial
+            </Button>
             <DashboardCustomizeDialog />
             <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-1.5">
               <Plus className="h-3.5 w-3.5" />
