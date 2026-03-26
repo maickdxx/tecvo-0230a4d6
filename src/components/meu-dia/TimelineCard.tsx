@@ -87,6 +87,7 @@ export function TimelineCard({
   paidAmount,
   isEmployee: isEmployeeUser,
   isNext,
+  isLocked,
 }: Props) {
   const tz = useOrgTimezone();
   const addr = buildAddress(service);
