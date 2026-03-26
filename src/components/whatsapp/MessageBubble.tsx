@@ -25,6 +25,7 @@ import {
   Sparkles,
   Reply,
 } from "lucide-react";
+import { AudioPlayer } from "./AudioPlayer";
 import {
   DropdownMenu,
   DropdownMenuContent,
