@@ -368,7 +368,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
             <div className="px-3.5 py-2">
               {/* Audio */}
               {mediaType === "audio" && message.media_url && (
-                <AudioPlayer src={message.media_url} isMe={isMe} />
+                <AudioPlayer src={message.media_url} isMe={isMe} messageId={message.id} />
               )}
 
               {/* Document */}
