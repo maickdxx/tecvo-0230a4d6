@@ -285,6 +285,7 @@ export default function MeusServicos() {
                 )}
               </CardContent>
             </Card>
+            );
           })}
         </div>
       )}
