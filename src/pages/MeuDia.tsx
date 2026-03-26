@@ -109,6 +109,10 @@ export default function MeuDia() {
       });
   }, [baseFiltered, tab, todayStr, tomorrowStr, weekEndStr, tz]);
 
+  const currentOpenService = useMemo(() => {
+    return filteredServices.find(s => s.status === "in_progress" || (s as any).operational_status === "en_route");
+  }, [filteredServices]);
+
   // Find next actionable service (first non-completed)
   const nextServiceId = useMemo(() => {
     if (tab !== "today") return null;
