@@ -74,14 +74,27 @@ export function useGuidedOnboarding(): GuidedOnboardingData {
 
   const dismissMutation = useMutation({
     mutationFn: async () => {
-      if (!organizationId) return;
-      await supabase
+      if (!organizationId || !session?.user?.id) return;
+      
+      // Update organization dismissed flag
+      const { error: orgError } = await supabase
         .from("organizations")
         .update({ guided_onboarding_dismissed: true } as any)
         .eq("id", organizationId);
+      
+      if (orgError) throw orgError;
+
+      // Also update profile onboarding_completed
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ onboarding_completed: true })
+        .eq("user_id", session.user.id);
+      
+      if (profileError) throw profileError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guided-onboarding"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-onboarding", session?.user?.id] });
     },
   });
 
