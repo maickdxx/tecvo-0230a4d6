@@ -204,15 +204,21 @@ export function TimelineCard({
             </div>
           )}
 
-          {/* Address — always prominent for non-completed */}
+          {/* Address */}
           {addr && !isCompleted && (
-            <button
-              onClick={() => onOpenRoute(service)}
-              className="text-xs text-muted-foreground flex items-start gap-1 text-left hover:text-foreground transition-colors"
-            >
+            <div className="flex items-start gap-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-              <span className="line-clamp-1">{addr}</span>
-            </button>
+              {isLocked ? (
+                <span className="italic">{service.service_neighborhood || "Bairro não informado"} • <span className="text-[10px] text-amber-500/80">(Endereço completo disponível após finalizar serviço atual)</span></span>
+              ) : (
+                <button
+                  onClick={() => onOpenRoute(service)}
+                  className="text-left hover:text-foreground transition-colors"
+                >
+                  <span className="line-clamp-1">{addr}</span>
+                </button>
+              )}
+            </div>
           )}
 
           {/* Financial + Time info */}
