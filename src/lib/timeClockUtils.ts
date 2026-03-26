@@ -59,6 +59,30 @@ export function calculateOvertimeMinutes(
 }
 
 /**
+ * Calculate journey deficit with tolerance dead zone.
+ * Small variations within tolerance are NOT counted as deficit.
+ *
+ * @param workedMinutes - Total minutes worked in the day
+ * @param expectedMinutes - Expected minutes based on employee's schedule
+ * @param toleranceMinutes - Tolerance from org settings (late_tolerance_minutes)
+ * @param isNonWorkDay - If true, it is NEVER a deficit
+ * @returns Deficit minutes (floored)
+ */
+export function calculateDeficitMinutes(
+  workedMinutes: number,
+  expectedMinutes: number,
+  toleranceMinutes: number,
+  isNonWorkDay: boolean
+): number {
+  if (isNonWorkDay) return 0;
+  const diff = expectedMinutes - workedMinutes;
+  if (diff <= 0) return 0;
+  // Within tolerance band — not counted as deficit
+  if (diff <= toleranceMinutes) return 0;
+  return Math.floor(diff);
+}
+
+/**
  * Policy-driven summary result.
  * Both policies calculate the same raw data, but surface different metrics.
  */
@@ -72,9 +96,11 @@ export interface PolicySummary {
   expectedMinutes: number;
   /** Daily-accumulated overtime (CLT tolerance applied) — always >= 0 */
   totalOvertime: number;
+  /** Daily-accumulated deficit (CLT tolerance applied) — always >= 0 */
+  totalDeficit: number;
   
   // === BANK MODE fields ===
-  /** Net balance (worked - expected) — can be negative */
+  /** Net balance (overtime - deficit) — can be negative */
   bankBalance: number;
   
   // === PAY MODE fields ===
@@ -100,9 +126,13 @@ export function computePolicySummary(
   totalWorked: number,
   expectedMinutes: number,
   totalOvertime: number,
+  totalDeficit?: number, // Optional for backward compat, but recommended
 ): PolicySummary {
-  const bankBalance = Math.round(totalWorked - expectedMinutes);
-  const journeyDeficit = Math.max(0, expectedMinutes - totalWorked);
+  // If totalDeficit is not provided (legacy), we fall back to raw calculation (inconsistent but safe for now)
+  const effectiveDeficit = totalDeficit !== undefined ? totalDeficit : Math.max(0, expectedMinutes - totalWorked);
+  
+  // Bank balance is now symmetric: Overtime - Deficit
+  const bankBalance = Math.round(totalOvertime - effectiveDeficit);
   
   if (policy === "bank") {
     return {
@@ -110,8 +140,9 @@ export function computePolicySummary(
       totalWorked,
       expectedMinutes,
       totalOvertime,
+      totalDeficit: effectiveDeficit,
       bankBalance,
-      journeyDeficit,
+      journeyDeficit: effectiveDeficit,
       primaryValue: bankBalance,
       primaryLabel: "Saldo Banco de Horas",
       secondaryValue: null,
@@ -125,12 +156,13 @@ export function computePolicySummary(
     totalWorked,
     expectedMinutes,
     totalOvertime,
+    totalDeficit: effectiveDeficit,
     bankBalance,
-    journeyDeficit,
+    journeyDeficit: effectiveDeficit,
     primaryValue: totalOvertime,
     primaryLabel: "Horas Extras a Pagar",
-    secondaryValue: journeyDeficit > 0 ? journeyDeficit : null,
-    secondaryLabel: journeyDeficit > 0 ? "Déficit de Jornada" : null,
+    secondaryValue: effectiveDeficit > 0 ? effectiveDeficit : null,
+    secondaryLabel: effectiveDeficit > 0 ? "Déficit de Jornada" : null,
   };
 }
 

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { calculateOvertimeMinutes, getEffectiveMaxDay, computePolicySummary, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig, type OvertimePolicy } from "@/lib/timeClockUtils";
+import { calculateOvertimeMinutes, calculateDeficitMinutes, getEffectiveMaxDay, computePolicySummary, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig, type OvertimePolicy } from "@/lib/timeClockUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AppLayout } from "@/components/layout";
@@ -140,7 +140,7 @@ export default function PontoFechamento() {
       const maxDay = getEffectiveMaxDay(year, month, null, null); // open period → no closure constraint
 
       // Calculate from entries
-      let totalWorked = 0, totalLates = 0, totalIncompletes = 0, totalOvertime = 0;
+      let totalWorked = 0, totalLates = 0, totalIncompletes = 0, totalOvertime = 0, totalDeficit = 0;
       let expectedDays = 0;
       const daysWorkedSet = new Set<string>();
       const dayOvertimes: Array<{ date: string; overtimeMinutes: number }> = [];
@@ -201,14 +201,16 @@ export default function PontoFechamento() {
         if (hasClockOut) {
           const expectedPerDay = schedule.work_hours_per_day * 60;
           const om = calculateOvertimeMinutes(dayWorked, expectedPerDay, toleranceMin, isNonWork);
+          const dm = calculateDeficitMinutes(dayWorked, expectedPerDay, toleranceMin, isNonWork);
           totalOvertime += om;
+          totalDeficit += dm;
           if (om > 0) dayOvertimes.push({ date, overtimeMinutes: Math.floor(om) });
         }
       }
 
       const workDaysWorked = [...daysWorkedSet].filter(d => isWorkDay(d, userId, empType)).length;
       const totalAbsences = Math.max(0, expectedDays - workDaysWorked);
-      const bankBalance = Math.floor(totalWorked) - expectedMinutes;
+      const bankBalance = Math.round(totalOvertime - totalDeficit);
 
       return {
         userId,
