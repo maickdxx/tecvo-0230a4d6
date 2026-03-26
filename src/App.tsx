@@ -10,6 +10,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { OfflineProvider } from "@/contexts/OfflineContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AudioProvider } from "@/contexts/AudioContext";
 import { DemoTourProvider } from "@/hooks/useDemoTour";
 import { SessionTrackerProvider } from "@/components/SessionTrackerProvider";
 import { AdminProtectedRoute } from "@/components/admin";
