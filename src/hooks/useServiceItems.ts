@@ -7,6 +7,7 @@ export interface ServiceItem {
   id: string;
   service_id: string;
   organization_id: string;
+  name?: string;
   description: string;
   quantity: number;
   unit_price: number;
@@ -16,6 +17,7 @@ export interface ServiceItem {
 }
 
 export interface ServiceItemFormData {
+  name?: string;
   description: string;
   quantity: number;
   unit_price: number;
