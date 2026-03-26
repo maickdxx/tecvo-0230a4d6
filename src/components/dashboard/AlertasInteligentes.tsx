@@ -102,6 +102,21 @@ export function AlertasInteligentes() {
       });
     }
 
+    // 5. Started but not finished services (Today or older)
+    const unfinishedServices = services.filter((s) => {
+      return (s.status === "in_progress" || (s as any).operational_status === "en_route");
+    });
+
+    if (unfinishedServices.length > 0) {
+      result.push({
+        id: "unfinished_services",
+        icon: AlertTriangle,
+        message: `${unfinishedServices.length} serviço${unfinishedServices.length > 1 ? "s" : ""} em execução no momento`,
+        severity: "warning",
+        action: () => navigate("/ordens-servico?status=in_progress"),
+      });
+    }
+
     return result;
   }, [services, clients, transactions, navigate]);
 
