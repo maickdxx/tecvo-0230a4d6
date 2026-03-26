@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, MapPin, Clock, Wrench, User, CalendarDays, Loader2, Eye } from "lucide-react";
+import { Phone, MapPin, Clock, Wrench, User, CalendarDays, Loader2, Eye, Lock, AlertCircle } from "lucide-react";
 import { useServices, SERVICE_STATUS_LABELS, type Service, type ServiceStatus } from "@/hooks/useServices";
 import { ServiceDetailsDialog } from "@/components/services/ServiceDetailsDialog";
 import { useAuth } from "@/hooks/useAuth";
