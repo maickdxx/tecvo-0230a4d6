@@ -54,7 +54,7 @@ export default function PontoEspelho() {
     const summaries: Array<{
       userId: string; name: string; type: string; date: string;
       clockIn: string | null; breakStart: string | null; breakEnd: string | null; clockOut: string | null;
-      breakMinutes: number; workedMinutes: number; overtimeMinutes: number;
+      breakMinutes: number; workedMinutes: number; overtimeMinutes: number; deficitMinutes: number;
       isLate: boolean; isIncomplete: boolean; isNonWorkDay: boolean;
     }> = [];
 
@@ -94,14 +94,16 @@ export default function PontoEspelho() {
         isLate = entryTime > expected;
       }
 
-      const isIncomplete = !lastClockOut && sorted.length > 0;
-      const overtimeMinutes = calculateOvertimeMinutes(workedMinutes, expectedMinutes, toleranceMin, isNonWorkDay);
+      const hasClockOut = !!lastClockOut;
+      const isIncomplete = !hasClockOut && sorted.length > 0;
+      const overtimeMinutes = hasClockOut ? calculateOvertimeMinutes(workedMinutes, expectedMinutes, toleranceMin, isNonWorkDay) : 0;
+      const deficitMinutes = hasClockOut ? calculateDeficitMinutes(workedMinutes, expectedMinutes, toleranceMin, isNonWorkDay) : 0;
 
       summaries.push({
         userId, name: profile?.name || "Sem nome", type: profile?.type || "tecnico",
         date, clockIn: firstClockIn, breakStart: firstBreakStart, breakEnd: firstBreakEnd, clockOut: lastClockOut,
         breakMinutes: Math.floor(breakMinutes), workedMinutes: Math.floor(workedMinutes),
-        overtimeMinutes: Math.floor(overtimeMinutes),
+        overtimeMinutes: Math.floor(overtimeMinutes), deficitMinutes: Math.floor(deficitMinutes),
         isLate, isIncomplete, isNonWorkDay,
       });
     }
@@ -111,10 +113,11 @@ export default function PontoEspelho() {
 
   // Aggregate stats
   const periodStats = useMemo(() => {
-    let totalWorked = 0, totalOvertime = 0, totalLates = 0, totalIncompletes = 0;
+    let totalWorked = 0, totalOvertime = 0, totalDeficit = 0, totalLates = 0, totalIncompletes = 0;
     for (const s of dailySummaries) {
       totalWorked += s.workedMinutes;
       totalOvertime += s.overtimeMinutes;
+      totalDeficit += s.deficitMinutes;
       if (s.isLate && !s.isNonWorkDay) totalLates++;
       if (s.isIncomplete) totalIncompletes++;
     }
@@ -137,9 +140,9 @@ export default function PontoEspelho() {
       expectedTotal += Math.round(count * schedule.work_hours_per_day * 60);
     }
 
-    const bankBalance = Math.round(totalWorked - expectedTotal);
+    const bankBalance = Math.round(totalOvertime - totalDeficit);
 
-    return { totalWorked, totalOvertime, totalLates, totalIncompletes, bankBalance, expectedTotal };
+    return { totalWorked, totalOvertime, totalDeficit, totalLates, totalIncompletes, bankBalance, expectedTotal };
   }, [dailySummaries, filterMonth, filterUser, teamProfiles, isWorkDay, getScheduleForEmployee]);
 
   const formatTime = (iso: string | null) => {
@@ -331,7 +334,7 @@ export default function PontoEspelho() {
 
         {/* Policy-driven balance section */}
         {(() => {
-          const ps = computePolicySummary(overtimePolicy, periodStats.totalWorked, periodStats.expectedTotal, periodStats.totalOvertime);
+          const ps = computePolicySummary(overtimePolicy, periodStats.totalWorked, periodStats.expectedTotal, periodStats.totalOvertime, periodStats.totalDeficit);
           if (ps.primaryValue === 0 && ps.secondaryValue == null) return null;
           return (
             <div className="space-y-1.5">
