@@ -40,6 +40,8 @@ interface Props {
   isEmployee?: boolean;
   /** Whether this is the next actionable service */
   isNext?: boolean;
+  /** Whether information should be restricted (current service is open) */
+  isLocked?: boolean;
 }
 
 function buildAddress(service: Service): string {
