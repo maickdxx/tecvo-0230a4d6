@@ -432,13 +432,17 @@ export function useServices(options?: UseServicesOptions | string) {
         organization_id: organizationId,
       };
 
+      console.log("[CREATE-OS] sanitizedData:", JSON.stringify(sanitizedData, null, 2));
       const { data: service, error } = await supabase
         .from("services")
         .insert(sanitizedData as any)
         .select("*, client:clients(*)")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[CREATE-OS] Supabase error:", error.message, error.details, error.hint, error.code);
+        throw error;
+      }
 
       // Track activity event
       try {
