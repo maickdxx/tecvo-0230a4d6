@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         // Check if org has an active WhatsApp channel
         const { data: channel } = await supabaseAdmin
           .from("whatsapp_channels")
-          .select("id, is_connected")
+          .select("id, is_connected, instance_name")
           .eq("organization_id", profile.organization_id)
           .eq("is_connected", true)
           .limit(1)
