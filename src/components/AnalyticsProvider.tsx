@@ -8,19 +8,20 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { user, profile } = useAuth();
 
   useEffect(() => {
+    // Determine user type (simple logic for now)
+    let userType = null;
+    if (profile) {
+      userType = profile.employee_type || (profile.id ? "admin" : null);
+    }
+
     // Track Page View
     analytics.trackPageView(
       user?.id || null,
       profile?.organization_id || null,
       location.pathname + location.search,
-      document.title
+      document.title,
+      { user_type: userType }
     );
-
-    // Update metadata with user type if available
-    if (profile?.employee_type) {
-      // This is a bit tricky since trackPageView already happened.
-      // But we can include it in the next events or update the client state.
-    }
   }, [location.pathname, location.search, user?.id, profile?.organization_id, profile?.employee_type]);
 
   return <>{children}</>;
