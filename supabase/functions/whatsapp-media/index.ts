@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-
+import { classifyEvoError } from "../_shared/evoErrorClassifier.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -179,8 +179,37 @@ Deno.serve(async (req) => {
     if (!evoResponse.ok) {
       const errText = await evoResponse.text();
       console.error("[WHATSAPP-MEDIA] Evolution API error:", evoResponse.status, errText);
-      return new Response(JSON.stringify({ error: "Failed to send media", details: errText }), {
-        status: 502,
+
+      const classified = classifyEvoError(evoResponse.status, errText);
+
+      if (classified.isDisconnection) {
+        await supabase
+          .from("whatsapp_channels")
+          .update({
+            is_connected: false,
+            channel_status: "disconnected",
+            disconnected_reason: classified.technicalReason.substring(0, 200),
+          })
+          .eq("id", channel.id);
+
+        console.warn("[WHATSAPP-MEDIA] Channel auto-disconnected:", channel.id);
+
+        return new Response(JSON.stringify({
+          error: "channel_disconnected",
+          message: classified.userMessage,
+          channel_id: channel.id,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        error: classified.domainError,
+        message: classified.userMessage,
+        details: classified.technicalReason,
+      }), {
+        status: classified.domainError === "rate_limited" ? 429 : 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
