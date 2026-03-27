@@ -8,17 +8,13 @@ import { useInviteByToken } from "@/hooks/useInvites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Wrench, UserPlus, Star, Crown, CreditCard, Shield, Mail, ArrowLeft, RefreshCw, CalendarCheck, FileText, DollarSign, CheckCircle2 } from "lucide-react";
+import { Loader2, UserPlus, Mail, ArrowLeft, RefreshCw } from "lucide-react";
 import { lovable } from "@/integrations/lovable";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-// supabase already imported above
 import { PLAN_CONFIG } from "@/lib/planConfig";
 import type { PlanSlug } from "@/lib/planConfig";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
