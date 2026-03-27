@@ -113,6 +113,16 @@ export function useAdminAnalytics() {
     return data;
   };
 
+  const fetchABTestResults = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_ab_test_results")
+      .select("*")
+      .order("test_name", { ascending: true });
+    
+    if (error) throw error;
+    return data;
+  };
+
   const fetchAlerts = async () => {
     const { data, error } = await supabase
       .from("analytics_alerts")
@@ -224,7 +234,8 @@ export function useAdminAnalytics() {
     leadDropoffs,
     ctaPerformance,
     leadPaths,
+    abTestResults,
     kpis,
-    isLoading: isLoading || marketingFunnel.isLoading || leadDropoffs.isLoading || ctaPerformance.isLoading || leadPaths.isLoading
+    isLoading: isLoading || marketingFunnel.isLoading || leadDropoffs.isLoading || ctaPerformance.isLoading || leadPaths.isLoading || abTestResults.isLoading
   };
 }
