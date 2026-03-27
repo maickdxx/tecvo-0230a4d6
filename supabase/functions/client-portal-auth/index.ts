@@ -1,5 +1,13 @@
+/**
+ * ── SEND FLOW: PLATFORM_AUTH ──
+ * Client portal OTP verification codes sent via WhatsApp.
+ * These are fire-and-forget security messages, NOT conversation replies.
+ * Uses the client's org channel if found, falls back to TECVO_PLATFORM_INSTANCE.
+ * Must NEVER participate in conversation thread history.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +40,7 @@ function maskEmail(email: string): string {
   return `${masked}@${domain}`;
 }
 
-async function sendWhatsApp(phone: string, text: string, instanceName = "tecvo"): Promise<boolean> {
+async function sendWhatsApp(phone: string, text: string, instanceName = TECVO_PLATFORM_INSTANCE): Promise<boolean> {
   const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
   const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
   if (!vpsUrl || !apiKey) return false;
@@ -357,14 +365,14 @@ Deno.serve(async (req) => {
       let sent = false;
 
       if (channel === "whatsapp" && client.phone) {
-        const instanceName = await findClientChannelInstance(supabase, session.organization_id, client.phone) || "tecvo";
+        const instanceName = await findClientChannelInstance(supabase, session.organization_id, client.phone) || TECVO_PLATFORM_INSTANCE;
         const message = `🔐 *Código de verificação*\n\nSeu código: *${otp}*\n\n⏱ Válido por 5 minutos.`;
         sent = await sendWhatsApp(client.phone, message, instanceName);
       } else if (channel === "email" && client.email) {
         // TODO: implement email OTP sending
         // For now, fall back to WhatsApp if possible
         if (client.phone) {
-          const instanceName = await findClientChannelInstance(supabase, session.organization_id, client.phone) || "tecvo";
+          const instanceName = await findClientChannelInstance(supabase, session.organization_id, client.phone) || TECVO_PLATFORM_INSTANCE;
           const message = `🔐 *Código de verificação*\n\nSeu código: *${otp}*\n\n⏱ Válido por 5 minutos.`;
           sent = await sendWhatsApp(client.phone, message, instanceName);
         }

@@ -7,6 +7,7 @@
  * this is a test utility — production flows use strict channel isolation instead.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    let instanceName = "tecvo";
+    let instanceName = TECVO_PLATFORM_INSTANCE;
     if (contact?.channel_id) {
       const { data: ch } = await supabase
         .from("whatsapp_channels")
