@@ -677,6 +677,27 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_internal_ids: {
+        Row: {
+          anonymous_id: string
+          created_at: string | null
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          anonymous_id: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          anonymous_id?: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           content: string
@@ -4555,6 +4576,7 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
+          ip_address: string | null
           metadata: Json | null
           organization_id: string | null
           user_id: string | null
@@ -4563,6 +4585,7 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
+          ip_address?: string | null
           metadata?: Json | null
           organization_id?: string | null
           user_id?: string | null
@@ -4571,6 +4594,7 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
+          ip_address?: string | null
           metadata?: Json | null
           organization_id?: string | null
           user_id?: string | null
