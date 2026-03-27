@@ -220,10 +220,10 @@ export function AdminPatterns({ patterns, applications, onRefetch }: AdminPatter
               <tbody className="divide-y">
                 {applications?.map((app) => (
                   <tr key={app.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-3 font-medium">
+                    <td className="px-4 py-3 font-medium text-foreground">
                       <div className="flex items-center gap-2">
-                        {app.ab_test_winning_patterns?.pattern_type === 'headline' && <Star className="h-3 w-3 text-amber-500" />}
-                        {app.ab_test_winning_patterns?.pattern_type === 'cta' && <MousePointer2 className="h-3 w-3 text-blue-500" />}
+                        {app.ab_test_winning_patterns?.pattern_type === 'headline' && <Star className="h-3 w-3 text-primary" />}
+                        {app.ab_test_winning_patterns?.pattern_type === 'cta' && <MousePointer2 className="h-3 w-3 text-primary" />}
                         {app.ab_test_winning_patterns?.name}
                       </div>
                     </td>
