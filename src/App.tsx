@@ -835,6 +835,7 @@ const App = () => (
               </ViewModeProvider>
               </DemoTourProvider>
               </SessionTrackerProvider>
+              </AnalyticsProvider>
             </AudioProvider>
           </AuthProvider>
           <CookieConsent />
