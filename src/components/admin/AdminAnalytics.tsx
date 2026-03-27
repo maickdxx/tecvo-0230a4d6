@@ -133,26 +133,34 @@ export function AdminAnalytics() {
       </div>
 
       <Tabs defaultValue="leads" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="leads" className="gap-2">
             <Filter className="h-4 w-4 text-primary" />
-            Leads & Marketing
+            Leads
+          </TabsTrigger>
+          <TabsTrigger value="campaigns" className="gap-2">
+            <Globe className="h-4 w-4 text-blue-500" />
+            Canais & Campanhas
           </TabsTrigger>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="funnel">Funil & Conversão</TabsTrigger>
-          <TabsTrigger value="retention">Retenção & Coorte</TabsTrigger>
-          <TabsTrigger value="users">Usuários & Alertas</TabsTrigger>
+          <TabsTrigger value="retention">Retenção</TabsTrigger>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="automations" className="gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
             Automações
           </TabsTrigger>
           <TabsTrigger value="ab_tests" className="gap-2">
             <TrendingUp className="h-4 w-4 text-emerald-500" />
-            Otimização Inteligente
+            Testes A/B
           </TabsTrigger>
-          <TabsTrigger value="learnings" className="gap-2">
-            <Lightbulb className="h-4 w-4 text-amber-500" />
-            Aprendizados
+          <TabsTrigger value="patterns" className="gap-2">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            Padrões Vencedores
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            Templates
           </TabsTrigger>
         </TabsList>
 
