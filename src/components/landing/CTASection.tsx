@@ -13,7 +13,14 @@ import { cn } from "@/lib/utils";
 import { useABTest } from "@/hooks/useABTest";
 
 const faqs = [
-...
+  { question: "Preciso instalar algum programa no computador?", answer: "Não. O Tecvo funciona direto no navegador — celular, tablet ou computador. Você pode adicionar na tela inicial do celular e usar como um app." },
+  { question: "Meus dados ficam seguros?", answer: "Sim. Usamos criptografia de nível bancário com backup automático. Seus dados de clientes, serviços e financeiro estão protegidos 24h." },
+  { question: "Tenho contrato ou fidelidade?", answer: "Não. Cancele quando quiser, sem multa, sem burocracia. Direto nas configurações da sua conta." },
+  { question: "Funciona pra técnico autônomo também?", answer: "Sim. O plano Start é ideal para quem trabalha sozinho — organiza seus serviços, clientes e financeiro sem complicação." },
+  { question: "Consigo controlar minha equipe pelo Tecvo?", answer: "Sim. Você convida seus técnicos, atribui serviços, acompanha o que cada um fez e controla os gastos da equipe." },
+  { question: "O WhatsApp com IA funciona mesmo?", answer: "Funciona. A IA responde seus clientes automaticamente, sugere respostas e você pode criar ordem de serviço direto da conversa — sem sair do Tecvo." },
+];
+
 export function CTASection() {
   const { variant } = useABTest("Landing Page Headline & CTA");
   
