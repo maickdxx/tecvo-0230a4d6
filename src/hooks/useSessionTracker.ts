@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { analytics } from "@/lib/analytics";
 
 const HEARTBEAT_INTERVAL = 60_000; // 60 seconds
 
@@ -16,11 +17,14 @@ export function useSessionTracker() {
 
     // Start session
     const startSession = async () => {
+      const utms = analytics.getStoredUTMs();
+      
       const { data, error } = await supabase
         .from("user_sessions")
         .insert({
           user_id: user.id,
           organization_id: organizationId,
+          ...utms
         })
         .select("id")
         .single();
