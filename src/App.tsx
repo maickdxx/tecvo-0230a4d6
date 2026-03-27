@@ -13,6 +13,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { DemoTourProvider } from "@/hooks/useDemoTour";
 import { SessionTrackerProvider } from "@/components/SessionTrackerProvider";
+import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { AdminProtectedRoute } from "@/components/admin";
 import { CookieConsent } from "./components/CookieConsent";
 
@@ -160,7 +161,8 @@ const App = () => (
           <ScrollToTop />
           <AuthProvider>
             <AudioProvider>
-              <SessionTrackerProvider>
+              <AnalyticsProvider>
+                <SessionTrackerProvider>
               <DemoTourProvider>
               <ViewModeProvider>
               <OfflineProvider>
@@ -833,6 +835,7 @@ const App = () => (
               </ViewModeProvider>
               </DemoTourProvider>
               </SessionTrackerProvider>
+              </AnalyticsProvider>
             </AudioProvider>
           </AuthProvider>
           <CookieConsent />

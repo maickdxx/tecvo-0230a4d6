@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { analytics } from "@/lib/analytics";
 
 const HEARTBEAT_INTERVAL = 60_000; // 60 seconds
 
@@ -10,17 +11,22 @@ export function useSessionTracker() {
   const startedAtRef = useRef<Date | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    // We want to track sessions for both anonymous and authenticated users
+    // const organizationId = profile?.organization_id ?? null; // Move down inside startSession
 
     const organizationId = profile?.organization_id ?? null;
 
     // Start session
     const startSession = async () => {
+      const utms = analytics.getStoredUTMs();
+      const organizationId = profile?.organization_id ?? null;
+      
       const { data, error } = await supabase
         .from("user_sessions")
         .insert({
-          user_id: user.id,
+          user_id: user?.id || null,
           organization_id: organizationId,
+          ...utms
         })
         .select("id")
         .single();
