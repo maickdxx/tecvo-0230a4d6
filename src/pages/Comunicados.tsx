@@ -11,7 +11,7 @@ import { ptBR } from "date-fns/locale";
 
 export default function Comunicados() {
   const { profile } = useAuth();
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
 
   const { data: announcements = [], isLoading } = useQuery({
     queryKey: ["comunicados", orgId],

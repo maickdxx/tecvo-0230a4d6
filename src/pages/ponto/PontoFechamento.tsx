@@ -48,7 +48,7 @@ export default function PontoFechamento() {
   const { isAdmin, isOwner } = useUserRole();
   const tz = useOrgTimezone();
   const queryClient = useQueryClient();
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
   const canManageClosures = isAdmin || isOwner;
 
   const [confirmDialog, setConfirmDialog] = useState<{ action: "close" | "reopen"; userId: string } | null>(null);

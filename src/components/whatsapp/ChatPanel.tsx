@@ -7,6 +7,7 @@ import { useWhatsAppMediaSend } from "@/hooks/useWhatsAppMediaSend";
 import { useWhatsAppMessageActions } from "@/hooks/useWhatsAppMessageActions";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { MessageBubble } from "./MessageBubble";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -150,11 +151,12 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  // Load signature preference from profile
+  // Load signature preference from profile via sensitive data hook
+  const { sensitiveData } = useProfileSensitiveData();
   useEffect(() => {
-    const pref = (profile as any)?.whatsapp_signature_enabled;
-    if (pref !== undefined) setSignatureEnabled(pref as boolean);
-  }, [profile]);
+    const pref = sensitiveData?.whatsapp_signature_enabled;
+    if (pref !== undefined) setSignatureEnabled(pref);
+  }, [sensitiveData]);
 
   // Fetch channel info for this contact
   useEffect(() => {

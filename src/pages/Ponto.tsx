@@ -78,11 +78,11 @@ export default function Ponto() {
   } = useTimeClock();
 
   const { getScheduleForEmployee } = useWorkSchedules();
-  const employeeType = (profile as any)?.employee_type || "tecnico";
+  const employeeType = profile?.employee_type || "tecnico";
   const employeeSchedule = getScheduleForEmployee(user?.id || "", employeeType);
 
-  const isFieldWorker = (profile as any)?.field_worker === true;
-  const orgId = (profile as any)?.organization_id;
+  const isFieldWorker = profile?.field_worker === true;
+  const orgId = profile?.organization_id;
 
   // Fetch adjustments for today's entries (pending + approved)
   const todayEntryIds = useMemo(() => todayEntries.map(e => e.id), [todayEntries]);

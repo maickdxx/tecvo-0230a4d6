@@ -59,7 +59,7 @@ export function useTeamMembers() {
           user_id: profile.user_id,
           full_name: profile.full_name,
           role: bestRole as AppRole,
-          field_worker: !!(profile as any).field_worker,
+          field_worker: !!profile.field_worker,
         };
       });
     },

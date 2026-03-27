@@ -33,7 +33,7 @@ export default function HistoricoPonto() {
   const tz = useOrgTimezone();
   const { settings } = useTimeClock();
   const { getScheduleForEmployee, isWorkDay } = useWorkSchedules();
-  const employeeType = (profile as any)?.employee_type || "tecnico";
+  const employeeType = profile?.employee_type || "tecnico";
   const schedule = getScheduleForEmployee(user?.id || "", employeeType);
   const toleranceMin = settings?.late_tolerance_minutes ?? 10;
   const expectedPerDay = Math.round(schedule.work_hours_per_day * 60);

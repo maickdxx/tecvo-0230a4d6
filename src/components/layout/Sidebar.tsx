@@ -469,8 +469,8 @@ export function Sidebar() {
                   onClick={() => setProfileDialogOpen(true)}
                   className="h-8 w-8 rounded-full overflow-hidden bg-sidebar-primary/15 border border-sidebar-primary/20 flex items-center justify-center"
                 >
-                  {(profile as any)?.avatar_url ? (
-                    <img src={(profile as any).avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-xs font-semibold text-sidebar-primary">{userInitial}</span>
                   )}
@@ -496,8 +496,8 @@ export function Sidebar() {
               onClick={() => setProfileDialogOpen(true)}
               className="h-8 w-8 rounded-full overflow-hidden bg-sidebar-primary/15 border border-sidebar-primary/20 flex items-center justify-center shrink-0 hover:border-sidebar-primary/40 transition-colors"
             >
-              {(profile as any)?.avatar_url ? (
-                <img src={(profile as any).avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
               ) : (
                 <span className="text-xs font-semibold text-sidebar-primary">{userInitial}</span>
               )}

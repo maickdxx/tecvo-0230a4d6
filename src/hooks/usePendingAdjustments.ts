@@ -4,7 +4,7 @@ import { useAuth } from "./useAuth";
 
 export function usePendingAdjustmentsCount() {
   const { profile } = useAuth();
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
 
   const { data: count = 0 } = useQuery({
     queryKey: ["pending-adjustments-count", orgId],

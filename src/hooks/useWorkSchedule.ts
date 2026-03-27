@@ -69,7 +69,7 @@ function parseWorkDays(raw: any): string[] {
 
 export function useWorkSchedules() {
   const { profile } = useAuth();
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
 
   const { data: schedules = [] } = useQuery({
     queryKey: ["time-clock-work-schedules", orgId],
