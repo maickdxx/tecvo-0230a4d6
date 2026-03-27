@@ -13,6 +13,7 @@ import {
   CategoryChart,
   CashFlowChart,
 } from "@/components/finance";
+import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useFinancialAccounts } from "@/hooks/useFinancialAccounts";
 import { generateFinanceReportPDF } from "@/lib/generateFinanceReportPDF";
@@ -119,6 +120,7 @@ export default function Financeiro() {
               <CategoryChart transactions={transactions} type="income" />
               <CategoryChart transactions={transactions} type="expense" />
             </div>
+            <PaymentFeeReport startDate={startDate} endDate={endDate} />
           </div>
         </TabsContent>
       </Tabs>
