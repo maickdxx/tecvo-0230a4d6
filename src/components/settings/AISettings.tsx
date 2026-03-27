@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAISettings, type AISettings as AISettingsType } from "@/hooks/useAISettings";
 import { useProfile } from "@/hooks/useProfile";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useState, useEffect } from "react";
@@ -61,14 +62,15 @@ const settingsOptions: {
 export function AISettings({ onBack }: AISettingsProps) {
   const { settings, updateSetting, isLoading } = useAISettings();
   const { profile } = useProfile();
+  const { sensitiveData } = useProfileSensitiveData();
   const { organization, update: updateOrganization, isUpdating: isUpdatingOrganization } = useOrganization();
   const { isOwner } = useUserRole();
   const [whatsappPersonal, setWhatsappPersonal] = useState("");
 
   useEffect(() => {
-    const whatsappOwner = organization?.whatsapp_owner || (profile as any)?.whatsapp_personal || "";
+    const whatsappOwner = organization?.whatsapp_owner || sensitiveData?.whatsapp_personal || "";
     setWhatsappPersonal(whatsappOwner);
-  }, [profile, organization]);
+  }, [sensitiveData, organization]);
 
   const handleSaveWhatsApp = () => {
     updateOrganization({

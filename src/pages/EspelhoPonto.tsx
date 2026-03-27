@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout";
 import { useTimeClock } from "@/hooks/useTimeClock";
 import { useWorkSchedules } from "@/hooks/useWorkSchedule";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +39,7 @@ interface RecordWithExplanation extends TimeClockDayRecord {
 
 export default function EspelhoPonto() {
   const { user, profile } = useAuth();
+  const { sensitiveData } = useProfileSensitiveData();
   const tz = useOrgTimezone();
   const { settings } = useTimeClock();
   const { organization } = useOrganization();

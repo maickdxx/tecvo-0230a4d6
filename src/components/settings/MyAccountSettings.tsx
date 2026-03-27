@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useProfile } from "@/hooks/useProfile";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 
 interface MyAccountSettingsProps {
   onBack: () => void;
@@ -19,6 +20,7 @@ const formatPhone = (value: string) => {
 
 export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { profile, updateProfile, isUpdating } = useProfile();
+  const { sensitiveData } = useProfileSensitiveData();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [whatsappPersonal, setWhatsappPersonal] = useState("");
@@ -27,9 +29,9 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
     if (profile) {
       setFullName(profile.full_name || "");
       setPhone(profile.phone || "");
-      setWhatsappPersonal((profile as any)?.whatsapp_personal || "");
+      setWhatsappPersonal(sensitiveData?.whatsapp_personal || "");
     }
-  }, [profile]);
+  }, [profile, sensitiveData]);
 
   const handleSave = () => {
     if (!fullName.trim()) return;

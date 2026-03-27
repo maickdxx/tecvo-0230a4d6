@@ -4,6 +4,7 @@ import { useTimeClock, type TimeClockEntryType } from "@/hooks/useTimeClock";
 import { useWorkSchedules } from "@/hooks/useWorkSchedule";
 import { calculateOvertimeMinutes, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig } from "@/lib/timeClockUtils";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { formatTimeInTz, getTodayInTz, buildTimestamp, getDatePartInTz } from "@/lib/timezone";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +79,7 @@ interface TimeClockWidgetProps {
 export function TimeClockWidget({ compact = false }: TimeClockWidgetProps) {
   const tz = useOrgTimezone();
   const { user, profile } = useAuth();
+  const { sensitiveData } = useProfileSensitiveData();
   const {
     todayEntries,
     effectiveTodayEntries,
