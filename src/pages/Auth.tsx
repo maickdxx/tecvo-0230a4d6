@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { analytics } from "@/lib/analytics";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import { trackFBEvent } from "@/lib/fbPixel";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,7 +61,6 @@ export default function Auth() {
   
   const { signIn, signUp, refreshProfile, signUpSuccess, setSignUpSuccess } = useAuth();
   const { data: invite, isLoading: isLoadingInvite } = useInviteByToken(inviteToken);
-  
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [activeTab, setActiveTab] = useState(isSignupRoute ? "signup" : "login");
@@ -68,6 +68,12 @@ export default function Auth() {
   const [otpCode, setOtpCode] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (activeTab === "signup") {
+      analytics.track("signup_started", null, null);
+    }
+  }, [activeTab]);
 
   // Login form
   const [loginEmail, setLoginEmail] = useState("");
@@ -194,6 +200,7 @@ export default function Auth() {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
     } else {
       trackFBEvent("Lead", { content_name: "Signup" });
+      analytics.track("signup_completed", null, null, { email: signupEmail });
       setConfirmationEmail(signupEmail);
       setResendCooldown(60);
     }

@@ -15,6 +15,18 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Track Page View
+    const path = location.pathname;
+    const isLandingPage = path === "/" || path === "/home";
+    const isGuest = !user;
+
+    if (isLandingPage && isGuest) {
+      analytics.track("landing_page_view", null, null, {
+        page_path: path,
+        page_title: document.title,
+        referrer: document.referrer
+      });
+    }
+
     analytics.trackPageView(
       user?.id || null,
       profile?.organization_id || null,

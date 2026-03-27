@@ -74,6 +74,45 @@ export function useAdminAnalytics() {
     return data;
   };
 
+  const fetchMarketingFunnel = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_marketing_funnel")
+      .select("*")
+      .single();
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchLeadDropoffs = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_lead_dropoffs")
+      .select("*")
+      .limit(10);
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchCTAPerformance = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_cta_performance")
+      .select("*");
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchLeadPaths = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_lead_paths")
+      .select("*")
+      .limit(20);
+    
+    if (error) throw error;
+    return data;
+  };
+
   const fetchAlerts = async () => {
     const { data, error } = await supabase
       .from("analytics_alerts")
@@ -125,6 +164,26 @@ export function useAdminAnalytics() {
     queryFn: fetchAlerts,
   });
 
+  const marketingFunnel = useQuery({
+    queryKey: ["admin-analytics-marketing-funnel"],
+    queryFn: fetchMarketingFunnel,
+  });
+
+  const leadDropoffs = useQuery({
+    queryKey: ["admin-analytics-lead-dropoffs"],
+    queryFn: fetchLeadDropoffs,
+  });
+
+  const ctaPerformance = useQuery({
+    queryKey: ["admin-analytics-cta-performance"],
+    queryFn: fetchCTAPerformance,
+  });
+
+  const leadPaths = useQuery({
+    queryKey: ["admin-analytics-lead-paths"],
+    queryFn: fetchLeadPaths,
+  });
+
   const isLoading = 
     dailyMetrics.isLoading || 
     trafficSources.isLoading || 
@@ -161,7 +220,11 @@ export function useAdminAnalytics() {
     activationMetrics,
     retentionCohorts,
     alerts,
+    marketingFunnel,
+    leadDropoffs,
+    ctaPerformance,
+    leadPaths,
     kpis,
-    isLoading
+    isLoading: isLoading || marketingFunnel.isLoading || leadDropoffs.isLoading || ctaPerformance.isLoading || leadPaths.isLoading
   };
 }

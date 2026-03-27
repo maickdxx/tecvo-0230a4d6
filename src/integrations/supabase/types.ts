@@ -5734,6 +5734,14 @@ export type Database = {
         }
         Relationships: []
       }
+      view_analytics_cta_performance: {
+        Row: {
+          click_count: number | null
+          cta_location: string | null
+          cta_plan: string | null
+        }
+        Relationships: []
+      }
       view_analytics_daily_metrics: {
         Row: {
           avg_session_duration: number | null
@@ -5821,6 +5829,40 @@ export type Database = {
           signup_started: number | null
           subscription_completed: number | null
           subscription_started: number | null
+        }
+        Relationships: []
+      }
+      view_analytics_lead_dropoffs: {
+        Row: {
+          dropoff_count: number | null
+          last_page: string | null
+        }
+        Relationships: []
+      }
+      view_analytics_lead_paths: {
+        Row: {
+          interaction_count: number | null
+          path: string | null
+          total_time_seconds: number | null
+          visitor_id: string | null
+        }
+        Relationships: []
+      }
+      view_analytics_marketing_funnel: {
+        Row: {
+          avg_time_to_signup_seconds: number | null
+          cta_click_rate: number | null
+          cta_clicks: number | null
+          final_conversion_rate: number | null
+          interactions: number | null
+          landing_page_views: number | null
+          payments_completed: number | null
+          payments_initiated: number | null
+          signup_completion_rate: number | null
+          signup_start_rate: number | null
+          signups_completed: number | null
+          signups_started: number | null
+          total_visitors: number | null
         }
         Relationships: []
       }

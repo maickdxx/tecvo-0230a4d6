@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { analytics } from "@/lib/analytics";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { trackFBEvent } from "@/lib/fbPixel";
 import { PartyPopper, CheckCircle2, ArrowRight, Loader2, LogIn } from "lucide-react";
@@ -62,6 +63,7 @@ export default function AssinaturaSucesso() {
       clearCheckoutContext();
       stopPolling();
       trackFBEvent("Purchase", { content_name: plan || "unknown", currency: "BRL" });
+      analytics.track("payment_completed", user?.id || null, organizationId || null, { plan: plan || "unknown" });
       await queryClient.invalidateQueries({ queryKey: ["subscription"] });
       await queryClient.invalidateQueries({ queryKey: ["organization"] });
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
