@@ -89,7 +89,10 @@ export function LandingHeader() {
           {navLinks.map((link) => (
             <button
               key={link.id}
-              onClick={() => scrollToSection(link.id)}
+              onClick={() => {
+                analytics.track("interaction", null, null, { action: "nav_click", target: link.id, button_label: link.label, page_section: "mobile_menu", interaction_type: "click" });
+                scrollToSection(link.id);
+              }}
               className="text-left py-2.5 px-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
             >
               {link.label}
@@ -97,10 +100,10 @@ export function LandingHeader() {
           ))}
           <div className="flex flex-col gap-2 pt-3 mt-2 border-t border-border">
             <Button variant="outline" asChild className="w-full">
-              <Link to="/login">Entrar</Link>
+              <Link to="/login" onClick={() => analytics.track("interaction", null, null, { action: "login_click", location: "mobile_menu", button_label: "Entrar", page_section: "mobile_menu", interaction_type: "click" })}>Entrar</Link>
             </Button>
             <Button asChild className="w-full shadow-lg shadow-primary/20">
-              <Link to="/cadastro">Começar Grátis</Link>
+              <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "mobile_menu", page_section: "mobile_menu", button_label: "Começar Grátis", interaction_type: "click" })}>Começar Grátis</Link>
             </Button>
           </div>
         </nav>
