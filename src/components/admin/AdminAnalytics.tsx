@@ -15,13 +15,14 @@ import {
   ComposedChart,
   Area
 } from "recharts";
-import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3, AlertTriangle, CheckCircle2, UserX, UserCheck, Activity } from "lucide-react";
+import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3, AlertTriangle, CheckCircle2, UserX, UserCheck, Activity, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminAutomations } from "./AdminAutomations";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -123,11 +124,15 @@ export function AdminAnalytics() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="funnel">Funil & Conversão</TabsTrigger>
           <TabsTrigger value="retention">Retenção & Coorte</TabsTrigger>
           <TabsTrigger value="users">Usuários & Alertas</TabsTrigger>
+          <TabsTrigger value="automations" className="gap-2">
+            <Zap className="h-4 w-4 text-amber-500" />
+            Automações
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
@@ -416,6 +421,10 @@ export function AdminAnalytics() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="automations" className="space-y-6 pt-4">
+          <AdminAutomations />
         </TabsContent>
       </Tabs>
     </div>
