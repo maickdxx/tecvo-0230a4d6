@@ -380,7 +380,7 @@ export function AdminBackups() {
           ) : backupLogs.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground">Nenhum backup encontrado</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto w-full">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">

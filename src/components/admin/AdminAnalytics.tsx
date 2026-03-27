@@ -136,32 +136,32 @@ export function AdminAnalytics() {
       </div>
 
       <Tabs defaultValue="leads" className="w-full">
-        <TabsList className="grid w-full grid-cols-10">
-          <TabsTrigger value="leads" className="gap-2">
+        <TabsList className="flex w-full overflow-x-auto flex-nowrap justify-start h-auto p-1 bg-muted/50">
+          <TabsTrigger value="leads" className="gap-2 whitespace-nowrap">
             <Filter className="h-4 w-4 text-primary" />
             Leads
           </TabsTrigger>
-          <TabsTrigger value="campaigns" className="gap-2">
+          <TabsTrigger value="campaigns" className="gap-2 whitespace-nowrap">
             <Globe className="h-4 w-4 text-primary" />
             Canais & Campanhas
           </TabsTrigger>
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="funnel">Funil & Conversão</TabsTrigger>
-          <TabsTrigger value="retention">Retenção</TabsTrigger>
-          <TabsTrigger value="users">Usuários</TabsTrigger>
-          <TabsTrigger value="automations" className="gap-2">
+          <TabsTrigger value="overview" className="whitespace-nowrap">Visão Geral</TabsTrigger>
+          <TabsTrigger value="funnel" className="whitespace-nowrap">Funil & Conversão</TabsTrigger>
+          <TabsTrigger value="retention" className="whitespace-nowrap">Retenção</TabsTrigger>
+          <TabsTrigger value="users" className="whitespace-nowrap">Usuários</TabsTrigger>
+          <TabsTrigger value="automations" className="gap-2 whitespace-nowrap">
             <Zap className="h-4 w-4 text-primary" />
             Automações
           </TabsTrigger>
-          <TabsTrigger value="ab_tests" className="gap-2">
+          <TabsTrigger value="ab_tests" className="gap-2 whitespace-nowrap">
             <TrendingUp className="h-4 w-4 text-primary" />
             Testes A/B
           </TabsTrigger>
-          <TabsTrigger value="patterns" className="gap-2">
+          <TabsTrigger value="patterns" className="gap-2 whitespace-nowrap">
             <Trophy className="h-4 w-4 text-primary" />
             Padrões Vencedores
           </TabsTrigger>
-          <TabsTrigger value="templates" className="gap-2">
+          <TabsTrigger value="templates" className="gap-2 whitespace-nowrap">
             <FileText className="h-4 w-4 text-primary" />
             Templates
           </TabsTrigger>
@@ -264,7 +264,7 @@ export function AdminAnalytics() {
                   <CardTitle>Gargalos - Páginas de Abandono</CardTitle>
                   <CardDescription>Onde os leads mais deixam o site (sem converter)</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -289,7 +289,7 @@ export function AdminAnalytics() {
                   <CardTitle>Performance de CTAs</CardTitle>
                   <CardDescription>Cliques por localização e plano</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -321,7 +321,7 @@ export function AdminAnalytics() {
               </div>
               <History className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
