@@ -175,7 +175,31 @@ export function AdminWhatsAppTecvo() {
     }
   };
 
-  // Initial load
+  const handleSendTest = async () => {
+    if (!testPhone.trim()) {
+      toast.error("Informe o número de destino");
+      return;
+    }
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const data = await invoke("send_test", { phone: testPhone, message: testMessage });
+      setTestResult(data);
+      if (data?.ok) {
+        toast.success("Mensagem de teste enviada com sucesso!");
+        fetchMetrics();
+      } else {
+        toast.error(data?.error || "Erro ao enviar mensagem de teste");
+      }
+    } catch (e: any) {
+      setTestResult({ ok: false, error: e.message || "Erro desconhecido" });
+      toast.error("Falha ao enviar mensagem de teste");
+    } finally {
+      setTestSending(false);
+    }
+  };
+
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
