@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Star, MousePointer2, Layout, Copy, Check, Filter, Search, Tag, ShieldCheck, ShieldAlert, Zap, Globe } from "lucide-react";
+import { Trophy, Star, MousePointer2, Layout, Copy, Check, Filter, Search, Tag, ShieldCheck, ShieldAlert, Zap, Globe, FileText } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
