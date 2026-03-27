@@ -23,6 +23,7 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminAutomations } from "./AdminAutomations";
+import { AdminABTests } from "./AdminABTests";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -40,6 +41,7 @@ export function AdminAnalytics() {
     leadDropoffs,
     ctaPerformance,
     leadPaths,
+    abTestResults,
     kpis, 
     isLoading 
   } = useAdminAnalytics();
@@ -128,7 +130,7 @@ export function AdminAnalytics() {
       </div>
 
       <Tabs defaultValue="leads" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="leads" className="gap-2">
             <Filter className="h-4 w-4 text-primary" />
             Leads & Marketing
@@ -140,6 +142,10 @@ export function AdminAnalytics() {
           <TabsTrigger value="automations" className="gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
             Automações
+          </TabsTrigger>
+          <TabsTrigger value="ab_tests" className="gap-2">
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            Testes A/B
           </TabsTrigger>
         </TabsList>
 
