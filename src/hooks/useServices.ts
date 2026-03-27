@@ -437,6 +437,10 @@ export function useServices(options?: UseServicesOptions | string) {
       const sanitizedData = {
         ...data,
         assigned_to: data.assigned_to || null,
+        description: data.description || null,
+        notes: data.notes || null,
+        solution: data.solution || null,
+        internal_notes: data.internal_notes || null,
         // Convert date-only strings to proper timestamptz with org offset
         scheduled_date: ensureDateTimestamp(data.scheduled_date, orgTz),
         payment_due_date: ensureDateTimestamp(data.payment_due_date, orgTz),
@@ -507,6 +511,10 @@ export function useServices(options?: UseServicesOptions | string) {
       const updateData: Record<string, unknown> = { 
         ...data,
         assigned_to: data.assigned_to === "" ? null : data.assigned_to,
+        description: data.description === "" ? null : data.description,
+        notes: data.notes === "" ? null : data.notes,
+        solution: data.solution === "" ? null : data.solution,
+        internal_notes: data.internal_notes === "" ? null : data.internal_notes,
         scheduled_date: data.scheduled_date === "" ? null : ensureDateTimestamp(data.scheduled_date, orgTz),
         payment_due_date: data.payment_due_date === "" ? null : ensureDateTimestamp(data.payment_due_date, orgTz),
         entry_date: data.entry_date === "" ? null : toTimestamp(data.entry_date, data.scheduled_date || currentService.scheduled_date, orgTz),
