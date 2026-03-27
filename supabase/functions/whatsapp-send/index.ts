@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { normalizePhone } from "../_shared/whatsapp-utils.ts";
+import { classifyEvoError } from "../_shared/evoErrorClassifier.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
