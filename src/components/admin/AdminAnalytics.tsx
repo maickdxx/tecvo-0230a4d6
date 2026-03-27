@@ -654,32 +654,32 @@ export function AdminAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-emerald-50/50">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-primary/5">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Taxa de Conversão Total</p>
                       <p className="text-xs text-muted-foreground">Visita vs Assinatura</p>
                     </div>
-                    <div className="text-2xl font-bold text-emerald-600">
+                    <div className="text-2xl font-bold text-primary">
                       {((funnel.data?.subscription_completed || 0) / (funnel.data?.landing_page || 1) * 100).toFixed(2)}%
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50/50">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-secondary/10">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Eficiência de Signup</p>
                       <p className="text-xs text-muted-foreground">Iniciado vs Concluído</p>
                     </div>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-foreground">
                       {((funnel.data?.signup_completed || 0) / (funnel.data?.signup_started || 1) * 100).toFixed(1)}%
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-indigo-50/50">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Poder de Ativação</p>
                       <p className="text-xs text-muted-foreground">Login vs Uso Real</p>
                     </div>
-                    <div className="text-2xl font-bold text-indigo-600">
+                    <div className="text-2xl font-bold text-muted-foreground">
                       {((funnel.data?.activated || 0) / (funnel.data?.first_login || 1) * 100).toFixed(1)}%
                     </div>
                   </div>
