@@ -48,7 +48,7 @@ export function useUserRole() {
   const isMember = primaryRole === "member";
 
   // field_worker flag from profile - independent of role
-  const isFieldWorker = !!(profile as any)?.field_worker;
+  const isFieldWorker = !!profile?.field_worker;
 
   // Granular permission check with role-based fallback
   const hasPermission = (module: string): boolean => {
