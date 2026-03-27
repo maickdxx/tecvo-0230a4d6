@@ -33,6 +33,16 @@ export function useAdminAnalytics() {
     return data;
   };
 
+  const fetchFunnel = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_funnel")
+      .select("*")
+      .single();
+    
+    if (error) throw error;
+    return data;
+  };
+
   const dailyMetrics = useQuery({
     queryKey: ["admin-analytics-daily"],
     queryFn: fetchDailyMetrics,
@@ -48,7 +58,12 @@ export function useAdminAnalytics() {
     queryFn: fetchPageViews,
   });
 
-  const isLoading = dailyMetrics.isLoading || trafficSources.isLoading || pageViews.isLoading;
+  const funnel = useQuery({
+    queryKey: ["admin-analytics-funnel"],
+    queryFn: fetchFunnel,
+  });
+
+  const isLoading = dailyMetrics.isLoading || trafficSources.isLoading || pageViews.isLoading || funnel.isLoading;
 
   // Calculate overall KPIs
   const kpis = dailyMetrics.data ? {
