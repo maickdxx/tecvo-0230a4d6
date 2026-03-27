@@ -48,6 +48,7 @@ export function useServiceExecution() {
         .from("services")
         .select("id, quote_number")
         .eq("assigned_to", user!.id)
+        .eq("organization_id", organizationId!)
         .in("status", ["in_progress"])
         .neq("id", serviceId);
 
@@ -98,6 +99,7 @@ export function useServiceExecution() {
         .from("services")
         .select("id, quote_number")
         .eq("assigned_to", user!.id)
+        .eq("organization_id", organizationId!)
         .in("status", ["in_progress"])
         .neq("id", serviceId);
 
