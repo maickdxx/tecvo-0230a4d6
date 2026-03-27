@@ -209,17 +209,17 @@ export function AdminAnalytics() {
           </CardContent>
         </Card>
 
-        {/* Funnel Concept (Simple representation for now) */}
+        {/* Funnel Concept */}
         <Card>
           <CardHeader>
             <CardTitle>Funil de Conversão</CardTitle>
-            <CardDescription>Jornada do visitante até o cadastro</CardDescription>
+            <CardDescription>Jornada do visitante até a primeira ação</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Visitantes Únicos</span>
-                <span className="font-bold">{kpis?.unique_visitors.toLocaleString()}</span>
+                <span>Landing Page</span>
+                <span className="font-bold">{funnel.data?.landing_page?.toLocaleString() || 0}</span>
               </div>
               <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 w-full" />
@@ -229,15 +229,13 @@ export function AdminAnalytics() {
             <div className="space-y-2 pl-4 border-l-2 border-slate-200">
               <div className="flex justify-between text-sm">
                 <span>Iniciaram Cadastro</span>
-                <span className="font-bold">
-                  {dailyMetrics.data?.reduce((acc, curr) => acc + (curr.signups_started || 0), 0).toLocaleString()}
-                </span>
+                <span className="font-bold">{funnel.data?.signup_started?.toLocaleString() || 0}</span>
               </div>
               <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-blue-400" 
                   style={{ 
-                    width: `${Math.min(100, (dailyMetrics.data?.reduce((acc, curr) => acc + (curr.signups_started || 0), 0) / (kpis?.unique_visitors || 1)) * 100)}%` 
+                    width: `${Math.min(100, ((funnel.data?.signup_started || 0) / (funnel.data?.landing_page || 1)) * 100)}%` 
                   }} 
                 />
               </div>
@@ -246,19 +244,31 @@ export function AdminAnalytics() {
             <div className="space-y-2 pl-8 border-l-2 border-slate-200">
               <div className="flex justify-between text-sm">
                 <span>Cadastros Concluídos</span>
-                <span className="font-bold">{kpis?.signups_completed.toLocaleString()}</span>
+                <span className="font-bold">{funnel.data?.signup_completed?.toLocaleString() || 0}</span>
               </div>
               <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-green-500" 
                   style={{ 
-                    width: `${Math.min(100, (kpis?.signups_completed || 0) / (kpis?.unique_visitors || 1) * 100)}%` 
+                    width: `${Math.min(100, ((funnel.data?.signup_completed || 0) / (funnel.data?.landing_page || 1)) * 100)}%` 
                   }} 
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground text-right italic">
-                {kpis?.conversion_rate.toFixed(1)}% de conversão final
-              </p>
+            </div>
+
+            <div className="space-y-2 pl-12 border-l-2 border-slate-200">
+              <div className="flex justify-between text-sm">
+                <span>Primeira Ação Importante</span>
+                <span className="font-bold">{funnel.data?.first_action?.toLocaleString() || 0}</span>
+              </div>
+              <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-orange-500" 
+                  style={{ 
+                    width: `${Math.min(100, ((funnel.data?.first_action || 0) / (funnel.data?.landing_page || 1)) * 100)}%` 
+                  }} 
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
