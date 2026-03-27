@@ -70,7 +70,7 @@ export function SolutionSection() {
                 asChild
                 className="text-base px-8 py-6 shadow-[0_8px_30px_-6px_hsl(var(--primary)/0.35)] hover:scale-[1.02] transition-all duration-300"
               >
-                <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "solution_section" })}>
+                <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "solution_section", page_section: "solution_section", button_label: "Quero organizar minha empresa", interaction_type: "click" })}>
                   Quero organizar minha empresa
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
