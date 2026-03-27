@@ -1,3 +1,9 @@
+/**
+ * ── SEND FLOW: CUSTOMER_CONVERSATION ──
+ * Manual chat messages sent by an agent to a customer.
+ * STRICT channel isolation: uses ONLY the channel bound to the contact/conversation.
+ * NO fallback to any other channel or instance. Disconnected channel → BLOCK.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { normalizePhone } from "../_shared/whatsapp-utils.ts";

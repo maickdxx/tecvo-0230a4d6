@@ -1,5 +1,12 @@
+/**
+ * ── SEND FLOW: PLATFORM_NOTIFICATION ──
+ * Broadcasts messages from the Tecvo platform to organization owners.
+ * Always uses TECVO_PLATFORM_INSTANCE ("tecvo") — never an org channel.
+ * These messages are NOT part of any customer conversation.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +26,7 @@ async function sendWhatsApp(phone: string, text: string) {
   const jid = cleanNumber.includes("@") ? cleanNumber : `${cleanNumber}@s.whatsapp.net`;
 
   try {
-    const res = await fetch(`${vpsUrl}/message/sendText/tecvo`, {
+    const res = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: apiKey },
       body: JSON.stringify({ number: jid, text }),

@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         // Check if org has an active WhatsApp channel
         const { data: channel } = await supabaseAdmin
           .from("whatsapp_channels")
-          .select("id, is_connected")
+          .select("id, is_connected, instance_name")
           .eq("organization_id", profile.organization_id)
           .eq("is_connected", true)
           .limit(1)
@@ -135,13 +135,24 @@ Deno.serve(async (req) => {
           const cleanPhone = phone.replace(/\D/g, "");
           const waMessage = `🔐 *Tecvo — Redefinição de Senha*\n\nRecebemos uma solicitação de redefinição de senha para sua conta Tecvo.\n\nSeu código é: *${code}*\n\n⏱ Válido por 10 minutos.\n\nSe você não solicitou, ignore esta mensagem. Sua senha permanece a mesma.`;
 
-          await supabaseAdmin.functions.invoke("whatsapp-send-message", {
-            body: {
-              channel_id: channel.id,
-              phone: cleanPhone,
-              message: waMessage,
-            },
-          });
+          // ── SEND FLOW: PLATFORM_AUTH ──
+          // Password reset codes are fire-and-forget security messages.
+          // They are NOT conversation replies and do NOT participate in thread history.
+          // We send via the org's connected channel for delivery convenience.
+          const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
+          const waApiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+          if (vpsUrl && waApiKey && channel.instance_name) {
+            let normalizedPhone = cleanPhone;
+            if (!normalizedPhone.startsWith("55") && normalizedPhone.length <= 11) {
+              normalizedPhone = "55" + normalizedPhone;
+            }
+            const jid = `${normalizedPhone}@s.whatsapp.net`;
+            await fetch(`${vpsUrl}/message/sendText/${channel.instance_name}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", apikey: waApiKey },
+              body: JSON.stringify({ number: jid, text: waMessage }),
+            });
+          }
           logger.step("WhatsApp reset code sent", { phone: cleanPhone.slice(0, 4) + "****" });
         }
       }

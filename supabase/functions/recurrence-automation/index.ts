@@ -1,3 +1,9 @@
+/**
+ * ── SEND FLOW: CUSTOMER_CONVERSATION ──
+ * Sends recurrence/maintenance reminder messages to clients via their org's channel.
+ * STRICT channel isolation: resolves the client's last channel within the org.
+ * NO fallback to any other channel or the platform instance. No channel → BLOCK.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 
