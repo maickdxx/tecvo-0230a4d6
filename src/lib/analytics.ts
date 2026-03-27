@@ -39,12 +39,24 @@ class AnalyticsClient {
   private readonly FLUSH_INTERVAL = 5000; // 5 seconds
   private lastPath: string | null = null;
   private lastPathStartTime: number = Date.now();
+  private anonymousId: string | null = null;
 
   constructor() {
     if (typeof window !== "undefined") {
       this.captureUTMs();
+      this.anonymousId = this.getAnonymousId();
       window.addEventListener("beforeunload", () => this.flush(true));
     }
+  }
+
+  private getAnonymousId() {
+    if (typeof window === "undefined") return null;
+    let id = localStorage.getItem("tecvo_anon_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("tecvo_anon_id", id);
+    }
+    return id;
   }
 
   private captureUTMs() {
@@ -81,13 +93,32 @@ class AnalyticsClient {
   ) {
     const utms = this.getStoredUTMs();
     
+    // Get all stored AB Test variants
+    const abTests: Record<string, string> = {};
+    if (typeof window !== "undefined") {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("ab_test_")) {
+          const testName = key.replace("ab_test_", "");
+          try {
+            const variant = JSON.parse(localStorage.getItem(key) || "{}");
+            abTests[`ab_test_${testName}`] = variant.name;
+            abTests[`ab_variant_id_${testName}`] = variant.id;
+          } catch (e) {
+            console.warn("Error parsing AB test variant", e);
+          }
+        }
+      });
+    }
+
     const event = {
       user_id: userId,
       organization_id: organizationId,
       event_type: eventType,
       metadata: {
         ...utms,
+        ...abTests,
         ...metadata,
+        anonymous_id: this.anonymousId,
         timestamp: new Date().toISOString(),
         url: typeof window !== "undefined" ? window.location.href : undefined,
       },
@@ -169,3 +200,4 @@ class AnalyticsClient {
 }
 
 export const analytics = new AnalyticsClient();
+
