@@ -3,6 +3,7 @@ import { format, isSameDay, isSameMonth, isSameWeek, subDays, eachDayOfInterval,
 import { ptBR } from "date-fns/locale";
 import { useTransactions } from "./useTransactions";
 import { useServices, SERVICE_TYPE_LABELS, SERVICE_STATUS_LABELS } from "./useServices";
+import { useDashboardServices } from "./useDashboardServices";
 import { usePaymentMethods } from "./usePaymentMethods";
 import { calcularMetricasCompletas } from "@/lib/metricsEngine";
 
@@ -53,8 +54,8 @@ export interface RecentServiceData {
  * O Dashboard apenas exibe o retorno — nenhum cálculo direto nos cards.
  */
 export function useDashboardStats(startDate: string, endDate: string, prevStartDate: string, prevEndDate: string) {
-  // CoreServiceEngine: fonte única de serviços
-  const { services, isLoading: isLoadingServices } = useServices();
+  // Lightweight service query for dashboard metrics (no client join)
+  const { data: services = [], isLoading: isLoadingServices } = useDashboardServices();
 
   // Despesas do período atual (por payment_date — data do pagamento efetivo)
   const { 
