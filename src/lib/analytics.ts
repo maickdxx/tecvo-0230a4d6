@@ -2,10 +2,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type EventType = 
   | "page_view"
+  | "landing_page_view"
+  | "interaction"
+  | "create_account_click"
   | "login"
   | "logout"
   | "signup_started"
   | "signup_completed"
+  | "payment_initiated"
+  | "payment_completed"
   | "service_created"
   | "agenda_viewed"
   | "finance_viewed"
