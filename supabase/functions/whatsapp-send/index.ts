@@ -115,61 +115,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── AUTO-FALLBACK: If contact's channel is disconnected, find another active channel ──
-    let activeChannel = channel;
-    let didFallback = false;
+    // ── STRICT CHANNEL POLICY: No fallback between channels ──
+    // Each conversation thread is bound to its channel (phone number).
+    // Sending via a different channel would change the sender identity — never allowed.
+    const activeChannel = channel;
 
     if (!channel.is_connected || !channel.instance_name || channel.channel_status !== "connected") {
-      console.warn(`[WHATSAPP-SEND] Contact's channel ${channel.id} is disconnected (status: ${channel.channel_status}). Searching for active fallback...`);
-
-      const { data: fallbackChannel } = await supabase
-        .from("whatsapp_channels")
-        .select("id, instance_name, organization_id, is_connected, channel_status, phone_number")
-        .eq("organization_id", orgId)
-        .eq("channel_type", "CUSTOMER_INBOX")
-        .eq("is_connected", true)
-        .eq("channel_status", "connected")
-        .neq("id", channel.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (fallbackChannel && fallbackChannel.instance_name) {
-        console.info(`[WHATSAPP-SEND] Fallback channel found: ${fallbackChannel.id} (${fallbackChannel.instance_name}). Migrating contact.`);
-        activeChannel = fallbackChannel;
-        didFallback = true;
-
-        // Auto-migrate contact to the active channel
-        await supabase
-          .from("whatsapp_contacts")
-          .update({ channel_id: fallbackChannel.id })
-          .eq("id", contact_id);
-
-        // Log the transition for audit
-        await supabase.from("whatsapp_channel_transitions").insert({
-          organization_id: orgId,
-          contact_id: contact_id,
-          previous_channel_id: channel.id,
-          new_channel_id: fallbackChannel.id,
-          reason: "send_fallback:contact_channel_disconnected",
-        });
-      } else {
-        // No fallback available — block with clear error
-        const phoneLabel = channel.phone_number || "desconhecido";
-        console.warn(`[WHATSAPP-SEND] No active fallback channel for org ${orgId}. Blocking send.`);
-        return new Response(JSON.stringify({
-          error: "channel_disconnected",
-          message: `O número ${phoneLabel} não está conectado e não há outro canal ativo. Reconecte nas configurações.`,
-          phone_number: channel.phone_number,
-          channel_id: channel.id,
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    if (didFallback) {
-      console.info(`[WHATSAPP-SEND] Using fallback channel: ${activeChannel.id} (${activeChannel.instance_name}) instead of ${channel.id}`);
+      const phoneLabel = channel.phone_number || "desconhecido";
+      console.warn(`[WHATSAPP-SEND] Channel ${channel.id} is disconnected (status: ${channel.channel_status}). Blocking send — no fallback.`);
+      return new Response(JSON.stringify({
+        error: "channel_disconnected",
+        message: `O número ${phoneLabel} não está conectado. Reconecte este canal para enviar mensagens.`,
+        phone_number: channel.phone_number,
+        channel_id: channel.id,
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Fetch contact by org
