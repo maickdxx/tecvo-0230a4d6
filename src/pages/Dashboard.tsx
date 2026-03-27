@@ -28,6 +28,7 @@ import { TodayBlock } from "@/components/dashboard/TodayBlock";
 import { AgendaResumo } from "@/components/dashboard/AgendaResumo";
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
+import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { DashboardCustomizeDialog } from "@/components/dashboard/DashboardCustomizeDialog";
 import { useDashboardLayout } from "@/hooks/useDashboardLayout";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
@@ -153,6 +154,7 @@ export default function Dashboard() {
           <PaymentMethodChart startDate={startDate} endDate={endDate} />
         </div>
         <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
+        <PaymentFeeReport startDate={startDate} endDate={endDate} />
       </DashboardSection>
     ) : null,
 
