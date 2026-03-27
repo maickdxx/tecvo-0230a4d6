@@ -10,18 +10,18 @@ import {
 } from "@/components/ui/accordion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { cn } from "@/lib/utils";
+import { useABTest } from "@/hooks/useABTest";
 
 const faqs = [
-  { question: "Preciso instalar algum programa no computador?", answer: "Não. O Tecvo funciona direto no navegador — celular, tablet ou computador. Você pode adicionar na tela inicial do celular e usar como um app." },
-  { question: "Meus dados ficam seguros?", answer: "Sim. Usamos criptografia de nível bancário com backup automático. Seus dados de clientes, serviços e financeiro estão protegidos 24h." },
-  { question: "Tenho contrato ou fidelidade?", answer: "Não. Cancele quando quiser, sem multa, sem burocracia. Direto nas configurações da sua conta." },
-  { question: "Funciona pra técnico autônomo também?", answer: "Sim. O plano Start é ideal para quem trabalha sozinho — organiza seus serviços, clientes e financeiro sem complicação." },
-  { question: "Consigo controlar minha equipe pelo Tecvo?", answer: "Sim. Você convida seus técnicos, atribui serviços, acompanha o que cada um fez e controla os gastos da equipe." },
-  { question: "O WhatsApp com IA funciona mesmo?", answer: "Funciona. A IA responde seus clientes automaticamente, sugere respostas e você pode criar ordem de serviço direto da conversa — sem sair do Tecvo." },
-];
-
+...
 export function CTASection() {
+  const { variant } = useABTest("Landing Page Headline & CTA");
+  
+  const headline = variant?.config?.cta_section_headline || "Cada dia sem controle é dinheiro que você não recupera";
+  const buttonText = variant?.config?.cta_section_button || "Começar meu teste grátis";
+
   const { ref: ctaRef, isVisible: ctaVisible } = useScrollReveal();
+
   const { ref: faqRef, isVisible: faqVisible } = useScrollReveal();
 
   return (
@@ -72,11 +72,15 @@ export function CTASection() {
 
             <div className="relative z-10">
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-5 tracking-tight">
-                Cada dia sem controle é{" "}
-                <br className="hidden sm:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/70">
-                  dinheiro que você não recupera
-                </span>
+                {headline.split(" ").map((word, i) => (
+                  i > 4 ? (
+                    <span key={i} className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/70">
+                      {" "}{word}
+                    </span>
+                  ) : (
+                    <span key={i}>{" "}{word}</span>
+                  )
+                ))}
               </h2>
               <p className="text-muted-foreground text-base md:text-lg mb-8 max-w-xl mx-auto">
                 Comece agora, sem pagar nada. Em 2 minutos sua empresa já está rodando no Tecvo.
@@ -90,10 +94,11 @@ export function CTASection() {
               >
                 <Link to="/cadastro">
                   <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                  Começar meu teste grátis
+                  {buttonText}
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </Button>
+
 
               <div className="flex flex-wrap items-center justify-center gap-6 mt-7 text-sm text-muted-foreground">
                 {["7 dias grátis", "Sem cartão de crédito", "Cancele quando quiser"].map((text) => (
