@@ -1,7 +1,11 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, isSameMonth, isSameWeek, subDays, eachDayOfInterval, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTransactions } from "./useTransactions";
+import { useAuth } from "./useAuth";
+import { useDemoMode } from "./useDemoMode";
 import { useServices, SERVICE_TYPE_LABELS, SERVICE_STATUS_LABELS } from "./useServices";
 import { useDashboardServices } from "./useDashboardServices";
 import { usePaymentMethods } from "./usePaymentMethods";
