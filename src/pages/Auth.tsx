@@ -59,6 +59,7 @@ export default function Auth() {
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [signupWhatsapp, setSignupWhatsapp] = useState("");
 
   useEffect(() => {
     if (mode === "signup" && !hasTrackedSignupStarted.current) {
@@ -154,7 +155,8 @@ export default function Auth() {
       return;
     }
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName, "");
+    const cleanPhone = signupWhatsapp.replace(/\D/g, "");
+    const { error } = await signUp(signupEmail, signupPassword, signupName, cleanPhone);
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
     } else {
@@ -373,6 +375,27 @@ export default function Auth() {
             <div className="space-y-2">
               <Label htmlFor="signup-password">Senha</Label>
               <Input id="signup-password" type="password" placeholder="Mínimo 6 caracteres" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required className="h-11" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="signup-whatsapp" className="text-muted-foreground font-normal">
+                WhatsApp <span className="text-xs">(opcional)</span>
+              </Label>
+              <Input
+                id="signup-whatsapp"
+                type="tel"
+                inputMode="numeric"
+                placeholder="(11) 99999-9999"
+                value={signupWhatsapp}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                  let formatted = digits;
+                  if (digits.length > 2) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+                  if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+                  setSignupWhatsapp(formatted);
+                }}
+                className="h-11"
+              />
+              <p className="text-xs text-muted-foreground">Receba notificações e automações direto no seu WhatsApp</p>
             </div>
             <div className="flex items-start gap-2">
               <input
