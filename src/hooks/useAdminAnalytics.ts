@@ -289,11 +289,6 @@ export function useAdminAnalytics() {
     queryFn: fetchLeadPaths,
   });
 
-  const leadPaths = useQuery({
-    queryKey: ["admin-analytics-lead-paths"],
-    queryFn: fetchLeadPaths,
-  });
-
   const leadJourneys = useQuery({
     queryKey: ["admin-analytics-lead-journeys"],
     queryFn: fetchLeadJourneys,
