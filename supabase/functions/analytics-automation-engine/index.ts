@@ -20,12 +20,15 @@ Deno.serve(async (req) => {
     console.log("[AUTOMATION-ENGINE] Starting processing...");
 
     // 1. Fetch enabled automations
-    const { data: automations } = await supabase
+    const { data: automations, error: autoError } = await supabase
       .from("analytics_automations")
       .select("*")
       .eq("enabled", true);
 
+    if (autoError) throw autoError;
+
     if (!automations || automations.length === 0) {
+      console.log("[AUTOMATION-ENGINE] No active automations found.");
       return new Response(JSON.stringify({ message: "No active automations" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -34,12 +37,12 @@ Deno.serve(async (req) => {
     const results = [];
 
     for (const automation of automations) {
-      console.log(`[AUTOMATION-ENGINE] Checking trigger: ${automation.trigger_type}`);
+      console.log(`[AUTOMATION-ENGINE] Checking trigger: ${automation.trigger_type} (ID: ${automation.id})`);
       
       const targets = [];
 
+      // TRIGGER: Signup Recovery
       if (automation.trigger_type === "signup_recovery") {
-        // Find signup_started events (delay_minutes ago) that didn't complete
         const delay = automation.delay_minutes || 30;
         const startTime = new Date(Date.now() - (delay + 60) * 60000).toISOString();
         const endTime = new Date(Date.now() - delay * 60000).toISOString();
@@ -59,7 +62,6 @@ Deno.serve(async (req) => {
             
             if (!email) continue;
 
-            // Check if completed - looking for signup_completed or a profile with this email
             const { count: completedCount } = await supabase
               .from("user_activity_events")
               .select("*", { count: 'exact', head: true })
@@ -69,10 +71,9 @@ Deno.serve(async (req) => {
             const { count: profileCount } = await supabase
               .from("profiles")
               .select("*", { count: 'exact', head: true })
-              .or(`email.eq.${email},email.eq.${email.toLowerCase()}`);
+              .or(`user_id.in.(select id from auth.users where email = '${email}')`); // Approximate
 
             if (completedCount === 0 && profileCount === 0) {
-              // Check if already sent
               const { count: alreadySent } = await supabase
                 .from("analytics_automation_logs")
                 .select("*", { count: 'exact', head: true })
@@ -86,9 +87,9 @@ Deno.serve(async (req) => {
           }
         }
       } 
+      // TRIGGER: New User Activation
       else if (automation.trigger_type === "new_user_activation") {
-        // Users created delay_minutes ago who didn't create an OS
-        const delay = automation.delay_minutes || 1440; // 24h default
+        const delay = automation.delay_minutes || 1440; 
         const startTime = new Date(Date.now() - (delay + 1440) * 60000).toISOString();
         const endTime = new Date(Date.now() - delay * 60000).toISOString();
 
@@ -100,9 +101,8 @@ Deno.serve(async (req) => {
 
         if (profiles) {
           for (const profile of profiles) {
-            // Check if they created an OS
             const { count: osCount } = await supabase
-              .from("service_orders")
+              .from("service_items")
               .select("*", { count: 'exact', head: true })
               .eq("organization_id", profile.organization_id);
 
@@ -125,40 +125,90 @@ Deno.serve(async (req) => {
           }
         }
       }
-      else if (automation.trigger_type === "churn_recovery") {
-        // Users classified as 'em risco'
-        const { data: scores } = await supabase
-          .from("view_analytics_user_scores")
-          .select("user_id, full_name, classification, organization_id")
-          .eq("classification", "em risco");
+      // TRIGGER: Trial Journey (d0, d1, d3, d5, d7, d10, d13, d14)
+      else if (automation.trigger_type.startsWith("trial_d")) {
+        const delay = automation.delay_minutes || 0;
+        const startTime = new Date(Date.now() - (delay + 60) * 60000).toISOString();
+        const endTime = new Date(Date.now() - delay * 60000).toISOString();
 
-        if (scores) {
-          for (const score of scores) {
-            // Get phone from profile
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("phone")
-              .eq("id", score.user_id)
-              .single();
+        console.log(`[AUTOMATION-ENGINE] Window: ${startTime} to ${endTime} (Delay: ${delay}m)`);
 
-            if (!profile?.phone) continue;
+        const { data: profiles, error: profError } = await supabase
+          .from("profiles")
+          .select("id, full_name, organization_id, phone, created_at")
+          .gte("created_at", startTime)
+          .lte("created_at", endTime);
 
-            // Check cooldown (7 days for churn)
-            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60000).toISOString();
+        if (profError) {
+          console.error(`[AUTOMATION-ENGINE] Profile query error for ${automation.trigger_type}:`, profError);
+          continue;
+        }
+
+        if (profiles && profiles.length > 0) {
+          console.log(`[AUTOMATION-ENGINE] Found ${profiles.length} potential targets for ${automation.trigger_type}`);
+          for (const profile of profiles) {
             const { count: alreadySent } = await supabase
               .from("analytics_automation_logs")
               .select("*", { count: 'exact', head: true })
               .eq("automation_id", automation.id)
-              .eq("user_id", score.user_id)
-              .gt("sent_at", weekAgo);
+              .eq("user_id", profile.id);
 
             if (alreadySent === 0) {
               targets.push({ 
-                user_id: score.user_id, 
-                org_id: score.organization_id, 
+                user_id: profile.id, 
+                org_id: profile.organization_id, 
                 phone: profile.phone, 
-                name: score.full_name?.split(' ')[0] || "amigo(a)" 
+                name: profile.full_name?.split(' ')[0] || "amigo(a)" 
               });
+            }
+          }
+        }
+      }
+      // TRIGGER: Trial Ending Alerts
+      else if (automation.trigger_type.startsWith("trial_ending_")) {
+        const daysMap: Record<string, number> = { "3d": 3, "1d": 1, "0d": 0 };
+        const suffix = automation.trigger_type.split("_")[2];
+        const daysUntilEnd = daysMap[suffix] ?? -1;
+
+        if (daysUntilEnd !== -1) {
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + daysUntilEnd);
+          const dateStr = targetDate.toISOString().split('T')[0];
+
+          console.log(`[AUTOMATION-ENGINE] Checking orgs ending on ${dateStr}`);
+
+          const { data: orgs } = await supabase
+            .from("organizations")
+            .select("id, name, trial_ends_at")
+            .filter('trial_ends_at', 'gte', `${dateStr}T00:00:00`)
+            .filter('trial_ends_at', 'lte', `${dateStr}T23:59:59`);
+
+          if (orgs && orgs.length > 0) {
+            for (const org of orgs) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("id, full_name, phone")
+                .eq("organization_id", org.id)
+                .order('created_at', { ascending: true })
+                .limit(1)
+                .single();
+
+              if (profile) {
+                const { count: alreadySent } = await supabase
+                  .from("analytics_automation_logs")
+                  .select("*", { count: 'exact', head: true })
+                  .eq("automation_id", automation.id)
+                  .eq("user_id", profile.id);
+
+                if (alreadySent === 0) {
+                  targets.push({ 
+                    user_id: profile.id, 
+                    org_id: org.id, 
+                    phone: profile.phone, 
+                    name: profile.full_name?.split(' ')[0] || "amigo(a)" 
+                  });
+                }
+              }
             }
           }
         }
@@ -167,16 +217,15 @@ Deno.serve(async (req) => {
       // 3. Send messages to targets
       for (const target of targets) {
         if (!target.phone) {
-          console.log(`[AUTOMATION-ENGINE] Target ${target.email || target.user_id} has no phone. Skipping.`);
+          console.log(`[AUTOMATION-ENGINE] Target ${target.user_id} has no phone. Skipping.`);
           continue;
         }
 
         const message = automation.message_template.replace("{{name}}", target.name);
-        
-        console.log(`[AUTOMATION-ENGINE] Sending message to ${target.phone} for ${automation.name}`);
+        console.log(`[AUTOMATION-ENGINE] Sending WA to ${target.phone} for ${automation.name}`);
 
-        let status = "sent";
-        let errorMsg = null;
+        let waStatus = "skipped";
+        let waError = null;
 
         if (vpsUrl && apiKey) {
           try {
@@ -192,42 +241,42 @@ Deno.serve(async (req) => {
               body: JSON.stringify({ number: jid, text: message }),
             });
 
-            if (!res.ok) {
-              status = "error";
-              errorMsg = await res.text();
-              console.error(`[AUTOMATION-ENGINE] Send failed for ${target.phone}:`, res.status, errorMsg);
+            if (res.ok) {
+              waStatus = "sent";
+            } else {
+              waStatus = "error";
+              waError = await res.text();
+              console.error(`[AUTOMATION-ENGINE] WA failed for ${target.phone}:`, res.status, waError);
             }
           } catch (err) {
-            status = "error";
-            errorMsg = err.message;
-            console.error(`[AUTOMATION-ENGINE] Send error for ${target.phone}:`, err);
+            waStatus = "error";
+            waError = err.message;
+            console.error(`[AUTOMATION-ENGINE] WA error for ${target.phone}:`, err);
           }
-        } else {
-          status = "error";
-          errorMsg = "WhatsApp API not configured";
-          console.warn("[AUTOMATION-ENGINE] WhatsApp API not configured. Skipping actual send.");
         }
 
-        // Log the result
+        // 4. Log the result
         await supabase.from("analytics_automation_logs").insert({
           automation_id: automation.id,
           user_id: target.user_id || null,
           email: target.email || null,
           organization_id: target.org_id || null,
-          status: status,
-          error_message: errorMsg,
+          status: waStatus === "sent" ? "sent" : (waStatus === "error" ? "error" : "processed"),
+          channel: "whatsapp",
+          error_message: waError,
           metadata: { 
             phone: target.phone, 
             name: target.name,
-            original_metadata: target.metadata 
+            wa_status: waStatus,
+            message_sent: message
           }
         });
 
-        results.push({ target: target.email || target.user_id, status });
+        results.push({ target: target.user_id, status: waStatus });
       }
     }
 
-    return new Response(JSON.stringify({ success: true, results }), {
+    return new Response(JSON.stringify({ success: true, processed_count: results.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 

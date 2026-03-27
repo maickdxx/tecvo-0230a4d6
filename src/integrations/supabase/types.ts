@@ -591,6 +591,7 @@ export type Database = {
       analytics_automation_logs: {
         Row: {
           automation_id: string | null
+          channel: string | null
           email: string | null
           error_message: string | null
           id: string
@@ -602,6 +603,7 @@ export type Database = {
         }
         Insert: {
           automation_id?: string | null
+          channel?: string | null
           email?: string | null
           error_message?: string | null
           id?: string
@@ -613,6 +615,7 @@ export type Database = {
         }
         Update: {
           automation_id?: string | null
+          channel?: string | null
           email?: string | null
           error_message?: string | null
           id?: string
@@ -638,6 +641,7 @@ export type Database = {
           created_at: string | null
           delay_minutes: number | null
           description: string | null
+          email_template: string | null
           enabled: boolean | null
           id: string
           message_template: string
@@ -650,6 +654,7 @@ export type Database = {
           created_at?: string | null
           delay_minutes?: number | null
           description?: string | null
+          email_template?: string | null
           enabled?: boolean | null
           id?: string
           message_template: string
@@ -662,6 +667,7 @@ export type Database = {
           created_at?: string | null
           delay_minutes?: number | null
           description?: string | null
+          email_template?: string | null
           enabled?: boolean | null
           id?: string
           message_template?: string
