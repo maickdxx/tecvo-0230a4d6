@@ -194,6 +194,11 @@ export function useAdminAnalytics() {
     queryFn: fetchLeadPaths,
   });
 
+  const abTestResults = useQuery({
+    queryKey: ["admin-analytics-ab-tests"],
+    queryFn: fetchABTestResults,
+  });
+
   const isLoading = 
     dailyMetrics.isLoading || 
     trafficSources.isLoading || 
