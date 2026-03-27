@@ -178,24 +178,13 @@ export default function Auth() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (signupPassword !== signupConfirmPassword) {
-      toast({ variant: "destructive", title: "Erro", description: "As senhas não coincidem" });
-      return;
-    }
-
     if (signupPassword.length < 6) {
       toast({ variant: "destructive", title: "Erro", description: "A senha deve ter pelo menos 6 caracteres" });
       return;
     }
 
-    const cleanPhone = signupPhone.replace(/\D/g, "");
-    if (cleanPhone.length < 11) {
-      toast({ variant: "destructive", title: "Erro", description: "Informe um número de celular válido com DDD" });
-      return;
-    }
-
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName, signupPhone);
+    const { error } = await signUp(signupEmail, signupPassword, signupName, "");
 
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
