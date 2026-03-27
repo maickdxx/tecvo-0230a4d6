@@ -89,7 +89,8 @@ class AnalyticsClient {
     eventType: EventType,
     userId: string | null,
     organizationId: string | null,
-    metadata: EventMetadata = {}
+    metadata: EventMetadata = {},
+    immediate: boolean = false
   ) {
     const utms = this.getStoredUTMs();
     
