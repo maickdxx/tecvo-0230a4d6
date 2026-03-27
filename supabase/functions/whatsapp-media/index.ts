@@ -82,39 +82,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── AUTO-FALLBACK for disconnected channels ──
-    let activeChannel = channel;
-    let didFallback = false;
-
+    // Block sending if channel is disconnected — no fallback
+    const activeChannel = channel;
     if (!channel.is_connected || !channel.instance_name || channel.channel_status !== "connected") {
-      console.warn(`[WHATSAPP-MEDIA] Channel ${channel.id} disconnected. Searching fallback...`);
-      const { data: fallbackChannel } = await supabase
-        .from("whatsapp_channels")
-        .select("id, instance_name, organization_id, is_connected, channel_status, phone_number")
-        .eq("organization_id", orgId)
-        .eq("channel_type", "CUSTOMER_INBOX")
-        .eq("is_connected", true)
-        .eq("channel_status", "connected")
-        .neq("id", channel.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (fallbackChannel?.instance_name) {
-        activeChannel = fallbackChannel;
-        didFallback = true;
-        await supabase.from("whatsapp_contacts").update({ channel_id: fallbackChannel.id }).eq("id", contactId);
-        await supabase.from("whatsapp_channel_transitions").insert({
-          organization_id: orgId, contact_id: contactId,
-          previous_channel_id: channel.id, new_channel_id: fallbackChannel.id,
-          reason: "media_send_fallback",
-        });
-        console.info(`[WHATSAPP-MEDIA] Fallback to ${fallbackChannel.id} (${fallbackChannel.instance_name})`);
-      } else {
-        return new Response(JSON.stringify({
-          error: "channel_disconnected",
-          message: "Nenhum canal ativo disponível. Reconecte nas configurações.",
-        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
+      console.warn(`[WHATSAPP-MEDIA] Channel ${channel.id} disconnected. Blocking send.`);
+      return new Response(JSON.stringify({
+        error: "channel_disconnected",
+        message: "O canal está desconectado. Reconecte para enviar mídia.",
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Fetch contact
