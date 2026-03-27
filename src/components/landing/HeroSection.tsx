@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { analytics } from "@/lib/analytics";
 import { ArrowRight, CheckCircle2, MessageCircle, CalendarCheck, Wallet, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useABTest } from "@/hooks/useABTest";
 import screenshotDashboard from "@/assets/screenshot-dashboard.jpg";
 import screenshotWhatsapp from "@/assets/screenshot-whatsapp.jpg";
 
@@ -13,6 +14,11 @@ const highlights = [
 ];
 
 export function HeroSection() {
+  const { variant } = useABTest("Landing Page Headline & CTA");
+
+  const headline = variant?.config?.hero_headline || "Sua empresa de ar-condicionado perde dinheiro todo mês e você nem percebe.";
+  const cta = variant?.config?.hero_cta || "Testar grátis por 7 dias";
+
   return (
     <section className="relative pt-28 pb-20 md:pt-40 md:pb-28 overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.12),transparent)]" />
@@ -39,12 +45,17 @@ export function HeroSection() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-black tracking-[-0.03em] text-foreground leading-[1.08] mb-5 animate-fade-in">
-              Sua empresa de ar-condicionado{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/90 to-primary/70">
-                perde dinheiro todo mês
-              </span>{" "}
-              e você nem percebe.
+              {headline.split(" ").map((word, i) => (
+                i > 4 && i < 8 ? (
+                  <span key={i} className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/90 to-primary/70">
+                    {" "}{word}
+                  </span>
+                ) : (
+                  <span key={i}>{" "}{word}</span>
+                )
+              ))}
             </h1>
+
 
             <p className="text-lg text-muted-foreground leading-relaxed mb-8 animate-fade-in">
               Orçamento que não mandou, serviço que esqueceu, cliente que foi pro concorrente.{" "}
@@ -62,10 +73,11 @@ export function HeroSection() {
               >
                 <Link to="/cadastro">
                   <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                  Testar grátis por 7 dias
+                  {cta}
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </Button>
+
               <Button
                 variant="outline"
                 size="lg"

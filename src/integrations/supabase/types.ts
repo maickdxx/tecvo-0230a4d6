@@ -14,6 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
+      ab_test_assignments: {
+        Row: {
+          anonymous_id: string | null
+          created_at: string | null
+          id: string
+          test_id: string | null
+          user_id: string | null
+          variant_id: string | null
+        }
+        Insert: {
+          anonymous_id?: string | null
+          created_at?: string | null
+          id?: string
+          test_id?: string | null
+          user_id?: string | null
+          variant_id?: string | null
+        }
+        Update: {
+          anonymous_id?: string | null
+          created_at?: string | null
+          id?: string
+          test_id?: string | null
+          user_id?: string | null
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ab_test_assignments_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "ab_tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ab_test_assignments_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "view_analytics_ab_test_results"
+            referencedColumns: ["test_id"]
+          },
+          {
+            foreignKeyName: "ab_test_assignments_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "ab_test_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ab_test_assignments_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "view_analytics_ab_test_results"
+            referencedColumns: ["variant_id"]
+          },
+        ]
+      }
+      ab_test_variants: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          id: string
+          is_control: boolean | null
+          name: string
+          test_id: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_control?: boolean | null
+          name: string
+          test_id?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_control?: boolean | null
+          name?: string
+          test_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ab_test_variants_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "ab_tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ab_test_variants_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "view_analytics_ab_test_results"
+            referencedColumns: ["test_id"]
+          },
+        ]
+      }
+      ab_tests: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          start_date: string | null
+          traffic_percentage: number | null
+          updated_at: string | null
+          winner_variant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_date?: string | null
+          traffic_percentage?: number | null
+          updated_at?: string | null
+          winner_variant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_date?: string | null
+          traffic_percentage?: number | null
+          updated_at?: string | null
+          winner_variant_id?: string | null
+        }
+        Relationships: []
+      }
       ai_assistant_permissions: {
         Row: {
           allowed_actions: string[] | null
@@ -5724,6 +5861,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      view_analytics_ab_test_results: {
+        Row: {
+          conversion_rate: number | null
+          test_id: string | null
+          test_name: string | null
+          total_conversions: number | null
+          total_users: number | null
+          variant_id: string | null
+          variant_name: string | null
+        }
+        Relationships: []
       }
       view_analytics_activation_metrics: {
         Row: {
