@@ -303,7 +303,81 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: "Invalid action. Use: list, status, qrcode, disconnect, restart, send_metrics" }), {
+    // ── ACTION: SEND_TEST ── Send a real test message via Evolution API
+    if (action === "send_test") {
+      const { phone, message } = body;
+      if (!phone || !message) {
+        return new Response(JSON.stringify({ error: "phone and message required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const inst = instance_name || "tecvo";
+      const digits = phone.replace(/\D/g, "");
+      const recipientJid = `${digits}@s.whatsapp.net`;
+      const startTime = Date.now();
+
+      try {
+        const evoRes = await fetch(`${vpsUrl}/message/sendText/${inst}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ number: recipientJid, text: message }),
+        });
+
+        const elapsed = Date.now() - startTime;
+        const evoData = await evoRes.json().catch(() => ({}));
+
+        if (!evoRes.ok) {
+          // Log error
+          await supabase.from("analytics_automation_logs").insert({
+            status: "error",
+            channel: "whatsapp",
+            error_message: `Test send failed: ${evoRes.status} - ${JSON.stringify(evoData).substring(0, 200)}`,
+            sent_at: new Date().toISOString(),
+            metadata: { type: "admin_test", phone: digits, elapsed_ms: elapsed },
+          });
+
+          return new Response(JSON.stringify({
+            ok: false,
+            error: `Evolution API error ${evoRes.status}`,
+            details: evoData,
+            elapsed_ms: elapsed,
+          }), {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Log success
+        await supabase.from("analytics_automation_logs").insert({
+          status: "sent",
+          channel: "whatsapp",
+          sent_at: new Date().toISOString(),
+          metadata: { type: "admin_test", phone: digits, elapsed_ms: elapsed, message_id: evoData?.key?.id },
+        });
+
+        return new Response(JSON.stringify({
+          ok: true,
+          message_id: evoData?.key?.id || null,
+          elapsed_ms: elapsed,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        const elapsed = Date.now() - startTime;
+        return new Response(JSON.stringify({
+          ok: false,
+          error: `Send failed: ${e.message}`,
+          elapsed_ms: elapsed,
+        }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({ error: "Invalid action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
