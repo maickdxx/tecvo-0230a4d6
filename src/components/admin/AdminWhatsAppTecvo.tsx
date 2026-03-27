@@ -415,9 +415,88 @@ export function AdminWhatsAppTecvo() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {isConnected && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setTestResult(null); setTestModalOpen(true); }}
+                disabled={!!actionLoading}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Enviar Teste
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Teste de Envio */}
+      <Dialog open={testModalOpen} onOpenChange={setTestModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar mensagem de teste</DialogTitle>
+            <DialogDescription>
+              Valide se o canal institucional está enviando mensagens corretamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="test-phone">Número de destino</Label>
+              <Input
+                id="test-phone"
+                placeholder="5511999999999"
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Formato: código do país + DDD + número (sem espaços ou traços)</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="test-message">Mensagem</Label>
+              <Textarea
+                id="test-message"
+                value={testMessage}
+                onChange={(e) => setTestMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+            {testResult && (
+              <div className={`p-3 rounded-lg border text-sm ${testResult.ok ? "bg-green-500/10 border-green-500/20" : "bg-destructive/10 border-destructive/20"}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  {testResult.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className="font-medium">
+                    {testResult.ok ? "Enviado com sucesso" : "Falha no envio"}
+                  </span>
+                </div>
+                {testResult.elapsed_ms != null && (
+                  <p className="text-xs text-muted-foreground">Tempo: {testResult.elapsed_ms}ms</p>
+                )}
+                {testResult.message_id && (
+                  <p className="text-xs text-muted-foreground font-mono">ID: {testResult.message_id}</p>
+                )}
+                {testResult.error && (
+                  <p className="text-xs text-destructive mt-1">{testResult.error}</p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestModalOpen(false)}>Fechar</Button>
+            <Button onClick={handleSendTest} disabled={testSending}>
+              {testSending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Enviar Teste
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* QR Code */}
       {!isConnected && (qrCode || qrString) && (
