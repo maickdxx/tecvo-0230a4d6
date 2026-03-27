@@ -377,7 +377,7 @@ export function AdminAnalytics() {
               </CardHeader>
               <CardContent>
                 <p className="text-xs text-muted-foreground">
-                  A landing page "Problema > Solução" gerou <strong>+28% de lift</strong> comparada à tradicional.
+                  A landing page "Problema {'>'} Solução" gerou <strong>+28% de lift</strong> comparada à tradicional.
                 </p>
               </CardContent>
             </Card>
