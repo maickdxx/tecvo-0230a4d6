@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cleanDisplayUrl, getPageName } from "@/lib/cleanUrl";
 
 interface LeadJourneyDetailsProps {
   visitorId: string;
@@ -136,7 +137,7 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-bold text-sm">
                             {event.event_type === 'page_view' || event.event_type === 'landing_page_view' 
-                              ? `Visitou ${event.page_title || event.page_path}` 
+                              ? `Visitou ${getPageName(event.page_path, event.page_title)}` 
                               : event.event_type.replace(/_/g, ' ')}
                           </span>
                           <span className="text-[10px] text-muted-foreground whitespace-nowrap bg-muted px-2 py-0.5 rounded">
@@ -146,7 +147,7 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                         <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
                           {event.page_path && (
                             <span className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" /> {event.page_path}
+                              <MapPin className="h-3 w-3" /> {cleanDisplayUrl(event.page_path)}
                             </span>
                           )}
                           {event.duration_on_page && event.duration_on_page > 0 && (
@@ -179,7 +180,7 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
             <CardContent className="space-y-4">
               <div className="p-3 bg-muted/50 rounded-lg space-y-2 border border-muted">
                 <div className="text-[10px] uppercase text-muted-foreground font-semibold">Última Página</div>
-                <div className="text-sm font-medium truncate">{lastPage?.page_title || lastPage?.page_path || 'N/A'}</div>
+                <div className="text-sm font-medium truncate">{getPageName(lastPage?.page_path, lastPage?.page_title)}</div>
               </div>
 
               <div className={`p-3 rounded-lg flex items-center gap-3 border ${
@@ -233,7 +234,7 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
             <CardContent>
               <div className="text-[11px] space-y-2">
                 {!hasCta && pageViews.length > 2 && (
-                  <p>O lead visitou {pageViews.length} páginas mas não clicou em nenhum CTA. Considere revisar o copy da página <strong>{lastPage?.page_title || lastPage?.page_path}</strong>.</p>
+                  <p>O lead visitou {pageViews.length} páginas mas não clicou em nenhum CTA. Considere revisar o copy da página <strong>{getPageName(lastPage?.page_path, lastPage?.page_title)}</strong>.</p>
                 )}
                 {hasCta && (
                   <p>O lead demonstrou interesse clicando em CTA, mas abandonou antes do cadastro. Verifique se o formulário de cadastro está muito complexo.</p>
