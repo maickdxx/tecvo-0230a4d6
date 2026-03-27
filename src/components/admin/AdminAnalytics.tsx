@@ -349,10 +349,59 @@ export function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-6 pt-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Melhor Campanha</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold truncate">
+                  {campaignComparison.data?.[0]?.campaign || "Nenhuma ativa"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Taxa de {campaignComparison.data?.[0]?.conversion_rate || 0}%
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Melhor Origem</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  {trafficSources.data?.[0]?.source || "Direto"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {trafficSources.data?.[0]?.session_count?.toLocaleString() || 0} sessões
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Melhor Estrutura</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  {winningPatterns.data?.find(p => p.pattern_type === 'structure')?.name || "Padrão Tecvo"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Lift de +{winningPatterns.data?.find(p => p.pattern_type === 'structure')?.performance_lift || 0}%
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Performance por Canal e Campanha</CardTitle>
-              <CardDescription>Qual origem traz os leads que mais convertem em vendas</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Análise de Conversão por Canal</CardTitle>
+                  <CardDescription>Comparativo detalhado de ROI e Eficiência de Leads por origem UTM.</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Share2 className="h-4 w-4" /> Exportar Relatório
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -369,15 +418,15 @@ export function AdminAnalytics() {
                 <TableBody>
                   {campaignComparison.data?.map((comp, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{comp.campaign || '(Sem Campanha)'}</TableCell>
+                      <TableCell className="font-medium text-foreground">{comp.campaign || '(Sem Campanha)'}</TableCell>
                       <TableCell className="text-xs">
-                        <Badge variant="outline" className="mr-1">{comp.source}</Badge>
-                        <Badge variant="secondary">{comp.medium}</Badge>
+                        <Badge variant="outline" className="mr-1 text-primary border-primary/20">{comp.source}</Badge>
+                        <Badge variant="secondary" className="text-foreground">{comp.medium}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">{comp.session_count.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{comp.signups.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-bold text-emerald-500">{comp.conversions.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-bold">{comp.conversion_rate}%</TableCell>
+                      <TableCell className="text-right text-foreground">{comp.session_count.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-foreground">{comp.signups.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{comp.conversions.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold text-foreground">{comp.conversion_rate}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
