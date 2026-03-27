@@ -39,7 +39,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function AdminABTests() {
-  const { abTestResults, hypotheses, marketingFunnel, leadDropoffs } = useAdminAnalytics();
+  const { abTestResults, hypotheses, marketingFunnel, leadDropoffs } = useAdminAnalytics("ab_tests");
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newHypothesis, setNewHypothesis] = useState({
