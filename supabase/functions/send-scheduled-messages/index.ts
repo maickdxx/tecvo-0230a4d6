@@ -67,6 +67,18 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // STRICT: Validate channel is connected — no fallback to other channels
+        if (!channel.is_connected || channel.channel_status !== "connected" || !channel.instance_name) {
+          console.warn(`[SCHEDULED-SEND] Channel ${channel.id} disconnected (status: ${channel.channel_status}). Blocking scheduled message ${msg.id} — no fallback.`);
+          await supabase.from("whatsapp_scheduled_messages").update({
+            status: "error",
+            error_message: `Canal desconectado (${channel.channel_status || "unknown"}). Reconecte para enviar.`,
+            updated_at: new Date().toISOString(),
+          }).eq("id", msg.id);
+          errors++;
+          continue;
+        }
+
         const isWebchat = contact.source === "webchat" || (contact.whatsapp_id || "").startsWith("webchat-");
         const messageId = `out_sched_${crypto.randomUUID()}`;
 
