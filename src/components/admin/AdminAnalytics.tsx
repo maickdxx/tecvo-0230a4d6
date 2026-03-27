@@ -330,6 +330,10 @@ export function AdminAnalytics() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="ab_tests" className="pt-4">
+          <AdminABTests />
+        </TabsContent>
+
         <TabsContent value="overview" className="space-y-6 pt-4">
           <div className="grid gap-6 md:grid-cols-2">
             {/* Evolution Chart */}
