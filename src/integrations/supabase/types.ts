@@ -5733,11 +5733,11 @@ export type Database = {
           activated: number | null
           first_action: number | null
           first_login: number | null
+          landing_page: number | null
           signup_completed: number | null
           signup_started: number | null
           subscription_completed: number | null
           subscription_started: number | null
-          total_users: number | null
         }
         Relationships: []
       }
