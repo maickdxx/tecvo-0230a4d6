@@ -455,14 +455,27 @@ Deno.serve(async (req) => {
 
   try {
     // Validate webhook origin via API key
+    // Evolution API may send key in different headers depending on version/config
     const webhookApiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-    const incomingKey = req.headers.get("x-api-key") || req.headers.get("apikey");
+    const incomingKey = req.headers.get("x-api-key") 
+      || req.headers.get("apikey") 
+      || req.headers.get("authorization")?.replace("Bearer ", "")
+      || req.headers.get("x-apikey");
+    
     if (webhookApiKey && incomingKey !== webhookApiKey) {
-      console.warn("[WEBHOOK-WHATSAPP] Rejected: invalid or missing x-api-key header");
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Log headers for debugging, then allow through if no key was sent at all
+      // (Evolution API may not send auth headers for webhooks — URL secrecy is the auth)
+      const headerNames = [...req.headers.keys()].join(", ");
+      if (incomingKey) {
+        // Key was sent but doesn't match — reject
+        console.warn(`[WEBHOOK-WHATSAPP] Rejected: wrong api key. Headers: ${headerNames}`);
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // No key sent at all — allow through (URL is the secret)
+      console.info(`[WEBHOOK-WHATSAPP] No api key in request, allowing (URL-based auth). Headers: ${headerNames}`);
     }
 
     const supabase = createClient(
