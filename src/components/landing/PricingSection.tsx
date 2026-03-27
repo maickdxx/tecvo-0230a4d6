@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { analytics } from "@/lib/analytics";
 import { Check, X, ArrowRight, Star, Crown, Zap, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -137,10 +138,11 @@ export function PricingSection() {
                     size="lg"
                     className={cn(
                       "w-full py-6 text-base font-semibold hover:scale-[1.02] transition-all duration-200",
-                      isFeatured && "shadow-[0_8px_25px_-5px_hsl(var(--primary)/0.4)] hover:shadow-[0_12px_35px_-5px_hsl(var(--primary)/0.5)] relative overflow-hidden group/btn"
-                    )}
-                    asChild
-                  >
+                        isFeatured && "shadow-[0_8px_25px_-5px_hsl(var(--primary)/0.4)] hover:shadow-[0_12px_35px_-5px_hsl(var(--primary)/0.5)] relative overflow-hidden group/btn"
+                      )}
+                      onClick={() => analytics.track("create_account_click", null, null, { plan: slug, location: "pricing" })}
+                      asChild
+                    >
                     <Link to={`/cadastro?plan=${plan.slug}`}>
                       {isFeatured && (
                         <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700" />
