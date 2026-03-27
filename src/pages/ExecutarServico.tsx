@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout";
-import { Loader2, CheckCircle, PenLine, User, Briefcase, FileText } from "lucide-react";
+import { Loader2, CheckCircle, PenLine, User, Briefcase, FileText, DollarSign } from "lucide-react";
 import { useServiceExecutionMode } from "@/hooks/useServiceExecutionMode";
 import { EquipmentListView } from "@/components/services/execution/EquipmentListView";
 import { EquipmentReportForm } from "@/components/services/execution/EquipmentReportForm";
@@ -12,6 +12,8 @@ import { useServices } from "@/hooks/useServices";
 import { toast } from "@/hooks/use-toast";
 import { SignatureCanvas } from "@/components/services/SignatureCanvas";
 import { useServiceSignatures } from "@/hooks/useServiceSignatures";
+import { ServiceCompleteDialog } from "@/components/services/ServiceCompleteDialog";
+import type { ServicePaymentInput } from "@/hooks/useServicePayments";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +34,7 @@ export default function ExecutarServico() {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string | null>(null);
   const [showFinalizeDialog, setShowFinalizeDialog] = useState(false);
   const [showSignatureView, setShowSignatureView] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
 
   const {
     equipmentList,
@@ -52,14 +55,14 @@ export default function ExecutarServico() {
   const { updateStatus } = useServices({ skipQuery: true });
   const { createSignature, isCreating: isSavingSignature } = useServiceSignatures(serviceId);
 
-  // Fetch service details
+  // Fetch service details including value for payment flow
   const { data: service } = useQuery({
     queryKey: ["service-execution-detail", serviceId],
     queryFn: async () => {
       if (!serviceId) return null;
       const { data } = await supabase
         .from("services")
-        .select("id, description, quote_number, status, client:clients!client_id(name)")
+        .select("id, description, quote_number, status, value, payment_method, client:clients!client_id(name)")
         .eq("id", serviceId)
         .single();
       return data;
@@ -67,14 +70,26 @@ export default function ExecutarServico() {
     enabled: !!serviceId,
   });
 
+  const serviceValue = service?.value ?? 0;
+
   const selectedEquipment = selectedEquipmentId
     ? equipmentList.find((e) => e.id === selectedEquipmentId) || null
     : null;
 
-  const handleFinalizeService = async () => {
+  // Finalize without payment (value = 0)
+  const handleFinalizeService = async (payments?: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
     if (!serviceId) return;
     try {
-      await updateStatus({ id: serviceId, status: "completed" });
+      const mainMethod = payments?.[0]?.payment_method;
+      await updateStatus({
+        id: serviceId,
+        status: "completed",
+        ...(mainMethod ? { paymentMethod: mainMethod } : {}),
+        ...(payments && payments.length > 0 ? { payments } : {}),
+      });
+      if (signatureBlob) {
+        await createSignature({ serviceId, blob: signatureBlob, signerName });
+      }
       toast({ title: "Serviço finalizado com sucesso! 🚀" });
       navigate("/meus-servicos");
     } catch (e: any) {
@@ -82,13 +97,32 @@ export default function ExecutarServico() {
     }
   };
 
+  // Called from ServiceCompleteDialog (has value)
+  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
+    await handleFinalizeService(payments, signatureBlob, signerName);
+    setShowCompleteDialog(false);
+  };
+
+  // Called from signature-only view (no value)
   const handleSaveSignature = async (blob: Blob, signerName: string) => {
     if (!serviceId) return;
     try {
       await createSignature({ serviceId, blob, signerName });
-      handleFinalizeService();
+      await handleFinalizeService();
     } catch (e: any) {
       // Error handled by hook toast
+    }
+  };
+
+  // User clicks "Assinar e Concluir" from finalize dialog
+  const handleProceedToFinalization = () => {
+    setShowFinalizeDialog(false);
+    if (serviceValue > 0) {
+      // Has value → open payment + signature dialog
+      setShowCompleteDialog(true);
+    } else {
+      // No value → signature only
+      setShowSignatureView(true);
     }
   };
 
@@ -186,6 +220,7 @@ export default function ExecutarServico() {
         )}
       </div>
 
+      {/* Confirmation dialog before finalization */}
       <AlertDialog open={showFinalizeDialog} onOpenChange={setShowFinalizeDialog}>
         <AlertDialogContent className="rounded-3xl max-w-[90vw]">
           <AlertDialogHeader>
@@ -194,7 +229,7 @@ export default function ExecutarServico() {
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base">
               Você preencheu o laudo de todos os equipamentos ({totalCount}/{totalCount}). 
-              Deseja coletar a assinatura e finalizar o atendimento agora?
+              Deseja finalizar o atendimento agora?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid grid-cols-1 gap-3 py-2">
@@ -212,18 +247,38 @@ export default function ExecutarServico() {
                 <p className="text-muted-foreground">Status passará para "Concluída".</p>
               </div>
             </div>
+            {serviceValue > 0 && (
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+                <DollarSign className="h-5 w-5 text-primary" />
+                <div className="text-xs">
+                  <p className="font-bold">Pagamento</p>
+                  <p className="text-muted-foreground">
+                    Você informará o pagamento de{" "}
+                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(serviceValue)}.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel className="w-full sm:w-auto rounded-xl h-12">Revisar</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={() => setShowSignatureView(true)}
+              onClick={handleProceedToFinalization}
               className="w-full sm:w-auto rounded-xl h-12 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
             >
-              Assinar e Concluir
+              {serviceValue > 0 ? "Pagamento e Assinatura" : "Assinar e Concluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Payment + Signature dialog (reuses the same component as OS details) */}
+      <ServiceCompleteDialog
+        open={showCompleteDialog}
+        onOpenChange={setShowCompleteDialog}
+        serviceValue={serviceValue}
+        onConfirm={handleCompleteWithPayments}
+      />
     </AppLayout>
   );
 }
