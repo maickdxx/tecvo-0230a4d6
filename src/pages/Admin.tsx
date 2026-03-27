@@ -110,6 +110,10 @@ export default function Admin() {
             <ExecutiveDashboard onNavigateTab={setActiveTab} />
           </TabsContent>
 
+          <TabsContent value="analytics">
+            <AdminAnalytics />
+          </TabsContent>
+
           <TabsContent value="financial">
             <FinancialDashboard />
           </TabsContent>
