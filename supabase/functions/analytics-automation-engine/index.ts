@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     for (const automation of automations) {
       console.log(`[AUTOMATION-ENGINE] Checking trigger: ${automation.trigger_type}`);
       
-      let targets = [];
+      const targets = [];
 
       if (automation.trigger_type === "signup_recovery") {
         // Find signup_started events (delay_minutes ago) that didn't complete
@@ -59,14 +59,19 @@ Deno.serve(async (req) => {
             
             if (!email) continue;
 
-            // Check if completed
+            // Check if completed - looking for signup_completed or a profile with this email
             const { count: completedCount } = await supabase
               .from("user_activity_events")
               .select("*", { count: 'exact', head: true })
               .eq("event_type", "signup_completed")
               .or(`metadata->>email.eq.${email},metadata->>email.eq.${email.toLowerCase()}`);
 
-            if (completedCount === 0) {
+            const { count: profileCount } = await supabase
+              .from("profiles")
+              .select("*", { count: 'exact', head: true })
+              .or(`email.eq.${email},email.eq.${email.toLowerCase()}`);
+
+            if (completedCount === 0 && profileCount === 0) {
               // Check if already sent
               const { count: alreadySent } = await supabase
                 .from("analytics_automation_logs")
@@ -124,11 +129,20 @@ Deno.serve(async (req) => {
         // Users classified as 'em risco'
         const { data: scores } = await supabase
           .from("view_analytics_user_scores")
-          .select("user_id, full_name, phone, organization_id")
+          .select("user_id, full_name, classification, organization_id")
           .eq("classification", "em risco");
 
         if (scores) {
           for (const score of scores) {
+            // Get phone from profile
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("phone")
+              .eq("id", score.user_id)
+              .single();
+
+            if (!profile?.phone) continue;
+
             // Check cooldown (7 days for churn)
             const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60000).toISOString();
             const { count: alreadySent } = await supabase
@@ -142,7 +156,7 @@ Deno.serve(async (req) => {
               targets.push({ 
                 user_id: score.user_id, 
                 org_id: score.organization_id, 
-                phone: score.phone, 
+                phone: profile.phone, 
                 name: score.full_name?.split(' ')[0] || "amigo(a)" 
               });
             }
