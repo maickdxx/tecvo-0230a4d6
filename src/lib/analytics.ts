@@ -74,11 +74,14 @@ class AnalyticsClient {
     organizationId: string | null,
     metadata: EventMetadata = {}
   ) {
+    const utms = this.getStoredUTMs();
+    
     const event = {
       user_id: userId,
       organization_id: organizationId,
       event_type: eventType,
       metadata: {
+        ...utms,
         ...metadata,
         timestamp: new Date().toISOString(),
         url: typeof window !== "undefined" ? window.location.href : undefined,
