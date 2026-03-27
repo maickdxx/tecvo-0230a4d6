@@ -183,10 +183,10 @@ export function AdminAnalytics() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Clique CTA</CardTitle>
-                <MousePointer2 className="h-4 w-4 text-blue-500" />
+                <MousePointer2 className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{marketingFunnel.data?.cta_click_rate?.toFixed(1) || 0}%</div>
+                <div className="text-2xl font-bold text-foreground">{marketingFunnel.data?.cta_click_rate?.toFixed(1) || 0}%</div>
                 <p className="text-xs text-muted-foreground">Visitantes vs Cliques</p>
               </CardContent>
             </Card>
@@ -194,10 +194,10 @@ export function AdminAnalytics() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Taxa Conv. Final</CardTitle>
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <TrendingUp className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{marketingFunnel.data?.final_conversion_rate?.toFixed(2) || 0}%</div>
+                <div className="text-2xl font-bold text-foreground">{marketingFunnel.data?.final_conversion_rate?.toFixed(2) || 0}%</div>
                 <p className="text-xs text-muted-foreground">Visitantes vs Pagamento</p>
               </CardContent>
             </Card>
@@ -205,10 +205,10 @@ export function AdminAnalytics() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Tempo Médio p/ Conv.</CardTitle>
-                <Timer className="h-4 w-4 text-amber-500" />
+                <Timer className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold text-foreground">
                   {marketingFunnel.data?.avg_time_to_signup_seconds 
                     ? Math.round(marketingFunnel.data.avg_time_to_signup_seconds / 60) 
                     : 0} min
