@@ -4,21 +4,23 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 
 export function usePermissions() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { role, isOwner } = useUserRole();
+  const organizationId = profile?.organization_id;
 
   const { data: permissions = [], isLoading } = useQuery({
-    queryKey: ["member-permissions", user?.id],
+    queryKey: ["member-permissions", user?.id, organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("member_permissions")
         .select("module")
-        .eq("user_id", user!.id);
+        .eq("user_id", user!.id)
+        .eq("organization_id", organizationId!);
 
       if (error) throw error;
       return data?.map(r => r.module) || [];
     },
-    enabled: !!user,
+    enabled: !!user && !!organizationId,
     staleTime: 1000 * 60 * 5,
   });
 
