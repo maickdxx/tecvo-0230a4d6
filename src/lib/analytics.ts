@@ -49,7 +49,7 @@ class AnalyticsClient {
     }
   }
 
-  private getAnonymousId() {
+  public getAnonymousId() {
     if (typeof window === "undefined") return null;
     let id = localStorage.getItem("tecvo_anon_id");
     if (!id) {
