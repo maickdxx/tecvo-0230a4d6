@@ -35,9 +35,51 @@ export function useAdminAnalytics() {
 
   const fetchFunnel = async () => {
     const { data, error } = await supabase
-      .from("view_analytics_funnel")
+      .from("view_analytics_funnel_advanced")
       .select("*")
       .single();
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchUserScores = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_user_scores")
+      .select("*")
+      .order("total_events_30d", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchActivationMetrics = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_activation_metrics")
+      .select("*")
+      .single();
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchRetentionCohorts = async () => {
+    const { data, error } = await supabase
+      .from("view_analytics_retention_cohorts")
+      .select("*")
+      .order("cohort_month", { ascending: true })
+      .order("month_number", { ascending: true });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchAlerts = async () => {
+    const { data, error } = await supabase
+      .from("analytics_alerts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
     
     if (error) throw error;
     return data;
@@ -63,7 +105,35 @@ export function useAdminAnalytics() {
     queryFn: fetchFunnel,
   });
 
-  const isLoading = dailyMetrics.isLoading || trafficSources.isLoading || pageViews.isLoading || funnel.isLoading;
+  const userScores = useQuery({
+    queryKey: ["admin-analytics-user-scores"],
+    queryFn: fetchUserScores,
+  });
+
+  const activationMetrics = useQuery({
+    queryKey: ["admin-analytics-activation"],
+    queryFn: fetchActivationMetrics,
+  });
+
+  const retentionCohorts = useQuery({
+    queryKey: ["admin-analytics-retention"],
+    queryFn: fetchRetentionCohorts,
+  });
+
+  const alerts = useQuery({
+    queryKey: ["admin-analytics-alerts"],
+    queryFn: fetchAlerts,
+  });
+
+  const isLoading = 
+    dailyMetrics.isLoading || 
+    trafficSources.isLoading || 
+    pageViews.isLoading || 
+    funnel.isLoading ||
+    userScores.isLoading ||
+    activationMetrics.isLoading ||
+    retentionCohorts.isLoading ||
+    alerts.isLoading;
 
   // Calculate overall KPIs
   const kpis = dailyMetrics.data ? {
@@ -76,6 +146,9 @@ export function useAdminAnalytics() {
     conversion_rate: dailyMetrics.data.length > 0
       ? (dailyMetrics.data.reduce((acc, curr) => acc + (curr.signups_completed || 0), 0) / 
          dailyMetrics.data.reduce((acc, curr) => acc + (curr.unique_visitors || 1), 0)) * 100
+      : 0,
+    activation_rate: activationMetrics.data 
+      ? (activationMetrics.data.total_activated / (activationMetrics.data.total_users || 1)) * 100 
       : 0
   } : null;
 
@@ -84,6 +157,10 @@ export function useAdminAnalytics() {
     trafficSources,
     pageViews,
     funnel,
+    userScores,
+    activationMetrics,
+    retentionCohorts,
+    alerts,
     kpis,
     isLoading
   };
