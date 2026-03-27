@@ -1,63 +1,67 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
   Users, 
-  Search, 
-  Filter, 
   ChevronRight,
   MousePointer2,
-  Calendar,
   Globe,
-  ArrowRight,
   Activity
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
 import { LeadJourneyDetails } from "./LeadJourneyDetails";
 import { cleanDisplayUrl } from "@/lib/cleanUrl";
+import { LeadFiltersPanel, LeadFilters, defaultLeadFilters, applyLeadFilters } from "./LeadFilters";
 
 export function LeadJourneyTab() {
   const { leadJourneys } = useAdminAnalytics();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<LeadFilters>(defaultLeadFilters);
   const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
+
+  const allLeads = leadJourneys.data || [];
+
+  // Extract available sources and campaigns for filter options
+  const availableSources = useMemo(() => {
+    const set = new Set<string>();
+    allLeads.forEach((l) => set.add((l.source || "direto").toLowerCase()));
+    return Array.from(set).sort();
+  }, [allLeads]);
+
+  const availableCampaigns = useMemo(() => {
+    const set = new Set<string>();
+    allLeads.forEach((l) => {
+      if ((l as any).campaign) set.add((l as any).campaign);
+    });
+    return Array.from(set).sort();
+  }, [allLeads]);
+
+  const filteredLeads = useMemo(
+    () => applyLeadFilters(allLeads, filters),
+    [allLeads, filters]
+  );
 
   if (selectedVisitorId) {
     return <LeadJourneyDetails visitorId={selectedVisitorId} onBack={() => setSelectedVisitorId(null)} />;
   }
 
-  const filteredLeads = leadJourneys.data?.filter(lead => 
-    lead.visitor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (lead.source && lead.source.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Jornada do Lead</h2>
-          <p className="text-muted-foreground">Analise o comportamento individual de cada visitante antes da conversão.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar por ID ou origem..."
-              className="pl-8 w-full md:w-[300px]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Jornada do Lead</h2>
+        <p className="text-muted-foreground text-sm">Analise o comportamento individual de cada visitante antes da conversão.</p>
       </div>
+
+      <LeadFiltersPanel
+        filters={filters}
+        onChange={setFilters}
+        availableSources={availableSources}
+        availableCampaigns={availableCampaigns}
+        resultCount={filteredLeads.length}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -66,8 +70,12 @@ export function LeadJourneyTab() {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{leadJourneys.data?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">Visitantes não convertidos</p>
+            <div className="text-2xl font-bold">{filteredLeads.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {filteredLeads.length !== allLeads.length
+                ? `de ${allLeads.length} totais`
+                : "Visitantes não convertidos"}
+            </p>
           </CardContent>
         </Card>
 
@@ -78,7 +86,7 @@ export function LeadJourneyTab() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leadJourneys.data?.filter(l => l.clicked_cta).length || 0}
+              {filteredLeads.filter(l => l.clicked_cta).length}
             </div>
             <p className="text-xs text-muted-foreground">Clicaram em pelo menos um CTA</p>
           </CardContent>
@@ -91,8 +99,8 @@ export function LeadJourneyTab() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leadJourneys.data && leadJourneys.data.length > 0 
-                ? Math.round(leadJourneys.data.reduce((acc, l) => acc + ((l as any).total_duration_seconds || 0), 0) / leadJourneys.data.length / 60) 
+              {filteredLeads.length > 0
+                ? Math.round(filteredLeads.reduce((acc, l) => acc + ((l as any).total_duration_seconds || 0), 0) / filteredLeads.length / 60)
                 : 0} min
             </div>
             <p className="text-xs text-muted-foreground">Média de permanência no site</p>
@@ -106,8 +114,8 @@ export function LeadJourneyTab() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leadJourneys.data && leadJourneys.data.length > 0 
-                ? (leadJourneys.data.reduce((acc, l) => acc + (l.unique_pages || 0), 0) / leadJourneys.data.length).toFixed(1) 
+              {filteredLeads.length > 0
+                ? (filteredLeads.reduce((acc, l) => acc + (l.unique_pages || 0), 0) / filteredLeads.length).toFixed(1)
                 : 0}
             </div>
             <p className="text-xs text-muted-foreground">Média de profundidade</p>
@@ -120,14 +128,14 @@ export function LeadJourneyTab() {
           <CardTitle>Leads Recentes</CardTitle>
           <CardDescription>Lista de visitantes ativos no site que ainda não concluíram cadastro.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Visitante</TableHead>
-                <TableHead>Última Atividade</TableHead>
+                <TableHead className="hidden sm:table-cell">Última Atividade</TableHead>
                 <TableHead>Origem</TableHead>
-                <TableHead>Páginas</TableHead>
+                <TableHead className="hidden md:table-cell">Páginas</TableHead>
                 <TableHead>Interesse</TableHead>
                 <TableHead className="text-right">Ação</TableHead>
               </TableRow>
@@ -141,7 +149,7 @@ export function LeadJourneyTab() {
                       <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">{cleanDisplayUrl(lead.last_page)}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <div className="flex flex-col">
                       <span className="text-xs">{format(new Date(lead.last_seen), "HH:mm 'de' dd/MM", { locale: ptBR })}</span>
                       <span className="text-[10px] text-muted-foreground">Duração: {Math.round(((lead as any).total_duration_seconds || 0) / 60)} min</span>
@@ -152,7 +160,7 @@ export function LeadJourneyTab() {
                       {lead.source || 'Direto'}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="flex items-center gap-1 text-xs">
                       <Globe className="h-3 w-3 text-muted-foreground" />
                       {lead.unique_pages}
@@ -171,7 +179,7 @@ export function LeadJourneyTab() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" className="gap-2">
-                      Ver Jornada <ChevronRight className="h-4 w-4" />
+                      <span className="hidden sm:inline">Ver Jornada</span> <ChevronRight className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
