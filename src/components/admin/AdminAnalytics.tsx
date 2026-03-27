@@ -152,13 +152,13 @@ export function AdminAnalytics() {
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={sourceData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" width={80} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} />
+                  <YAxis dataKey="name" type="category" width={80} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
+                  <Tooltip cursor={{ fill: 'var(--accent)' }} contentStyle={{ borderRadius: '8px', border: 'none', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} />
                   <Bar dataKey="value" name="Sessões" radius={[0, 4, 4, 0]}>
                     {sourceData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={index === 0 ? "var(--primary)" : `hsl(var(--primary) / ${0.8 - index * 0.15})`} />
                     ))}
                   </Bar>
                 </BarChart>
