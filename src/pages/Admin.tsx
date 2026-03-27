@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText } from "lucide-react";
+import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import { AdminWhatsAppStatus } from "@/components/admin/AdminWhatsAppStatus";
 import { ExecutiveDashboard } from "@/components/admin/ExecutiveDashboard";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { FinancialDashboard } from "@/components/admin/FinancialDashboard";
+import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
 import { useAdminOrganizations } from "@/hooks/useAdminOrganizations";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useEngagementMetrics } from "@/hooks/useEngagementMetrics";
@@ -85,6 +86,10 @@ export default function Admin() {
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="financial" className="gap-2">
               <DollarSign className="h-4 w-4" />
               Financeiro
@@ -103,6 +108,10 @@ export default function Admin() {
 
           <TabsContent value="dashboard">
             <ExecutiveDashboard onNavigateTab={setActiveTab} />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <AdminAnalytics />
           </TabsContent>
 
           <TabsContent value="financial">

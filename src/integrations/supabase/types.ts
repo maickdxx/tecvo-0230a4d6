@@ -5574,6 +5574,156 @@ export type Database = {
           },
         ]
       }
+      view_analytics_daily_metrics: {
+        Row: {
+          avg_session_duration: number | null
+          conversion_rate: number | null
+          day: string | null
+          page_views: number | null
+          signups_completed: number | null
+          signups_started: number | null
+          total_sessions: number | null
+          unique_visitors: number | null
+        }
+        Relationships: []
+      }
+      view_analytics_events: {
+        Row: {
+          created_at: string | null
+          duration_on_previous_page: number | null
+          event_type: string | null
+          id: string | null
+          metadata: Json | null
+          organization_id: string | null
+          page_path: string | null
+          page_title: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_on_previous_page?: never
+          event_type?: string | null
+          id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          page_path?: never
+          page_title?: never
+          user_id?: string | null
+          utm_campaign?: never
+          utm_medium?: never
+          utm_source?: never
+        }
+        Update: {
+          created_at?: string | null
+          duration_on_previous_page?: never
+          event_type?: string | null
+          id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          page_path?: never
+          page_title?: never
+          user_id?: string | null
+          utm_campaign?: never
+          utm_medium?: never
+          utm_source?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      view_analytics_funnel: {
+        Row: {
+          first_action: number | null
+          first_login: number | null
+          landing_page: number | null
+          signup_completed: number | null
+          signup_started: number | null
+          total_entries: number | null
+        }
+        Relationships: []
+      }
+      view_analytics_pages: {
+        Row: {
+          avg_duration_on_page: number | null
+          page_path: string | null
+          page_title: string | null
+          total_views: number | null
+          unique_views: number | null
+        }
+        Relationships: []
+      }
+      view_analytics_sessions: {
+        Row: {
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string | null
+          landing_page: string | null
+          organization_id: string | null
+          referrer: string | null
+          started_at: string | null
+          user_id: string | null
+          user_status: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string | null
+          landing_page?: string | null
+          organization_id?: string | null
+          referrer?: string | null
+          started_at?: string | null
+          user_id?: string | null
+          user_status?: never
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string | null
+          landing_page?: string | null
+          organization_id?: string | null
+          referrer?: string | null
+          started_at?: string | null
+          user_id?: string | null
+          user_status?: never
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      view_analytics_traffic_sources: {
+        Row: {
+          campaign: string | null
+          medium: string | null
+          session_count: number | null
+          source: string | null
+          user_count: number | null
+        }
+        Relationships: []
+      }
       whatsapp_channels_safe: {
         Row: {
           channel_status: string | null
