@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     // Fetch due scheduled messages
     const { data: dueMessages, error: fetchError } = await supabase
       .from("whatsapp_scheduled_messages")
-      .select("*, contact:contact_id(id, phone, whatsapp_id, normalized_phone, organization_id, source), channel:channel_id(id, instance_name, organization_id)")
+      .select("*, contact:contact_id(id, phone, whatsapp_id, normalized_phone, organization_id, source), channel:channel_id(id, instance_name, organization_id, is_connected, channel_status)")
       .eq("status", "scheduled")
       .lte("scheduled_at", new Date().toISOString())
       .limit(50);
