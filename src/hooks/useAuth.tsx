@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string, phone: string) => {
     try {
       const utms = analytics.getStoredUTMs();
-      analytics.track("signup_started", null, null, { email, ...utms });
+      analytics.track("signup_started", null, null, { email, ...utms }, true);
 
       const { data, error } = await supabase.auth.signUp({
         email,
