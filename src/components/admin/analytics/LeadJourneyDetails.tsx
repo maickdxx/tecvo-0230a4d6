@@ -151,7 +151,7 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                           )}
                           {event.duration_on_page && event.duration_on_page > 0 && (
                             <span className="flex items-center gap-1">
-                              <Timer className="h-3 w-3" /> {event.duration_on_page}s na página
+                              <Timer className="h-3 w-3" /> {event.duration_on_page}s na página anterior
                             </span>
                           )}
                         </div>
