@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
       }
       recipientJid = `${digits}@s.whatsapp.net`;
     }
-    console.log("[WHATSAPP-SEND] Sending to:", recipientJid, "via instance:", activeChannel.instance_name, didFallback ? "(FALLBACK)" : "");
+    console.log("[WHATSAPP-SEND] Sending to:", recipientJid, "via instance:", activeChannel.instance_name);
 
     // Send via Evolution API
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
