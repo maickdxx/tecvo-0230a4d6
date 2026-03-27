@@ -155,7 +155,7 @@ export function AdminAnalytics() {
         </Card>
       </div>
 
-      <Tabs defaultValue="leads" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="flex w-full overflow-x-auto flex-nowrap justify-start h-auto p-1 bg-muted/50">
           <TabsTrigger value="leads" className="gap-2 whitespace-nowrap">
             <Filter className="h-4 w-4 text-primary" />
