@@ -155,10 +155,10 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                             </span>
                           )}
                         </div>
-                        {event.metadata?.utm_source && (
+                        {(event.metadata as any)?.utm_source && (
                           <div className="mt-2 flex gap-1">
                             <Badge variant="outline" className="text-[9px] h-4">
-                              {event.metadata.utm_source} / {event.metadata.utm_medium}
+                              {(event.metadata as any).utm_source} / {(event.metadata as any).utm_medium}
                             </Badge>
                           </div>
                         )}
@@ -211,16 +211,16 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="text-muted-foreground">Origem:</div>
-                <div className="font-medium text-right truncate">{timeline?.[0]?.metadata?.utm_source || 'Direto'}</div>
+                <div className="font-medium text-right truncate">{(timeline?.[0]?.metadata as any)?.utm_source || 'Direto'}</div>
                 
                 <div className="text-muted-foreground">Médio:</div>
-                <div className="font-medium text-right truncate">{timeline?.[0]?.metadata?.utm_medium || 'N/A'}</div>
+                <div className="font-medium text-right truncate">{(timeline?.[0]?.metadata as any)?.utm_medium || 'N/A'}</div>
                 
                 <div className="text-muted-foreground">Campanha:</div>
-                <div className="font-medium text-right truncate">{timeline?.[0]?.metadata?.utm_campaign || 'N/A'}</div>
+                <div className="font-medium text-right truncate">{(timeline?.[0]?.metadata as any)?.utm_campaign || 'N/A'}</div>
 
                 <div className="text-muted-foreground">Dispositivo:</div>
-                <div className="font-medium text-right truncate text-[9px]">{timeline?.[0]?.metadata?.user_agent?.split(' ')[0] || 'Desktop'}</div>
+                <div className="font-medium text-right truncate text-[9px]">{(timeline?.[0]?.metadata as any)?.user_agent?.split(' ')[0] || 'Desktop'}</div>
               </div>
             </CardContent>
           </Card>
