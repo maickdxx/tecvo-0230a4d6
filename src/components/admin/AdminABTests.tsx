@@ -98,6 +98,34 @@ export function AdminABTests() {
       });
     }
   };
+  const handleSavePattern = async (testName: string, variantName: string, conversionRate: number, testId: string) => {
+    try {
+      const { error } = await supabase
+        .from("ab_test_winning_patterns")
+        .insert([{
+          name: `${testName} - ${variantName}`,
+          pattern_type: 'headline', // Default to headline for now, could be selectable
+          content: { variant_name: variantName },
+          performance_lift: 0, // Should be calculated
+          conversion_rate: conversionRate,
+          source_test_id: testId,
+          description: `Padrão vencedor identificado no teste ${testName}`
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Padrão salvo!",
+        description: "Este aprendizado agora é um ativo reutilizável.",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar padrão",
+        description: "Não foi possível registrar o padrão vencedor.",
+      });
+    }
+  };
 
   const handleCreateHypothesis = async () => {
     try {
