@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { normalizePhone } from "../_shared/whatsapp-utils.ts";
+import { classifyEvoError } from "../_shared/evoErrorClassifier.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -278,27 +279,40 @@ Deno.serve(async (req) => {
       const errText = await evoResponse.text();
       console.error("[WHATSAPP-SEND] Evolution API error:", evoResponse.status, errText);
 
-      // Detect "Connection Closed" — means session dropped on Evolution side
-      const isConnectionClosed = errText.toLowerCase().includes("connection closed") ||
-        errText.toLowerCase().includes("disconnected");
+      // Classify the error using centralized classifier
+      const classified = classifyEvoError(evoResponse.status, errText, channel.phone_number || undefined);
+      console.warn(`[WHATSAPP-SEND] Classified error: ${classified.domainError} — ${classified.technicalReason}`);
 
-      if (isConnectionClosed) {
+      // Log channel status transition for audit
+      const logTransition = async (newStatus: string, reason: string) => {
+        try {
+          await supabase.from("whatsapp_channel_transitions").insert({
+            organization_id: orgId,
+            contact_id: contact.id,
+            previous_channel_id: channel.id,
+            new_channel_id: channel.id,
+            reason: `auto_disconnect:${reason}`,
+          });
+        } catch (_e) { /* best effort */ }
+      };
+
+      if (classified.isDisconnection) {
         // Auto-update channel status so UI reflects reality
         await supabase
           .from("whatsapp_channels")
           .update({
             is_connected: false,
             channel_status: "disconnected",
-            disconnected_reason: "connection_closed_on_send",
+            disconnected_reason: classified.technicalReason.substring(0, 200),
           })
           .eq("id", channel.id);
 
-        console.warn("[WHATSAPP-SEND] Channel auto-disconnected due to Connection Closed:", channel.id);
+        await logTransition("disconnected", classified.technicalReason.substring(0, 100));
+        console.warn("[WHATSAPP-SEND] Channel auto-disconnected:", channel.id, classified.domainError);
 
-        const phoneLabel = channel.phone_number || "desconhecido";
         return new Response(JSON.stringify({
           error: "channel_disconnected",
-          message: `O número ${phoneLabel} perdeu a conexão com o WhatsApp. Reconecte-o nas configurações.`,
+          message: classified.userMessage,
           phone_number: channel.phone_number,
           channel_id: channel.id,
         }), {
@@ -307,8 +321,13 @@ Deno.serve(async (req) => {
         });
       }
 
-      return new Response(JSON.stringify({ error: "Failed to send message", details: errText }), {
-        status: 502,
+      // Non-disconnection errors: return specific domain error
+      return new Response(JSON.stringify({
+        error: classified.domainError,
+        message: classified.userMessage,
+        details: classified.technicalReason,
+      }), {
+        status: classified.domainError === "rate_limited" ? 429 : 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -198,6 +198,35 @@ export function useWhatsAppConversations() {
           return newList;
         });
       })
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "whatsapp_channels",
+      }, (payload) => {
+        const updated = payload.new as any;
+        // Update channel data on all contacts using this channel
+        setContacts(prev => {
+          let changed = false;
+          const newList = prev.map(c => {
+            if (c.channel_id === updated.id && c.channel) {
+              const newChannel = {
+                ...c.channel,
+                is_connected: updated.is_connected,
+                channel_status: updated.channel_status,
+                phone_number: updated.phone_number || c.channel.phone_number,
+              };
+              // Check if actually changed
+              if (c.channel.is_connected !== newChannel.is_connected ||
+                  c.channel.channel_status !== newChannel.channel_status) {
+                changed = true;
+                return { ...c, channel: newChannel };
+              }
+            }
+            return c;
+          });
+          return changed ? newList : prev;
+        });
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
