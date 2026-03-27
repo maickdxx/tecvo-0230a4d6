@@ -80,14 +80,18 @@ export function useABTest(testName: string) {
             anonymous_id: anonId
           });
 
-          // Track assignment event
-          analytics.track("interaction" as any, null, null, {
-            event_category: "ab_test",
-            event_action: "assigned",
-            test_name: test.name,
-            variant_name: selectedVariant.name,
-            anonymous_id: anonId
-          });
+          // Track assignment event (only if not already tracked in this session for this test)
+          const sessionTrackKey = `ab_tracked_${testName}`;
+          if (!sessionStorage.getItem(sessionTrackKey)) {
+            analytics.track("interaction" as any, null, null, {
+              event_category: "ab_test",
+              event_action: "assigned",
+              test_name: test.name,
+              variant_name: selectedVariant.name,
+              anonymous_id: anonId
+            });
+            sessionStorage.setItem(sessionTrackKey, "true");
+          }
         }
       } catch (err) {
         console.error("Error in AB Test assignment:", err);

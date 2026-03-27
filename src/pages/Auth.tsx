@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { analytics } from "@/lib/analytics";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import { trackFBEvent } from "@/lib/fbPixel";
@@ -68,10 +68,13 @@ export default function Auth() {
   const [otpCode, setOtpCode] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const signupTrackedRef = useState(false); // Using state to persist across renders but avoid re-triggering effect incorrectly if needed, or just a ref.
+  const hasTrackedSignupStarted = useRef(false);
 
   useEffect(() => {
-    if (activeTab === "signup") {
+    if (activeTab === "signup" && !hasTrackedSignupStarted.current) {
       analytics.track("signup_started", null, null);
+      hasTrackedSignupStarted.current = true;
     }
   }, [activeTab]);
 
@@ -199,8 +202,8 @@ export default function Auth() {
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
     } else {
+      // analytics.track is already called in signUp hook
       trackFBEvent("Lead", { content_name: "Signup" });
-      analytics.track("signup_completed", null, null, { email: signupEmail });
       setConfirmationEmail(signupEmail);
       setResendCooldown(60);
     }

@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string, phone: string) => {
     try {
       const utms = analytics.getStoredUTMs();
-      analytics.track("signup_started", null, null, { email, ...utms });
+      analytics.track("signup_started", null, null, { email, ...utms }, true);
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -189,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Failed to send verification email:", otpErr);
       }
 
-      analytics.track("signup_completed", data.user?.id || null, null);
+      analytics.track("signup_completed", data.user?.id || null, null, {}, true);
       setSignUpSuccess(true);
       return { error: null };
     } catch (error) {

@@ -25,6 +25,7 @@ export function useSessionTracker() {
         .from("user_sessions")
         .insert({
           user_id: user?.id || null,
+          anonymous_id: analytics.getAnonymousId(),
           organization_id: organizationId,
           ...utms
         })

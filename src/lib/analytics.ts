@@ -49,7 +49,7 @@ class AnalyticsClient {
     }
   }
 
-  private getAnonymousId() {
+  public getAnonymousId() {
     if (typeof window === "undefined") return null;
     let id = localStorage.getItem("tecvo_anon_id");
     if (!id) {
@@ -89,7 +89,8 @@ class AnalyticsClient {
     eventType: EventType,
     userId: string | null,
     organizationId: string | null,
-    metadata: EventMetadata = {}
+    metadata: EventMetadata = {},
+    immediate: boolean = false
   ) {
     const utms = this.getStoredUTMs();
     
@@ -127,7 +128,7 @@ class AnalyticsClient {
 
     this.queue.push(event);
 
-    if (this.queue.length >= 10) {
+    if (this.queue.length >= 10 || immediate) {
       this.flush();
     } else if (!this.flushTimeout) {
       this.flushTimeout = setTimeout(() => this.flush(), this.FLUSH_INTERVAL);
