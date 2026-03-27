@@ -124,11 +124,15 @@ export function AdminAnalytics() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="funnel">Funil & Conversão</TabsTrigger>
           <TabsTrigger value="retention">Retenção & Coorte</TabsTrigger>
           <TabsTrigger value="users">Usuários & Alertas</TabsTrigger>
+          <TabsTrigger value="automations" className="gap-2">
+            <Zap className="h-4 w-4 text-amber-500" />
+            Automações
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
