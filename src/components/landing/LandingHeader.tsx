@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { analytics } from "@/lib/analytics";
 import { Link } from "react-router-dom";
 import { Snowflake, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,10 @@ export function LandingHeader() {
             {navLinks.map((link) => (
               <button
                 key={link.id}
-                onClick={() => scrollToSection(link.id)}
+                onClick={() => {
+                  analytics.track("interaction", null, null, { action: "nav_click", target: link.id });
+                  scrollToSection(link.id);
+                }}
                 className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-all duration-200"
               >
                 {link.label}
@@ -57,10 +61,10 @@ export function LandingHeader() {
 
           <div className="hidden md:flex items-center gap-2.5">
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">Entrar</Link>
+              <Link to="/login" onClick={() => analytics.track("interaction", null, null, { action: "login_click", location: "header" })}>Entrar</Link>
             </Button>
             <Button size="sm" asChild className="shadow-lg shadow-primary/20 px-5">
-              <Link to="/cadastro">Começar Grátis</Link>
+              <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "header" })}>Começar Grátis</Link>
             </Button>
           </div>
 
