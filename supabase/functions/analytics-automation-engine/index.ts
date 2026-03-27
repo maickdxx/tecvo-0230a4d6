@@ -20,12 +20,15 @@ Deno.serve(async (req) => {
     console.log("[AUTOMATION-ENGINE] Starting processing...");
 
     // 1. Fetch enabled automations
-    const { data: automations } = await supabase
+    const { data: automations, error: autoError } = await supabase
       .from("analytics_automations")
       .select("*")
       .eq("enabled", true);
 
+    if (autoError) throw autoError;
+
     if (!automations || automations.length === 0) {
+      console.log("[AUTOMATION-ENGINE] No active automations found.");
       return new Response(JSON.stringify({ message: "No active automations" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -34,7 +37,7 @@ Deno.serve(async (req) => {
     const results = [];
 
     for (const automation of automations) {
-      console.log(`[AUTOMATION-ENGINE] Checking trigger: ${automation.trigger_type}`);
+      console.log(`[AUTOMATION-ENGINE] Checking trigger: ${automation.trigger_type} (ID: ${automation.id})`);
       
       const targets = [];
 
@@ -68,7 +71,7 @@ Deno.serve(async (req) => {
             const { count: profileCount } = await supabase
               .from("profiles")
               .select("*", { count: 'exact', head: true })
-              .or(`email.eq.${email},email.eq.${email.toLowerCase()}`);
+              .or(`user_id.in.(select id from auth.users where email = '${email}')`); // Approximate
 
             if (completedCount === 0 && profileCount === 0) {
               const { count: alreadySent } = await supabase
@@ -92,7 +95,7 @@ Deno.serve(async (req) => {
 
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, full_name, organization_id, phone, email, created_at")
+          .select("id, full_name, organization_id, phone, created_at")
           .gte("created_at", startTime)
           .lte("created_at", endTime);
 
@@ -113,7 +116,6 @@ Deno.serve(async (req) => {
               if (alreadySent === 0) {
                 targets.push({ 
                   user_id: profile.id, 
-                  email: profile.email,
                   org_id: profile.organization_id, 
                   phone: profile.phone, 
                   name: profile.full_name?.split(' ')[0] || "amigo(a)" 
@@ -129,13 +131,21 @@ Deno.serve(async (req) => {
         const startTime = new Date(Date.now() - (delay + 60) * 60000).toISOString();
         const endTime = new Date(Date.now() - delay * 60000).toISOString();
 
-        const { data: profiles } = await supabase
+        console.log(`[AUTOMATION-ENGINE] Window: ${startTime} to ${endTime} (Delay: ${delay}m)`);
+
+        const { data: profiles, error: profError } = await supabase
           .from("profiles")
-          .select("id, full_name, organization_id, phone, email, created_at")
+          .select("id, full_name, organization_id, phone, created_at")
           .gte("created_at", startTime)
           .lte("created_at", endTime);
 
-        if (profiles) {
+        if (profError) {
+          console.error(`[AUTOMATION-ENGINE] Profile query error for ${automation.trigger_type}:`, profError);
+          continue;
+        }
+
+        if (profiles && profiles.length > 0) {
+          console.log(`[AUTOMATION-ENGINE] Found ${profiles.length} potential targets for ${automation.trigger_type}`);
           for (const profile of profiles) {
             const { count: alreadySent } = await supabase
               .from("analytics_automation_logs")
@@ -146,7 +156,6 @@ Deno.serve(async (req) => {
             if (alreadySent === 0) {
               targets.push({ 
                 user_id: profile.id, 
-                email: profile.email,
                 org_id: profile.organization_id, 
                 phone: profile.phone, 
                 name: profile.full_name?.split(' ')[0] || "amigo(a)" 
@@ -166,19 +175,19 @@ Deno.serve(async (req) => {
           targetDate.setDate(targetDate.getDate() + daysUntilEnd);
           const dateStr = targetDate.toISOString().split('T')[0];
 
-          // Find orgs ending on this specific date
+          console.log(`[AUTOMATION-ENGINE] Checking orgs ending on ${dateStr}`);
+
           const { data: orgs } = await supabase
             .from("organizations")
             .select("id, name, trial_ends_at")
             .filter('trial_ends_at', 'gte', `${dateStr}T00:00:00`)
             .filter('trial_ends_at', 'lte', `${dateStr}T23:59:59`);
 
-          if (orgs) {
+          if (orgs && orgs.length > 0) {
             for (const org of orgs) {
-              // Find first user of this org
               const { data: profile } = await supabase
                 .from("profiles")
-                .select("id, full_name, phone, email")
+                .select("id, full_name, phone")
                 .eq("organization_id", org.id)
                 .order('created_at', { ascending: true })
                 .limit(1)
@@ -194,7 +203,6 @@ Deno.serve(async (req) => {
                 if (alreadySent === 0) {
                   targets.push({ 
                     user_id: profile.id, 
-                    email: profile.email,
                     org_id: org.id, 
                     phone: profile.phone, 
                     name: profile.full_name?.split(' ')[0] || "amigo(a)" 
@@ -208,14 +216,18 @@ Deno.serve(async (req) => {
 
       // 3. Send messages to targets
       for (const target of targets) {
-        const message = automation.message_template.replace("{{name}}", target.name);
-        console.log(`[AUTOMATION-ENGINE] Target: ${target.phone || target.email} for ${automation.name}`);
+        if (!target.phone) {
+          console.log(`[AUTOMATION-ENGINE] Target ${target.user_id} has no phone. Skipping.`);
+          continue;
+        }
 
-        // --- WHATSAPP CHANNEL ---
+        const message = automation.message_template.replace("{{name}}", target.name);
+        console.log(`[AUTOMATION-ENGINE] Sending WA to ${target.phone} for ${automation.name}`);
+
         let waStatus = "skipped";
         let waError = null;
 
-        if (target.phone && vpsUrl && apiKey) {
+        if (vpsUrl && apiKey) {
           try {
             let cleanNumber = target.phone.replace(/\D/g, "");
             if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
@@ -243,27 +255,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        // --- EMAIL CHANNEL (Complementary) ---
-        let emailStatus = "skipped";
-        let emailError = null;
-
-        if (target.email && automation.email_template) {
-          try {
-            // We use the existing send-support-email or direct insert to queue
-            // For now, we'll use the analytics-automation-logs to track intent
-            // and log the content. In a full implementation, we'd trigger the email engine.
-            const emailContent = automation.email_template.replace("{{name}}", target.name);
-            
-            // Try calling send-support-email or process-email-queue if possible
-            // But since we want to be safe, we just log it for now as "queued" 
-            // and in the next step we can add actual sending if required.
-            emailStatus = "pending_infrastructure";
-          } catch (err) {
-            emailStatus = "error";
-            emailError = err.message;
-          }
-        }
-
         // 4. Log the result
         await supabase.from("analytics_automation_logs").insert({
           automation_id: automation.id,
@@ -277,12 +268,11 @@ Deno.serve(async (req) => {
             phone: target.phone, 
             name: target.name,
             wa_status: waStatus,
-            email_status: emailStatus,
             message_sent: message
           }
         });
 
-        results.push({ target: target.email || target.user_id, status: waStatus });
+        results.push({ target: target.user_id, status: waStatus });
       }
     }
 
