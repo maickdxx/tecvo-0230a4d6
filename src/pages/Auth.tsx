@@ -60,6 +60,13 @@ export default function Auth() {
   
   const { signIn, signUp, refreshProfile, signUpSuccess, setSignUpSuccess } = useAuth();
   const { data: invite, isLoading: isLoadingInvite } = useInviteByToken(inviteToken);
+  const { track } = analytics;
+
+  useEffect(() => {
+    if (activeTab === "signup") {
+      track("signup_started", null, null);
+    }
+  }, [activeTab]);
   
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
