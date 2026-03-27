@@ -65,7 +65,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b bg-card">
+      <div className="sticky top-0 z-50 border-b bg-card">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
@@ -79,7 +79,7 @@ export default function Admin() {
         </div>
       </div>
 
-      <div className="container mx-auto px-3 py-4 space-y-4 sm:px-4 sm:py-6 sm:space-y-6">
+      <div className="container mx-auto px-2 py-4 space-y-4 sm:px-4 sm:py-6 sm:space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="w-full justify-start overflow-x-auto flex-nowrap">
             <TabsTrigger value="dashboard" className="gap-2">
