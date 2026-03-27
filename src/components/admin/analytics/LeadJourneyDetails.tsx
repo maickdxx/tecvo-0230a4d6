@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -6,10 +7,8 @@ import {
   Clock, 
   MapPin, 
   MousePointer2, 
-  ExternalLink,
   Timer,
   Layout,
-  User,
   AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,7 @@ import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cleanDisplayUrl, getPageName } from "@/lib/cleanUrl";
 import { formatEventDescription, getEventIconType } from "@/lib/formatAnalyticsEvent";
+import { TimelineFiltersPanel, TimelineFilterState, defaultTimelineFilters, filterTimelineEvents } from "./TimelineFilters";
 
 interface LeadJourneyDetailsProps {
   visitorId: string;
@@ -28,11 +28,17 @@ interface LeadJourneyDetailsProps {
 
 export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProps) {
   const { fetchLeadJourneyDetail } = useAdminAnalytics();
+  const [timelineFilters, setTimelineFilters] = useState<TimelineFilterState>(defaultTimelineFilters);
 
   const { data: timeline, isLoading } = useQuery({
     queryKey: ["lead-journey-detail", visitorId],
     queryFn: () => fetchLeadJourneyDetail(visitorId),
   });
+
+  const filteredTimeline = useMemo(
+    () => filterTimelineEvents(timeline || [], timelineFilters),
+    [timeline, timelineFilters]
+  );
 
   if (isLoading) {
     return (
@@ -46,32 +52,33 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
     );
   }
 
-  const totalTimeSeconds = timeline && timeline.length > 1
-    ? (new Date(timeline[timeline.length - 1].created_at).getTime() - new Date(timeline[0].created_at).getTime()) / 1000
+  const allEvents = timeline || [];
+  const totalTimeSeconds = allEvents.length > 1
+    ? (new Date(allEvents[allEvents.length - 1].created_at).getTime() - new Date(allEvents[0].created_at).getTime()) / 1000
     : 0;
 
-  const pageViews = timeline?.filter(e => e.event_type === 'page_view' || e.event_type === 'landing_page_view') || [];
-  const interactions = timeline?.filter(e => e.event_type !== 'page_view' && e.event_type !== 'landing_page_view') || [];
+  const pageViews = allEvents.filter(e => e.event_type === 'page_view' || e.event_type === 'landing_page_view');
+  const interactions = allEvents.filter(e => e.event_type !== 'page_view' && e.event_type !== 'landing_page_view');
   const lastPage = pageViews[pageViews.length - 1];
-  const hasCta = timeline?.some(e => e.event_type === 'create_account_click');
+  const hasCta = allEvents.some(e => e.event_type === 'create_account_click');
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={onBack} className="gap-2">
-          <ArrowLeft className="h-4 w-4" /> Voltar para a lista
+          <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
         <div className="flex gap-2">
-          <Badge variant="outline" className="font-mono">{visitorId.slice(0, 8)}...</Badge>
+          <Badge variant="outline" className="font-mono text-[10px]">{visitorId.slice(0, 8)}...</Badge>
           {hasCta ? (
-            <Badge className="bg-green-500">Clicou em CTA</Badge>
+            <Badge className="bg-green-500 text-[10px]">Clicou em CTA</Badge>
           ) : (
-            <Badge variant="secondary">Sem conversão</Badge>
+            <Badge variant="secondary" className="text-[10px]">Sem conversão</Badge>
           )}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -88,7 +95,7 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Layout className="h-4 w-4 text-primary" /> Páginas Visitadas
+              <Layout className="h-4 w-4 text-primary" /> Páginas
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -111,15 +118,23 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Linha do Tempo</CardTitle>
-            <CardDescription>Caminho detalhado percorrido pelo lead</CardDescription>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle>Linha do Tempo</CardTitle>
+                <CardDescription>Caminho detalhado percorrido pelo lead</CardDescription>
+              </div>
+            </div>
+            <TimelineFiltersPanel
+              filters={timelineFilters}
+              onChange={setTimelineFilters}
+              totalEvents={allEvents.length}
+              filteredEvents={filteredTimeline.length}
+            />
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[500px] pr-4">
               <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-muted-foreground/20 before:to-transparent">
-                {timeline?.map((event, idx) => {
-                  const isLast = idx === timeline.length - 1;
-                  const isFirst = idx === 0;
+                {filteredTimeline.map((event, idx) => {
                   const iconType = getEventIconType(event.event_type);
                   const description = event.event_type === 'page_view' || event.event_type === 'landing_page_view'
                     ? `Visualizou ${getPageName(event.page_path, event.page_title)}`
@@ -138,12 +153,12 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                         ) : iconType === 'conversion' ? (
                           <CheckCircle2 className="h-4 w-4 text-green-600" />
                         ) : (
-                          <Activity className="h-4 w-4 text-muted-foreground" />
+                          <ActivityIcon className="h-4 w-4 text-muted-foreground" />
                         )}
                       </div>
-                      <div className="flex flex-col gap-1 pt-1 flex-1">
+                      <div className="flex flex-col gap-1 pt-1 flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-sm">
+                          <span className="font-bold text-sm truncate">
                             {description}
                           </span>
                           <span className="text-[10px] text-muted-foreground whitespace-nowrap bg-muted px-2 py-0.5 rounded">
@@ -173,6 +188,11 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                     </div>
                   );
                 })}
+                {filteredTimeline.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    Nenhum evento encontrado com os filtros atuais.
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </CardContent>
@@ -205,9 +225,11 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                 )}
               </div>
               
-              <div className="text-xs text-muted-foreground italic">
-                Última interação há {format(new Date(timeline?.[timeline.length - 1]?.created_at || new Date()), "HH:mm 'de' dd/MM", { locale: ptBR })}
-              </div>
+              {allEvents.length > 0 && (
+                <div className="text-xs text-muted-foreground italic">
+                  Última interação há {format(new Date(allEvents[allEvents.length - 1]?.created_at), "HH:mm 'de' dd/MM", { locale: ptBR })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -218,19 +240,20 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="text-muted-foreground">Origem:</div>
-                <div className="font-medium text-right truncate">{(timeline?.[0]?.metadata as any)?.utm_source || 'Direto'}</div>
+                <div className="font-medium text-right truncate">{(allEvents[0]?.metadata as any)?.utm_source || 'Direto'}</div>
                 
                 <div className="text-muted-foreground">Médio:</div>
-                <div className="font-medium text-right truncate">{(timeline?.[0]?.metadata as any)?.utm_medium || 'N/A'}</div>
+                <div className="font-medium text-right truncate">{(allEvents[0]?.metadata as any)?.utm_medium || 'N/A'}</div>
                 
                 <div className="text-muted-foreground">Campanha:</div>
-                <div className="font-medium text-right truncate">{(timeline?.[0]?.metadata as any)?.utm_campaign || 'N/A'}</div>
+                <div className="font-medium text-right truncate">{(allEvents[0]?.metadata as any)?.utm_campaign || 'N/A'}</div>
 
                 <div className="text-muted-foreground">Dispositivo:</div>
-                <div className="font-medium text-right truncate text-[9px]">{(timeline?.[0]?.metadata as any)?.user_agent?.split(' ')[0] || 'Desktop'}</div>
+                <div className="font-medium text-right truncate text-[9px]">{(allEvents[0]?.metadata as any)?.user_agent?.split(' ')[0] || 'Desktop'}</div>
               </div>
             </CardContent>
           </Card>
+
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -262,18 +285,7 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
 
 function Lightbulb({ className }: { className?: string }) {
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .5 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
       <path d="M9 18h6" />
       <path d="M10 22h4" />
@@ -281,20 +293,9 @@ function Lightbulb({ className }: { className?: string }) {
   );
 }
 
-function Activity({ className }: { className?: string }) {
+function ActivityIcon({ className }: { className?: string }) {
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
     </svg>
   );
@@ -302,18 +303,7 @@ function Activity({ className }: { className?: string }) {
 
 function CheckCircle2({ className }: { className?: string }) {
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
