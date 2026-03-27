@@ -5640,6 +5640,17 @@ export type Database = {
           },
         ]
       }
+      view_analytics_funnel: {
+        Row: {
+          first_action: number | null
+          first_login: number | null
+          landing_page: number | null
+          signup_completed: number | null
+          signup_started: number | null
+          total_entries: number | null
+        }
+        Relationships: []
+      }
       view_analytics_pages: {
         Row: {
           avg_duration_on_page: number | null
