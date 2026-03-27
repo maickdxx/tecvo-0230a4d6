@@ -49,7 +49,7 @@ export function LandingHeader() {
               <button
                 key={link.id}
                 onClick={() => {
-                  analytics.track("interaction", null, null, { action: "nav_click", target: link.id });
+                  analytics.track("interaction", null, null, { action: "nav_click", target: link.id, button_label: link.label, page_section: "header", interaction_type: "click" });
                   scrollToSection(link.id);
                 }}
                 className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-all duration-200"
@@ -61,10 +61,10 @@ export function LandingHeader() {
 
           <div className="hidden md:flex items-center gap-2.5">
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/login" onClick={() => analytics.track("interaction", null, null, { action: "login_click", location: "header" })}>Entrar</Link>
+              <Link to="/login" onClick={() => analytics.track("interaction", null, null, { action: "login_click", location: "header", button_label: "Entrar", page_section: "header", interaction_type: "click" })}>Entrar</Link>
             </Button>
             <Button size="sm" asChild className="shadow-lg shadow-primary/20 px-5">
-              <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "header" })}>Começar Grátis</Link>
+              <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "header", page_section: "header", button_label: "Começar Grátis", interaction_type: "click" })}>Começar Grátis</Link>
             </Button>
           </div>
 

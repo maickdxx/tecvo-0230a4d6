@@ -140,7 +140,7 @@ export function PricingSection() {
                       "w-full py-6 text-base font-semibold hover:scale-[1.02] transition-all duration-200",
                         isFeatured && "shadow-[0_8px_25px_-5px_hsl(var(--primary)/0.4)] hover:shadow-[0_12px_35px_-5px_hsl(var(--primary)/0.5)] relative overflow-hidden group/btn"
                       )}
-                      onClick={() => analytics.track("create_account_click", null, null, { plan: plan.slug, location: "pricing" })}
+                      onClick={() => analytics.track("create_account_click", null, null, { plan: plan.slug, location: "pricing", page_section: "pricing", button_label: plan.cta, interaction_type: "click" })}
                       asChild
                     >
                     <Link to={`/cadastro?plan=${plan.slug}`}>
