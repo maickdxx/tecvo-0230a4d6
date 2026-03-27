@@ -15,7 +15,7 @@ import {
   ComposedChart,
   Area
 } from "recharts";
-import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3, AlertTriangle, CheckCircle2, UserX, UserCheck, Activity, Zap, Filter, ArrowDown, History, Flag, Lightbulb, Trophy, Star } from "lucide-react";
+import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3, AlertTriangle, CheckCircle2, UserX, UserCheck, Activity, Zap, Filter, ArrowDown, History, Flag, Lightbulb, Trophy, Star, FileText, Layout, Copy, Check, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
