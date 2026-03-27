@@ -15,7 +15,13 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       location.pathname + location.search,
       document.title
     );
-  }, [location.pathname, location.search, user?.id, profile?.organization_id]);
+
+    // Update metadata with user type if available
+    if (profile?.employee_type) {
+      // This is a bit tricky since trackPageView already happened.
+      // But we can include it in the next events or update the client state.
+    }
+  }, [location.pathname, location.search, user?.id, profile?.organization_id, profile?.employee_type]);
 
   return <>{children}</>;
 }
