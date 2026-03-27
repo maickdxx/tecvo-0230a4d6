@@ -226,13 +226,13 @@ export function AdminAnalytics() {
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
                 {[
-                  { label: "Visita Landing Page", value: marketingFunnel.data?.landing_page_views, color: "bg-slate-500" },
-                  { label: "Interação", value: marketingFunnel.data?.interactions, color: "bg-slate-400" },
-                  { label: "Clique em Criar Conta", value: marketingFunnel.data?.cta_clicks, color: "bg-blue-500" },
-                  { label: "Início de Cadastro", value: marketingFunnel.data?.signups_started, color: "bg-blue-600" },
-                  { label: "Cadastro Concluído", value: marketingFunnel.data?.signups_completed, color: "bg-emerald-500" },
-                  { label: "Início de Pagamento", value: marketingFunnel.data?.payments_initiated, color: "bg-amber-500" },
-                  { label: "Pagamento Concluído", value: marketingFunnel.data?.payments_completed, color: "bg-emerald-600" },
+                  { label: "Visita Landing Page", value: marketingFunnel.data?.landing_page_views, color: "bg-muted-foreground/50" },
+                  { label: "Interação", value: marketingFunnel.data?.interactions, color: "bg-muted-foreground/40" },
+                  { label: "Clique em Criar Conta", value: marketingFunnel.data?.cta_clicks, color: "bg-primary/70" },
+                  { label: "Início de Cadastro", value: marketingFunnel.data?.signups_started, color: "bg-primary/80" },
+                  { label: "Cadastro Concluído", value: marketingFunnel.data?.signups_completed, color: "bg-primary" },
+                  { label: "Início de Pagamento", value: marketingFunnel.data?.payments_initiated, color: "bg-secondary" },
+                  { label: "Pagamento Concluído", value: marketingFunnel.data?.payments_completed, color: "bg-primary" },
                 ].map((step, idx, arr) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs font-medium">
