@@ -437,6 +437,10 @@ export function useServices(options?: UseServicesOptions | string) {
       const sanitizedData = {
         ...data,
         assigned_to: data.assigned_to || null,
+        description: data.description || null,
+        notes: data.notes || null,
+        solution: data.solution || null,
+        internal_notes: data.internal_notes || null,
         // Convert date-only strings to proper timestamptz with org offset
         scheduled_date: ensureDateTimestamp(data.scheduled_date, orgTz),
         payment_due_date: ensureDateTimestamp(data.payment_due_date, orgTz),
