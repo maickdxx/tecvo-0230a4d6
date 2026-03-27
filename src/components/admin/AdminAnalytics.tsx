@@ -15,7 +15,7 @@ import {
   ComposedChart,
   Area
 } from "recharts";
-import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3, AlertTriangle, CheckCircle2, UserX, UserCheck, Activity, Zap } from "lucide-react";
+import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3, AlertTriangle, CheckCircle2, UserX, UserCheck, Activity, Zap, Filter, ArrowDown, History, Flag } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
@@ -36,6 +36,10 @@ export function AdminAnalytics() {
     activationMetrics,
     retentionCohorts,
     alerts,
+    marketingFunnel,
+    leadDropoffs,
+    ctaPerformance,
+    leadPaths,
     kpis, 
     isLoading 
   } = useAdminAnalytics();
@@ -123,8 +127,12 @@ export function AdminAnalytics() {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs defaultValue="leads" className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="leads" className="gap-2">
+            <Filter className="h-4 w-4 text-primary" />
+            Leads & Marketing
+          </TabsTrigger>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="funnel">Funil & Conversão</TabsTrigger>
           <TabsTrigger value="retention">Retenção & Coorte</TabsTrigger>
@@ -134,6 +142,187 @@ export function AdminAnalytics() {
             Automações
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="leads" className="space-y-6 pt-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Visitantes Únicos</CardTitle>
+                <Users className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{marketingFunnel.data?.total_visitors?.toLocaleString() || 0}</div>
+                <p className="text-xs text-muted-foreground">Visitantes no site</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Clique CTA</CardTitle>
+                <MousePointer2 className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{marketingFunnel.data?.cta_click_rate?.toFixed(1) || 0}%</div>
+                <p className="text-xs text-muted-foreground">Visitantes vs Cliques</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Taxa Conv. Final</CardTitle>
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{marketingFunnel.data?.final_conversion_rate?.toFixed(2) || 0}%</div>
+                <p className="text-xs text-muted-foreground">Visitantes vs Pagamento</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Tempo Médio p/ Conv.</CardTitle>
+                <Timer className="h-4 w-4 text-amber-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {marketingFunnel.data?.avg_time_to_signup_seconds 
+                    ? Math.round(marketingFunnel.data.avg_time_to_signup_seconds / 60) 
+                    : 0} min
+                </div>
+                <p className="text-xs text-muted-foreground">Média desde a 1ª visita</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Funil de Venda (Leads)</CardTitle>
+                <CardDescription>Etapas críticas antes da ativação</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                {[
+                  { label: "Visita Landing Page", value: marketingFunnel.data?.landing_page_views, color: "bg-slate-500" },
+                  { label: "Interação", value: marketingFunnel.data?.interactions, color: "bg-slate-400" },
+                  { label: "Clique em Criar Conta", value: marketingFunnel.data?.cta_clicks, color: "bg-blue-500" },
+                  { label: "Início de Cadastro", value: marketingFunnel.data?.signups_started, color: "bg-blue-600" },
+                  { label: "Cadastro Concluído", value: marketingFunnel.data?.signups_completed, color: "bg-emerald-500" },
+                  { label: "Início de Pagamento", value: marketingFunnel.data?.payments_initiated, color: "bg-amber-500" },
+                  { label: "Pagamento Concluído", value: marketingFunnel.data?.payments_completed, color: "bg-emerald-600" },
+                ].map((step, idx, arr) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex justify-between text-xs font-medium">
+                      <span>{step.label}</span>
+                      <span>{step.value?.toLocaleString() || 0}</span>
+                    </div>
+                    <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${step.color} transition-all duration-700`} 
+                        style={{ 
+                          width: `${Math.min(100, ((step.value || 0) / (arr[0].value || 1)) * 100)}%` 
+                        }} 
+                      />
+                    </div>
+                    {idx > 0 && (
+                      <div className="flex justify-between text-[10px] text-muted-foreground px-0.5">
+                        <span>Conversão do passo anterior</span>
+                        <span>{((step.value || 0) / (arr[idx-1].value || 1) * 100).toFixed(1)}%</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gargalos - Páginas de Abandono</CardTitle>
+                  <CardDescription>Onde os leads mais deixam o site (sem converter)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Página</TableHead>
+                        <TableHead className="text-right">Abandonos</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {leadDropoffs.data?.map((drop, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium text-xs truncate max-w-[200px]">{drop.last_page}</TableCell>
+                          <TableCell className="text-right font-bold text-destructive">{drop.dropoff_count}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance de CTAs</CardTitle>
+                  <CardDescription>Cliques por localização e plano</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Local</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead className="text-right">Cliques</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ctaPerformance.data?.map((cta, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="capitalize text-xs">{cta.cta_location?.replace('_', ' ')}</TableCell>
+                          <TableCell className="capitalize text-xs">{cta.cta_plan || "Geral"}</TableCell>
+                          <TableCell className="text-right font-medium">{cta.click_count}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Amostra de Jornadas de Leads</CardTitle>
+                <CardDescription>Caminho percorrido até a última interação</CardDescription>
+              </div>
+              <History className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Visitante (ID)</TableHead>
+                    <TableHead>Caminho Percorrido</TableHead>
+                    <TableHead className="text-right">Interações</TableHead>
+                    <TableHead className="text-right">Tempo Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {leadPaths.data?.map((path, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-mono text-[10px] truncate max-w-[100px]">{path.visitor_id}</TableCell>
+                      <TableCell className="text-[10px] max-w-[400px] truncate" title={path.path}>
+                        {path.path}
+                      </TableCell>
+                      <TableCell className="text-right">{path.interaction_count}</TableCell>
+                      <TableCell className="text-right">{Math.round(path.total_time_seconds / 60)} min</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
           <div className="grid gap-6 md:grid-cols-2">
