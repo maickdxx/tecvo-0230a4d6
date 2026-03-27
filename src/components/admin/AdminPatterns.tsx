@@ -112,18 +112,18 @@ export function AdminPatterns({ patterns, applications, onRefetch }: AdminPatter
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredPatterns?.map((pattern) => (
-          <Card key={pattern.id} className={`border-emerald-200 ${pattern.is_validated ? 'bg-emerald-50/20' : 'bg-slate-50/50'}`}>
+          <Card key={pattern.id} className={`border-border ${pattern.is_validated ? 'bg-primary/5' : 'bg-muted/30'}`}>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <div className="flex gap-2">
-                  <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-100">Padrão Vencedor</Badge>
+                  <Badge variant="outline" className="text-primary border-primary/20 bg-primary/10">Padrão Vencedor</Badge>
                   {pattern.is_validated && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200">
+                    <Badge variant="secondary" className="bg-secondary text-secondary-foreground border-secondary">
                       <ShieldCheck className="h-3 w-3 mr-1" /> Validado
                     </Badge>
                   )}
                 </div>
-                <span className="text-[10px] font-bold uppercase text-emerald-600">Lift +{pattern.performance_lift}%</span>
+                <span className="text-[10px] font-bold uppercase text-primary">Lift +{pattern.performance_lift}%</span>
               </div>
               <CardTitle className="text-base mt-2 flex items-center gap-2">
                 {pattern.pattern_type === 'headline' && <Star className="h-4 w-4 text-amber-500" />}
