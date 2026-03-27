@@ -78,9 +78,15 @@ export function AdminWhatsAppTecvo() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const invoke = useCallback(async (action: string) => {
+  const [testModalOpen, setTestModalOpen] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testMessage, setTestMessage] = useState("Teste de envio Tecvo ✅");
+  const [testResult, setTestResult] = useState<{ ok: boolean; elapsed_ms?: number; error?: string; message_id?: string } | null>(null);
+  const [testSending, setTestSending] = useState(false);
+
+  const invoke = useCallback(async (action: string, extra?: Record<string, any>) => {
     const { data, error } = await supabase.functions.invoke("whatsapp-admin-status", {
-      body: { action, instance_name: INSTANCE_NAME },
+      body: { action, instance_name: INSTANCE_NAME, ...extra },
     });
     if (error) throw error;
     return data;
