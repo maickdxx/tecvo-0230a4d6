@@ -68,6 +68,8 @@ export default function Auth() {
   const [otpCode, setOtpCode] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const signupTrackedRef = useState(false); // Using state to persist across renders but avoid re-triggering effect incorrectly if needed, or just a ref.
+  const hasTrackedSignupStarted = useRef(false);
 
   useEffect(() => {
     if (activeTab === "signup") {
