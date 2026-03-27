@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { cleanDisplayUrl } from "@/lib/cleanUrl";
 
 export type EventType = 
   | "page_view"
@@ -150,11 +151,12 @@ class AnalyticsClient {
     }
 
     const metadata: EventMetadata = {
-      page_path: path,
+      page_path: cleanDisplayUrl(path),
       page_title: title,
       referrer: document.referrer,
-      previous_page: this.lastPath,
+      previous_page: this.lastPath ? cleanDisplayUrl(this.lastPath) : null,
       duration_on_previous_page: durationOnLastPage,
+      full_url: typeof window !== "undefined" ? window.location.href : undefined,
       ...extraMetadata
     };
 

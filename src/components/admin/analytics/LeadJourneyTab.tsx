@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
 import { LeadJourneyDetails } from "./LeadJourneyDetails";
+import { cleanDisplayUrl } from "@/lib/cleanUrl";
 
 export function LeadJourneyTab() {
   const { leadJourneys } = useAdminAnalytics();
@@ -137,7 +138,7 @@ export function LeadJourneyTab() {
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-mono text-xs">{lead.visitor_id.slice(0, 12)}...</span>
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">{lead.last_page}</span>
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">{cleanDisplayUrl(lead.last_page)}</span>
                     </div>
                   </TableCell>
                   <TableCell>
