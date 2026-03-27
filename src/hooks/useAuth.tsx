@@ -99,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(data ? { ...data, dashboard_layout: (Array.isArray(data.dashboard_layout) ? data.dashboard_layout as unknown as DashboardLayoutItem[] : null) } : null);
 
       // Update last_access silently (once per session load)
+      if (data) {
         const utms = analytics.getStoredUTMs();
         const updateData: any = { last_access: new Date().toISOString() };
         
