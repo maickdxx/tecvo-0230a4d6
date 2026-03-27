@@ -6350,7 +6350,7 @@ export type Database = {
           last_seen: string | null
           medium: string | null
           source: string | null
-          total_duration: string | null
+          total_duration_seconds: number | null
           total_events: number | null
           unique_pages: number | null
           visitor_id: string | null
