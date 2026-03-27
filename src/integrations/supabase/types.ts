@@ -6341,6 +6341,22 @@ export type Database = {
         }
         Relationships: []
       }
+      view_lead_journeys_summary: {
+        Row: {
+          campaign: string | null
+          clicked_cta: boolean | null
+          first_seen: string | null
+          last_page: string | null
+          last_seen: string | null
+          medium: string | null
+          source: string | null
+          total_duration: string | null
+          total_events: number | null
+          unique_pages: number | null
+          visitor_id: string | null
+        }
+        Relationships: []
+      }
       whatsapp_channels_safe: {
         Row: {
           channel_status: string | null
@@ -6500,6 +6516,17 @@ export type Database = {
           organization_name: string
           role: Database["public"]["Enums"]["app_role"]
           token: string
+        }[]
+      }
+      get_lead_journey_timeline: {
+        Args: { p_visitor_id: string }
+        Returns: {
+          created_at: string
+          duration_on_page: number
+          event_type: string
+          metadata: Json
+          page_path: string
+          page_title: string
         }[]
       }
       get_portal_config_by_slug: {
