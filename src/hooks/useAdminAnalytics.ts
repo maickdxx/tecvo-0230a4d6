@@ -134,6 +134,16 @@ export function useAdminAnalytics() {
     return data;
   };
 
+  const fetchHypotheses = async () => {
+    const { data, error } = await supabase
+      .from("ab_test_hypotheses")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
   const dailyMetrics = useQuery({
     queryKey: ["admin-analytics-daily"],
     queryFn: fetchDailyMetrics,
@@ -199,6 +209,11 @@ export function useAdminAnalytics() {
     queryFn: fetchABTestResults,
   });
 
+  const hypotheses = useQuery({
+    queryKey: ["admin-analytics-hypotheses"],
+    queryFn: fetchHypotheses,
+  });
+
   const isLoading = 
     dailyMetrics.isLoading || 
     trafficSources.isLoading || 
@@ -207,7 +222,8 @@ export function useAdminAnalytics() {
     userScores.isLoading ||
     activationMetrics.isLoading ||
     retentionCohorts.isLoading ||
-    alerts.isLoading;
+    alerts.isLoading ||
+    hypotheses.isLoading;
 
   // Calculate overall KPIs
   const kpis = dailyMetrics.data ? {
@@ -240,7 +256,8 @@ export function useAdminAnalytics() {
     ctaPerformance,
     leadPaths,
     abTestResults,
+    hypotheses,
     kpis,
-    isLoading: isLoading || marketingFunnel.isLoading || leadDropoffs.isLoading || ctaPerformance.isLoading || leadPaths.isLoading || abTestResults.isLoading
+    isLoading: isLoading || marketingFunnel.isLoading || leadDropoffs.isLoading || ctaPerformance.isLoading || leadPaths.isLoading || abTestResults.isLoading || hypotheses.isLoading
   };
 }
