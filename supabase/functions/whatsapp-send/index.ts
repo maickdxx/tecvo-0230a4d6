@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
         content: message,
         is_from_me: true,
         status: "sent",
-        channel_id: channel.id,
+        channel_id: activeChannel.id,
         timestamp: new Date().toISOString(),
       };
       if (reply_context) {
