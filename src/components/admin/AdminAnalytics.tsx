@@ -13,7 +13,7 @@ import {
   Legend,
   Cell
 } from "recharts";
-import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2 } from "lucide-react";
+import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
