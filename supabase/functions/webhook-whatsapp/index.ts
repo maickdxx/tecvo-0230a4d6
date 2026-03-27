@@ -455,10 +455,17 @@ Deno.serve(async (req) => {
 
   try {
     // Validate webhook origin via API key
+    // Evolution API may send key in different headers depending on version/config
     const webhookApiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-    const incomingKey = req.headers.get("x-api-key") || req.headers.get("apikey");
+    const incomingKey = req.headers.get("x-api-key") 
+      || req.headers.get("apikey") 
+      || req.headers.get("authorization")?.replace("Bearer ", "")
+      || req.headers.get("x-apikey");
+    
     if (webhookApiKey && incomingKey !== webhookApiKey) {
-      console.warn("[WEBHOOK-WHATSAPP] Rejected: invalid or missing x-api-key header");
+      // Log all headers for debugging (redacted)
+      const headerNames = [...req.headers.keys()].join(", ");
+      console.warn(`[WEBHOOK-WHATSAPP] Rejected: invalid or missing api key. Headers present: ${headerNames}. Expected key length: ${webhookApiKey?.length}, got: ${incomingKey?.length || 0}`);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
