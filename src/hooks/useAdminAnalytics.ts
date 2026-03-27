@@ -173,6 +173,16 @@ export function useAdminAnalytics() {
     return data;
   };
 
+  const fetchPatternApplications = async () => {
+    const { data, error } = await supabase
+      .from("ab_test_pattern_applications")
+      .select("*, ab_test_winning_patterns(name, pattern_type)")
+      .order("applied_at", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
   const dailyMetrics = useQuery({
     queryKey: ["admin-analytics-daily"],
     queryFn: fetchDailyMetrics,
