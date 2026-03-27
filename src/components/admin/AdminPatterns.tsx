@@ -126,8 +126,8 @@ export function AdminPatterns({ patterns, applications, onRefetch }: AdminPatter
                 <span className="text-[10px] font-bold uppercase text-primary">Lift +{pattern.performance_lift}%</span>
               </div>
               <CardTitle className="text-base mt-2 flex items-center gap-2">
-                {pattern.pattern_type === 'headline' && <Star className="h-4 w-4 text-amber-500" />}
-                {pattern.pattern_type === 'cta' && <MousePointer2 className="h-4 w-4 text-blue-500" />}
+                {pattern.pattern_type === 'headline' && <Star className="h-4 w-4 text-primary" />}
+                {pattern.pattern_type === 'cta' && <MousePointer2 className="h-4 w-4 text-primary" />}
                 {pattern.pattern_type === 'structure' && <Layout className="h-4 w-4 text-primary" />}
                 {pattern.name}
               </CardTitle>
