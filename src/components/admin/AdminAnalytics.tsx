@@ -422,6 +422,10 @@ export function AdminAnalytics() {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="automations" className="space-y-6 pt-4">
+          <AdminAutomations />
+        </TabsContent>
       </Tabs>
     </div>
   );
