@@ -166,7 +166,7 @@ export function AdminAutomations() {
             <CardDescription>Últimas automações disparadas pelo sistema</CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

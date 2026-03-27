@@ -228,7 +228,7 @@ export function AdminAIUsage() {
         <CardHeader>
           <CardTitle className="text-base">Uso por Funcionalidade</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -266,7 +266,7 @@ export function AdminAIUsage() {
         <CardHeader>
           <CardTitle className="text-base">Top 20 Organizações por Custo</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

@@ -245,7 +245,8 @@ export function FinancialDashboard() {
               Nenhuma conta inadimplente 🎉
             </p>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Empresa</TableHead>
@@ -284,7 +285,8 @@ export function FinancialDashboard() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

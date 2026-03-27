@@ -148,7 +148,7 @@ export function ExecutiveDashboard({ onNavigateTab }: ExecutiveDashboardProps) {
       <AdminQuickActions onNavigate={handleNavigate} />
 
       {/* KPI Grid */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
         {kpis.map((stat, index) => (
           <Card
             key={index}
@@ -173,7 +173,7 @@ export function ExecutiveDashboard({ onNavigateTab }: ExecutiveDashboardProps) {
               }`} />
             </CardHeader>
             <CardContent className="pb-3 px-3">
-              <div className="text-xl font-bold">{stat.value}</div>
+              <div className="text-lg sm:text-xl font-bold truncate">{stat.value}</div>
               {stat.trend !== undefined && (
                 <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
                   {stat.trend >= 0 ? (

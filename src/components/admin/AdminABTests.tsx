@@ -221,16 +221,16 @@ export function AdminABTests() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="active" className="gap-2">
+        <TabsList className="flex w-full overflow-x-auto flex-nowrap justify-start h-auto p-1 bg-muted/50">
+          <TabsTrigger value="active" className="gap-2 whitespace-nowrap">
             <Target className="h-4 w-4" />
             Testes Ativos
           </TabsTrigger>
-          <TabsTrigger value="hypotheses" className="gap-2">
+          <TabsTrigger value="hypotheses" className="gap-2 whitespace-nowrap">
             <Lightbulb className="h-4 w-4 text-amber-500" />
             Hipóteses & Estratégia
           </TabsTrigger>
-          <TabsTrigger value="library" className="gap-2">
+          <TabsTrigger value="library" className="gap-2 whitespace-nowrap">
             <History className="h-4 w-4" />
             Biblioteca (Histórico)
           </TabsTrigger>
@@ -314,7 +314,8 @@ export function AdminABTests() {
                       </div>
                     </div>
 
-                    <Table>
+                    <div className="overflow-x-auto">
+                      <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Variante</TableHead>
@@ -363,7 +364,8 @@ export function AdminABTests() {
                           </TableRow>
                         ))}
                       </TableBody>
-                    </Table>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               );
