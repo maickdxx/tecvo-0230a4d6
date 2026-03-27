@@ -70,6 +70,45 @@ export type Database = {
           },
         ]
       }
+      ab_test_hypotheses: {
+        Row: {
+          created_at: string
+          expected_impact: string
+          hypothesis_improvement: string
+          id: string
+          learnings: string | null
+          priority_score: number | null
+          problem_identified: string
+          proposed_solution: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expected_impact?: string
+          hypothesis_improvement: string
+          id?: string
+          learnings?: string | null
+          priority_score?: number | null
+          problem_identified: string
+          proposed_solution: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expected_impact?: string
+          hypothesis_improvement?: string
+          id?: string
+          learnings?: string | null
+          priority_score?: number | null
+          problem_identified?: string
+          proposed_solution?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ab_test_variants: {
         Row: {
           config: Json | null
@@ -117,6 +156,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           end_date: string | null
+          hypothesis_id: string | null
           id: string
           is_active: boolean | null
           name: string
@@ -129,6 +169,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           end_date?: string | null
+          hypothesis_id?: string | null
           id?: string
           is_active?: boolean | null
           name: string
@@ -141,6 +182,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           end_date?: string | null
+          hypothesis_id?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
@@ -149,7 +191,15 @@ export type Database = {
           updated_at?: string | null
           winner_variant_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ab_tests_hypothesis_id_fkey"
+            columns: ["hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "ab_test_hypotheses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_assistant_permissions: {
         Row: {
