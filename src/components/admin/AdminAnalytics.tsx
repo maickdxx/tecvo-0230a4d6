@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminAutomations } from "./AdminAutomations";
 import { AdminABTests } from "./AdminABTests";
 import { AdminPatterns } from "./AdminPatterns";
+import { LeadJourneyTab } from "./analytics/LeadJourneyTab";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -140,6 +141,10 @@ export function AdminAnalytics() {
           <TabsTrigger value="leads" className="gap-2 whitespace-nowrap">
             <Filter className="h-4 w-4 text-primary" />
             Leads
+          </TabsTrigger>
+          <TabsTrigger value="journey" className="gap-2 whitespace-nowrap">
+            <History className="h-4 w-4 text-primary" />
+            Jornada do Lead
           </TabsTrigger>
           <TabsTrigger value="campaigns" className="gap-2 whitespace-nowrap">
             <Globe className="h-4 w-4 text-primary" />
@@ -346,6 +351,10 @@ export function AdminAnalytics() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="journey" className="space-y-6 pt-4">
+          <LeadJourneyTab />
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-6 pt-4">
