@@ -479,7 +479,7 @@ export function AdminAnalytics() {
             <Card className="border-primary/50 bg-primary/5">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Star className="h-4 w-4 text-amber-500" />
+                  <Star className="h-4 w-4 text-primary" />
                   LP Padrão Tecvo (Alta Conv.)
                 </CardTitle>
                 <CardDescription>Estrutura otimizada com base em +50 testes validados.</CardDescription>
@@ -487,13 +487,13 @@ export function AdminAnalytics() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Headlines Dinâmicas
+                    <CheckCircle2 className="h-3 w-3 text-primary" /> Headlines Dinâmicas
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Prova Social Integrada
+                    <CheckCircle2 className="h-3 w-3 text-primary" /> Prova Social Integrada
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Senso de Urgência no CTA
+                    <CheckCircle2 className="h-3 w-3 text-primary" /> Senso de Urgência no CTA
                   </div>
                 </div>
                 <Button className="w-full gap-2">
