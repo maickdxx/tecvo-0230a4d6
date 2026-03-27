@@ -23,7 +23,7 @@ export function JourneyBalanceCard() {
   const { effectiveMonthEntries, settings } = useTimeClock();
   const { getScheduleForEmployee, isWorkDay } = useWorkSchedules();
 
-  const employeeType = (profile as any)?.employee_type || "tecnico";
+  const employeeType = profile?.employee_type || "tecnico";
   const overtimePolicy: OvertimePolicy = settings?.overtime_policy === "pay" ? "pay" : "bank";
   const toleranceMin = settings?.late_tolerance_minutes ?? 10;
 

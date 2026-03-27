@@ -42,7 +42,7 @@ export default function EspelhoPonto() {
   const { settings } = useTimeClock();
   const { organization } = useOrganization();
   const { getScheduleForEmployee, isWorkDay, countExpectedWorkDays } = useWorkSchedules();
-  const employeeType = (profile as any)?.employee_type || "tecnico";
+  const employeeType = profile?.employee_type || "tecnico";
   const schedule = getScheduleForEmployee(user?.id || "", employeeType);
   const toleranceMin = settings?.late_tolerance_minutes ?? 10;
   const expectedPerDay = Math.round(schedule.work_hours_per_day * 60);
@@ -381,7 +381,7 @@ export default function EspelhoPonto() {
               {/* Estimated cost — pay mode, employee view */}
               {policy === "pay" && ps.primaryValue > 0 && (() => {
                 const rate = resolveHourlyRate(
-                  (profile as any)?.hourly_rate,
+                  sensitiveData?.hourly_rate,
                   schedule.hourly_rate,
                   (settings as any)?.default_hourly_rate,
                 );
