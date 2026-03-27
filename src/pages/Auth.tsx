@@ -72,8 +72,9 @@ export default function Auth() {
   const hasTrackedSignupStarted = useRef(false);
 
   useEffect(() => {
-    if (activeTab === "signup") {
+    if (activeTab === "signup" && !hasTrackedSignupStarted.current) {
       analytics.track("signup_started", null, null);
+      hasTrackedSignupStarted.current = true;
     }
   }, [activeTab]);
 
