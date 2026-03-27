@@ -99,7 +99,8 @@ class AnalyticsClient {
     userId: string | null,
     organizationId: string | null,
     path: string,
-    title: string
+    title: string,
+    extraMetadata: EventMetadata = {}
   ) {
     const now = Date.now();
     let durationOnLastPage = 0;
@@ -114,6 +115,7 @@ class AnalyticsClient {
       referrer: document.referrer,
       previous_page: this.lastPath,
       duration_on_previous_page: durationOnLastPage,
+      ...extraMetadata
     };
 
     this.track("page_view", userId, organizationId, metadata);
