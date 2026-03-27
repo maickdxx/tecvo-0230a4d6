@@ -127,7 +127,7 @@ class AnalyticsClient {
     this.lastPathStartTime = now;
   }
 
-  private async flush(isUnload = false) {
+  public async flush(isUnload = false) {
     if (this.flushTimeout) {
       clearTimeout(this.flushTimeout);
       this.flushTimeout = null;
