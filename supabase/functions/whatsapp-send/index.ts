@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
       }
       recipientJid = `${digits}@s.whatsapp.net`;
     }
-    console.log("[WHATSAPP-SEND] Sending to:", recipientJid, "via instance:", channel.instance_name);
+    console.log("[WHATSAPP-SEND] Sending to:", recipientJid, "via instance:", activeChannel.instance_name, didFallback ? "(FALLBACK)" : "");
 
     // Send via Evolution API
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
       console.log("[WHATSAPP-SEND] Sending with quoted message:", reply_context.reply_to_message_id);
     }
 
-    const evoResponse = await fetch(`${vpsUrl}/message/sendText/${channel.instance_name}`, {
+    const evoResponse = await fetch(`${vpsUrl}/message/sendText/${activeChannel.instance_name}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -324,7 +324,7 @@ Deno.serve(async (req) => {
       console.error("[WHATSAPP-SEND] Evolution API error:", evoResponse.status, errText);
 
       // Classify the error using centralized classifier
-      const classified = classifyEvoError(evoResponse.status, errText, channel.phone_number || undefined);
+      const classified = classifyEvoError(evoResponse.status, errText, activeChannel.phone_number || undefined);
       console.warn(`[WHATSAPP-SEND] Classified error: ${classified.domainError} — ${classified.technicalReason}`);
 
       // Log channel status transition for audit
