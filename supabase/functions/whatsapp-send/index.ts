@@ -333,8 +333,8 @@ Deno.serve(async (req) => {
           await supabase.from("whatsapp_channel_transitions").insert({
             organization_id: orgId,
             contact_id: contact.id,
-            previous_channel_id: channel.id,
-            new_channel_id: channel.id,
+            previous_channel_id: activeChannel.id,
+            new_channel_id: activeChannel.id,
             reason: `auto_disconnect:${reason}`,
           });
         } catch (_e) { /* best effort */ }
@@ -349,16 +349,16 @@ Deno.serve(async (req) => {
             channel_status: "disconnected",
             disconnected_reason: classified.technicalReason.substring(0, 200),
           })
-          .eq("id", channel.id);
+          .eq("id", activeChannel.id);
 
         await logTransition("disconnected", classified.technicalReason.substring(0, 100));
-        console.warn("[WHATSAPP-SEND] Channel auto-disconnected:", channel.id, classified.domainError);
+        console.warn("[WHATSAPP-SEND] Channel auto-disconnected:", activeChannel.id, classified.domainError);
 
         return new Response(JSON.stringify({
           error: "channel_disconnected",
           message: classified.userMessage,
-          phone_number: channel.phone_number,
-          channel_id: channel.id,
+          phone_number: activeChannel.phone_number,
+          channel_id: activeChannel.id,
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -391,7 +391,7 @@ Deno.serve(async (req) => {
       content: message,
       is_from_me: true,
       status: "sent",
-      channel_id: channel.id,
+      channel_id: activeChannel.id,
       timestamp: sentTimestamp,
     };
     if (reply_context) {
