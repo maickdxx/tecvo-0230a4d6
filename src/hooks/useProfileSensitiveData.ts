@@ -61,7 +61,7 @@ export function useProfileSensitiveData(targetUserId?: string) {
         .maybeSingle();
 
       if (error) throw error;
-      return data as SensitiveProfileData | null;
+      return (data as unknown as SensitiveProfileData) ?? null;
     },
     enabled: !!userId && !!profile?.organization_id && canAccess,
     staleTime: 1000 * 60 * 5,
