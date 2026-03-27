@@ -17,6 +17,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import {
   RefreshCw,
   Smartphone,
   Wifi,
@@ -66,9 +78,15 @@ export function AdminWhatsAppTecvo() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const invoke = useCallback(async (action: string) => {
+  const [testModalOpen, setTestModalOpen] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testMessage, setTestMessage] = useState("Teste de envio Tecvo ✅");
+  const [testResult, setTestResult] = useState<{ ok: boolean; elapsed_ms?: number; error?: string; message_id?: string } | null>(null);
+  const [testSending, setTestSending] = useState(false);
+
+  const invoke = useCallback(async (action: string, extra?: Record<string, any>) => {
     const { data, error } = await supabase.functions.invoke("whatsapp-admin-status", {
-      body: { action, instance_name: INSTANCE_NAME },
+      body: { action, instance_name: INSTANCE_NAME, ...extra },
     });
     if (error) throw error;
     return data;
@@ -157,7 +175,31 @@ export function AdminWhatsAppTecvo() {
     }
   };
 
-  // Initial load
+  const handleSendTest = async () => {
+    if (!testPhone.trim()) {
+      toast.error("Informe o número de destino");
+      return;
+    }
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const data = await invoke("send_test", { phone: testPhone, message: testMessage });
+      setTestResult(data);
+      if (data?.ok) {
+        toast.success("Mensagem de teste enviada com sucesso!");
+        fetchMetrics();
+      } else {
+        toast.error(data?.error || "Erro ao enviar mensagem de teste");
+      }
+    } catch (e: any) {
+      setTestResult({ ok: false, error: e.message || "Erro desconhecido" });
+      toast.error("Falha ao enviar mensagem de teste");
+    } finally {
+      setTestSending(false);
+    }
+  };
+
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -373,9 +415,88 @@ export function AdminWhatsAppTecvo() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {isConnected && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setTestResult(null); setTestModalOpen(true); }}
+                disabled={!!actionLoading}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Enviar Teste
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Teste de Envio */}
+      <Dialog open={testModalOpen} onOpenChange={setTestModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar mensagem de teste</DialogTitle>
+            <DialogDescription>
+              Valide se o canal institucional está enviando mensagens corretamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="test-phone">Número de destino</Label>
+              <Input
+                id="test-phone"
+                placeholder="5511999999999"
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Formato: código do país + DDD + número (sem espaços ou traços)</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="test-message">Mensagem</Label>
+              <Textarea
+                id="test-message"
+                value={testMessage}
+                onChange={(e) => setTestMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+            {testResult && (
+              <div className={`p-3 rounded-lg border text-sm ${testResult.ok ? "bg-green-500/10 border-green-500/20" : "bg-destructive/10 border-destructive/20"}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  {testResult.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className="font-medium">
+                    {testResult.ok ? "Enviado com sucesso" : "Falha no envio"}
+                  </span>
+                </div>
+                {testResult.elapsed_ms != null && (
+                  <p className="text-xs text-muted-foreground">Tempo: {testResult.elapsed_ms}ms</p>
+                )}
+                {testResult.message_id && (
+                  <p className="text-xs text-muted-foreground font-mono">ID: {testResult.message_id}</p>
+                )}
+                {testResult.error && (
+                  <p className="text-xs text-destructive mt-1">{testResult.error}</p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestModalOpen(false)}>Fechar</Button>
+            <Button onClick={handleSendTest} disabled={testSending}>
+              {testSending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Enviar Teste
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* QR Code */}
       {!isConnected && (qrCode || qrString) && (
