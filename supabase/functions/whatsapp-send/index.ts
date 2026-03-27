@@ -277,6 +277,36 @@ Deno.serve(async (req) => {
     if (!evoResponse.ok) {
       const errText = await evoResponse.text();
       console.error("[WHATSAPP-SEND] Evolution API error:", evoResponse.status, errText);
+
+      // Detect "Connection Closed" — means session dropped on Evolution side
+      const isConnectionClosed = errText.toLowerCase().includes("connection closed") ||
+        errText.toLowerCase().includes("disconnected");
+
+      if (isConnectionClosed) {
+        // Auto-update channel status so UI reflects reality
+        await supabase
+          .from("whatsapp_channels")
+          .update({
+            is_connected: false,
+            channel_status: "disconnected",
+            disconnected_reason: "connection_closed_on_send",
+          })
+          .eq("id", channel.id);
+
+        console.warn("[WHATSAPP-SEND] Channel auto-disconnected due to Connection Closed:", channel.id);
+
+        const phoneLabel = channel.phone_number || "desconhecido";
+        return new Response(JSON.stringify({
+          error: "channel_disconnected",
+          message: `O número ${phoneLabel} perdeu a conexão com o WhatsApp. Reconecte-o nas configurações.`,
+          phone_number: channel.phone_number,
+          channel_id: channel.id,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       return new Response(JSON.stringify({ error: "Failed to send message", details: errText }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
