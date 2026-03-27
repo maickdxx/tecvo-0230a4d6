@@ -1899,6 +1899,11 @@ export type Database = {
           demo_tour_completed: boolean
           employee_type: string
           field_worker: boolean
+          first_landing_page: string | null
+          first_referrer: string | null
+          first_utm_campaign: string | null
+          first_utm_medium: string | null
+          first_utm_source: string | null
           full_name: string | null
           hire_date: string | null
           hourly_rate: number | null
@@ -1933,6 +1938,11 @@ export type Database = {
           demo_tour_completed?: boolean
           employee_type?: string
           field_worker?: boolean
+          first_landing_page?: string | null
+          first_referrer?: string | null
+          first_utm_campaign?: string | null
+          first_utm_medium?: string | null
+          first_utm_source?: string | null
           full_name?: string | null
           hire_date?: string | null
           hourly_rate?: number | null
@@ -1967,6 +1977,11 @@ export type Database = {
           demo_tour_completed?: boolean
           employee_type?: string
           field_worker?: boolean
+          first_landing_page?: string | null
+          first_referrer?: string | null
+          first_utm_campaign?: string | null
+          first_utm_medium?: string | null
+          first_utm_source?: string | null
           full_name?: string | null
           hire_date?: string | null
           hourly_rate?: number | null
@@ -4059,6 +4074,7 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
+          metadata: Json | null
           organization_id: string | null
           user_id: string
         }
@@ -4066,6 +4082,7 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
+          metadata?: Json | null
           organization_id?: string | null
           user_id: string
         }
@@ -4073,6 +4090,7 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
+          metadata?: Json | null
           organization_id?: string | null
           user_id?: string
         }
@@ -4152,25 +4170,40 @@ export type Database = {
           duration_seconds: number
           ended_at: string
           id: string
+          landing_page: string | null
           organization_id: string | null
+          referrer: string | null
           started_at: string
           user_id: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           duration_seconds?: number
           ended_at?: string
           id?: string
+          landing_page?: string | null
           organization_id?: string | null
+          referrer?: string | null
           started_at?: string
           user_id: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           duration_seconds?: number
           ended_at?: string
           id?: string
+          landing_page?: string | null
           organization_id?: string | null
+          referrer?: string | null
           started_at?: string
           user_id?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: [
           {
