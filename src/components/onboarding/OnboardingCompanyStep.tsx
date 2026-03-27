@@ -38,11 +38,12 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
 
     update({ name: formData.name, phone: formData.phone }, {
       onSuccess: async () => {
-        // Save the company phone as whatsapp_personal for AI identification
+        const trimmedPhone = formData.phone.trim();
         if (user) {
+          // Save whatsapp_personal on profile (trigger syncs to org.whatsapp_owner)
           await supabase
             .from("profiles")
-            .update({ whatsapp_personal: formData.phone.trim() })
+            .update({ whatsapp_personal: trimmedPhone })
             .eq("user_id", user.id);
         }
         onNext();
