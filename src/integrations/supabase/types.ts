@@ -109,6 +109,44 @@ export type Database = {
         }
         Relationships: []
       }
+      ab_test_pattern_applications: {
+        Row: {
+          applied_at: string | null
+          id: string
+          is_active: boolean | null
+          pattern_id: string | null
+          performance_metric: Json | null
+          target_element: string
+          target_page: string
+        }
+        Insert: {
+          applied_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          pattern_id?: string | null
+          performance_metric?: Json | null
+          target_element: string
+          target_page: string
+        }
+        Update: {
+          applied_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          pattern_id?: string | null
+          performance_metric?: Json | null
+          target_element?: string
+          target_page?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ab_test_pattern_applications_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "ab_test_winning_patterns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ab_test_templates: {
         Row: {
           category: string
@@ -186,42 +224,51 @@ export type Database = {
       }
       ab_test_winning_patterns: {
         Row: {
+          category: string | null
           content: Json
           conversion_rate: number | null
           created_at: string
           description: string | null
           id: string
           is_active: boolean | null
+          is_validated: boolean | null
           name: string
           pattern_type: string
           performance_lift: number | null
           source_test_id: string | null
+          tags: string[] | null
           updated_at: string
         }
         Insert: {
+          category?: string | null
           content: Json
           conversion_rate?: number | null
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_validated?: boolean | null
           name: string
           pattern_type: string
           performance_lift?: number | null
           source_test_id?: string | null
+          tags?: string[] | null
           updated_at?: string
         }
         Update: {
+          category?: string | null
           content?: Json
           conversion_rate?: number | null
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_validated?: boolean | null
           name?: string
           pattern_type?: string
           performance_lift?: number | null
           source_test_id?: string | null
+          tags?: string[] | null
           updated_at?: string
         }
         Relationships: [

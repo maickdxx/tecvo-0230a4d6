@@ -143,6 +143,7 @@ export function useAdminAnalytics() {
     if (error) throw error;
     return data;
   };
+
   const fetchWinningPatterns = async () => {
     const { data, error } = await supabase
       .from("ab_test_winning_patterns")
@@ -168,6 +169,23 @@ export function useAdminAnalytics() {
       .from("view_campaign_comparison")
       .select("*")
       .order("conversion_rate", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchPatternApplications = async () => {
+    const { data, error } = await supabase
+      .from("ab_test_pattern_applications")
+      .select(`
+        *,
+        ab_test_winning_patterns (
+          name,
+          pattern_type,
+          category
+        )
+      `)
+      .order("applied_at", { ascending: false });
     
     if (error) throw error;
     return data;
@@ -212,6 +230,7 @@ export function useAdminAnalytics() {
     queryKey: ["admin-analytics-alerts"],
     queryFn: fetchAlerts,
   });
+
   const winningPatterns = useQuery({
     queryKey: ["admin-analytics-winning-patterns"],
     queryFn: fetchWinningPatterns,
@@ -225,6 +244,11 @@ export function useAdminAnalytics() {
   const campaignComparison = useQuery({
     queryKey: ["admin-analytics-campaign-comparison"],
     queryFn: fetchCampaignComparison,
+  });
+
+  const patternApplications = useQuery({
+    queryKey: ["admin-analytics-pattern-applications"],
+    queryFn: fetchPatternApplications,
   });
 
   const marketingFunnel = useQuery({
@@ -269,6 +293,7 @@ export function useAdminAnalytics() {
     hypotheses.isLoading ||
     winningPatterns.isLoading ||
     templates.isLoading ||
+    patternApplications.isLoading ||
     campaignComparison.isLoading;
 
   // Calculate overall KPIs
@@ -306,7 +331,15 @@ export function useAdminAnalytics() {
     winningPatterns,
     templates,
     campaignComparison,
+    patternApplications,
     kpis,
-    isLoading: isLoading || marketingFunnel.isLoading || leadDropoffs.isLoading || ctaPerformance.isLoading || leadPaths.isLoading || abTestResults.isLoading || hypotheses.isLoading
+    isLoading: isLoading || 
+               marketingFunnel.isLoading || 
+               leadDropoffs.isLoading || 
+               ctaPerformance.isLoading || 
+               leadPaths.isLoading || 
+               abTestResults.isLoading || 
+               hypotheses.isLoading ||
+               patternApplications.isLoading
   };
 }

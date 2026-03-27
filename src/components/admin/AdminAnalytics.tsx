@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminAutomations } from "./AdminAutomations";
 import { AdminABTests } from "./AdminABTests";
+import { AdminPatterns } from "./AdminPatterns";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -46,6 +47,7 @@ export function AdminAnalytics() {
     winningPatterns,
     templates,
     campaignComparison,
+    patternApplications,
     kpis, 
     isLoading 
   } = useAdminAnalytics();
@@ -113,10 +115,10 @@ export function AdminAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Ativação</CardTitle>
-            <Activity className="h-4 w-4 text-emerald-500" />
+            <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis?.activation_rate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold text-foreground">{kpis?.activation_rate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">Usuários que usaram o sistema</p>
           </CardContent>
         </Card>
@@ -124,10 +126,10 @@ export function AdminAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Tempo p/ Ativação</CardTitle>
-            <Timer className="h-4 w-4 text-amber-500" />
+            <Timer className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activationMetrics.data?.avg_hours_to_activation?.toFixed(1) || 0}h</div>
+            <div className="text-2xl font-bold text-foreground">{activationMetrics.data?.avg_hours_to_activation?.toFixed(1) || 0}h</div>
             <p className="text-xs text-muted-foreground">Média desde o cadastro</p>
           </CardContent>
         </Card>
@@ -140,7 +142,7 @@ export function AdminAnalytics() {
             Leads
           </TabsTrigger>
           <TabsTrigger value="campaigns" className="gap-2">
-            <Globe className="h-4 w-4 text-blue-500" />
+            <Globe className="h-4 w-4 text-primary" />
             Canais & Campanhas
           </TabsTrigger>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
@@ -148,15 +150,15 @@ export function AdminAnalytics() {
           <TabsTrigger value="retention">Retenção</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="automations" className="gap-2">
-            <Zap className="h-4 w-4 text-amber-500" />
+            <Zap className="h-4 w-4 text-primary" />
             Automações
           </TabsTrigger>
           <TabsTrigger value="ab_tests" className="gap-2">
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <TrendingUp className="h-4 w-4 text-primary" />
             Testes A/B
           </TabsTrigger>
           <TabsTrigger value="patterns" className="gap-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <Trophy className="h-4 w-4 text-primary" />
             Padrões Vencedores
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-2">
@@ -181,10 +183,10 @@ export function AdminAnalytics() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Clique CTA</CardTitle>
-                <MousePointer2 className="h-4 w-4 text-blue-500" />
+                <MousePointer2 className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{marketingFunnel.data?.cta_click_rate?.toFixed(1) || 0}%</div>
+                <div className="text-2xl font-bold text-foreground">{marketingFunnel.data?.cta_click_rate?.toFixed(1) || 0}%</div>
                 <p className="text-xs text-muted-foreground">Visitantes vs Cliques</p>
               </CardContent>
             </Card>
@@ -192,10 +194,10 @@ export function AdminAnalytics() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Taxa Conv. Final</CardTitle>
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <TrendingUp className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{marketingFunnel.data?.final_conversion_rate?.toFixed(2) || 0}%</div>
+                <div className="text-2xl font-bold text-foreground">{marketingFunnel.data?.final_conversion_rate?.toFixed(2) || 0}%</div>
                 <p className="text-xs text-muted-foreground">Visitantes vs Pagamento</p>
               </CardContent>
             </Card>
@@ -203,10 +205,10 @@ export function AdminAnalytics() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Tempo Médio p/ Conv.</CardTitle>
-                <Timer className="h-4 w-4 text-amber-500" />
+                <Timer className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold text-foreground">
                   {marketingFunnel.data?.avg_time_to_signup_seconds 
                     ? Math.round(marketingFunnel.data.avg_time_to_signup_seconds / 60) 
                     : 0} min
@@ -224,13 +226,13 @@ export function AdminAnalytics() {
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
                 {[
-                  { label: "Visita Landing Page", value: marketingFunnel.data?.landing_page_views, color: "bg-slate-500" },
-                  { label: "Interação", value: marketingFunnel.data?.interactions, color: "bg-slate-400" },
-                  { label: "Clique em Criar Conta", value: marketingFunnel.data?.cta_clicks, color: "bg-blue-500" },
-                  { label: "Início de Cadastro", value: marketingFunnel.data?.signups_started, color: "bg-blue-600" },
-                  { label: "Cadastro Concluído", value: marketingFunnel.data?.signups_completed, color: "bg-emerald-500" },
-                  { label: "Início de Pagamento", value: marketingFunnel.data?.payments_initiated, color: "bg-amber-500" },
-                  { label: "Pagamento Concluído", value: marketingFunnel.data?.payments_completed, color: "bg-emerald-600" },
+                  { label: "Visita Landing Page", value: marketingFunnel.data?.landing_page_views, color: "bg-muted-foreground/50" },
+                  { label: "Interação", value: marketingFunnel.data?.interactions, color: "bg-muted-foreground/40" },
+                  { label: "Clique em Criar Conta", value: marketingFunnel.data?.cta_clicks, color: "bg-primary/70" },
+                  { label: "Início de Cadastro", value: marketingFunnel.data?.signups_started, color: "bg-primary/80" },
+                  { label: "Cadastro Concluído", value: marketingFunnel.data?.signups_completed, color: "bg-primary" },
+                  { label: "Início de Pagamento", value: marketingFunnel.data?.payments_initiated, color: "bg-secondary" },
+                  { label: "Pagamento Concluído", value: marketingFunnel.data?.payments_completed, color: "bg-primary" },
                 ].map((step, idx, arr) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs font-medium">
@@ -347,10 +349,59 @@ export function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-6 pt-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Melhor Campanha</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold truncate">
+                  {campaignComparison.data?.[0]?.campaign || "Nenhuma ativa"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Taxa de {campaignComparison.data?.[0]?.conversion_rate || 0}%
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Melhor Origem</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  {trafficSources.data?.[0]?.source || "Direto"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {trafficSources.data?.[0]?.session_count?.toLocaleString() || 0} sessões
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Melhor Estrutura</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold">
+                  {winningPatterns.data?.find(p => p.pattern_type === 'structure')?.name || "Padrão Tecvo"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Lift de +{winningPatterns.data?.find(p => p.pattern_type === 'structure')?.performance_lift || 0}%
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Performance por Canal e Campanha</CardTitle>
-              <CardDescription>Qual origem traz os leads que mais convertem em vendas</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Análise de Conversão por Canal</CardTitle>
+                  <CardDescription>Comparativo detalhado de ROI e Eficiência de Leads por origem UTM.</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Share2 className="h-4 w-4" /> Exportar Relatório
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -367,15 +418,15 @@ export function AdminAnalytics() {
                 <TableBody>
                   {campaignComparison.data?.map((comp, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{comp.campaign || '(Sem Campanha)'}</TableCell>
+                      <TableCell className="font-medium text-foreground">{comp.campaign || '(Sem Campanha)'}</TableCell>
                       <TableCell className="text-xs">
-                        <Badge variant="outline" className="mr-1">{comp.source}</Badge>
-                        <Badge variant="secondary">{comp.medium}</Badge>
+                        <Badge variant="outline" className="mr-1 text-primary border-primary/20">{comp.source}</Badge>
+                        <Badge variant="secondary" className="text-foreground">{comp.medium}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">{comp.session_count.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{comp.signups.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-bold text-emerald-500">{comp.conversions.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-bold">{comp.conversion_rate}%</TableCell>
+                      <TableCell className="text-right text-foreground">{comp.session_count.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-foreground">{comp.signups.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{comp.conversions.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold text-foreground">{comp.conversion_rate}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -388,47 +439,15 @@ export function AdminAnalytics() {
           <AdminABTests />
         </TabsContent>
 
-        <TabsContent value="patterns" className="space-y-6 pt-4">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {winningPatterns.data?.map((pattern) => (
-              <Card key={pattern.id} className="border-emerald-200 bg-emerald-50/20">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-100">Padrão Vencedor</Badge>
-                    <span className="text-[10px] font-bold uppercase text-emerald-600">Lift +{pattern.performance_lift}%</span>
-                  </div>
-                  <CardTitle className="text-base mt-2 flex items-center gap-2">
-                    {pattern.pattern_type === 'headline' && <Star className="h-4 w-4 text-amber-500" />}
-                    {pattern.pattern_type === 'cta' && <MousePointer2 className="h-4 w-4 text-blue-500" />}
-                    {pattern.pattern_type === 'structure' && <Layout className="h-4 w-4 text-primary" />}
-                    {pattern.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">{pattern.description}</p>
-                  <div className="p-3 bg-white rounded border text-xs font-mono">
-                    {typeof pattern.content === 'string' ? pattern.content : JSON.stringify(pattern.content, null, 2)}
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                    <span>Validado via Teste A/B</span>
-                    <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1">
-                      <Copy className="h-3 w-3" />
-                      Copiar Padrão
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            
-            {/* Fallback if no patterns */}
-            {(!winningPatterns.data || winningPatterns.data.length === 0) && (
-              <div className="col-span-full py-12 text-center border-2 border-dashed rounded-lg bg-muted/10">
-                <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-                <h3 className="text-lg font-medium text-muted-foreground">Nenhum padrão vencedor registrado ainda</h3>
-                <p className="text-sm text-muted-foreground mb-4">Encerre testes A/B definindo um vencedor para salvar padrões aqui.</p>
-              </div>
-            )}
-          </div>
+        <TabsContent value="patterns" className="pt-4">
+          <AdminPatterns 
+            patterns={winningPatterns.data || []} 
+            applications={patternApplications.data || []} 
+            onRefetch={() => {
+              winningPatterns.refetch();
+              patternApplications.refetch();
+            }} 
+          />
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6 pt-4">
@@ -460,7 +479,7 @@ export function AdminAnalytics() {
             <Card className="border-primary/50 bg-primary/5">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Star className="h-4 w-4 text-amber-500" />
+                  <Star className="h-4 w-4 text-primary" />
                   LP Padrão Tecvo (Alta Conv.)
                 </CardTitle>
                 <CardDescription>Estrutura otimizada com base em +50 testes validados.</CardDescription>
@@ -468,13 +487,13 @@ export function AdminAnalytics() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Headlines Dinâmicas
+                    <CheckCircle2 className="h-3 w-3 text-primary" /> Headlines Dinâmicas
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Prova Social Integrada
+                    <CheckCircle2 className="h-3 w-3 text-primary" /> Prova Social Integrada
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Senso de Urgência no CTA
+                    <CheckCircle2 className="h-3 w-3 text-primary" /> Senso de Urgência no CTA
                   </div>
                 </div>
                 <Button className="w-full gap-2">
@@ -635,32 +654,32 @@ export function AdminAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-emerald-50/50">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-primary/5">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Taxa de Conversão Total</p>
                       <p className="text-xs text-muted-foreground">Visita vs Assinatura</p>
                     </div>
-                    <div className="text-2xl font-bold text-emerald-600">
+                    <div className="text-2xl font-bold text-primary">
                       {((funnel.data?.subscription_completed || 0) / (funnel.data?.landing_page || 1) * 100).toFixed(2)}%
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50/50">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-secondary/10">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Eficiência de Signup</p>
                       <p className="text-xs text-muted-foreground">Iniciado vs Concluído</p>
                     </div>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-foreground">
                       {((funnel.data?.signup_completed || 0) / (funnel.data?.signup_started || 1) * 100).toFixed(1)}%
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-indigo-50/50">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Poder de Ativação</p>
                       <p className="text-xs text-muted-foreground">Login vs Uso Real</p>
                     </div>
-                    <div className="text-2xl font-bold text-indigo-600">
+                    <div className="text-2xl font-bold text-muted-foreground">
                       {((funnel.data?.activated || 0) / (funnel.data?.first_login || 1) * 100).toFixed(1)}%
                     </div>
                   </div>
@@ -741,7 +760,7 @@ export function AdminAnalytics() {
             <Card className="md:col-span-1">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  <AlertTriangle className="h-5 w-5 text-primary" />
                   <CardTitle>Alertas Ativos</CardTitle>
                 </div>
                 <CardDescription>Detecção automática de problemas</CardDescription>
