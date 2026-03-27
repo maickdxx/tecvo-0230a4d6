@@ -17,6 +17,7 @@ interface Profile {
   field_worker?: boolean;
   employee_type?: string;
   avatar_url?: string | null;
+  position?: string | null;
 }
 
 interface AuthContextType {
