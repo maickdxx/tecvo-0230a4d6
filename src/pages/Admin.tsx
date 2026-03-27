@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText } from "lucide-react";
+import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import { AdminWhatsAppStatus } from "@/components/admin/AdminWhatsAppStatus";
 import { ExecutiveDashboard } from "@/components/admin/ExecutiveDashboard";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { FinancialDashboard } from "@/components/admin/FinancialDashboard";
+import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
 import { useAdminOrganizations } from "@/hooks/useAdminOrganizations";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useEngagementMetrics } from "@/hooks/useEngagementMetrics";
