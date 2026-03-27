@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { analytics } from "@/lib/analytics";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
@@ -69,7 +70,7 @@ export function SolutionSection() {
                 asChild
                 className="text-base px-8 py-6 shadow-[0_8px_30px_-6px_hsl(var(--primary)/0.35)] hover:scale-[1.02] transition-all duration-300"
               >
-                <Link to="/cadastro">
+                <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "solution_section" })}>
                   Quero organizar minha empresa
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
