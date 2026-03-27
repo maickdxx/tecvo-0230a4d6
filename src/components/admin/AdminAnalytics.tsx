@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
 import { 
@@ -30,7 +31,25 @@ import { LeadJourneyTab } from "./analytics/LeadJourneyTab";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
+// Map UI tab values to analytics hook tab categories
+const TAB_TO_CATEGORY: Record<string, string> = {
+  leads: "marketing",
+  journey: "leads",
+  campaigns: "marketing",
+  overview: "overview",
+  funnel: "overview",
+  retention: "engagement",
+  users: "engagement",
+  automations: "overview", // automations load independently
+  ab_tests: "ab_tests",
+  patterns: "patterns",
+  templates: "patterns",
+};
+
 export function AdminAnalytics() {
+  const [activeTab, setActiveTab] = useState("leads");
+  const analyticsCategory = TAB_TO_CATEGORY[activeTab] || "overview";
+
   const { 
     dailyMetrics, 
     trafficSources, 
@@ -51,7 +70,7 @@ export function AdminAnalytics() {
     patternApplications,
     kpis, 
     isLoading 
-  } = useAdminAnalytics();
+  } = useAdminAnalytics(analyticsCategory);
 
   if (isLoading) {
     return (
