@@ -121,7 +121,7 @@ export function useWhatsAppSendMonitor() {
       };
     },
     enabled: !!orgId,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 
   // ── Recent blocks ──
@@ -139,7 +139,7 @@ export function useWhatsAppSendMonitor() {
       return (data || []) as SendLogEntry[];
     },
     enabled: !!orgId,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 
   // ── Full log (paginated) ──
@@ -156,7 +156,7 @@ export function useWhatsAppSendMonitor() {
       return (data || []) as SendLogEntry[];
     },
     enabled: !!orgId,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 
   // ── Pause / Resume ──

@@ -18,7 +18,7 @@ import { cleanDisplayUrl } from "@/lib/cleanUrl";
 import { LeadFiltersPanel, LeadFilters, defaultLeadFilters, applyLeadFilters } from "./LeadFilters";
 
 export function LeadJourneyTab() {
-  const { leadJourneys } = useAdminAnalytics();
+  const { leadJourneys } = useAdminAnalytics("leads");
   const [filters, setFilters] = useState<LeadFilters>(defaultLeadFilters);
   const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
 

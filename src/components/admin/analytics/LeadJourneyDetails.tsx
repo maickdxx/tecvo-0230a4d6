@@ -27,7 +27,7 @@ interface LeadJourneyDetailsProps {
 }
 
 export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProps) {
-  const { fetchLeadJourneyDetail } = useAdminAnalytics();
+  const { fetchLeadJourneyDetail } = useAdminAnalytics("leads");
   const [timelineFilters, setTimelineFilters] = useState<TimelineFilterState>(defaultTimelineFilters);
 
   const { data: timeline, isLoading } = useQuery({
