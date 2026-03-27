@@ -91,7 +91,7 @@ export function LeadJourneyTab() {
           <CardContent>
             <div className="text-2xl font-bold">
               {leadJourneys.data && leadJourneys.data.length > 0 
-                ? Math.round(leadJourneys.data.reduce((acc, l) => acc + (l.total_duration_seconds || 0), 0) / leadJourneys.data.length / 60) 
+                ? Math.round(leadJourneys.data.reduce((acc, l) => acc + ((l as any).total_duration_seconds || 0), 0) / leadJourneys.data.length / 60) 
                 : 0} min
             </div>
             <p className="text-xs text-muted-foreground">Média de permanência no site</p>
@@ -143,7 +143,7 @@ export function LeadJourneyTab() {
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="text-xs">{format(new Date(lead.last_seen), "HH:mm 'de' dd/MM", { locale: ptBR })}</span>
-                      <span className="text-[10px] text-muted-foreground">Duração: {Math.round((lead.total_duration_seconds || 0) / 60)} min</span>
+                      <span className="text-[10px] text-muted-foreground">Duração: {Math.round(((lead as any).total_duration_seconds || 0) / 60)} min</span>
                     </div>
                   </TableCell>
                   <TableCell>
