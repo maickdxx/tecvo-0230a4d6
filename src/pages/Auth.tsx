@@ -202,8 +202,8 @@ export default function Auth() {
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
     } else {
+      // analytics.track is already called in signUp hook
       trackFBEvent("Lead", { content_name: "Signup" });
-      analytics.track("signup_completed", null, null, { email: signupEmail });
       setConfirmationEmail(signupEmail);
       setResendCooldown(60);
     }
