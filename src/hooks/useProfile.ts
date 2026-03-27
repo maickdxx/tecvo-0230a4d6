@@ -7,10 +7,13 @@ export function useProfile() {
   const { profile, user } = useAuth();
 
   const updateProfileMutation = useMutation({
-    mutationFn: async ({ fullName, phone, whatsappPersonal }: { fullName: string; phone: string; whatsappPersonal?: string }) => {
+    mutationFn: async ({ fullName, phone, position, whatsappPersonal }: { fullName: string; phone: string; position?: string; whatsappPersonal?: string }) => {
       if (!user) throw new Error("Não autenticado");
 
       const updateData: Record<string, string | null> = { full_name: fullName, phone };
+      if (position !== undefined) {
+        updateData.position = position || null;
+      }
       if (whatsappPersonal !== undefined) {
         updateData.whatsapp_personal = whatsappPersonal || null;
       }
