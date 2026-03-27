@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "@/lib/analytics";
 
 export interface DashboardLayoutItem {
   id: string;
@@ -90,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, user_id, organization_id, full_name, phone, dashboard_layout, field_worker, employee_type, avatar_url, position")
+        .select("id, user_id, organization_id, full_name, phone, dashboard_layout, field_worker, employee_type, avatar_url, position, first_utm_source")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -98,12 +99,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(data ? { ...data, dashboard_layout: (Array.isArray(data.dashboard_layout) ? data.dashboard_layout as unknown as DashboardLayoutItem[] : null) } : null);
 
       // Update last_access silently (once per session load)
-      if (data) {
+        const utms = analytics.getStoredUTMs();
+        const updateData: any = { last_access: new Date().toISOString() };
+        
+        // Populate first UTMs if they don't exist yet
+        if (!data.first_utm_source && Object.keys(utms).length > 0) {
+          updateData.first_utm_source = utms.utm_source;
+          updateData.first_utm_medium = utms.utm_medium;
+          updateData.first_utm_campaign = utms.utm_campaign;
+          updateData.first_referrer = utms.referrer;
+          updateData.first_landing_page = utms.landing_page;
+        }
+
         supabase
           .from("profiles")
-          .update({ last_access: new Date().toISOString() })
+          .update(updateData)
           .eq("user_id", userId)
           .then(() => {});
+
+        // Track Login Event (if not already tracked in this session)
+        if (!sessionStorage.getItem("tecvo_login_tracked")) {
+          analytics.track("login", userId, data.organization_id);
+          sessionStorage.setItem("tecvo_login_tracked", "true");
+        }
 
         // Check if welcome WhatsApp needs to be sent
         if (data.organization_id) {
@@ -130,11 +148,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string, phone: string) => {
     try {
+      const utms = analytics.getStoredUTMs();
+      analytics.track("signup_started", null, null, { email, ...utms });
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: fullName, phone },
+          data: { 
+            full_name: fullName, 
+            phone,
+            ...utms // This will be handled by a trigger if available, or we do it on first fetch
+          },
           emailRedirectTo: window.location.origin,
         },
       });
@@ -163,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Failed to send verification email:", otpErr);
       }
 
+      analytics.track("signup_completed", data.user?.id || null, null);
       setSignUpSuccess(true);
       return { error: null };
     } catch (error) {
