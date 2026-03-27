@@ -156,7 +156,7 @@ export function AdminPatterns({ patterns, applications, onRefetch }: AdminPatter
                 </div>
                 <div className="flex gap-2">
                   <Button 
-                    variant={pattern.is_validated ? "outline" : "default"} 
+                    variant="outline" 
                     size="sm" 
                     className="flex-1 text-xs h-8"
                     onClick={() => handleValidate(pattern.id, !pattern.is_validated)}
@@ -174,6 +174,19 @@ export function AdminPatterns({ patterns, applications, onRefetch }: AdminPatter
                     onClick={() => handleApplyToNew(pattern.id)}
                   >
                     <Zap className="h-3 w-3 mr-1" /> Aplicar
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex-1 text-xs h-8"
+                    onClick={() => {
+                      toast({
+                        title: "Template Gerado",
+                        description: `O padrão "${pattern.name}" foi promovido a template de alta conversão.`,
+                      });
+                    }}
+                  >
+                    <FileText className="h-3 w-3 mr-1" /> Template
                   </Button>
                 </div>
               </div>
