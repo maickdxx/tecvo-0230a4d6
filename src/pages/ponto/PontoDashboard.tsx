@@ -58,7 +58,7 @@ export default function PontoDashboard() {
 
       // Check late using employee's own schedule
       const profile = teamProfiles.find(p => p.user_id === userId);
-      const schedule = getScheduleForEmployee(userId, (profile as any)?.employee_type);
+      const schedule = getScheduleForEmployee(userId, profile?.employee_type);
       const firstEntry = sorted[0];
       if (firstEntry.entry_type === "clock_in" && schedule.expected_clock_in) {
         const entryTime = new Date(firstEntry.recorded_at);
@@ -84,7 +84,7 @@ export default function PontoDashboard() {
     for (const [userId, entries] of yesterdayUsers) {
       // Skip employees who were NOT expected to work yesterday
       const profile = teamProfiles.find(p => p.user_id === userId);
-      if (!isWorkDay(yesterdayStr, userId, (profile as any)?.employee_type)) continue;
+      if (!isWorkDay(yesterdayStr, userId, profile?.employee_type)) continue;
       const sorted = [...entries].sort((a, b) => a.recorded_at.localeCompare(b.recorded_at));
       const last = sorted[sorted.length - 1];
       if (last.entry_type !== "clock_out") inconsistencies++;
@@ -121,7 +121,7 @@ export default function PontoDashboard() {
       if (last.entry_type !== "clock_out") openShifts++;
       
       const profile = teamProfiles.find(p => p.user_id === userId);
-      const schedule = getScheduleForEmployee(userId, (profile as any)?.employee_type);
+      const schedule = getScheduleForEmployee(userId, profile?.employee_type);
       
       let breakStart: Date | null = null;
       for (const e of sorted) {

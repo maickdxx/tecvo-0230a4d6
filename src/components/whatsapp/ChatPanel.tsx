@@ -7,6 +7,7 @@ import { useWhatsAppMediaSend } from "@/hooks/useWhatsAppMediaSend";
 import { useWhatsAppMessageActions } from "@/hooks/useWhatsAppMessageActions";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { MessageBubble } from "./MessageBubble";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
