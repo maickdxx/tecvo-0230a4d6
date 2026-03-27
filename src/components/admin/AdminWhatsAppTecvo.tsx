@@ -183,7 +183,27 @@ export function AdminWhatsAppTecvo() {
     setTestSending(true);
     setTestResult(null);
     try {
-      const data = await invoke("send_test", { phone: testPhone, message: testMessage });
+      // Call directly instead of via invoke() to handle non-2xx responses properly
+      const { data, error } = await supabase.functions.invoke("whatsapp-admin-status", {
+        body: { action: "send_test", instance_name: INSTANCE_NAME, phone: testPhone, message: testMessage },
+      });
+
+      // supabase.functions.invoke returns error for non-2xx but may still have useful data
+      if (error) {
+        // Try to parse error context
+        const errMsg = typeof error === "object" && error?.context?.body
+          ? await error.context.body.text?.() || error.message
+          : error.message || String(error);
+        
+        let parsed: any = null;
+        try { parsed = JSON.parse(errMsg); } catch { /* ignore */ }
+        
+        const result = parsed || { ok: false, error: errMsg };
+        setTestResult(result);
+        toast.error(result.error || "Erro ao enviar mensagem de teste");
+        return;
+      }
+
       setTestResult(data);
       if (data?.ok) {
         toast.success("Mensagem de teste enviada com sucesso!");
@@ -192,6 +212,7 @@ export function AdminWhatsAppTecvo() {
         toast.error(data?.error || "Erro ao enviar mensagem de teste");
       }
     } catch (e: any) {
+      console.error("[TEST SEND] Error:", e);
       setTestResult({ ok: false, error: e.message || "Erro desconhecido" });
       toast.error("Falha ao enviar mensagem de teste");
     } finally {
