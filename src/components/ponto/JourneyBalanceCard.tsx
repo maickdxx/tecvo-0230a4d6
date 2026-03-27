@@ -21,6 +21,7 @@ function formatBalance(minutes: number): string {
 export function JourneyBalanceCard() {
   const tz = useOrgTimezone();
   const { user, profile } = useAuth();
+  const { sensitiveData } = useProfileSensitiveData();
   const { effectiveMonthEntries, settings } = useTimeClock();
   const { getScheduleForEmployee, isWorkDay } = useWorkSchedules();
 
