@@ -115,17 +115,61 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── AUTO-FALLBACK: If contact's channel is disconnected, find another active channel ──
+    let activeChannel = channel;
+    let didFallback = false;
+
     if (!channel.is_connected || !channel.instance_name || channel.channel_status !== "connected") {
-      const phoneLabel = channel.phone_number || "desconhecido";
-      return new Response(JSON.stringify({
-        error: "channel_disconnected",
-        message: `O número ${phoneLabel} não está conectado. Reconecte-o para enviar mensagens.`,
-        phone_number: channel.phone_number,
-        channel_id: channel.id,
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.warn(`[WHATSAPP-SEND] Contact's channel ${channel.id} is disconnected (status: ${channel.channel_status}). Searching for active fallback...`);
+
+      const { data: fallbackChannel } = await supabase
+        .from("whatsapp_channels")
+        .select("id, instance_name, organization_id, is_connected, channel_status, phone_number")
+        .eq("organization_id", orgId)
+        .eq("channel_type", "CUSTOMER_INBOX")
+        .eq("is_connected", true)
+        .eq("channel_status", "connected")
+        .neq("id", channel.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackChannel && fallbackChannel.instance_name) {
+        console.info(`[WHATSAPP-SEND] Fallback channel found: ${fallbackChannel.id} (${fallbackChannel.instance_name}). Migrating contact.`);
+        activeChannel = fallbackChannel;
+        didFallback = true;
+
+        // Auto-migrate contact to the active channel
+        await supabase
+          .from("whatsapp_contacts")
+          .update({ channel_id: fallbackChannel.id })
+          .eq("id", contact_id);
+
+        // Log the transition for audit
+        await supabase.from("whatsapp_channel_transitions").insert({
+          organization_id: orgId,
+          contact_id: contact_id,
+          previous_channel_id: channel.id,
+          new_channel_id: fallbackChannel.id,
+          reason: "send_fallback:contact_channel_disconnected",
+        });
+      } else {
+        // No fallback available — block with clear error
+        const phoneLabel = channel.phone_number || "desconhecido";
+        console.warn(`[WHATSAPP-SEND] No active fallback channel for org ${orgId}. Blocking send.`);
+        return new Response(JSON.stringify({
+          error: "channel_disconnected",
+          message: `O número ${phoneLabel} não está conectado e não há outro canal ativo. Reconecte nas configurações.`,
+          phone_number: channel.phone_number,
+          channel_id: channel.id,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    if (didFallback) {
+      console.info(`[WHATSAPP-SEND] Using fallback channel: ${activeChannel.id} (${activeChannel.instance_name}) instead of ${channel.id}`);
     }
 
     // Fetch contact by org
@@ -168,7 +212,7 @@ Deno.serve(async (req) => {
         content: message,
         is_from_me: true,
         status: "sent",
-        channel_id: channel.id,
+        channel_id: activeChannel.id,
         timestamp: new Date().toISOString(),
       };
       if (reply_context) {
@@ -232,7 +276,7 @@ Deno.serve(async (req) => {
       }
       recipientJid = `${digits}@s.whatsapp.net`;
     }
-    console.log("[WHATSAPP-SEND] Sending to:", recipientJid, "via instance:", channel.instance_name);
+    console.log("[WHATSAPP-SEND] Sending to:", recipientJid, "via instance:", activeChannel.instance_name, didFallback ? "(FALLBACK)" : "");
 
     // Send via Evolution API
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
@@ -266,7 +310,7 @@ Deno.serve(async (req) => {
       console.log("[WHATSAPP-SEND] Sending with quoted message:", reply_context.reply_to_message_id);
     }
 
-    const evoResponse = await fetch(`${vpsUrl}/message/sendText/${channel.instance_name}`, {
+    const evoResponse = await fetch(`${vpsUrl}/message/sendText/${activeChannel.instance_name}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -280,7 +324,7 @@ Deno.serve(async (req) => {
       console.error("[WHATSAPP-SEND] Evolution API error:", evoResponse.status, errText);
 
       // Classify the error using centralized classifier
-      const classified = classifyEvoError(evoResponse.status, errText, channel.phone_number || undefined);
+      const classified = classifyEvoError(evoResponse.status, errText, activeChannel.phone_number || undefined);
       console.warn(`[WHATSAPP-SEND] Classified error: ${classified.domainError} — ${classified.technicalReason}`);
 
       // Log channel status transition for audit
@@ -289,8 +333,8 @@ Deno.serve(async (req) => {
           await supabase.from("whatsapp_channel_transitions").insert({
             organization_id: orgId,
             contact_id: contact.id,
-            previous_channel_id: channel.id,
-            new_channel_id: channel.id,
+            previous_channel_id: activeChannel.id,
+            new_channel_id: activeChannel.id,
             reason: `auto_disconnect:${reason}`,
           });
         } catch (_e) { /* best effort */ }
@@ -305,16 +349,16 @@ Deno.serve(async (req) => {
             channel_status: "disconnected",
             disconnected_reason: classified.technicalReason.substring(0, 200),
           })
-          .eq("id", channel.id);
+          .eq("id", activeChannel.id);
 
         await logTransition("disconnected", classified.technicalReason.substring(0, 100));
-        console.warn("[WHATSAPP-SEND] Channel auto-disconnected:", channel.id, classified.domainError);
+        console.warn("[WHATSAPP-SEND] Channel auto-disconnected:", activeChannel.id, classified.domainError);
 
         return new Response(JSON.stringify({
           error: "channel_disconnected",
           message: classified.userMessage,
-          phone_number: channel.phone_number,
-          channel_id: channel.id,
+          phone_number: activeChannel.phone_number,
+          channel_id: activeChannel.id,
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -347,7 +391,7 @@ Deno.serve(async (req) => {
       content: message,
       is_from_me: true,
       status: "sent",
-      channel_id: channel.id,
+      channel_id: activeChannel.id,
       timestamp: sentTimestamp,
     };
     if (reply_context) {

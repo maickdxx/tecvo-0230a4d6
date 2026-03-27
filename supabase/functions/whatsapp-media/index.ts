@@ -67,11 +67,12 @@ Deno.serve(async (req) => {
     }
 
     // Fetch channel
+    const orgId = profile.organization_id;
     const { data: channel } = await supabase
       .from("whatsapp_channels")
-      .select("id, instance_name, organization_id")
+      .select("id, instance_name, organization_id, is_connected, channel_status, phone_number")
       .eq("id", channelId)
-      .eq("organization_id", profile.organization_id)
+      .eq("organization_id", orgId)
       .single();
 
     if (!channel) {
@@ -79,6 +80,41 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ── AUTO-FALLBACK for disconnected channels ──
+    let activeChannel = channel;
+    let didFallback = false;
+
+    if (!channel.is_connected || !channel.instance_name || channel.channel_status !== "connected") {
+      console.warn(`[WHATSAPP-MEDIA] Channel ${channel.id} disconnected. Searching fallback...`);
+      const { data: fallbackChannel } = await supabase
+        .from("whatsapp_channels")
+        .select("id, instance_name, organization_id, is_connected, channel_status, phone_number")
+        .eq("organization_id", orgId)
+        .eq("channel_type", "CUSTOMER_INBOX")
+        .eq("is_connected", true)
+        .eq("channel_status", "connected")
+        .neq("id", channel.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackChannel?.instance_name) {
+        activeChannel = fallbackChannel;
+        didFallback = true;
+        await supabase.from("whatsapp_contacts").update({ channel_id: fallbackChannel.id }).eq("id", contactId);
+        await supabase.from("whatsapp_channel_transitions").insert({
+          organization_id: orgId, contact_id: contactId,
+          previous_channel_id: channel.id, new_channel_id: fallbackChannel.id,
+          reason: "media_send_fallback",
+        });
+        console.info(`[WHATSAPP-MEDIA] Fallback to ${fallbackChannel.id} (${fallbackChannel.instance_name})`);
+      } else {
+        return new Response(JSON.stringify({
+          error: "channel_disconnected",
+          message: "Nenhum canal ativo disponível. Reconecte nas configurações.",
+        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     // Fetch contact
@@ -148,14 +184,14 @@ Deno.serve(async (req) => {
 
     if (mediaType === "audio") {
       // Use sendWhatsAppAudio for audio files
-      evoEndpoint = `${vpsUrl}/message/sendWhatsAppAudio/${channel.instance_name}`;
+      evoEndpoint = `${vpsUrl}/message/sendWhatsAppAudio/${activeChannel.instance_name}`;
       evoBody = {
         number: recipientJid,
         audio: mediaUrl,
       };
     } else {
       // Use sendMedia for image, video, document
-      evoEndpoint = `${vpsUrl}/message/sendMedia/${channel.instance_name}`;
+      evoEndpoint = `${vpsUrl}/message/sendMedia/${activeChannel.instance_name}`;
       evoBody = {
         number: recipientJid,
         mediatype: mediaType === "image" ? "image" : mediaType === "video" ? "video" : "document",
@@ -190,14 +226,14 @@ Deno.serve(async (req) => {
             channel_status: "disconnected",
             disconnected_reason: classified.technicalReason.substring(0, 200),
           })
-          .eq("id", channel.id);
+          .eq("id", activeChannel.id);
 
-        console.warn("[WHATSAPP-MEDIA] Channel auto-disconnected:", channel.id);
+        console.warn("[WHATSAPP-MEDIA] Channel auto-disconnected:", activeChannel.id);
 
         return new Response(JSON.stringify({
           error: "channel_disconnected",
           message: classified.userMessage,
-          channel_id: channel.id,
+          channel_id: activeChannel.id,
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -230,7 +266,7 @@ Deno.serve(async (req) => {
       media_type: mediaType,
       is_from_me: true,
       status: "sent",
-      channel_id: channel.id,
+      channel_id: activeChannel.id,
     });
 
     await supabase
