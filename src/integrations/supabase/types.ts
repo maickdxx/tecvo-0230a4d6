@@ -196,6 +196,74 @@ export type Database = {
           },
         ]
       }
+      analytics_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          organization_id: string | null
+          resolved_at: string | null
+          severity: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          organization_id?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "view_analytics_user_scores"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           content: string
@@ -5574,6 +5642,15 @@ export type Database = {
           },
         ]
       }
+      view_analytics_activation_metrics: {
+        Row: {
+          activated_24h: number | null
+          avg_hours_to_activation: number | null
+          total_activated: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
       view_analytics_daily_metrics: {
         Row: {
           avg_session_duration: number | null
@@ -5651,6 +5728,19 @@ export type Database = {
         }
         Relationships: []
       }
+      view_analytics_funnel_advanced: {
+        Row: {
+          activated: number | null
+          first_action: number | null
+          first_login: number | null
+          signup_completed: number | null
+          signup_started: number | null
+          subscription_completed: number | null
+          subscription_started: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
       view_analytics_pages: {
         Row: {
           avg_duration_on_page: number | null
@@ -5658,6 +5748,15 @@ export type Database = {
           page_title: string | null
           total_views: number | null
           unique_views: number | null
+        }
+        Relationships: []
+      }
+      view_analytics_retention_cohorts: {
+        Row: {
+          active_users: number | null
+          activity_month: string | null
+          cohort_month: string | null
+          month_number: number | null
         }
         Relationships: []
       }
@@ -5723,6 +5822,39 @@ export type Database = {
           user_count: number | null
         }
         Relationships: []
+      }
+      view_analytics_unified_events: {
+        Row: {
+          created_at: string | null
+          event_type: string | null
+          id: string | null
+          metadata: Json | null
+          organization_id: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      view_analytics_user_scores: {
+        Row: {
+          active_days_30d: number | null
+          classification: string | null
+          full_name: string | null
+          is_churn_risk: boolean | null
+          joined_at: string | null
+          last_active_at: string | null
+          organization_id: string | null
+          total_events_30d: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_channels_safe: {
         Row: {
@@ -5810,6 +5942,7 @@ export type Database = {
       }
       can_create_service: { Args: { org_id: string }; Returns: boolean }
       can_modify: { Args: { _user_id: string }; Returns: boolean }
+      check_analytics_anomalies: { Args: never; Returns: undefined }
       check_send_limit: {
         Args: { _contact_id?: string; _org_id: string; _source?: string }
         Returns: Json
