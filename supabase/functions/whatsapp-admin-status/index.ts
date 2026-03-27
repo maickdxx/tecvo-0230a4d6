@@ -175,7 +175,135 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ error: "Invalid action. Use: list, status, qrcode" }), {
+    // ── ACTION: DISCONNECT ── Logout/disconnect instance from Evolution API
+    if (action === "disconnect") {
+      if (!instance_name) {
+        return new Response(JSON.stringify({ error: "instance_name required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      try {
+        const evoRes = await fetch(`${vpsUrl}/instance/logout/${instance_name}`, {
+          method: "DELETE",
+          headers: { apikey: apiKey },
+        });
+
+        const evoData = await evoRes.json().catch(() => ({}));
+        console.log("[WHATSAPP-ADMIN-STATUS] Disconnect response:", JSON.stringify(evoData));
+
+        // Update DB
+        await supabase
+          .from("whatsapp_channels")
+          .update({ is_connected: false })
+          .eq("instance_name", instance_name);
+
+        return new Response(JSON.stringify({
+          ok: true,
+          instance_name,
+          action: "disconnected",
+          detail: evoData,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({
+          ok: false,
+          error: `Failed to disconnect: ${e.message}`,
+        }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // ── ACTION: RESTART ── Restart instance connection
+    if (action === "restart") {
+      if (!instance_name) {
+        return new Response(JSON.stringify({ error: "instance_name required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      try {
+        // First logout
+        await fetch(`${vpsUrl}/instance/logout/${instance_name}`, {
+          method: "DELETE",
+          headers: { apikey: apiKey },
+        }).catch(() => {});
+
+        // Then reconnect
+        const evoRes = await fetch(`${vpsUrl}/instance/connect/${instance_name}`, {
+          method: "GET",
+          headers: { apikey: apiKey },
+        });
+
+        const evoData = await evoRes.json().catch(() => ({}));
+
+        return new Response(JSON.stringify({
+          ok: true,
+          instance_name,
+          action: "restarted",
+          state: evoData.instance?.state || evoData.state || null,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({
+          ok: false,
+          error: `Failed to restart: ${e.message}`,
+        }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // ── ACTION: SEND_METRICS ── Get send metrics for institutional instance
+    if (action === "send_metrics") {
+      if (!instance_name) {
+        return new Response(JSON.stringify({ error: "instance_name required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Count messages sent in last 24h via analytics_automation_logs
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      const { count: totalSent } = await supabase
+        .from("analytics_automation_logs")
+        .select("*", { count: "exact", head: true })
+        .gte("sent_at", since24h)
+        .eq("status", "sent");
+
+      const { count: totalErrors } = await supabase
+        .from("analytics_automation_logs")
+        .select("*", { count: "exact", head: true })
+        .gte("sent_at", since24h)
+        .eq("status", "error");
+
+      const { data: recentErrors } = await supabase
+        .from("analytics_automation_logs")
+        .select("error_message, sent_at, channel, metadata")
+        .eq("status", "error")
+        .order("sent_at", { ascending: false })
+        .limit(5);
+
+      return new Response(JSON.stringify({
+        ok: true,
+        instance_name,
+        sent_24h: totalSent || 0,
+        errors_24h: totalErrors || 0,
+        recent_errors: recentErrors || [],
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: "Invalid action. Use: list, status, qrcode, disconnect, restart, send_metrics" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
