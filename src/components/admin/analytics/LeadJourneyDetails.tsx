@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cleanDisplayUrl, getPageName } from "@/lib/cleanUrl";
+import { formatEventDescription, getEventIconType } from "@/lib/formatAnalyticsEvent";
 
 interface LeadJourneyDetailsProps {
   visitorId: string;
@@ -119,16 +120,23 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                 {timeline?.map((event, idx) => {
                   const isLast = idx === timeline.length - 1;
                   const isFirst = idx === 0;
+                  const iconType = getEventIconType(event.event_type);
+                  const description = event.event_type === 'page_view' || event.event_type === 'landing_page_view'
+                    ? `Visualizou ${getPageName(event.page_path, event.page_title)}`
+                    : formatEventDescription(event.event_type, event.metadata as any);
                   
                   return (
                     <div key={idx} className="relative flex items-start gap-6">
                       <div className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-background shadow-sm z-10 ${
-                        event.event_type === 'create_account_click' ? 'border-primary ring-2 ring-primary/20' : ''
+                        iconType === 'cta' ? 'border-primary ring-2 ring-primary/20' : 
+                        iconType === 'conversion' ? 'border-green-500 ring-2 ring-green-200' : ''
                       }`}>
-                        {event.event_type === 'page_view' || event.event_type === 'landing_page_view' ? (
+                        {iconType === 'page' ? (
                           <Layout className="h-4 w-4 text-primary" />
-                        ) : event.event_type === 'create_account_click' ? (
+                        ) : iconType === 'cta' ? (
                           <MousePointer2 className="h-4 w-4 text-primary fill-primary/10" />
+                        ) : iconType === 'conversion' ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
                         ) : (
                           <Activity className="h-4 w-4 text-muted-foreground" />
                         )}
@@ -136,9 +144,7 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
                       <div className="flex flex-col gap-1 pt-1 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-bold text-sm">
-                            {event.event_type === 'page_view' || event.event_type === 'landing_page_view' 
-                              ? `Visitou ${getPageName(event.page_path, event.page_title)}` 
-                              : event.event_type.replace(/_/g, ' ')}
+                            {description}
                           </span>
                           <span className="text-[10px] text-muted-foreground whitespace-nowrap bg-muted px-2 py-0.5 rounded">
                             {format(new Date(event.created_at), 'HH:mm:ss', { locale: ptBR })}
