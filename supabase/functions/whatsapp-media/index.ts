@@ -184,14 +184,14 @@ Deno.serve(async (req) => {
 
     if (mediaType === "audio") {
       // Use sendWhatsAppAudio for audio files
-      evoEndpoint = `${vpsUrl}/message/sendWhatsAppAudio/${channel.instance_name}`;
+      evoEndpoint = `${vpsUrl}/message/sendWhatsAppAudio/${activeChannel.instance_name}`;
       evoBody = {
         number: recipientJid,
         audio: mediaUrl,
       };
     } else {
       // Use sendMedia for image, video, document
-      evoEndpoint = `${vpsUrl}/message/sendMedia/${channel.instance_name}`;
+      evoEndpoint = `${vpsUrl}/message/sendMedia/${activeChannel.instance_name}`;
       evoBody = {
         number: recipientJid,
         mediatype: mediaType === "image" ? "image" : mediaType === "video" ? "video" : "document",
@@ -226,14 +226,14 @@ Deno.serve(async (req) => {
             channel_status: "disconnected",
             disconnected_reason: classified.technicalReason.substring(0, 200),
           })
-          .eq("id", channel.id);
+          .eq("id", activeChannel.id);
 
-        console.warn("[WHATSAPP-MEDIA] Channel auto-disconnected:", channel.id);
+        console.warn("[WHATSAPP-MEDIA] Channel auto-disconnected:", activeChannel.id);
 
         return new Response(JSON.stringify({
           error: "channel_disconnected",
           message: classified.userMessage,
-          channel_id: channel.id,
+          channel_id: activeChannel.id,
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
       media_type: mediaType,
       is_from_me: true,
       status: "sent",
-      channel_id: channel.id,
+      channel_id: activeChannel.id,
     });
 
     await supabase
