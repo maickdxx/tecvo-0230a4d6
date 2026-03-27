@@ -19,7 +19,8 @@ import {
   Target,
   FileText,
   MousePointer2,
-  Star
+  Star,
+  Layout
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -99,15 +100,16 @@ export function AdminABTests() {
       });
     }
   };
+
   const handleSavePattern = async (testName: string, variantName: string, conversionRate: number, testId: string) => {
     try {
       const { error } = await supabase
         .from("ab_test_winning_patterns")
         .insert([{
           name: `${testName} - ${variantName}`,
-          pattern_type: 'headline', // Default to headline for now, could be selectable
+          pattern_type: 'headline',
           content: { variant_name: variantName },
-          performance_lift: 0, // Should be calculated
+          performance_lift: 0,
           conversion_rate: conversionRate,
           source_test_id: testId,
           description: `Padrão vencedor identificado no teste ${testName}`
@@ -158,10 +160,8 @@ export function AdminABTests() {
     }
   };
 
-  // Automated Suggestion Logic
   const getSuggestions = () => {
     const suggestions = [];
-    
     if (marketingFunnel.data) {
       if ((marketingFunnel.data.cta_click_rate || 0) < 5) {
         suggestions.push({
@@ -172,7 +172,6 @@ export function AdminABTests() {
           impact: "high"
         });
       }
-      
       if ((marketingFunnel.data.final_conversion_rate || 0) < 1) {
         suggestions.push({
           type: "conversion",
@@ -183,7 +182,6 @@ export function AdminABTests() {
         });
       }
     }
-
     if (leadDropoffs.data && leadDropoffs.data.length > 0) {
       const topDropoff = leadDropoffs.data[0];
       if (topDropoff.dropoff_count > 50) {
@@ -196,13 +194,10 @@ export function AdminABTests() {
         });
       }
     }
-
     return suggestions;
   };
 
   const suggestions = getSuggestions();
-
-  // Group by test
   const activeTestsData = abTestResults.data?.filter((v: any) => !v.winner_variant_id) || [];
   const historicalTestsData = abTestResults.data?.filter((v: any) => v.winner_variant_id) || [];
 
@@ -446,7 +441,6 @@ export function AdminABTests() {
             </Dialog>
           </div>
 
-          {/* Suggestions Section */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {suggestions.map((s, idx) => (
               <Card key={idx} className="border-amber-200 bg-amber-50/30">
@@ -483,7 +477,6 @@ export function AdminABTests() {
             ))}
           </div>
 
-          {/* Hypotheses List */}
           <Card>
             <CardHeader>
               <CardTitle>Histórico de Hipóteses</CardTitle>
@@ -619,7 +612,6 @@ export function AdminABTests() {
         </TabsContent>
       </Tabs>
       
-      {/* Hidden button to switch tabs */}
       <button id="trigger-hypotheses-tab" className="hidden" onClick={() => {
         const tabList = document.querySelector('[role="tablist"]');
         const hypothesesTab = tabList?.querySelector('[value="hypotheses"]') as HTMLElement;
