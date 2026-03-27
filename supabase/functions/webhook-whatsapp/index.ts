@@ -1077,69 +1077,59 @@ Deno.serve(async (req) => {
 
     console.log("[WEBHOOK-WHATSAPP] Mode:", mode, "| channel_type:", channel.channel_type, "| sender:", normalizedSender, "| channel_org:", channelOrganizationId, "| target_org:", targetOrganizationId);
 
-    // 2. Find or create contact — in the TARGET org
-    // Strategy: 
-    // a) Exact JID match (cross-channel)
-    // b) Fallback to normalized phone match (cross-channel) — handles @lid vs @s.whatsapp.net
-    // c) Fuzzy group match
+    // 2. Find or create contact — in the TARGET org, SCOPED TO THIS CHANNEL
+    // Architecture: Each (org + phone + channel) = unique conversation thread.
+    // The same client talking to two different company numbers = two separate contacts/threads.
+    // We NEVER reassign a contact's channel_id — that would merge conversations.
     let existingContact: any = null;
-    let needsChannelReassign = false;
     {
-      // Step 1: Lookup by whatsapp_id (JID) — Cross-channel
+      // Step 1: Lookup by whatsapp_id (JID) + channel_id (exact match for this channel's thread)
       const { data: idMatch } = await supabase
         .from("whatsapp_contacts")
         .select("id, profile_picture_url, is_name_custom, name, linked_client_id, is_blocked, channel_id, whatsapp_id")
         .eq("organization_id", targetOrganizationId)
         .eq("whatsapp_id", remoteJid)
+        .eq("channel_id", channel.id)
         .maybeSingle();
       
       if (idMatch) {
         existingContact = idMatch;
-        if (idMatch.channel_id !== channel.id) {
-          needsChannelReassign = true;
-        }
       } else if (!isGroup) {
-        // Step 2: Fallback to normalized phone for non-groups (handles identity variations like @lid)
+        // Step 2: Fallback to normalized phone + channel_id for non-groups
         const phoneDigits = normalizePhone(remoteJid);
         const { data: phoneMatch } = await supabase
           .from("whatsapp_contacts")
           .select("id, profile_picture_url, is_name_custom, name, linked_client_id, is_blocked, channel_id, whatsapp_id")
           .eq("organization_id", targetOrganizationId)
           .eq("normalized_phone", phoneDigits)
+          .eq("channel_id", channel.id)
           .eq("is_group", false)
           .maybeSingle();
         
         if (phoneMatch) {
           existingContact = phoneMatch;
-          // IMPORTANT: Update whatsapp_id to the latest one received if they differ
+          // Update whatsapp_id to the latest one received if they differ (e.g., @lid → @s.whatsapp.net)
           if (phoneMatch.whatsapp_id !== remoteJid) {
             console.log("[WEBHOOK-WHATSAPP] Updating contact JID due to identity variation:", phoneMatch.whatsapp_id, "→", remoteJid);
             await supabase.from("whatsapp_contacts").update({ whatsapp_id: remoteJid }).eq("id", phoneMatch.id);
           }
-          if (phoneMatch.channel_id !== channel.id) {
-            needsChannelReassign = true;
-          }
         }
       } else if (isGroup) {
-        // Step 3: Fuzzy group match
+        // Step 3: Fuzzy group match (scoped to channel)
         const groupNumericId = remoteJid.split("@")[0];
         if (groupNumericId) {
           const { data: fuzzyMatch } = await supabase
             .from("whatsapp_contacts")
             .select("id, profile_picture_url, is_name_custom, name, linked_client_id, is_blocked, whatsapp_id, channel_id")
             .eq("organization_id", targetOrganizationId)
+            .eq("channel_id", channel.id)
             .eq("is_group", true)
             .like("whatsapp_id", `${groupNumericId}@%`)
             .maybeSingle();
           
           if (fuzzyMatch) {
             existingContact = fuzzyMatch;
-            const updates: Record<string, any> = { whatsapp_id: remoteJid };
-            if (fuzzyMatch.channel_id !== channel.id) {
-              updates.channel_id = channel.id;
-              needsChannelReassign = false; // reassign handled inline for groups
-            }
-            await supabase.from("whatsapp_contacts").update(updates).eq("id", fuzzyMatch.id);
+            await supabase.from("whatsapp_contacts").update({ whatsapp_id: remoteJid }).eq("id", fuzzyMatch.id);
             console.log("[WEBHOOK-WHATSAPP] Group matched via numeric ID + synced:", fuzzyMatch.id);
           }
         }
@@ -1157,22 +1147,8 @@ Deno.serve(async (req) => {
 
     if (existingContact) {
       contactId = existingContact.id;
-      // Reassign channel_id if the message arrived on a different (active) channel
+      // No channel reassignment — contact stays on its original channel
       const updateData: Record<string, any> = {};
-      
-      if (needsChannelReassign) {
-        updateData.channel_id = channel.id;
-        // Log channel transition for audit trail
-        await supabase.from("whatsapp_channel_transitions").insert({
-          organization_id: targetOrganizationId,
-          contact_id: contactId,
-          previous_channel_id: existingContact.channel_id,
-          new_channel_id: channel.id,
-          reason: "message_received",
-          metadata: { instance, remote_jid: remoteJid, from_me: fromMe },
-        });
-        console.log("[WEBHOOK-WHATSAPP] Channel transition logged: contact", contactId, "from", existingContact.channel_id, "→", channel.id);
-      }
       
       if (!existingContact.is_name_custom && !existingContact.linked_client_id && !fromMe && pushName) {
         updateData.name = pushName;
@@ -1190,6 +1166,7 @@ Deno.serve(async (req) => {
           .eq("id", contactId);
       }
     } else {
+      // Create NEW contact for this channel — even if same phone exists on another channel
       const normalizedPhone = phoneNumber.replace(/\D/g, "");
       
       let contactPicUrl = (typeof profilePictureUrl === "string" && profilePictureUrl) ? profilePictureUrl : null;
@@ -1224,6 +1201,7 @@ Deno.serve(async (req) => {
         });
       }
       contactId = newContact.id;
+      console.log("[WEBHOOK-WHATSAPP] New contact/thread created:", contactId, "for channel:", channel.id, "phone:", normalizedPhone);
     }
 
     // 3. Deduplicate echo messages — skip saving if already exists
