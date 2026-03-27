@@ -122,6 +122,7 @@ export function useWhatsAppSendMonitor() {
     },
     enabled: !!orgId,
     refetchInterval: 60_000,
+  });
 
   // ── Recent blocks ──
   const blocksQuery = useQuery({
