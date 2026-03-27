@@ -495,7 +495,7 @@ export function ServiceForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="solution">Solução / Descrição Técnica</Label>
+            <Label htmlFor="solution">Solução / Descrição Técnica <span className="text-muted-foreground font-normal">(opcional)</span></Label>
             <Textarea
               id="solution"
               placeholder="Descreva o que será/foi realizado no serviço..."
@@ -505,7 +505,7 @@ export function ServiceForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="notes">Observações</Label>
+            <Label htmlFor="notes">Observações <span className="text-muted-foreground font-normal">(opcional)</span></Label>
             <Textarea
               id="notes"
               placeholder="Observações visíveis no documento do cliente"
