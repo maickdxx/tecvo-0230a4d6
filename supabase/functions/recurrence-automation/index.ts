@@ -39,8 +39,7 @@ async function sendWhatsApp(phone: string, text: string, instanceName: string): 
  * Resolve which WhatsApp instance to use for sending.
  * Priority:
  *   1. Instance the client last interacted with (MUST belong to this org)
- *   2. Org's default connected CUSTOMER_INBOX channel
- *   3. null → block send (no fallback to global/other org instances)
+ *   2. null → block send (no fallback to other channels)
  */
 async function resolveOrgInstance(
   supabase: any,
@@ -74,25 +73,13 @@ async function resolveOrgInstance(
       }
     }
 
-    // 2. Fallback: org's default connected CUSTOMER_INBOX channel
-    const { data: defaultChannel } = await supabase
-      .from("whatsapp_channels")
-      .select("id, instance_name")
-      .eq("organization_id", orgId)
-      .eq("is_connected", true)
-      .eq("channel_type", "CUSTOMER_INBOX")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (defaultChannel?.instance_name) {
-      return { instanceName: defaultChannel.instance_name, channelId: defaultChannel.id };
-    }
+    // 2. STRICT: No fallback to other channels — isolamento total
+    console.warn(`[RECURRENCE] Contact's channel not available (client: ${clientId}, channel_id: ${contact?.channel_id || "null"}). Blocking send — no fallback allowed.`);
   } catch (err) {
     console.warn("[RECURRENCE] Instance resolve failed:", err);
   }
 
-  // 3. No connected WhatsApp for this org → block
+  // No connected channel for this contact → block
   return { instanceName: null, channelId: null };
 }
 
