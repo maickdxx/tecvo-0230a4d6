@@ -249,7 +249,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   // Determine if the channel for this conversation is online
   const channelData = contact.channel;
   const isChannelConnected = useMemo(() => {
-    if (!channelData) return true; // No channel data yet (loading/reassigning) — assume ok
+    if (!channelData) return false; // No channel data — block send until confirmed
     return channelData.is_connected === true && channelData.channel_status === "connected";
   }, [channelData]);
   const isChannelDeleted = channelData?.channel_status === "deleted";

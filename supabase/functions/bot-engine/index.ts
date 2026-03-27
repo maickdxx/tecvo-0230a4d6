@@ -782,20 +782,11 @@ async function resolveChannelAndPhone(
     channel = contactChannel;
   }
 
-  // 2. Fallback: find any connected CUSTOMER_INBOX channel for this org
+  // 2. STRICT: No fallback to other channels — isolamento total
   if (!channel) {
-    const { data: channels } = await supabase
-      .from("whatsapp_channels")
-      .select("id, instance_name, channel_type")
-      .eq("organization_id", orgId)
-      .eq("is_connected", true)
-      .neq("channel_type", "WEBCHAT");
-
-    channel = (channels || []).find((ch: any) => ch.channel_type === "CUSTOMER_INBOX")
-      || (channels || [])[0];
+    console.warn(`[BOT-ENGINE] Channel not available for contact ${contactId} (channel_id: ${c.channel_id || "null"}). Blocking send — no fallback allowed.`);
+    return null;
   }
-
-  if (!channel) return null;
 
   const digits = c.normalized_phone || normalizePhone(c.phone || c.whatsapp_id || "");
   if (!digits) return null;
