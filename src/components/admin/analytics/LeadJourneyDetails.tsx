@@ -224,9 +224,53 @@ export function LeadJourneyDetails({ visitorId, onBack }: LeadJourneyDetailsProp
               </div>
             </CardContent>
           </Card>
+          <Card className="bg-primary/5 border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Lightbulb className="h-4 w-4 text-primary" /> Análise de Gargalo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-[11px] space-y-2">
+                {!hasCta && pageViews.length > 2 && (
+                  <p>O lead visitou {pageViews.length} páginas mas não clicou em nenhum CTA. Considere revisar o copy da página <strong>{lastPage?.page_title || lastPage?.page_path}</strong>.</p>
+                )}
+                {hasCta && (
+                  <p>O lead demonstrou interesse clicando em CTA, mas abandonou antes do cadastro. Verifique se o formulário de cadastro está muito complexo.</p>
+                )}
+                {totalTimeSeconds < 10 && (
+                  <p className="text-destructive font-medium">Rejeição Imediata: O lead saiu em menos de 10 segundos. Verifique se a promessa do anúncio condiz com a landing page.</p>
+                )}
+                {!hasCta && pageViews.length <= 2 && totalTimeSeconds > 10 && (
+                  <p>Baixo Engajamento: O lead passou {Math.round(totalTimeSeconds)}s mas explorou pouco. Considere CTAs mais visíveis na home.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
+  );
+}
+
+function Lightbulb({ className }: { className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .5 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+    </svg>
   );
 }
 
