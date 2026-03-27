@@ -154,7 +154,7 @@ export function PaymentFeeReport({ startDate, endDate }: PaymentFeeReportProps) 
                     -{formatCurrency(m.fee_total)} ({m.fee_percentage.toFixed(1)}%)
                   </span>
                 ) : (
-                  <span className="text-emerald-600 font-medium text-xs min-w-[70px]">
+                  <span className="text-primary font-medium text-xs min-w-[70px]">
                     Sem taxa
                   </span>
                 )}
@@ -165,7 +165,7 @@ export function PaymentFeeReport({ startDate, endDate }: PaymentFeeReportProps) 
 
         {/* Insight */}
         {data.total_fees > 0 && (
-          <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-800 dark:text-amber-200">
+          <div className="flex items-start gap-2 rounded-lg bg-accent/50 p-3 text-xs text-accent-foreground">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">Insight</p>
