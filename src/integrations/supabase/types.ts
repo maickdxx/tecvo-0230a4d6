@@ -4642,6 +4642,7 @@ export type Database = {
       }
       user_sessions: {
         Row: {
+          anonymous_id: string | null
           duration_seconds: number
           ended_at: string
           id: string
@@ -4655,6 +4656,7 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          anonymous_id?: string | null
           duration_seconds?: number
           ended_at?: string
           id?: string
@@ -4668,6 +4670,7 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          anonymous_id?: string | null
           duration_seconds?: number
           ended_at?: string
           id?: string
@@ -6223,6 +6226,7 @@ export type Database = {
       }
       view_analytics_sessions: {
         Row: {
+          anonymous_id: string | null
           duration_seconds: number | null
           ended_at: string | null
           id: string | null
@@ -6237,6 +6241,7 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          anonymous_id?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string | null
@@ -6251,6 +6256,7 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          anonymous_id?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string | null
