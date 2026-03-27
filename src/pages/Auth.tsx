@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Wrench, UserPlus, Star, Crown, CreditCard, Shield, BarChart3, Users, Mail, ArrowLeft, RefreshCw, Chrome, CalendarCheck, FileText, DollarSign, CheckCircle2 } from "lucide-react";
+import { Loader2, Wrench, UserPlus, Star, Crown, CreditCard, Mail, ArrowLeft, RefreshCw, CalendarCheck, FileText, DollarSign, CheckCircle2 } from "lucide-react";
 import { lovable } from "@/integrations/lovable";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 // supabase already imported above
