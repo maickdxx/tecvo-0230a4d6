@@ -143,6 +143,35 @@ export function useAdminAnalytics() {
     if (error) throw error;
     return data;
   };
+  const fetchWinningPatterns = async () => {
+    const { data, error } = await supabase
+      .from("ab_test_winning_patterns")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from("ab_test_templates")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchCampaignComparison = async () => {
+    const { data, error } = await supabase
+      .from("view_campaign_comparison")
+      .select("*")
+      .order("conversion_rate", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
 
   const dailyMetrics = useQuery({
     queryKey: ["admin-analytics-daily"],
