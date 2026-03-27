@@ -379,10 +379,10 @@ export default function Auth() {
         <Card className="w-full max-w-md border-0 shadow-xl">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold">
-              {invite ? "Você foi convidado!" : activeTab === "signup" ? "Configure sua conta em menos de 30 segundos" : "Acesse sua conta"}
+              {invite ? "Você foi convidado!" : activeTab === "signup" ? "Comece grátis agora" : "Acesse sua conta"}
             </CardTitle>
             <CardDescription className="text-base">
-              {invite ? "Crie sua conta para aceitar o convite" : planInfo ? "Comece seu teste gratuito de 7 dias" : activeTab === "signup" ? "Sem cartão de crédito. Comece grátis agora." : "Gestão de serviços técnicos"}
+              {invite ? "Crie sua conta para aceitar o convite" : planInfo ? "Comece seu teste gratuito de 7 dias" : activeTab === "signup" ? "Sem cartão de crédito • 7 dias grátis" : "Gestão de serviços técnicos"}
             </CardDescription>
 
             {invite && (
