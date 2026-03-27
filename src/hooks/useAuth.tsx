@@ -14,6 +14,7 @@ interface Profile {
   full_name: string | null;
   phone: string | null;
   dashboard_layout: DashboardLayoutItem[] | null;
+  field_worker?: boolean;
 }
 
 interface AuthContextType {
