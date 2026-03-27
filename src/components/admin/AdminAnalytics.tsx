@@ -142,7 +142,7 @@ export function AdminAnalytics() {
             Leads
           </TabsTrigger>
           <TabsTrigger value="campaigns" className="gap-2">
-            <Globe className="h-4 w-4 text-blue-500" />
+            <Globe className="h-4 w-4 text-primary" />
             Canais & Campanhas
           </TabsTrigger>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
@@ -150,15 +150,15 @@ export function AdminAnalytics() {
           <TabsTrigger value="retention">Retenção</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="automations" className="gap-2">
-            <Zap className="h-4 w-4 text-amber-500" />
+            <Zap className="h-4 w-4 text-primary" />
             Automações
           </TabsTrigger>
           <TabsTrigger value="ab_tests" className="gap-2">
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <TrendingUp className="h-4 w-4 text-primary" />
             Testes A/B
           </TabsTrigger>
           <TabsTrigger value="patterns" className="gap-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <Trophy className="h-4 w-4 text-primary" />
             Padrões Vencedores
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-2">
