@@ -173,7 +173,7 @@ export function ServiceForm({
         : "",
     description: service?.description ?? "",
     notes: service?.notes ?? "",
-    assigned_to: (service as any)?.assigned_to ?? "",
+    assigned_to: service?.assigned_to ?? "",
     service_zip_code: service?.service_zip_code ?? "",
     service_street: service?.service_street ?? "",
     service_number: service?.service_number ?? "",

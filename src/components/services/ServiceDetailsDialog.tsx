@@ -477,7 +477,7 @@ export function ServiceDetailsDialog({
             )}
 
             {/* Internal Notes */}
-            {(service as any).internal_notes && (
+            {service.internal_notes && (
               <div className="rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-blue-100 dark:bg-blue-900/40">
@@ -487,7 +487,7 @@ export function ServiceDetailsDialog({
                   <span className="text-[10px] font-medium text-blue-500 bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">Somente equipe</span>
                 </div>
                 <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
-                  {(service as any).internal_notes}
+                  {service.internal_notes}
                 </p>
               </div>
             )}
