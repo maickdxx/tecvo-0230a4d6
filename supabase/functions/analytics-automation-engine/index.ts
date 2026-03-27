@@ -135,9 +135,10 @@ Deno.serve(async (req) => {
 
         const { data: profiles, error: profError } = await supabase
           .from("profiles")
-          .select("id, full_name, organization_id, phone, created_at")
+          .select("id, full_name, organization_id, phone, created_at, organizations!inner(trial_ends_at)")
           .gte("created_at", startTime)
-          .lte("created_at", endTime);
+          .lte("created_at", endTime)
+          .filter("organizations.trial_ends_at", "gte", new Date().toISOString());
 
         if (profError) {
           console.error(`[AUTOMATION-ENGINE] Profile query error for ${automation.trigger_type}:`, profError);
