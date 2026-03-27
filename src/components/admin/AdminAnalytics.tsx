@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminAutomations } from "./AdminAutomations";
 import { AdminABTests } from "./AdminABTests";
+import { AdminPatterns } from "./AdminPatterns";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
