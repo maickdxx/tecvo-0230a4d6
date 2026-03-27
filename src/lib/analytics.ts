@@ -128,7 +128,7 @@ class AnalyticsClient {
 
     this.queue.push(event);
 
-    if (this.queue.length >= 10) {
+    if (this.queue.length >= 10 || immediate) {
       this.flush();
     } else if (!this.flushTimeout) {
       this.flushTimeout = setTimeout(() => this.flush(), this.FLUSH_INTERVAL);
