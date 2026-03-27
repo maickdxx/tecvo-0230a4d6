@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    let instanceName = "tecvo";
+    let instanceName = TECVO_PLATFORM_INSTANCE;
     if (contact?.channel_id) {
       const { data: ch } = await supabase
         .from("whatsapp_channels")

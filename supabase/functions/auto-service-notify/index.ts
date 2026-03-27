@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
       console.log(`[AUTO-SERVICE] Owner notification blocked by send guard: ${ownerGuard.reason}`);
     } else {
       // Send notification to org owner via Tecvo instance
-      ok = await sendWhatsApp(org.whatsapp_owner, message, "tecvo");
+      ok = await sendWhatsApp(org.whatsapp_owner, message, TECVO_PLATFORM_INSTANCE);
     }
 
     // Resolve the client's channel instance for client-facing messages
