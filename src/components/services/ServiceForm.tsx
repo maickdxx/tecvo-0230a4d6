@@ -485,10 +485,10 @@ export function ServiceForm({
         <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
           <Label className="text-base font-semibold">Descrição</Label>
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição do Serviço</Label>
+            <Label htmlFor="description">Descrição do Serviço <span className="text-muted-foreground font-normal">(opcional)</span></Label>
             <Textarea
               id="description"
-              placeholder="Descreva o serviço a ser realizado"
+              placeholder="Descreva o serviço a ser realizado (opcional)"
               rows={3}
               disabled={isCompleted}
               {...register("description")}
