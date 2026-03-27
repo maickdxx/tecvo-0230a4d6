@@ -1908,11 +1908,6 @@ export type Database = {
           hire_date: string | null
           hourly_rate: number | null
           id: string
-          initial_landing_page: string | null
-          initial_referrer: string | null
-          initial_utm_campaign: string | null
-          initial_utm_medium: string | null
-          initial_utm_source: string | null
           last_access: string | null
           notes: string | null
           notification_preferences: Json | null
@@ -1952,11 +1947,6 @@ export type Database = {
           hire_date?: string | null
           hourly_rate?: number | null
           id?: string
-          initial_landing_page?: string | null
-          initial_referrer?: string | null
-          initial_utm_campaign?: string | null
-          initial_utm_medium?: string | null
-          initial_utm_source?: string | null
           last_access?: string | null
           notes?: string | null
           notification_preferences?: Json | null
@@ -1996,11 +1986,6 @@ export type Database = {
           hire_date?: string | null
           hourly_rate?: number | null
           id?: string
-          initial_landing_page?: string | null
-          initial_referrer?: string | null
-          initial_utm_campaign?: string | null
-          initial_utm_medium?: string | null
-          initial_utm_source?: string | null
           last_access?: string | null
           notes?: string | null
           notification_preferences?: Json | null
