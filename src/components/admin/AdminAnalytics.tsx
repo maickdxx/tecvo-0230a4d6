@@ -70,7 +70,7 @@ export function AdminAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Usuários Únicos</CardTitle>
-            <Users className="h-4 w-4 text-blue-500" />
+            <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpis?.unique_visitors.toLocaleString()}</div>
@@ -81,7 +81,7 @@ export function AdminAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Conversão</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpis?.conversion_rate.toFixed(1)}%</div>
@@ -92,7 +92,7 @@ export function AdminAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Tempo Médio</CardTitle>
-            <Timer className="h-4 w-4 text-orange-500" />
+            <Timer className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{Math.floor((kpis?.avg_session_duration || 0) / 60)}m {Math.floor((kpis?.avg_session_duration || 0) % 60)}s</div>
