@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useTimeClock } from "@/hooks/useTimeClock";
 import { useWorkSchedules } from "@/hooks/useWorkSchedule";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { getDatePartInTz } from "@/lib/timezone";
 import { calculateOvertimeMinutes, calculateDeficitMinutes, getEffectiveMaxDay, computePolicySummary, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig, type OvertimePolicy } from "@/lib/timeClockUtils";
@@ -20,10 +21,11 @@ function formatBalance(minutes: number): string {
 export function JourneyBalanceCard() {
   const tz = useOrgTimezone();
   const { user, profile } = useAuth();
+  const { sensitiveData } = useProfileSensitiveData();
   const { effectiveMonthEntries, settings } = useTimeClock();
   const { getScheduleForEmployee, isWorkDay } = useWorkSchedules();
 
-  const employeeType = (profile as any)?.employee_type || "tecnico";
+  const employeeType = profile?.employee_type || "tecnico";
   const overtimePolicy: OvertimePolicy = settings?.overtime_policy === "pay" ? "pay" : "bank";
   const toleranceMin = settings?.late_tolerance_minutes ?? 10;
 
@@ -133,7 +135,7 @@ export function JourneyBalanceCard() {
       {/* Estimated cost — pay mode only, employee view */}
       {!isBank && policySummary.primaryValue > 0 && (() => {
         const rate = resolveHourlyRate(
-          (profile as any)?.hourly_rate,
+          sensitiveData?.hourly_rate,
           schedule.hourly_rate,
           (settings as any)?.default_hourly_rate,
         );

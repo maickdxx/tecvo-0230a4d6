@@ -12,6 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useProfile } from "@/hooks/useProfile";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +24,7 @@ interface EmployeeProfileDialogProps {
 
 export function EmployeeProfileDialog({ open, onOpenChange }: EmployeeProfileDialogProps) {
   const { profile, updateProfile, isUpdating } = useProfile();
+  const { sensitiveData } = useProfileSensitiveData();
   const { user } = useAuth();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -34,9 +36,9 @@ export function EmployeeProfileDialog({ open, onOpenChange }: EmployeeProfileDia
   useEffect(() => {
     if (profile?.full_name) setFullName(profile.full_name);
     if (profile?.phone) setPhone(profile.phone);
-    if ((profile as any)?.whatsapp_personal) setWhatsappPersonal((profile as any).whatsapp_personal);
-    if ((profile as any)?.avatar_url) setAvatarUrl((profile as any).avatar_url);
-  }, [profile]);
+    if (sensitiveData?.whatsapp_personal) setWhatsappPersonal(sensitiveData.whatsapp_personal);
+    if (sensitiveData?.avatar_url) setAvatarUrl(sensitiveData.avatar_url);
+  }, [profile, sensitiveData]);
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 11);

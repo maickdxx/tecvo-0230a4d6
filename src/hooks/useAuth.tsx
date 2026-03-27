@@ -15,6 +15,7 @@ interface Profile {
   phone: string | null;
   dashboard_layout: DashboardLayoutItem[] | null;
   field_worker?: boolean;
+  employee_type?: string;
 }
 
 interface AuthContextType {
@@ -87,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, user_id, organization_id, full_name, phone, dashboard_layout, field_worker")
+        .select("id, user_id, organization_id, full_name, phone, dashboard_layout, field_worker, employee_type")
         .eq("user_id", userId)
         .maybeSingle();
 

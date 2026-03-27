@@ -4,6 +4,7 @@ import { useTimeClock, type TimeClockEntryType } from "@/hooks/useTimeClock";
 import { useWorkSchedules } from "@/hooks/useWorkSchedule";
 import { calculateOvertimeMinutes, resolveHourlyRate, calculateEstimatedOvertimeCost, calculateOvertimeBreakdown, getOvertimeRateConfig } from "@/lib/timeClockUtils";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { formatTimeInTz, getTodayInTz, buildTimestamp, getDatePartInTz } from "@/lib/timezone";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +79,7 @@ interface TimeClockWidgetProps {
 export function TimeClockWidget({ compact = false }: TimeClockWidgetProps) {
   const tz = useOrgTimezone();
   const { user, profile } = useAuth();
+  const { sensitiveData } = useProfileSensitiveData();
   const {
     todayEntries,
     effectiveTodayEntries,
@@ -94,13 +96,13 @@ export function TimeClockWidget({ compact = false }: TimeClockWidgetProps) {
   } = useTimeClock();
 
   const { getScheduleForEmployee, isWorkDay } = useWorkSchedules();
-  const employeeType = (profile as any)?.employee_type || "tecnico";
+  const employeeType = profile?.employee_type || "tecnico";
   const employeeSchedule = getScheduleForEmployee(user?.id || "", employeeType);
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
 
   // Resolve effective hourly rate: profile > schedule > settings default
   const effectiveHourlyRate = resolveHourlyRate(
-    (profile as any)?.hourly_rate,
+    sensitiveData?.hourly_rate,
     employeeSchedule.hourly_rate,
     (settings as any)?.default_hourly_rate,
   );

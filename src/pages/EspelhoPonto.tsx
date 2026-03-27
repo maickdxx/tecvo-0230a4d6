@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout";
 import { useTimeClock } from "@/hooks/useTimeClock";
 import { useWorkSchedules } from "@/hooks/useWorkSchedule";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useQuery } from "@tanstack/react-query";
@@ -38,11 +39,12 @@ interface RecordWithExplanation extends TimeClockDayRecord {
 
 export default function EspelhoPonto() {
   const { user, profile } = useAuth();
+  const { sensitiveData } = useProfileSensitiveData();
   const tz = useOrgTimezone();
   const { settings } = useTimeClock();
   const { organization } = useOrganization();
   const { getScheduleForEmployee, isWorkDay, countExpectedWorkDays } = useWorkSchedules();
-  const employeeType = (profile as any)?.employee_type || "tecnico";
+  const employeeType = profile?.employee_type || "tecnico";
   const schedule = getScheduleForEmployee(user?.id || "", employeeType);
   const toleranceMin = settings?.late_tolerance_minutes ?? 10;
   const expectedPerDay = Math.round(schedule.work_hours_per_day * 60);
@@ -381,7 +383,7 @@ export default function EspelhoPonto() {
               {/* Estimated cost — pay mode, employee view */}
               {policy === "pay" && ps.primaryValue > 0 && (() => {
                 const rate = resolveHourlyRate(
-                  (profile as any)?.hourly_rate,
+                  sensitiveData?.hourly_rate,
                   schedule.hourly_rate,
                   (settings as any)?.default_hourly_rate,
                 );
