@@ -115,10 +115,10 @@ export function AdminAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Ativação</CardTitle>
-            <Activity className="h-4 w-4 text-emerald-500" />
+            <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis?.activation_rate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold text-foreground">{kpis?.activation_rate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">Usuários que usaram o sistema</p>
           </CardContent>
         </Card>
