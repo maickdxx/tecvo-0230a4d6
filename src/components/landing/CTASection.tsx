@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { analytics } from "@/lib/analytics";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,6 +86,7 @@ export function CTASection() {
                 size="lg"
                 asChild
                 className="text-base px-10 py-7 shadow-[0_8px_30px_-6px_hsl(var(--primary)/0.4)] hover:shadow-[0_14px_45px_-6px_hsl(var(--primary)/0.5)] hover:scale-[1.03] transition-all duration-300 relative overflow-hidden group"
+                onClick={() => analytics.track("create_account_click", null, null, { location: "cta_section" })}
               >
                 <Link to="/cadastro">
                   <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
