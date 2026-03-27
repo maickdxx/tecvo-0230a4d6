@@ -86,6 +86,10 @@ export default function Admin() {
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="financial" className="gap-2">
               <DollarSign className="h-4 w-4" />
               Financeiro
