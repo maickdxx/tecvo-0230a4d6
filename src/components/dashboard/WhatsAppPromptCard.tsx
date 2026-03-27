@@ -12,7 +12,7 @@ const DISMISS_KEY = "whatsapp_prompt_dismissed_at";
 
 export function WhatsAppPromptCard() {
   const { user, profile } = useAuth();
-  const { data: sensitiveData } = useProfileSensitiveData();
+  const { sensitiveData } = useProfileSensitiveData();
   const { isDemoMode } = useDemoMode();
   const [dismissed, setDismissed] = useState(true);
   const [editing, setEditing] = useState(false);
