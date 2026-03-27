@@ -22,7 +22,7 @@ import { ptBR } from "date-fns/locale";
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export function AdminAnalytics() {
-  const { dailyMetrics, trafficSources, pageViews, kpis, isLoading } = useAdminAnalytics();
+  const { dailyMetrics, trafficSources, pageViews, funnel, kpis, isLoading } = useAdminAnalytics();
 
   if (isLoading) {
     return (
@@ -32,7 +32,10 @@ export function AdminAnalytics() {
             <Skeleton key={i} className="h-32 w-full" />
           ))}
         </div>
-        <Skeleton className="h-[400px] w-full" />
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-[400px] w-full" />
+          <Skeleton className="h-[400px] w-full" />
+        </div>
       </div>
     );
   }
