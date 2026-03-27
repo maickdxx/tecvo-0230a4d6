@@ -66,7 +66,7 @@ export default function PontoAjustes() {
   const { profile } = useAuth();
   const tz = useOrgTimezone();
   const queryClient = useQueryClient();
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
   const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
   const [detailAdj, setDetailAdj] = useState<Adjustment | null>(null);
   const [editTime, setEditTime] = useState("");

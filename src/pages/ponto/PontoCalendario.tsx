@@ -29,7 +29,7 @@ export default function PontoCalendario() {
   const { profile } = useAuth();
   const { teamProfiles } = useTimeClockAdmin();
   const queryClient = useQueryClient();
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ event_type: "holiday", title: "", start_date: "", end_date: "", user_id: "", notes: "" });
 

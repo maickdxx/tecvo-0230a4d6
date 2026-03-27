@@ -558,8 +558,8 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
               <div className="p-4 border-t border-border/60 bg-muted/30">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                    {(profile as any)?.avatar_url ? (
-                      <img src={(profile as any).avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
                     ) : (
                       <span className="text-sm font-semibold text-primary">{userInitial}</span>
                     )}

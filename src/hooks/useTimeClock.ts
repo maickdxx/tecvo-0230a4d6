@@ -54,7 +54,7 @@ export function useTimeClock() {
   const { user, profile } = useAuth();
   const { organization } = useOrganization();
   const queryClient = useQueryClient();
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
   const { isOnline, refreshPendingCount } = useOffline();
 
   const isEnabled = !!(organization as any)?.time_clock_enabled;
@@ -408,7 +408,7 @@ export function useTimeClockAdmin(dateRange?: { start: string; end: string }) {
   const { profile } = useAuth();
   const { organization } = useOrganization();
   const queryClient = useQueryClient();
-  const orgId = (profile as any)?.organization_id;
+  const orgId = profile?.organization_id;
   const tz = useOrgTimezone();
 
   // Default to current month if no range provided
