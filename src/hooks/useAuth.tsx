@@ -189,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Failed to send verification email:", otpErr);
       }
 
-      analytics.track("signup_completed", data.user?.id || null, null);
+      analytics.track("signup_completed", data.user?.id || null, null, {}, true);
       setSignUpSuccess(true);
       return { error: null };
     } catch (error) {
