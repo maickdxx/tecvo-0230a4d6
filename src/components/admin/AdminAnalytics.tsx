@@ -42,6 +42,9 @@ export function AdminAnalytics() {
     ctaPerformance,
     leadPaths,
     abTestResults,
+    winningPatterns,
+    templates,
+    campaignComparison,
     kpis, 
     isLoading 
   } = useAdminAnalytics();
