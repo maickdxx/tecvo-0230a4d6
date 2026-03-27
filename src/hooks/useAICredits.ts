@@ -39,7 +39,7 @@ export function useAICredits() {
       return data;
     },
     enabled: !!organizationId,
-    refetchInterval: 30000, // refresh every 30s
+    refetchInterval: 120_000, // refresh every 2min
   });
 
   const balance = credits?.balance ?? 0;
