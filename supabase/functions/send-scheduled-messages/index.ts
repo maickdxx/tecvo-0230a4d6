@@ -1,3 +1,9 @@
+/**
+ * ── SEND FLOW: CUSTOMER_CONVERSATION ──
+ * Sends scheduled messages within existing customer conversations.
+ * STRICT channel isolation: uses ONLY the channel stored on the scheduled message.
+ * NO fallback to any other channel or instance. Disconnected channel → BLOCK.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 

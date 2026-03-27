@@ -1,3 +1,9 @@
+/**
+ * ── SEND FLOW: CUSTOMER_CONVERSATION ──
+ * Sends media (images, audio, documents, video) within customer conversations.
+ * STRICT channel isolation: uses ONLY the contact's bound channel.
+ * NO fallback to any other channel or instance. Disconnected channel → BLOCK.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { classifyEvoError } from "../_shared/evoErrorClassifier.ts";
 const corsHeaders = {

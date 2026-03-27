@@ -1,3 +1,9 @@
+/**
+ * ── SEND FLOW: CUSTOMER_CONVERSATION ──
+ * Bot-driven automated responses within customer conversations.
+ * STRICT channel isolation: uses ONLY the contact's bound channel.
+ * NO fallback to any other channel or instance. No channel → BLOCK.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 
