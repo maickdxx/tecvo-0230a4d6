@@ -255,7 +255,7 @@ export default function MeuDia() {
               return (
                 <div key={service.id}>
                   <TimelineCard
-                    service={service as any}
+                    service={service}
                     showDate={tab === "week"}
                     isEmployee={true}
                     isNext={service.id === nextServiceId}

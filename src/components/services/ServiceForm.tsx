@@ -71,7 +71,7 @@ const serviceSchema = z.object({
   equipment_model: z.string().optional(),
   solution: z.string().optional(),
   payment_method: z.string().optional(),
-  payment_due_date: z.string().min(1, "Informe a data de vencimento"),
+  payment_due_date: z.string().optional(),
   payment_notes: z.string().optional(),
   entry_date: z.string().optional(),
   exit_date: z.string().optional(),

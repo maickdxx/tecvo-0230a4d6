@@ -302,7 +302,8 @@ export default function OrdemServicoDetalhes() {
   const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
     setIsUpdating(true);
     try {
-      await updateStatus({ id: service.id, status: "completed" });
+      const mainMethod = payments[0]?.payment_method;
+      await updateStatus({ id: service.id, status: "completed", paymentMethod: mainMethod, payments });
       if (signatureBlob) {
         await createSignature({ serviceId: service.id, blob: signatureBlob, signerName });
       }
