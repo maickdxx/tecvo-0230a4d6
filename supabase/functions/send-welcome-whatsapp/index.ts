@@ -1,5 +1,12 @@
+/**
+ * ── SEND FLOW: PLATFORM_NOTIFICATION ──
+ * Sends a one-time welcome message from the Tecvo platform to new org owners.
+ * Always uses TECVO_PLATFORM_INSTANCE ("tecvo") — never an org channel.
+ * This is NOT a customer conversation message.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -103,7 +110,7 @@ Deno.serve(async (req) => {
         const jid = `${cleanNumber}@s.whatsapp.net`;
 
         try {
-          const res = await fetch(`${vpsUrl}/message/sendText/tecvo`, {
+          const res = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
             method: "POST",
             headers: { "Content-Type": "application/json", apikey: apiKey },
             body: JSON.stringify({ number: jid, text: welcomeText }),

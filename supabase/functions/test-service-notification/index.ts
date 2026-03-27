@@ -1,3 +1,11 @@
+/**
+ * ── SEND FLOW: INTERNAL_TEST ──
+ * ⚠️  This function is for INTERNAL TESTING ONLY.
+ * It simulates a service completion notification to validate the portal link flow.
+ * It is NOT a production send path and must NEVER be used for real customer conversations.
+ * The channel resolution here is flexible (picks any connected channel) because
+ * this is a test utility — production flows use strict channel isolation instead.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {

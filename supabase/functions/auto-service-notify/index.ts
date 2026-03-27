@@ -1,5 +1,22 @@
+/**
+ * ── SEND FLOW: ORG_AUTOMATION ──
+ * Automated notifications triggered by service status changes.
+ *
+ * OWNER notification → uses TECVO_PLATFORM_INSTANCE ("tecvo").
+ *   This is intentional: the owner receives updates from the platform, not from their own channel.
+ *
+ * CLIENT notification (portal link) → uses the client's org channel if found,
+ *   falls back to TECVO_PLATFORM_INSTANCE if no channel exists.
+ *   This is acceptable because portal link messages are one-shot notifications,
+ *   NOT replies within a customer conversation thread.
+ *   They do NOT create or participate in conversation history.
+ *
+ * ⚠️  This function must NEVER be used to send messages that appear as
+ *     conversation replies in the WhatsApp inbox.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +27,7 @@ function formatBRL(value: number): string {
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-async function sendWhatsApp(phone: string, text: string, instanceName = "tecvo") {
+async function sendWhatsApp(phone: string, text: string, instanceName = TECVO_PLATFORM_INSTANCE) {
   const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
   const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
   if (!vpsUrl || !apiKey) return false;
@@ -256,7 +273,10 @@ Deno.serve(async (req) => {
               if (!clientGuard.allowed) {
                 console.log(`[AUTO-SERVICE] Client notification blocked by send guard: ${clientGuard.reason}`);
               } else {
-                const instanceToUse = clientInstanceName || "tecvo";
+                // Use client's org channel if available; otherwise fall back to platform instance.
+                // This is a ONE-SHOT notification (portal link), NOT a conversation reply.
+                // Using the platform instance here is acceptable and does NOT violate channel isolation.
+                const instanceToUse = clientInstanceName || TECVO_PLATFORM_INSTANCE;
                 const clientOk = await sendWhatsApp(normalizedPhone, clientMessage, instanceToUse);
                 if (clientOk) {
                   clientNotified = true;
