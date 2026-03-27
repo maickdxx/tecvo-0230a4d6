@@ -6,34 +6,37 @@ export type AppRole = "owner" | "admin" | "member" | "employee";
 
 export function useUserRole() {
   const { user, profile } = useAuth();
+  const organizationId = profile?.organization_id;
 
   const { data: roles, isLoading: isLoadingRoles } = useQuery({
-    queryKey: ["user-role", user?.id],
+    queryKey: ["user-role", user?.id, organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user!.id);
+        .eq("user_id", user!.id)
+        .eq("organization_id", organizationId!);
 
       if (error) throw error;
       return data?.map(r => r.role as AppRole) || [];
     },
-    enabled: !!user,
+    enabled: !!user && !!organizationId,
     staleTime: 1000 * 60 * 5,
   });
 
   const { data: permissions = [] } = useQuery({
-    queryKey: ["member-permissions", user?.id],
+    queryKey: ["member-permissions", user?.id, organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("member_permissions")
         .select("module")
-        .eq("user_id", user!.id);
+        .eq("user_id", user!.id)
+        .eq("organization_id", organizationId!);
 
       if (error) throw error;
       return data?.map(r => r.module) || [];
     },
-    enabled: !!user,
+    enabled: !!user && !!organizationId,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -45,7 +48,7 @@ export function useUserRole() {
   const isMember = primaryRole === "member";
 
   // field_worker flag from profile - independent of role
-  const isFieldWorker = !!(profile as any)?.field_worker;
+  const isFieldWorker = !!profile?.field_worker;
 
   // Granular permission check with role-based fallback
   const hasPermission = (module: string): boolean => {
