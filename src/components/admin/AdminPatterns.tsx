@@ -195,12 +195,12 @@ export function AdminPatterns({ patterns, applications, onRefetch }: AdminPatter
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-amber-500" />
+                <Zap className="h-5 w-5 text-primary" />
                 Governança: Aplicações Automáticas em Tempo Real
               </CardTitle>
               <CardDescription>Acompanhe onde os padrões validados estão sendo aplicados e seu impacto atual.</CardDescription>
             </div>
-            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
               Escala Ativa
             </Badge>
           </div>
