@@ -212,6 +212,20 @@ export function useAdminAnalytics() {
     queryKey: ["admin-analytics-alerts"],
     queryFn: fetchAlerts,
   });
+  const winningPatterns = useQuery({
+    queryKey: ["admin-analytics-winning-patterns"],
+    queryFn: fetchWinningPatterns,
+  });
+
+  const templates = useQuery({
+    queryKey: ["admin-analytics-templates"],
+    queryFn: fetchTemplates,
+  });
+
+  const campaignComparison = useQuery({
+    queryKey: ["admin-analytics-campaign-comparison"],
+    queryFn: fetchCampaignComparison,
+  });
 
   const marketingFunnel = useQuery({
     queryKey: ["admin-analytics-marketing-funnel"],
