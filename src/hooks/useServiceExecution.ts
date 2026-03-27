@@ -48,6 +48,7 @@ export function useServiceExecution() {
         .from("services")
         .select("id, quote_number")
         .eq("assigned_to", user!.id)
+        .eq("organization_id", organizationId!)
         .in("status", ["in_progress"])
         .neq("id", serviceId);
 
@@ -57,12 +58,13 @@ export function useServiceExecution() {
       }
 
       const now = new Date().toISOString();
-      // Update service
+      // Update service - sync both operational_status and status
       const { error } = await supabase
         .from("services")
         .update({
           operational_status: "en_route",
           travel_started_at: now,
+          status: "in_progress",
         } as any)
         .eq("id", serviceId);
       if (error) throw error;
@@ -97,6 +99,7 @@ export function useServiceExecution() {
         .from("services")
         .select("id, quote_number")
         .eq("assigned_to", user!.id)
+        .eq("organization_id", organizationId!)
         .in("status", ["in_progress"])
         .neq("id", serviceId);
 

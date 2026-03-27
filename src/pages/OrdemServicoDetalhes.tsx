@@ -302,7 +302,8 @@ export default function OrdemServicoDetalhes() {
   const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
     setIsUpdating(true);
     try {
-      await updateStatus({ id: service.id, status: "completed" });
+      const mainMethod = payments[0]?.payment_method;
+      await updateStatus({ id: service.id, status: "completed", paymentMethod: mainMethod, payments });
       if (signatureBlob) {
         await createSignature({ serviceId: service.id, blob: signatureBlob, signerName });
       }
@@ -616,7 +617,7 @@ export default function OrdemServicoDetalhes() {
         )}
 
         {/* Internal Notes - only visible to team */}
-        {(service as any).internal_notes && (
+        {service.internal_notes && (
           <Card className="border-blue-200/60 dark:border-blue-800/40 bg-blue-50/50 dark:bg-blue-950/20">
             <CardContent className="p-4 md:p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -626,7 +627,7 @@ export default function OrdemServicoDetalhes() {
                 <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300">Observações Internas</h3>
                 <span className="text-[10px] font-medium text-blue-500 bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">Somente equipe</span>
               </div>
-              <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{(service as any).internal_notes}</p>
+              <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{service.internal_notes}</p>
             </CardContent>
           </Card>
         )}

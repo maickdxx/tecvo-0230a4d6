@@ -596,7 +596,7 @@ export async function generateServiceOrderPDF({
   // ═══════════════════════════════════════════
   //  NOTES / OBSERVAÇÕES
   // ═══════════════════════════════════════════
-  const notes = (service as any).notes || "";
+  const notes = service.notes || "";
   if (notes) {
     doc.setFontSize(8);
     const noteLines = doc.splitTextToSize(notes, contentWidth - 10);

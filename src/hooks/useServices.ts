@@ -72,6 +72,11 @@ export interface Service {
   entry_date: string | null;
   exit_date: string | null;
   estimated_duration?: string | null;
+  // Operational fields
+  operational_status?: string | null;
+  travel_started_at?: string | null;
+  attendance_started_at?: string | null;
+  priority?: string | null;
   created_at: string;
   updated_at: string;
   client?: Client;
@@ -333,6 +338,7 @@ export function useServices(options?: UseServicesOptions | string) {
       let queryBuilder = supabase
         .from("services")
         .select("*, client:clients(*)")
+        .eq("organization_id", organizationId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 

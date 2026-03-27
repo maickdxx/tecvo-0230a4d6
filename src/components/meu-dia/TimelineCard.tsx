@@ -91,10 +91,10 @@ export function TimelineCard({
 }: Props) {
   const tz = useOrgTimezone();
   const addr = buildAddress(service);
-  const opStatus = (service as any).operational_status as OperationalStatus | null;
-  const priority = (service as any).priority as string | null;
-  const travelStarted = (service as any).travel_started_at as string | null;
-  const attendanceStarted = (service as any).attendance_started_at as string | null;
+  const opStatus = service.operational_status as OperationalStatus | null;
+  const priority = service.priority as string | null;
+  const travelStarted = service.travel_started_at as string | null;
+  const attendanceStarted = service.attendance_started_at as string | null;
 
   const travelElapsed = calcElapsed(travelStarted);
   const attendanceElapsed = calcElapsed(attendanceStarted);
