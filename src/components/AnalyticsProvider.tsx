@@ -23,7 +23,9 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       analytics.track("landing_page_view", null, null, {
         page_path: path,
         page_title: document.title,
-        referrer: document.referrer
+        referrer: document.referrer,
+        interaction_type: "view",
+        page_section: "landing"
       });
     }
 

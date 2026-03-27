@@ -103,7 +103,7 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
         if (data?.error) throw new Error(data.error);
 
         if (data?.url) {
-          analytics.track("payment_initiated", null, null, { plan: targetPlan });
+          analytics.track("payment_initiated", null, null, { plan: targetPlan, page_section: "settings", button_label: "Assinar plano", interaction_type: "click" });
           saveCheckoutContext({ plan: targetPlan, returnTo: buildCheckoutSuccessPath(targetPlan) });
           window.open(data.url, "_blank");
           window.dispatchEvent(new CustomEvent("tecvo:checkout-started", { detail: { plan: targetPlan } }));

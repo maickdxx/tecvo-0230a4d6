@@ -63,7 +63,7 @@ export function UpgradeModal({ open, onOpenChange, servicesUsed = 15, servicesLi
       if (error) throw error;
 
       if (data?.url) {
-        analytics.track("payment_initiated", null, null, { plan: nextPlan });
+        analytics.track("payment_initiated", null, null, { plan: nextPlan, page_section: "upgrade_modal", button_label: "Fazer upgrade", interaction_type: "click" });
         saveCheckoutContext({ plan: nextPlan, returnTo: buildCheckoutSuccessPath(nextPlan) });
         window.open(data.url, "_blank");
         window.dispatchEvent(new CustomEvent("tecvo:checkout-started", { detail: { plan: nextPlan } }));
