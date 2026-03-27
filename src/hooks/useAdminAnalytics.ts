@@ -113,6 +113,24 @@ export function useAdminAnalytics() {
     return data;
   };
 
+  const fetchLeadJourneys = async () => {
+    const { data, error } = await supabase
+      .from("view_lead_journeys_summary")
+      .select("*")
+      .order("last_seen", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchLeadJourneyDetail = async (visitorId: string) => {
+    const { data, error } = await supabase
+      .rpc("get_lead_journey_timeline", { p_visitor_id: visitorId });
+    
+    if (error) throw error;
+    return data;
+  };
+
   const fetchABTestResults = async () => {
     const { data, error } = await supabase
       .from("view_analytics_ab_test_results")
@@ -271,6 +289,11 @@ export function useAdminAnalytics() {
     queryFn: fetchLeadPaths,
   });
 
+  const leadJourneys = useQuery({
+    queryKey: ["admin-analytics-lead-journeys"],
+    queryFn: fetchLeadJourneys,
+  });
+
   const abTestResults = useQuery({
     queryKey: ["admin-analytics-ab-tests"],
     queryFn: fetchABTestResults,
@@ -326,6 +349,8 @@ export function useAdminAnalytics() {
     leadDropoffs,
     ctaPerformance,
     leadPaths,
+    leadJourneys,
+    fetchLeadJourneyDetail,
     abTestResults,
     hypotheses,
     winningPatterns,
@@ -338,6 +363,7 @@ export function useAdminAnalytics() {
                leadDropoffs.isLoading || 
                ctaPerformance.isLoading || 
                leadPaths.isLoading || 
+               leadJourneys.isLoading ||
                abTestResults.isLoading || 
                hypotheses.isLoading ||
                patternApplications.isLoading
