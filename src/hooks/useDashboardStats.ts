@@ -210,7 +210,32 @@ export function useCashFlowChartData(granularity: Granularity, startDate: string
 }
 
 export function useRecentServices(limit: number = 5) {
-  const { services, isLoading } = useServices();
+  // Recent services need client name, so use the full query but limit to 5 rows
+  const { organizationId } = useAuth();
+  const { isDemoMode } = useDemoMode();
+
+  const query = useQuery({
+    queryKey: ["recent-services", organizationId, isDemoMode, limit],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      let qb = supabase
+        .from("services")
+        .select("id, status, value, scheduled_date, created_at, service_type, client:clients(name)")
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (!isDemoMode) qb = qb.eq("is_demo_data", false);
+      const { data, error } = await qb;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+    staleTime: 30_000,
+  });
+
+  const isLoading = query.isLoading;
+  const services = query.data || [];
 
   const recentServices = useMemo((): RecentServiceData[] => {
     return services
