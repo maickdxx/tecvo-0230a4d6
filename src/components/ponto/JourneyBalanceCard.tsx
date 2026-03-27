@@ -135,7 +135,7 @@ export function JourneyBalanceCard() {
       {/* Estimated cost — pay mode only, employee view */}
       {!isBank && policySummary.primaryValue > 0 && (() => {
         const rate = resolveHourlyRate(
-          (profile as any)?.hourly_rate,
+          sensitiveData?.hourly_rate,
           schedule.hourly_rate,
           (settings as any)?.default_hourly_rate,
         );
