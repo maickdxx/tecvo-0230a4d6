@@ -266,7 +266,10 @@ export function useAdminAnalytics() {
     activationMetrics.isLoading ||
     retentionCohorts.isLoading ||
     alerts.isLoading ||
-    hypotheses.isLoading;
+    hypotheses.isLoading ||
+    winningPatterns.isLoading ||
+    templates.isLoading ||
+    campaignComparison.isLoading;
 
   // Calculate overall KPIs
   const kpis = dailyMetrics.data ? {
@@ -300,6 +303,9 @@ export function useAdminAnalytics() {
     leadPaths,
     abTestResults,
     hypotheses,
+    winningPatterns,
+    templates,
+    campaignComparison,
     kpis,
     isLoading: isLoading || marketingFunnel.isLoading || leadDropoffs.isLoading || ctaPerformance.isLoading || leadPaths.isLoading || abTestResults.isLoading || hypotheses.isLoading
   };
