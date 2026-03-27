@@ -47,6 +47,7 @@ export function AdminAnalytics() {
     winningPatterns,
     templates,
     campaignComparison,
+    patternApplications,
     kpis, 
     isLoading 
   } = useAdminAnalytics();
