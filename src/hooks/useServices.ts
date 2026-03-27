@@ -203,6 +203,15 @@ async function createSplitPaymentTransactions(params: {
 
   if (serviceValue <= 0) return;
 
+  // Guard: validate payment integrity
+  if (payments && payments.length > 0) {
+    const paymentSum = payments.reduce((sum, p) => sum + p.amount, 0);
+    // Block overpayment
+    if (paymentSum > serviceValue + 0.01) {
+      throw new Error(`Soma dos pagamentos (R$ ${paymentSum.toFixed(2)}) excede o valor do serviço (R$ ${serviceValue.toFixed(2)}).`);
+    }
+  }
+
   // Get user for registered_by
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id ?? null;
