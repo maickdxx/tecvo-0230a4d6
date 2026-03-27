@@ -4076,7 +4076,7 @@ export type Database = {
           id: string
           metadata: Json | null
           organization_id: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -4084,7 +4084,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           organization_id?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -4092,7 +4092,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           organization_id?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4174,7 +4174,7 @@ export type Database = {
           organization_id: string | null
           referrer: string | null
           started_at: string
-          user_id: string
+          user_id: string | null
           utm_campaign: string | null
           utm_medium: string | null
           utm_source: string | null
@@ -4187,7 +4187,7 @@ export type Database = {
           organization_id?: string | null
           referrer?: string | null
           started_at?: string
-          user_id: string
+          user_id?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
@@ -4200,7 +4200,7 @@ export type Database = {
           organization_id?: string | null
           referrer?: string | null
           started_at?: string
-          user_id?: string
+          user_id?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
