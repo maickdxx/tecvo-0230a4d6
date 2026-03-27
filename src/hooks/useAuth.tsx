@@ -210,6 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    analytics.track("logout", user?.id || null, profile?.organization_id || null);
+    sessionStorage.removeItem("tecvo_login_tracked");
     await supabase.auth.signOut();
     setProfile(null);
   };
