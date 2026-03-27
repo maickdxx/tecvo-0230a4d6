@@ -389,47 +389,15 @@ export function AdminAnalytics() {
           <AdminABTests />
         </TabsContent>
 
-        <TabsContent value="patterns" className="space-y-6 pt-4">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {winningPatterns.data?.map((pattern) => (
-              <Card key={pattern.id} className="border-emerald-200 bg-emerald-50/20">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-100">Padrão Vencedor</Badge>
-                    <span className="text-[10px] font-bold uppercase text-emerald-600">Lift +{pattern.performance_lift}%</span>
-                  </div>
-                  <CardTitle className="text-base mt-2 flex items-center gap-2">
-                    {pattern.pattern_type === 'headline' && <Star className="h-4 w-4 text-amber-500" />}
-                    {pattern.pattern_type === 'cta' && <MousePointer2 className="h-4 w-4 text-blue-500" />}
-                    {pattern.pattern_type === 'structure' && <Layout className="h-4 w-4 text-primary" />}
-                    {pattern.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">{pattern.description}</p>
-                  <div className="p-3 bg-white rounded border text-xs font-mono">
-                    {typeof pattern.content === 'string' ? pattern.content : JSON.stringify(pattern.content, null, 2)}
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                    <span>Validado via Teste A/B</span>
-                    <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1">
-                      <Copy className="h-3 w-3" />
-                      Copiar Padrão
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            
-            {/* Fallback if no patterns */}
-            {(!winningPatterns.data || winningPatterns.data.length === 0) && (
-              <div className="col-span-full py-12 text-center border-2 border-dashed rounded-lg bg-muted/10">
-                <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-                <h3 className="text-lg font-medium text-muted-foreground">Nenhum padrão vencedor registrado ainda</h3>
-                <p className="text-sm text-muted-foreground mb-4">Encerre testes A/B definindo um vencedor para salvar padrões aqui.</p>
-              </div>
-            )}
-          </div>
+        <TabsContent value="patterns" className="pt-4">
+          <AdminPatterns 
+            patterns={winningPatterns.data || []} 
+            applications={patternApplications.data || []} 
+            onRefetch={() => {
+              winningPatterns.refetch();
+              patternApplications.refetch();
+            }} 
+          />
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6 pt-4">
