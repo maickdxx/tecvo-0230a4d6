@@ -264,6 +264,89 @@ export type Database = {
           },
         ]
       }
+      analytics_automation_logs: {
+        Row: {
+          automation_id: string | null
+          email: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          organization_id: string | null
+          sent_at: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          automation_id?: string | null
+          email?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          sent_at?: string | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          automation_id?: string | null
+          email?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          sent_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_automation_logs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_automations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analytics_automations: {
+        Row: {
+          cooldown_hours: number | null
+          created_at: string | null
+          delay_minutes: number | null
+          description: string | null
+          enabled: boolean | null
+          id: string
+          message_template: string
+          name: string
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          cooldown_hours?: number | null
+          created_at?: string | null
+          delay_minutes?: number | null
+          description?: string | null
+          enabled?: boolean | null
+          id?: string
+          message_template: string
+          name: string
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          cooldown_hours?: number | null
+          created_at?: string | null
+          delay_minutes?: number | null
+          description?: string | null
+          enabled?: boolean | null
+          id?: string
+          message_template?: string
+          name?: string
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           content: string
