@@ -180,7 +180,7 @@ export default function ExecutarServico() {
               onBack={() => navigate(-1)}
               onFinalize={() => setShowFinalizeDialog(true)}
               allCompleted={allCompleted}
-              clientName={(service as any)?.client?.name}
+              clientName={service?.client?.name}
             />
           </div>
         )}
