@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { analytics } from "@/lib/analytics";
 import { Crown, Check, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
