@@ -10,6 +10,7 @@ import { AdminAICredits } from "@/components/admin/AdminAICredits";
 import { AdminAIUsage } from "@/components/admin/AdminAIUsage";
 import { AdminBackups } from "@/components/admin/AdminBackups";
 import { AdminWhatsAppStatus } from "@/components/admin/AdminWhatsAppStatus";
+import { AdminWhatsAppTecvo } from "@/components/admin/AdminWhatsAppTecvo";
 import { ExecutiveDashboard } from "@/components/admin/ExecutiveDashboard";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { FinancialDashboard } from "@/components/admin/FinancialDashboard";
@@ -102,6 +103,7 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="superadmins">Admins</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+            <TabsTrigger value="whatsapp-tecvo">WA Tecvo</TabsTrigger>
             <TabsTrigger value="ai-credits">IA</TabsTrigger>
             <TabsTrigger value="backups">Backups</TabsTrigger>
           </TabsList>
@@ -171,6 +173,10 @@ export default function Admin() {
 
           <TabsContent value="whatsapp">
             <AdminWhatsAppStatus />
+          </TabsContent>
+
+          <TabsContent value="whatsapp-tecvo">
+            <AdminWhatsAppTecvo />
           </TabsContent>
         </Tabs>
       </div>
