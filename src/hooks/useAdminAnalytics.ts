@@ -83,6 +83,7 @@ export function useAdminAnalytics() {
     dailyMetrics,
     trafficSources,
     pageViews,
+    funnel,
     kpis,
     isLoading
   };
