@@ -109,6 +109,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ab_test_templates: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          structure: Json
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          structure: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          structure?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ab_test_variants: {
         Row: {
           config: Json | null
@@ -145,6 +178,63 @@ export type Database = {
           {
             foreignKeyName: "ab_test_variants_test_id_fkey"
             columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "view_analytics_ab_test_results"
+            referencedColumns: ["test_id"]
+          },
+        ]
+      }
+      ab_test_winning_patterns: {
+        Row: {
+          content: Json
+          conversion_rate: number | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          pattern_type: string
+          performance_lift: number | null
+          source_test_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          conversion_rate?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          pattern_type: string
+          performance_lift?: number | null
+          source_test_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          conversion_rate?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          pattern_type?: string
+          performance_lift?: number | null
+          source_test_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ab_test_winning_patterns_source_test_id_fkey"
+            columns: ["source_test_id"]
+            isOneToOne: false
+            referencedRelation: "ab_tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ab_test_winning_patterns_source_test_id_fkey"
+            columns: ["source_test_id"]
             isOneToOne: false
             referencedRelation: "view_analytics_ab_test_results"
             referencedColumns: ["test_id"]
@@ -6179,6 +6269,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      view_campaign_comparison: {
+        Row: {
+          campaign: string | null
+          conversion_rate: number | null
+          conversions: number | null
+          medium: string | null
+          session_count: number | null
+          signups: number | null
+          source: string | null
+        }
+        Relationships: []
       }
       whatsapp_channels_safe: {
         Row: {

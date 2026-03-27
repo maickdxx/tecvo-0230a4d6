@@ -143,6 +143,35 @@ export function useAdminAnalytics() {
     if (error) throw error;
     return data;
   };
+  const fetchWinningPatterns = async () => {
+    const { data, error } = await supabase
+      .from("ab_test_winning_patterns")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from("ab_test_templates")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchCampaignComparison = async () => {
+    const { data, error } = await supabase
+      .from("view_campaign_comparison")
+      .select("*")
+      .order("conversion_rate", { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
 
   const dailyMetrics = useQuery({
     queryKey: ["admin-analytics-daily"],
@@ -182,6 +211,20 @@ export function useAdminAnalytics() {
   const alerts = useQuery({
     queryKey: ["admin-analytics-alerts"],
     queryFn: fetchAlerts,
+  });
+  const winningPatterns = useQuery({
+    queryKey: ["admin-analytics-winning-patterns"],
+    queryFn: fetchWinningPatterns,
+  });
+
+  const templates = useQuery({
+    queryKey: ["admin-analytics-templates"],
+    queryFn: fetchTemplates,
+  });
+
+  const campaignComparison = useQuery({
+    queryKey: ["admin-analytics-campaign-comparison"],
+    queryFn: fetchCampaignComparison,
   });
 
   const marketingFunnel = useQuery({
@@ -223,7 +266,10 @@ export function useAdminAnalytics() {
     activationMetrics.isLoading ||
     retentionCohorts.isLoading ||
     alerts.isLoading ||
-    hypotheses.isLoading;
+    hypotheses.isLoading ||
+    winningPatterns.isLoading ||
+    templates.isLoading ||
+    campaignComparison.isLoading;
 
   // Calculate overall KPIs
   const kpis = dailyMetrics.data ? {
@@ -257,6 +303,9 @@ export function useAdminAnalytics() {
     leadPaths,
     abTestResults,
     hypotheses,
+    winningPatterns,
+    templates,
+    campaignComparison,
     kpis,
     isLoading: isLoading || marketingFunnel.isLoading || leadDropoffs.isLoading || ctaPerformance.isLoading || leadPaths.isLoading || abTestResults.isLoading || hypotheses.isLoading
   };

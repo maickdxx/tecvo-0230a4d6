@@ -15,12 +15,13 @@ import {
   ComposedChart,
   Area
 } from "recharts";
-import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3, AlertTriangle, CheckCircle2, UserX, UserCheck, Activity, Zap, Filter, ArrowDown, History, Flag, Lightbulb, Trophy, Star } from "lucide-react";
+import { Users, MousePointer2, UserPlus, Timer, TrendingUp, Search, Globe, Share2, BarChart3, AlertTriangle, CheckCircle2, UserX, UserCheck, Activity, Zap, Filter, ArrowDown, History, Flag, Lightbulb, Trophy, Star, FileText, Layout, Copy, Check, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminAutomations } from "./AdminAutomations";
 import { AdminABTests } from "./AdminABTests";
@@ -42,6 +43,9 @@ export function AdminAnalytics() {
     ctaPerformance,
     leadPaths,
     abTestResults,
+    winningPatterns,
+    templates,
+    campaignComparison,
     kpis, 
     isLoading 
   } = useAdminAnalytics();
@@ -130,26 +134,34 @@ export function AdminAnalytics() {
       </div>
 
       <Tabs defaultValue="leads" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="leads" className="gap-2">
             <Filter className="h-4 w-4 text-primary" />
-            Leads & Marketing
+            Leads
+          </TabsTrigger>
+          <TabsTrigger value="campaigns" className="gap-2">
+            <Globe className="h-4 w-4 text-blue-500" />
+            Canais & Campanhas
           </TabsTrigger>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="funnel">Funil & Conversão</TabsTrigger>
-          <TabsTrigger value="retention">Retenção & Coorte</TabsTrigger>
-          <TabsTrigger value="users">Usuários & Alertas</TabsTrigger>
+          <TabsTrigger value="retention">Retenção</TabsTrigger>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="automations" className="gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
             Automações
           </TabsTrigger>
           <TabsTrigger value="ab_tests" className="gap-2">
             <TrendingUp className="h-4 w-4 text-emerald-500" />
-            Otimização Inteligente
+            Testes A/B
           </TabsTrigger>
-          <TabsTrigger value="learnings" className="gap-2">
-            <Lightbulb className="h-4 w-4 text-amber-500" />
-            Aprendizados
+          <TabsTrigger value="patterns" className="gap-2">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            Padrões Vencedores
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            Templates
           </TabsTrigger>
         </TabsList>
 
@@ -334,89 +346,143 @@ export function AdminAnalytics() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="ab_tests" className="pt-4">
-          <AdminABTests />
-        </TabsContent>
-
-        <TabsContent value="learnings" className="space-y-6 pt-4">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Star className="h-4 w-4 text-amber-500" />
-                  Padrão Vencedor: Simplicidade
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  Variações com menos de 3 campos no formulário de cadastro performaram <strong>45% melhor</strong> em média.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-blue-500" />
-                  Senso de Urgência
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  Textos que mencionam "Configuração em 5 min" têm CTR <strong>12% superior</strong> a textos descritivos.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-emerald-500" />
-                  Melhor Variação Histórica
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  A landing page "Problema {'>'} Solução" gerou <strong>+28% de lift</strong> comparada à tradicional.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
+        <TabsContent value="campaigns" className="space-y-6 pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Histórico de Decisões Estratégicas</CardTitle>
-              <CardDescription>Principais aprendizados validados por testes A/B</CardDescription>
+              <CardTitle>Performance por Canal e Campanha</CardTitle>
+              <CardDescription>Qual origem traz os leads que mais convertem em vendas</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Aprendizado</TableHead>
-                    <TableHead>Validado em</TableHead>
-                    <TableHead>Impacto</TableHead>
+                    <TableHead>Campanha</TableHead>
+                    <TableHead>Origem / Mídia</TableHead>
+                    <TableHead className="text-right">Sessões</TableHead>
+                    <TableHead className="text-right">Signups</TableHead>
+                    <TableHead className="text-right">Vendas</TableHead>
+                    <TableHead className="text-right">Taxa Conv.</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Botões verdes convertem melhor que azuis no checkout</TableCell>
-                    <TableCell className="text-xs">Outubro 2023</TableCell>
-                    <TableCell><Badge variant="outline" className="text-emerald-500">+8.4%</Badge></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Depoimentos em vídeo aumentam confiança em 20%</TableCell>
-                    <TableCell className="text-xs">Novembro 2023</TableCell>
-                    <TableCell><Badge variant="outline" className="text-emerald-500">+12.1%</Badge></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Mobile-first design é crítico para a etapa de cadastro</TableCell>
-                    <TableCell className="text-xs">Janeiro 2024</TableCell>
-                    <TableCell><Badge variant="outline" className="text-emerald-500">+15.5%</Badge></TableCell>
-                  </TableRow>
+                  {campaignComparison.data?.map((comp, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-medium">{comp.campaign || '(Sem Campanha)'}</TableCell>
+                      <TableCell className="text-xs">
+                        <Badge variant="outline" className="mr-1">{comp.source}</Badge>
+                        <Badge variant="secondary">{comp.medium}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{comp.session_count.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{comp.signups.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold text-emerald-500">{comp.conversions.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold">{comp.conversion_rate}%</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ab_tests" className="pt-4">
+          <AdminABTests />
+        </TabsContent>
+
+        <TabsContent value="patterns" className="space-y-6 pt-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {winningPatterns.data?.map((pattern) => (
+              <Card key={pattern.id} className="border-emerald-200 bg-emerald-50/20">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-100">Padrão Vencedor</Badge>
+                    <span className="text-[10px] font-bold uppercase text-emerald-600">Lift +{pattern.performance_lift}%</span>
+                  </div>
+                  <CardTitle className="text-base mt-2 flex items-center gap-2">
+                    {pattern.pattern_type === 'headline' && <Star className="h-4 w-4 text-amber-500" />}
+                    {pattern.pattern_type === 'cta' && <MousePointer2 className="h-4 w-4 text-blue-500" />}
+                    {pattern.pattern_type === 'structure' && <Layout className="h-4 w-4 text-primary" />}
+                    {pattern.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">{pattern.description}</p>
+                  <div className="p-3 bg-white rounded border text-xs font-mono">
+                    {typeof pattern.content === 'string' ? pattern.content : JSON.stringify(pattern.content, null, 2)}
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                    <span>Validado via Teste A/B</span>
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1">
+                      <Copy className="h-3 w-3" />
+                      Copiar Padrão
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {/* Fallback if no patterns */}
+            {(!winningPatterns.data || winningPatterns.data.length === 0) && (
+              <div className="col-span-full py-12 text-center border-2 border-dashed rounded-lg bg-muted/10">
+                <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+                <h3 className="text-lg font-medium text-muted-foreground">Nenhum padrão vencedor registrado ainda</h3>
+                <p className="text-sm text-muted-foreground mb-4">Encerre testes A/B definindo um vencedor para salvar padrões aqui.</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-6 pt-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {templates.data?.map((template) => (
+              <Card key={template.id}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    {template.name}
+                  </CardTitle>
+                  <CardDescription>{template.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Badge variant="secondary" className="capitalize">{template.category.replace('_', ' ')}</Badge>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1 gap-2 text-xs">
+                      <Layout className="h-3 w-3" /> Ver Estrutura
+                    </Button>
+                    <Button className="flex-1 gap-2 text-xs">
+                      <Copy className="h-3 w-3" /> Usar Template
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {/* Default Tecvo Template (Conceptual) */}
+            <Card className="border-primary/50 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Star className="h-4 w-4 text-amber-500" />
+                  LP Padrão Tecvo (Alta Conv.)
+                </CardTitle>
+                <CardDescription>Estrutura otimizada com base em +50 testes validados.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Headlines Dinâmicas
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Prova Social Integrada
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Senso de Urgência no CTA
+                  </div>
+                </div>
+                <Button className="w-full gap-2">
+                  <Zap className="h-4 w-4" /> Aplicar em Novo Projeto
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
