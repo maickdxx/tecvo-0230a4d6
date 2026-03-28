@@ -11,6 +11,7 @@ import { PaymentPendingOverlay } from "@/components/subscription/PaymentPendingO
 import { DemoTourOverlay } from "@/components/demo/DemoTourOverlay";
 import { OfflineIndicator } from "@/components/offline/OfflineIndicator";
 import { InstallBanner } from "./InstallBanner";
+import { BannerPriorityProvider, useBannerPriority } from "@/contexts/BannerPriorityContext";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -25,11 +26,31 @@ export function AppLayout({
   hideBannersOnMobileFullscreen = false,
   desktopFullHeight = false,
 }: AppLayoutProps) {
+  return (
+    <BannerPriorityProvider>
+      <AppLayoutInner
+        mobileFullscreen={mobileFullscreen}
+        hideBannersOnMobileFullscreen={hideBannersOnMobileFullscreen}
+        desktopFullHeight={desktopFullHeight}
+      >
+        {children}
+      </AppLayoutInner>
+    </BannerPriorityProvider>
+  );
+}
+
+function AppLayoutInner({
+  children,
+  mobileFullscreen = false,
+  hideBannersOnMobileFullscreen = false,
+  desktopFullHeight = false,
+}: AppLayoutProps) {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobileFullscreen = isMobile && mobileFullscreen;
   const showBanners = !(isMobileFullscreen && hideBannersOnMobileFullscreen);
   const { isPendingPayment, pendingPlan, cancelPending } = useAutoCheckout();
+  const { isSuppressed } = useBannerPriority();
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden max-w-[100vw]">
@@ -54,7 +75,6 @@ export function AppLayout({
         style={{
           paddingTop: isMobile ? "3.5rem" : undefined,
           paddingBottom: isMobile && isMobileFullscreen ? "5rem" : undefined,
-          // Dynamic sidebar offset for desktop
           ...(!isMobile ? { marginLeft: "var(--sidebar-width, 240px)" } : {}),
         }}
       >
@@ -87,7 +107,7 @@ export function AppLayout({
       )}
       
       <DemoTourOverlay />
-      {!isMobile && <InstallBanner />}
+      {!isMobile && !isSuppressed("info") && <InstallBanner />}
     </div>
   );
 }
