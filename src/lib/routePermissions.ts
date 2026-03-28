@@ -1,4 +1,20 @@
 /**
+ * Precise route matching: matches exactly or as a parent segment.
+ * "/financeiro" matches "/financeiro" and "/financeiro/xxx"
+ * but NOT "/financeiro-teste" or "/financeiroExtra".
+ */
+export function matchRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(route + "/");
+}
+
+/**
+ * Check if pathname matches any route in the list (precise matching).
+ */
+export function matchAnyRoute(pathname: string, routes: string[]): boolean {
+  return routes.some(route => matchRoute(pathname, route));
+}
+
+/**
  * Maps routes to the granular permission required to access them.
  * If a user has the listed permission, access is granted regardless of base role.
  * Routes NOT listed here follow structural (role-based) rules.
@@ -20,7 +36,7 @@ export const ROUTE_PERMISSION_MAP: Record<string, string> = {
  * cannot override these. Only specific roles (owner, admin, super_admin)
  * can access them.
  */
-export const STRUCTURAL_BLOCKED_ROUTES = ["/admin", "/ia/"];
+export const STRUCTURAL_BLOCKED_ROUTES = ["/admin", "/ia"];
 
 /**
  * Check if a route path can be unlocked by a granular permission.
@@ -28,9 +44,8 @@ export const STRUCTURAL_BLOCKED_ROUTES = ["/admin", "/ia/"];
  * structurally blocked or not in the map.
  */
 export function getRoutePermission(pathname: string): string | null {
-  // Check exact match first, then prefix match
   for (const [route, permission] of Object.entries(ROUTE_PERMISSION_MAP)) {
-    if (pathname === route || pathname.startsWith(route + "/") || pathname.startsWith(route)) {
+    if (matchRoute(pathname, route)) {
       return permission;
     }
   }
