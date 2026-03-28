@@ -94,38 +94,52 @@ export function useSubscription() {
 
       const now = new Date();
 
-      // Past due tracking
+      // ── PAST DUE ──
       const isPastDue = subscriptionStatus === "past_due";
       let isPastDueGraceExpired = false;
       let pastDueDaysLeft = PAST_DUE_GRACE_DAYS;
       if (isPastDue && pastDueSince) {
-        const pastDueDate = new Date(pastDueSince);
-        const daysSincePastDue = Math.floor((now.getTime() - pastDueDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSincePastDue = Math.floor((now.getTime() - new Date(pastDueSince).getTime()) / (1000 * 60 * 60 * 24));
         pastDueDaysLeft = Math.max(0, PAST_DUE_GRACE_DAYS - daysSincePastDue);
         isPastDueGraceExpired = daysSincePastDue >= PAST_DUE_GRACE_DAYS;
       }
 
-      // Paid subscription detection: has stripe sub OR plan_expires_at set
+      // ── STRIPE SUBSCRIPTION STATE ──
       const hasStripeSubscription = !!stripeSubId;
-      const hasPaidSubscription = hasStripeSubscription || planExpiresAt !== null;
-      
-      // Trial state — only valid if NO paid subscription exists
-      const isTrial = !hasPaidSubscription && trialEndsAt !== null && trialStartedAt !== null;
+
+      // ── TRIAL STATE (only valid if NO Stripe subscription) ──
+      const isTrial = !hasStripeSubscription && trialEndsAt !== null && trialStartedAt !== null;
       const isTrialActive = isTrial && trialEndsAt > now;
       const isTrialExpired = isTrial && trialEndsAt <= now;
       const trialDaysLeft = isTrial && trialEndsAt
         ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
         : 0;
 
-      // Determine effective plan — paid subscription ALWAYS overrides trial
+      // ══════════════════════════════════════════════════════════
+      // EFFECTIVE PLAN — single clear decision tree
+      // Priority: Stripe subscription > Trial > Free
+      // ══════════════════════════════════════════════════════════
       let plan: PlanType;
-      if (hasPaidSubscription) {
-        const isPlanActive = !planExpiresAt || planExpiresAt > now;
-        const isStatusOk = subscriptionStatus === "active" || subscriptionStatus === "trialing" || (isPastDue && !isPastDueGraceExpired);
-        plan = (rawPlan !== "free" && isPlanActive && isStatusOk) ? rawPlan : (isPlanActive && !isPastDueGraceExpired ? rawPlan : "free");
+
+      if (hasStripeSubscription) {
+        // Has Stripe: check if subscription is in a usable state
+        const isStatusUsable =
+          subscriptionStatus === "active" ||
+          subscriptionStatus === "trialing" ||
+          (isPastDue && !isPastDueGraceExpired);
+
+        const isPlanNotExpired = !planExpiresAt || planExpiresAt > now;
+
+        if (rawPlan !== "free" && isStatusUsable && isPlanNotExpired) {
+          plan = rawPlan; // Paid plan active
+        } else {
+          plan = "free"; // Subscription exists but is not usable
+        }
       } else if (isTrialActive) {
-        plan = rawPlan;
+        // No Stripe, active trial: use whatever plan was set (usually "essential")
+        plan = rawPlan !== "free" ? rawPlan : "essential";
       } else {
+        // No Stripe, no active trial: free
         plan = "free";
       }
 
