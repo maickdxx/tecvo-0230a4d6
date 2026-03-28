@@ -224,15 +224,7 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="page-enter">
-        <DemoConversionBanner />
-        <GuidedOnboardingCard />
-        {!isActivationPhase && (
-          <>
-            <WhatsAppPromptCard />
-            <ValueMilestoneBanner />
-            <PageTutorialBanner pageKey="dashboard" title="Visão Geral" message="Este é o painel da sua empresa. Aqui você vê o que realmente entrou de dinheiro e o que ainda vai entrar." />
-          </>
-        )}
+        <DashboardBanners />
 
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
