@@ -7,32 +7,30 @@ export const PersistentBackground = () => {
 
   return (
     <AbsoluteFill style={{ background: "#0A0E1A" }}>
-      {/* Subtle animated gradient orbs */}
       <div
         style={{
           position: "absolute",
-          width: 900,
-          height: 900,
+          width: 600,
+          height: 600,
           borderRadius: "50%",
           background: "radial-gradient(circle, rgba(37,71,208,0.12) 0%, transparent 70%)",
-          top: -200 + drift * 0.5,
-          left: -200 + Math.sin(frame * 0.01) * 30,
+          top: -150 + drift * 0.5,
+          left: -150 + Math.sin(frame * 0.01) * 20,
           opacity: pulse,
         }}
       />
       <div
         style={{
           position: "absolute",
-          width: 700,
-          height: 700,
+          width: 500,
+          height: 500,
           borderRadius: "50%",
           background: "radial-gradient(circle, rgba(37,71,208,0.08) 0%, transparent 70%)",
-          bottom: -150 + Math.cos(frame * 0.015) * 20,
-          right: -100 + drift * 0.3,
+          bottom: -100 + Math.cos(frame * 0.015) * 15,
+          right: -80 + drift * 0.3,
           opacity: pulse * 0.7,
         }}
       />
-      {/* Grid pattern */}
       <div
         style={{
           position: "absolute",
@@ -41,7 +39,7 @@ export const PersistentBackground = () => {
             linear-gradient(rgba(37,71,208,0.04) 1px, transparent 1px),
             linear-gradient(90deg, rgba(37,71,208,0.04) 1px, transparent 1px)
           `,
-          backgroundSize: "60px 60px",
+          backgroundSize: "50px 50px",
           backgroundPosition: `${drift}px ${drift * 0.5}px`,
         }}
       />
