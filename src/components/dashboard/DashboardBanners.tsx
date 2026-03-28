@@ -8,22 +8,24 @@ import { useGuidedOnboarding } from "@/hooks/useGuidedOnboarding";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
+import { useBannerPriority } from "@/contexts/BannerPriorityContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Dashboard banner orchestrator.
+ * Dashboard banner orchestrator — consumes global priority context.
  *
  * Priority hierarchy (highest → lowest):
- *  1. DemoConversionBanner   — demo mode conversion CTA
- *  2. GuidedOnboardingCard   — activation checklist (real mode only)
- *  3. WhatsAppPromptCard     — collect WhatsApp
- *  4. ValueMilestoneBanner   — celebrate 3+ services
- *  5. PageTutorialBanner     — contextual page tip
+ *  1. DemoConversionBanner   — demo mode conversion CTA        (activation tier)
+ *  2. GuidedOnboardingCard   — activation checklist             (activation tier)
+ *  3. WhatsAppPromptCard     — collect WhatsApp                 (prompt tier)
+ *  4. ValueMilestoneBanner   — celebrate 3+ services            (info tier)
+ *  5. PageTutorialBanner     — contextual page tip              (info tier)
  *
  * Rules:
  *  - #1 and #2 are mutually exclusive (demo vs real).
  *  - Only ONE "soft" banner (#3-#5) shows at a time.
+ *  - Global priority can suppress prompt/info tiers (e.g. billing crisis).
  *  - During activation phase (#2 visible), all soft banners are hidden.
  */
 export function DashboardBanners() {
@@ -32,9 +34,14 @@ export function DashboardBanners() {
   const { user, profile, session } = useAuth();
   const { sensitiveData } = useProfileSensitiveData();
   const { showTutorial: showDashboardTutorial } = usePageTutorial("dashboard");
+  const { isSuppressed } = useBannerPriority();
 
   // Activation phase suppresses all soft banners
   const isActivationPhase = !isDemoMode && showGuide && !checklistDone;
+
+  // Global suppression from higher-priority tiers (billing crisis, etc.)
+  const promptSuppressed = isSuppressed("prompt");
+  const infoSuppressed = isSuppressed("info");
 
   // --- Resolve which soft banner to show (only one) ---
   const hasWhatsapp = !!(profile?.phone || sensitiveData?.whatsapp_personal);
@@ -43,7 +50,7 @@ export function DashboardBanners() {
     if (!ts) return false;
     return Date.now() - Number(ts) < 24 * 60 * 60 * 1000;
   })();
-  const showWhatsApp = !isDemoMode && !!user && !hasWhatsapp && !whatsappDismissed;
+  const showWhatsApp = !isDemoMode && !!user && !hasWhatsapp && !whatsappDismissed && !promptSuppressed;
 
   // ValueMilestone conditions
   const userId = session?.user?.id;
@@ -77,8 +84,8 @@ export function DashboardBanners() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const showMilestone = !isDemoMode && !milestoneProfile?.onboarding_completed && realServiceCount >= 3;
-  const showTutorial = !isDemoMode && showDashboardTutorial;
+  const showMilestone = !isDemoMode && !milestoneProfile?.onboarding_completed && realServiceCount >= 3 && !infoSuppressed;
+  const showTutorial = !isDemoMode && showDashboardTutorial && !infoSuppressed;
 
   // Pick highest-priority soft banner
   type SoftBanner = "whatsapp" | "milestone" | "tutorial" | null;
