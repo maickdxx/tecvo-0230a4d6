@@ -412,7 +412,7 @@ export const tutorialModules: TutorialModuleData[] = [
       },
       {
         title: "Assinar um plano",
-        description: "Acesse Configurações > Planos e escolha o plano desejado. Clique em \"Assinar\" para ser redirecionado ao checkout do Mercado Pago, onde você pode pagar com cartão, boleto ou PIX.",
+        description: "Acesse Configurações > Planos e escolha o plano desejado. Clique em \"Assinar\" para ser redirecionado ao checkout seguro, onde você pode pagar com cartão de crédito.",
         tips: [
           "Após o pagamento, seu plano é ativado automaticamente em poucos segundos."
         ]

@@ -388,7 +388,7 @@ export function AdminUserDialog({ user, open, onOpenChange, onGrantSuperAdmin, i
                 </div>
               )}
               <div>
-                <span className="text-muted-foreground">Gateway:</span> Mercado Pago
+                <span className="text-muted-foreground">Gateway:</span> Stripe
               </div>
             </div>
           </div>
