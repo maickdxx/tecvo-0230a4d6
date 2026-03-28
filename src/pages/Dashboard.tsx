@@ -2,9 +2,7 @@ import { useState, useMemo, type ReactNode } from "react";
 import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
-import { GuidedOnboardingCard, PageTutorialBanner } from "@/components/onboarding";
-import { DemoConversionBanner } from "@/components/demo/DemoConversionBanner";
-import { ValueMilestoneBanner } from "@/components/dashboard/ValueMilestoneBanner";
+import { DashboardBanners } from "@/components/dashboard/DashboardBanners";
 import { useAutoSeedDemo } from "@/hooks/useAutoSeedDemo";
 import { useGuidedOnboarding } from "@/hooks/useGuidedOnboarding";
 import { useDemoMode } from "@/hooks/useDemoMode";
@@ -25,7 +23,7 @@ import { ExecutiveHeroBlock } from "@/components/dashboard/ExecutiveHeroBlock";
 import { RevenueEngineBlock } from "@/components/dashboard/RevenueEngineBlock";
 import { WeatherForecast } from "@/components/dashboard/WeatherForecast";
 import { TodayBlock } from "@/components/dashboard/TodayBlock";
-import { WhatsAppPromptCard } from "@/components/dashboard/WhatsAppPromptCard";
+
 import { AgendaResumo } from "@/components/dashboard/AgendaResumo";
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
@@ -226,15 +224,7 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="page-enter">
-        <DemoConversionBanner />
-        <GuidedOnboardingCard />
-        {!isActivationPhase && (
-          <>
-            <WhatsAppPromptCard />
-            <ValueMilestoneBanner />
-            <PageTutorialBanner pageKey="dashboard" title="Visão Geral" message="Este é o painel da sua empresa. Aqui você vê o que realmente entrou de dinheiro e o que ainda vai entrar." />
-          </>
-        )}
+        <DashboardBanners />
 
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
