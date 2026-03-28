@@ -99,33 +99,48 @@ Deno.serve(async (req) => {
       const guard = await checkSendLimit(adminClient, profile.organization_id, null, "welcome");
       if (!guard.allowed) {
         console.log(`[WELCOME] Blocked by send guard: ${guard.reason}`);
-      } else {
-        const userName = profile.full_name || org?.name || "empreendedor";
-        const welcomeText = `👋 Olá, ${userName}! Bem-vindo(a) à *Tecvo*!\n\nSua conta foi configurada com sucesso. Estamos aqui para facilitar a gestão do seu negócio.\n\nSe precisar de ajuda, é só mandar uma mensagem! 🚀`;
+        // Don't mark as sent — allow retry later
+        return new Response(JSON.stringify({ message: "Rate limited, will retry" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-        let cleanNumber = phone.replace(/\D/g, "");
-        if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
-          cleanNumber = "55" + cleanNumber;
-        }
-        const jid = `${cleanNumber}@s.whatsapp.net`;
+      const userName = profile.full_name || org?.name || "empreendedor";
+      const welcomeText = `👋 Olá, ${userName}! Bem-vindo(a) à *Tecvo*!\n\nSua conta foi configurada com sucesso. Estamos aqui para facilitar a gestão do seu negócio.\n\nSe precisar de ajuda, é só mandar uma mensagem! 🚀`;
 
-        try {
-          const res = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", apikey: apiKey },
-            body: JSON.stringify({ number: jid, text: welcomeText }),
+      let cleanNumber = phone.replace(/\D/g, "");
+      if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
+        cleanNumber = "55" + cleanNumber;
+      }
+      const jid = `${cleanNumber}@s.whatsapp.net`;
+
+      try {
+        const res = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ number: jid, text: welcomeText }),
+        });
+
+        if (!res.ok) {
+          console.error("[WELCOME] Send failed:", res.status, await res.text());
+          // Don't mark as sent on failure — allow retry
+          return new Response(JSON.stringify({ error: "Send failed" }), {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
-
-          if (!res.ok) {
-            console.error("[WELCOME] Send failed:", res.status, await res.text());
-          }
-        } catch (err) {
-          console.error("[WELCOME] Send error:", err);
         }
+      } catch (err) {
+        console.error("[WELCOME] Send error:", err);
+        // Don't mark as sent on error — allow retry
+        return new Response(JSON.stringify({ error: "Send error" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
-    // Mark welcome as sent
+    // Only mark as sent AFTER successful send (or if no WhatsApp bridge configured)
     await adminClient
       .from("organizations")
       .update({ welcome_whatsapp_sent: true })
