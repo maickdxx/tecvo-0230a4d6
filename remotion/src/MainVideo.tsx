@@ -10,42 +10,42 @@ import { Scene4Benefits } from "./scenes/Scene4Benefits";
 import { Scene5Closing } from "./scenes/Scene5Closing";
 import { PersistentBackground } from "./components/PersistentBackground";
 
-const TRANSITION = 20;
+const TRANSITION = 15;
 
 export const MainVideo = () => {
   return (
     <AbsoluteFill>
       <PersistentBackground />
       <TransitionSeries>
-        <TransitionSeries.Sequence durationInFrames={130}>
+        <TransitionSeries.Sequence durationInFrames={160}>
           <Scene1Hook />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={wipe({ direction: "from-left" })}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: TRANSITION })}
         />
-        <TransitionSeries.Sequence durationInFrames={120}>
+        <TransitionSeries.Sequence durationInFrames={150}>
           <Scene2Problem />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: TRANSITION })}
         />
-        <TransitionSeries.Sequence durationInFrames={150}>
+        <TransitionSeries.Sequence durationInFrames={180}>
           <Scene3Features />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={slide({ direction: "from-right" })}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: TRANSITION })}
         />
-        <TransitionSeries.Sequence durationInFrames={120}>
+        <TransitionSeries.Sequence durationInFrames={150}>
           <Scene4Benefits />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: TRANSITION })}
         />
-        <TransitionSeries.Sequence durationInFrames={140}>
+        <TransitionSeries.Sequence durationInFrames={170}>
           <Scene5Closing />
         </TransitionSeries.Sequence>
       </TransitionSeries>
