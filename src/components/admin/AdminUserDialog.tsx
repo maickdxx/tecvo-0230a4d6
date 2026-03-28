@@ -388,8 +388,7 @@ export function AdminUserDialog({ user, open, onOpenChange, onGrantSuperAdmin, i
                 </div>
               )}
               <div>
-                <span className="text-muted-foreground">Gateway:</span>{" "}
-                {user.stripe_subscription_id ? "Stripe" : user.plan && user.plan !== "free" ? "Mercado Pago (legado)" : "—"}
+                <span className="text-muted-foreground">Gateway:</span> Stripe
               </div>
             </div>
           </div>
