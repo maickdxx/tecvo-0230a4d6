@@ -4,6 +4,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Loader2 } from "lucide-react";
+import { getRoutePermission, STRUCTURAL_BLOCKED_ROUTES } from "@/lib/routePermissions";
 
 // Routes that require the "Empresa" plan (hasTimeClock)
 const EMPRESA_ONLY_ROUTES = ["/ponto", "/ponto-admin"];
@@ -25,27 +26,14 @@ const EMPLOYEE_ROUTES = ["/meu-dia", "/ponto", "/historico-ponto", "/espelho-pon
 // Routes field workers (any role) can additionally access
 const FIELD_WORKER_ROUTES = ["/meu-dia"];
 
-// Routes blocked for members (Atendente)
-const MEMBER_BLOCKED_ROUTES = [
-  "/financeiro",
-  "/contas-pagar",
-  "/contas-receber",
-  "/financeiro/relatorios",
-  "/financeiro/formas-pagamento",
-  "/financeiro/categorias",
-  "/financeiro/transferencias",
-  "/fornecedores",
-  "/lixeira",
-  "/admin",
-  "/ia/",
-];
+// Note: MEMBER_BLOCKED_ROUTES replaced by routePermissions.ts logic
 
 // Routes accessible without an active paid plan
 const PLAN_EXEMPT_ROUTES = ["/planos", "/configuracoes"];
 
 export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRouteProps) {
   const { user, isLoading: authLoading } = useAuth();
-  const { isEmployee, isFieldWorker, isMember, isAdmin, isOwner, isLoading: roleLoading } = useUserRole();
+  const { isEmployee, isFieldWorker, isMember, isAdmin, isOwner, hasPermission, isLoading: roleLoading } = useUserRole();
   const { isOnboardingCompleted, isLoading: onboardingLoading } = useOnboarding();
   const { isFreePlan, isTrial, isTrialExpired, welcomeShown, hasTimeClock, hasWhatsAppFull, isLoading: subscriptionLoading } = useSubscription();
   const location = useLocation();
@@ -101,12 +89,19 @@ export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRou
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Member (Atendente): block financial, admin, and AI routes
+  // Member (Atendente): check structural blocks first, then permission-based access
   if (isMember) {
-    const isBlockedRoute = MEMBER_BLOCKED_ROUTES.some(route =>
+    // Structural blocks — cannot be overridden by granular permissions
+    const isStructurallyBlocked = STRUCTURAL_BLOCKED_ROUTES.some(route =>
       location.pathname.startsWith(route)
     );
-    if (isBlockedRoute) {
+    if (isStructurallyBlocked) {
+      return <Navigate to="/dashboard" replace />;
+    }
+
+    // Permission-based routes — check if user has the required granular permission
+    const requiredPermission = getRoutePermission(location.pathname);
+    if (requiredPermission && !hasPermission(requiredPermission)) {
       return <Navigate to="/dashboard" replace />;
     }
   }
