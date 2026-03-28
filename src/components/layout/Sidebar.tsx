@@ -236,7 +236,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(_sidebarCollapsed);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const { isEmployee, isFieldWorker, isMember, isAdmin, isOwner, roleLabel } = useUserRole();
+  const { isEmployee, isFieldWorker, isMember, isAdmin, isOwner, hasPermission, roleLabel } = useUserRole();
   const { profile, signOut } = useAuth();
   const { organization } = useOrganization();
   const { isSuperAdmin } = useSuperAdmin();
@@ -356,9 +356,20 @@ export function Sidebar() {
               <SidebarNavItem item={{ label: "Clientes", href: "/clientes", icon: Users }} collapsed={collapsed} />
               <SidebarNavItem item={{ label: "Catálogo", href: "/catalogo-servicos", icon: Wrench }} collapsed={collapsed} />
             </div>
+            {hasPermission("finance.view") && (
+              <>
+                <SectionLabel label="Controle" collapsed={collapsed} />
+                <div className="space-y-0.5">
+                  <SidebarGroup label="Financeiro" items={financeiroSubItems} isOpen={openGroups.financeiro} onToggle={() => toggleGroup('financeiro')} collapsed={collapsed} />
+                  <SidebarNavItem item={{ label: "Relatórios", href: "/financeiro/relatorios", icon: FileText }} collapsed={collapsed} />
+                  <SidebarNavItem item={{ label: "Fornecedores", href: "/fornecedores", icon: Building2 }} collapsed={collapsed} />
+                </div>
+              </>
+            )}
             <SectionLabel label="Sistema" collapsed={collapsed} />
             <div className="space-y-0.5">
               <SidebarGroup label="Ajuda" items={ajudaSubItems} isOpen={openGroups.ajuda} onToggle={() => toggleGroup('ajuda')} collapsed={collapsed} />
+              {hasPermission("service.delete") && <SidebarNavItem item={{ label: "Lixeira", href: "/lixeira", icon: Trash2 }} collapsed={collapsed} />}
             </div>
           </>
         ) : (
