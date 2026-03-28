@@ -8,6 +8,6 @@ export const RemotionRoot = () => (
     durationInFrames={600}
     fps={30}
     width={1080}
-    height={1080}
+    height={1920}
   />
 );
