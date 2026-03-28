@@ -264,7 +264,7 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const { isEmployee, isFieldWorker, isMember, roleLabel } = useUserRole();
+  const { isEmployee, isFieldWorker, isMember, hasPermission, roleLabel } = useUserRole();
   const { profile, signOut, user } = useAuth();
   const { organization } = useOrganization();
   const { plan, hasWhatsAppFull, hasRecurrence } = useSubscription();
@@ -420,10 +420,22 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
                       <MenuNavItem item={{ label: "Clientes", href: "/clientes", icon: Users }} onClick={closeMenu} />
                       <MenuNavItem item={{ label: "Catálogo de Serviços", href: "/catalogo-servicos", icon: Wrench }} onClick={closeMenu} />
                     </div>
+                    {hasPermission("finance.view") && (
+                      <>
+                        <SectionDivider />
+                        <SectionLabel label="Controle" />
+                        <div className="space-y-0.5">
+                          <MenuGroup label="Financeiro" items={financeiroSubItems} onItemClick={closeMenu} isOpen={openGroups.financeiro} onToggle={() => toggleGroup('financeiro')} />
+                          <MenuNavItem item={{ label: "Relatórios", href: "/financeiro/relatorios", icon: FileText }} onClick={closeMenu} />
+                          <MenuNavItem item={{ label: "Fornecedores", href: "/fornecedores", icon: Building2 }} onClick={closeMenu} />
+                        </div>
+                      </>
+                    )}
                     <SectionDivider />
                     <SectionLabel label="Sistema" />
                     <div className="space-y-0.5">
                       <MenuGroup label="Ajuda" items={ajudaSubItems} onItemClick={closeMenu} isOpen={openGroups.ajuda} onToggle={() => toggleGroup('ajuda')} />
+                      {hasPermission("service.delete") && <MenuNavItem item={{ label: "Lixeira", href: "/lixeira", icon: Trash2 }} onClick={closeMenu} />}
                     </div>
                   </>
                 ) : (
