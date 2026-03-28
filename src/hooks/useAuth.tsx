@@ -124,21 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionStorage.setItem("tecvo_login_tracked", "true");
         }
 
-        // Check if welcome WhatsApp needs to be sent
-        if (data.organization_id) {
-          supabase
-            .from("organizations")
-            .select("onboarding_completed, welcome_whatsapp_sent")
-            .eq("id", data.organization_id)
-            .maybeSingle()
-            .then(({ data: org }) => {
-              if (org?.onboarding_completed && !org?.welcome_whatsapp_sent) {
-                supabase.functions.invoke("send-welcome-whatsapp").catch((err) => {
-                  console.warn("Welcome WhatsApp retry failed:", err);
-                });
-              }
-            });
-        }
+        // Welcome WhatsApp is handled exclusively by useOnboarding hook
+        // to avoid duplicate sends from multiple trigger points
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
