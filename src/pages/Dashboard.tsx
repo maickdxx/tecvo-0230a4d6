@@ -33,7 +33,7 @@ import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { DashboardCustomizeDialog } from "@/components/dashboard/DashboardCustomizeDialog";
 import { useDashboardLayout } from "@/hooks/useDashboardLayout";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
-import { usePermissions } from "@/hooks/usePermissions";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   type Granularity,
   getPeriodoAtivo,
@@ -97,7 +97,7 @@ export default function Dashboard() {
   const metrics = useDashboardMetrics(startDate, endDate, prevStartDate, prevEndDate);
   const periodLabel = getLabelPeriodo(granularity, referenceDate);
   const { organization } = useOrganization();
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = useUserRole();
   const canViewFinance = hasPermission("finance.view");
   const { layout, isVisible } = useDashboardLayout();
 
