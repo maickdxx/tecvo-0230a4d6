@@ -62,7 +62,23 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
-  const { isOwner, isLoading: isLoadingRole } = useUserRole();
+  const { role, isOwner, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
+  
+  // Log de diagnóstico obrigatório
+  useEffect(() => {
+    if (!isLoadingRole) {
+      console.log("[MyAccountSettings] Diagnóstico de Permissão:", { 
+        role, 
+        isOwner, 
+        isSuperAdmin,
+        userId: profile?.user_id
+      });
+    }
+  }, [role, isLoadingRole, isOwner, isSuperAdmin, profile?.user_id]);
+
+  // Condição explícita de acesso total (Owner ou Super Admin)
+  const hasFullAccess = isOwner || isSuperAdmin || role === 'owner' || role === 'super_admin';
+
   
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
