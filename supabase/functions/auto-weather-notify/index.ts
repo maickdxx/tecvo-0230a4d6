@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
 
       if (result.sent) {
         sent++;
-        console.log(`[AUTO-WEATHER] ✅ Sent to org ${org.id}`);
+        console.log(`[AUTO-WEATHER] ✅ Sent: org_id=${org.id} user_id=${ownerPhone.userId} role=owner function=auto-weather`);
       } else if (result.skipped) {
         console.log(`[AUTO-WEATHER] ⏭️ Skipped org ${org.id} (already sent today)`);
       } else {
