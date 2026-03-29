@@ -160,7 +160,11 @@ export default function NovoCliente() {
     return (
       <AppLayout>
         <div className="max-w-lg mx-auto py-8">
-          <QuickClientForm onSubmit={handleQuickSubmit} isSubmitting={isCreating} />
+          <QuickClientForm 
+            onSubmit={handleQuickSubmit} 
+            isSubmitting={isCreating} 
+            onShowFullForm={() => setForceFullForm(true)}
+          />
         </div>
       </AppLayout>
     );
