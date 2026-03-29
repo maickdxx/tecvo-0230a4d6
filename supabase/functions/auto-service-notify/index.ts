@@ -17,7 +17,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
-import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { resolveOwnerPhone, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
