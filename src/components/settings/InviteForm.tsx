@@ -20,18 +20,21 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const ROLE_LABELS: Record<Exclude<AppRole, "owner">, string> = {
+  super_admin: "Super ADM",
   admin: "ADM",
   member: "Atendente",
   employee: "Funcionário (Técnico de Rua)",
 };
 
 const ROLE_ICONS: Record<Exclude<AppRole, "owner">, typeof Shield> = {
+  super_admin: Crown,
   admin: Shield,
   member: User,
   employee: Briefcase,
 };
 
 const ROLE_COLORS: Record<Exclude<AppRole, "owner">, string> = {
+  super_admin: "bg-red-500/10 text-red-600 border-red-200",
   admin: "bg-blue-500/10 text-blue-600 border-blue-200",
   member: "bg-green-500/10 text-green-600 border-green-200",
   employee: "bg-purple-500/10 text-purple-600 border-purple-200",
