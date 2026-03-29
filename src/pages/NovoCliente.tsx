@@ -118,10 +118,11 @@ export default function NovoCliente() {
   const queryClient = useQueryClient();
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const [forceFullForm, setForceFullForm] = useState(false);
   // Activation mode: first client hasn't been created yet
   const isActivationMode = showGuide && !steps[0]?.completed;
   const fromChecklist = searchParams.get("from") === "checklist";
-  const useQuickForm = isActivationMode || fromChecklist;
+  const useQuickForm = (isActivationMode || fromChecklist) && !forceFullForm;
 
   const handleQuickSubmit = async (data: ClientFormData) => {
     await create(data);
