@@ -26,9 +26,14 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const campaignName = body.campaign_name || "reengagement";
-    const messageTemplate = body.message_template;
-    const emailTemplate = body.email_template || null;
-    const emailSubject = body.email_subject || null;
+    const minDays = body.min_days || 20;
+    
+    // Default templates for auto-population (cron doesn't send body)
+    const messageTemplate = body.message_template || 
+      "Olá {{name}}! 👋 Vimos que você criou sua conta na Tecvo há um tempo. Queremos te ajudar a aproveitar ao máximo a plataforma. Tem alguma dúvida? Responda aqui que te ajudamos! 🚀";
+    const emailTemplate = body.email_template || 
+      "Olá {{name}},\n\nVimos que você criou sua conta na Tecvo há algum tempo e gostaríamos de ajudar.\n\nA Tecvo pode simplificar a gestão da sua empresa de serviços — ordens de serviço, clientes, agenda e muito mais.\n\nQue tal dar uma olhada? Estamos aqui para ajudar!\n\nEquipe Tecvo";
+    const emailSubject = body.email_subject || "Precisando de ajuda com a Tecvo? 🤝";
 
     if (!messageTemplate) {
       return jsonResponse({ error: "message_template is required" }, 400);
