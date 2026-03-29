@@ -15,9 +15,11 @@ import { toast } from "@/hooks/use-toast";
 function QuickClientForm({
   onSubmit,
   isSubmitting,
+  onShowFullForm,
 }: {
   onSubmit: (data: ClientFormData) => Promise<void>;
   isSubmitting: boolean;
+  onShowFullForm: () => void;
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
