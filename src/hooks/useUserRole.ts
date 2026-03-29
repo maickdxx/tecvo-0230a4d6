@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type AppRole = "owner" | "admin" | "member" | "employee" | "super_admin";
 
 export function useUserRole() {
-  const { user, profile } = useAuth();
+  const { user, profile, isLoading: isLoadingAuth } = useAuth();
   const organizationId = profile?.organization_id;
 
   const { data: roles, isLoading: isLoadingRoles } = useQuery({
