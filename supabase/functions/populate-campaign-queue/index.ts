@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       if (excludeUserIds.has(profile.id)) continue;
 
       const org = profile.organizations as any;
-      const phone = profile.whatsapp_personal || profile.phone;
+      const phone = profile.whatsapp_ai_enabled ? profile.phone : null;
       const firstName = profile.full_name?.split(" ")[0] || "";
 
       // Skip users with active paid subscription
