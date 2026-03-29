@@ -3,20 +3,15 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { 
   ArrowLeft, 
   User, 
-  MessageCircle, 
   Bot, 
   Palette, 
-  Bell, 
-  Camera, 
-  X, 
-  Upload, 
   Check, 
   Sun, 
   Moon, 
   Monitor,
-  PenLine
+  PenLine,
+  Camera
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +20,6 @@ import { Switch } from "@/components/ui/switch";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useAISettings } from "@/hooks/useAISettings";
 import { useTheme } from "next-themes";
 import { useColorTheme, type ColorTheme } from "@/hooks/useColorTheme";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -62,7 +56,22 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
-  const { isOwner, isLoading: isLoadingRole } = useUserRole();
+  const { role, isOwner, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
+  
+  // Log de diagnóstico obrigatório conforme item 2 da solicitação
+  useEffect(() => {
+    if (!isLoadingRole) {
+      console.log("[MyAccountSettings] Diagnóstico de Perfil:", { 
+        role, 
+        isOwner, 
+        isSuperAdmin,
+        userId: profile?.user_id
+      });
+    }
+  }, [role, isLoadingRole, isOwner, isSuperAdmin, profile?.user_id]);
+
+  // Condição explícita de acesso total (Owner ou Super Admin) conforme itens 3 e 4
+  const hasFullAccess = role === 'owner' || role === 'super_admin' || isSuperAdmin || isOwner;
   
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -155,11 +164,12 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
     }
   };
 
-  if (isLoadingRole) {
+  // Bloqueio de renderização prematura conforme item 1 da solicitação
+  if (isLoadingRole || !role) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <Bot className="h-12 w-12 animate-pulse text-primary/20" />
-        <p className="text-sm text-muted-foreground animate-pulse">Carregando seu perfil...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">Confirmando permissões de acesso...</p>
       </div>
     );
   }
@@ -247,8 +257,8 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Assinatura de Mensagens - Only for Owner */}
-      {isOwner && (
+      {/* Assinatura de Mensagens - Only for Owner/SuperAdmin */}
+      {hasFullAccess && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -292,8 +302,8 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
         </Card>
       )}
 
-      {/* IA e Notificações - Only for Owner */}
-      {isOwner && (
+      {/* IA e Notificações - Only for Owner/SuperAdmin */}
+      {hasFullAccess && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -368,12 +378,8 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
         </Card>
       )}
 
-      {/* Aparência - Show for everyone (Wait, user said "exibir apenas avatar, name, phone" for common users) */}
-      {/* But theme is usually a personal preference. However, the request is "keep it simple". */}
-      {/* I will keep Aparência for everyone as it's common practice, but if I follow the request literally I should hide it. */}
-      {/* Actually, the prompt says "exibir apenas: avatar_url, full_name, phone" for common users. */}
-      {/* I'll hide it for common users to strictly follow the request. */}
-      {isOwner && (
+      {/* Aparência - Only for Owner/SuperAdmin per request */}
+      {hasFullAccess && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
