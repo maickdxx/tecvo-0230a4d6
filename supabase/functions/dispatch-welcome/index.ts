@@ -5,7 +5,7 @@
  *
  * Strategy:
  *   - If WhatsApp available → send WhatsApp welcome
- *   - If email available → send email welcome
+ *   - If email available → send email via send-transactional-email (Lovable Email)
  *   - Both channels fire independently (not fallback)
  *   - Idempotent via onboarding_delivery_logs unique constraint
  *
@@ -21,46 +21,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = "Tecvo <contato@tecvo.com.br>";
-
 function buildWhatsAppText(name: string): string {
   return `👋 Olá, ${name}! Bem-vindo(a) à *Tecvo*!\n\nSua conta foi configurada com sucesso. Estamos aqui para facilitar a gestão do seu negócio.\n\nSe precisar de ajuda, é só mandar uma mensagem! 🚀`;
-}
-
-function buildWelcomeEmailHtml(name: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 0;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-  <tr><td style="background:linear-gradient(135deg,#2563eb,#7c3aed);padding:32px 40px;text-align:center;">
-    <h1 style="color:#ffffff;margin:0;font-size:24px;">🚀 Bem-vindo à Tecvo!</h1>
-  </td></tr>
-  <tr><td style="padding:32px 40px;">
-    <p style="color:#3f3f46;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      Olá, <strong>${name}</strong>! Sua conta foi criada com sucesso.
-    </p>
-    <p style="color:#3f3f46;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      A Tecvo vai te ajudar a organizar seus serviços, clientes e financeiro em um só lugar. 
-      Comece agora mesmo!
-    </p>
-    <table cellpadding="0" cellspacing="0" style="margin:24px auto;">
-    <tr><td style="background:#2563eb;border-radius:8px;padding:14px 32px;">
-      <a href="https://tecvo.com.br/dashboard" style="color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">
-        Acessar a Tecvo →
-      </a>
-    </td></tr></table>
-  </td></tr>
-  <tr><td style="background:#fafafa;padding:20px 40px;border-top:1px solid #e4e4e7;text-align:center;">
-    <p style="color:#a1a1aa;font-size:12px;margin:0;">
-      Tecvo — Gestão inteligente para empresas de serviço<br>
-      <a href="https://tecvo.com.br" style="color:#2563eb;text-decoration:none;">tecvo.com.br</a>
-    </p>
-  </td></tr>
-</table>
-</td></tr></table>
-</body></html>`;
 }
 
 Deno.serve(async (req) => {
@@ -137,7 +99,7 @@ Deno.serve(async (req) => {
       results.whatsapp = "skipped_no_phone";
     }
 
-    // ── Email channel ──
+    // ── Email channel (via Lovable Email / send-transactional-email) ──
     if (userEmail) {
       results.email = await dispatchChannel(adminClient, {
         userId: user_id,
@@ -147,29 +109,29 @@ Deno.serve(async (req) => {
         userName,
         payload: { email: userEmail },
         sendFn: async () => {
-          if (!RESEND_API_KEY) return { success: false, error: "RESEND_API_KEY not configured" };
+          try {
+            // Call send-transactional-email edge function internally
+            const { data, error } = await adminClient.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "welcome",
+                recipientEmail: userEmail,
+                idempotencyKey: `welcome-email-${user_id}`,
+                templateData: { name: userName },
+              },
+            });
 
-          const html = buildWelcomeEmailHtml(userName);
-          const res = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${RESEND_API_KEY}`,
-            },
-            body: JSON.stringify({
-              from: FROM_EMAIL,
-              to: [userEmail],
-              subject: "🚀 Bem-vindo à Tecvo!",
-              html,
-            }),
-          });
+            if (error) {
+              return { success: false, error: `invoke error: ${error.message}` };
+            }
 
-          if (!res.ok) {
-            const errText = await res.text();
-            return { success: false, error: `Resend ${res.status}: ${errText}` };
+            if (data?.success || data?.queued) {
+              return { success: true, messageId: data?.message_id || null };
+            }
+
+            return { success: false, error: data?.error || data?.reason || "Unknown response" };
+          } catch (err) {
+            return { success: false, error: String(err) };
           }
-          const resBody = await res.json();
-          return { success: true, messageId: resBody?.id || null };
         },
       });
     } else {
