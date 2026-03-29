@@ -77,8 +77,6 @@ Deno.serve(async (req) => {
 
   const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
   const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  const fromEmail = "Tecvo <noreply@notify.tecvo.com.br>";
 
   try {
     // 1. Read campaign config
@@ -194,20 +192,25 @@ Deno.serve(async (req) => {
     let emailError: string | null = null;
     let emailSentAt: string | null = null;
 
-    if (channelDecision.sendEmail && nextItem.email && nextItem.email_template && resendKey) {
+    if (channelDecision.sendEmail && nextItem.email) {
       const subject = nextItem.email_subject || "Novidades da Tecvo";
-      const bodyText = nextItem.email_template
-        .replace("{{name}}", nextItem.user_name || "")
-        .replace(/\n/g, "<br>");
-      const html = buildEmailHtml(nextItem.user_name || "", bodyText);
+      const bodyText = (nextItem.email_template || nextItem.message_template)
+        .replace("{{name}}", nextItem.user_name || "");
 
-      const result = await sendEmail(nextItem.email, subject, html, resendKey, fromEmail);
+      const result = await sendCampaignEmail(
+        supabase,
+        nextItem.email,
+        subject,
+        nextItem.user_name || "",
+        bodyText,
+        nextItem.id
+      );
       emailSentAt = new Date().toISOString();
       emailStatus = result.success ? "sent" : "error";
       emailError = result.error || null;
 
       if (result.success) {
-        console.log(`[CAMPAIGN] Email sent to ${nextItem.email}`);
+        console.log(`[CAMPAIGN] Email enqueued for ${nextItem.email}`);
       } else {
         console.error(`[CAMPAIGN] Email failed: ${result.error}`);
       }
