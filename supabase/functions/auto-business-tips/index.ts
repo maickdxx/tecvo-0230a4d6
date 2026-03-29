@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
 
       if (result.sent) {
         sent++;
-        console.log(`[AUTO-TIPS] ✅ Sent to org ${org.id}`);
+        console.log(`[AUTO-TIPS] ✅ Sent: org_id=${org.id} user_id=${ownerPhone.userId} role=owner function=auto-business-tips`);
       } else if (result.skipped) {
         console.log(`[AUTO-TIPS] ⏭️ Skipped org ${org.id} (already sent today)`);
       } else {

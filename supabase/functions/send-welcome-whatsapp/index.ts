@@ -66,6 +66,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Verify owner role
+    const { data: ownerRole } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("organization_id", profile.organization_id)
+      .eq("role", "owner")
+      .maybeSingle();
+
+    if (!ownerRole) {
+      console.log(`[WELCOME] User ${user.id} is not the owner for org ${profile.organization_id}, skipping.`);
+      return new Response(JSON.stringify({ message: "Not owner" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── ATOMIC LOCK: claim the welcome send right ──
     const { data: claimResult, error: claimError } = await adminClient
       .from("organizations")

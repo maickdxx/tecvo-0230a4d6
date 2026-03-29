@@ -45,6 +45,23 @@ Deno.serve(async (req) => {
 
     console.log(`[DISPATCH-WELCOME] Processing user=${user_id} org=${organization_id}`);
 
+    // Fetch and verify owner role
+    const { data: ownerRole } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user_id)
+      .eq("organization_id", organization_id)
+      .eq("role", "owner")
+      .maybeSingle();
+
+    if (!ownerRole) {
+      console.log(`[DISPATCH-WELCOME] User ${user_id} is not the owner for org ${organization_id}, skipping.`);
+      return new Response(JSON.stringify({ success: false, reason: "not_owner" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch all necessary data
     const [profileRes, orgRes, authRes] = await Promise.all([
       adminClient.from("profiles").select("full_name, phone, whatsapp_ai_enabled").eq("user_id", user_id).maybeSingle(),

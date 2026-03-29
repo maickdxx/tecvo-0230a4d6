@@ -129,19 +129,41 @@ Deno.serve(async (req) => {
       .eq("id", organization_id)
       .single();
 
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("full_name, user_id")
-      .eq("organization_id", organization_id);
+    // Get org + owner info via user_roles
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name, email")
+      .eq("id", organization_id)
+      .single();
 
-    if (!profiles?.length) {
-      console.warn("[BILLING-EMAIL] No profiles found for org:", organization_id);
-      return new Response(JSON.stringify({ sent: false, reason: "no_profiles" }), {
+    const { data: ownerRole } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("organization_id", organization_id)
+      .eq("role", "owner")
+      .limit(1)
+      .maybeSingle();
+
+    if (!ownerRole) {
+      console.warn("[BILLING-EMAIL] No owner role found for org:", organization_id);
+      return new Response(JSON.stringify({ sent: false, reason: "no_owner_role" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const ownerProfile = profiles[0];
+    const { data: ownerProfile } = await supabase
+      .from("profiles")
+      .select("full_name, user_id")
+      .eq("user_id", ownerRole.user_id)
+      .maybeSingle();
+
+    if (!ownerProfile) {
+      console.warn("[BILLING-EMAIL] No profile found for owner:", ownerRole.user_id);
+      return new Response(JSON.stringify({ sent: false, reason: "no_profile" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: authData } = await supabase.auth.admin.getUserById(ownerProfile.user_id);
     const ownerEmail = authData?.user?.email;
 
@@ -151,6 +173,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log(`[BILLING-EMAIL] Target: org_id=${organization_id} user_id=${ownerProfile.user_id} role=owner function=billing-send-purchase-email`);
 
     const userName = ownerProfile.full_name || org?.name || "Cliente";
     const orgName = org?.name || "Sua empresa";
