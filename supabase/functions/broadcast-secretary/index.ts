@@ -6,11 +6,15 @@
  *
  * PHONE SOURCE: Uses owner's personal phone (profiles.whatsapp_personal)
  * with fallback to profiles.phone, then legacy organizations.whatsapp_owner.
+ *
+ * IDEMPOTENCY: Uses INSERT-before-send pattern with unique constraint
+ * on (organization_id, message_type, sent_date) to prevent duplicate sends.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { idempotentSend } from "../_shared/idempotentSend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,7 +99,7 @@ Também envio *automaticamente*:
 
     let query = supabase
       .from("organizations")
-      .select("id, name");
+      .select("id, name, timezone");
 
     if (singleOrgId) {
       query = query.eq("id", singleOrgId);
@@ -111,7 +115,7 @@ Também envio *automaticamente*:
 
     console.log(`[BROADCAST] Found ${orgs?.length || 0} organizations`);
 
-    const results: { org: string; phone: string; sent: boolean; source: string }[] = [];
+    const results: { org: string; phone: string; sent: boolean; source: string; skipped?: boolean }[] = [];
 
     for (const org of orgs || []) {
       if (results.length > 0) {
@@ -133,16 +137,32 @@ Também envio *automaticamente*:
         continue;
       }
 
-      const sent = await sendWhatsApp(ownerPhone.phone, message);
-      results.push({ org: org.name, phone: ownerPhone.phone, sent, source: ownerPhone.source! });
-      console.log(`[BROADCAST] ${org.name} (${ownerPhone.phone} via ${ownerPhone.source}): ${sent ? "✅" : "❌"}`);
+      const orgTz = org.timezone || "America/Sao_Paulo";
 
-      if (sent) {
-        await supabase.from("auto_message_log").insert({
-          organization_id: org.id,
-          message_type: "broadcast",
-          content: message,
-        });
+      // IDEMPOTENT: Insert log first, send only if insert succeeds
+      const result = await idempotentSend({
+        supabase,
+        organizationId: org.id,
+        messageType: "broadcast",
+        content: message,
+        timezone: orgTz,
+        sendFn: () => sendWhatsApp(ownerPhone.phone!, message),
+      });
+
+      results.push({
+        org: org.name,
+        phone: ownerPhone.phone,
+        sent: result.sent,
+        source: ownerPhone.source!,
+        skipped: result.skipped,
+      });
+
+      if (result.sent) {
+        console.log(`[BROADCAST] ${org.name} (${ownerPhone.phone} via ${ownerPhone.source}): ✅`);
+      } else if (result.skipped) {
+        console.log(`[BROADCAST] ${org.name}: ⏭️ Already sent today`);
+      } else {
+        console.log(`[BROADCAST] ${org.name}: ❌ ${result.error}`);
       }
     }
 
@@ -150,7 +170,8 @@ Também envio *automaticamente*:
       JSON.stringify({
         total: results.length,
         sent: results.filter((r) => r.sent).length,
-        failed: results.filter((r) => !r.sent).length,
+        failed: results.filter((r) => !r.sent && !r.skipped).length,
+        skipped: results.filter((r) => r.skipped).length,
         details: results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
