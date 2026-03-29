@@ -79,7 +79,7 @@ export function useUserRole() {
 
   return {
     role: primaryRole,
-    isLoading: isLoadingRoles,
+    isLoading: isActuallyLoading,
     isEmployee: primaryRole === "employee",
     isFieldWorker,
     isMember,
