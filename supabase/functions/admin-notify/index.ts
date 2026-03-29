@@ -23,6 +23,45 @@ interface NotificationPayload {
   responsible_phone?: string;
 }
 
+function buildWhatsAppText(payload: NotificationPayload): string {
+  const { type } = payload;
+  const timestamp = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+  switch (type) {
+    case "new_account":
+      return `🚀 *Nova empresa cadastrada*\n\n` +
+        `Empresa: ${payload.org_name || "—"}\n` +
+        `E-mail: ${payload.org_email || payload.responsible_email || "—"}\n` +
+        `Telefone: ${payload.org_phone || payload.responsible_phone || "—"}\n` +
+        `Plano: ${payload.plan || "trial"}\n` +
+        `Data: ${timestamp}`;
+
+    case "first_service":
+      return `🎯 *Primeiro serviço criado!*\n\nEmpresa: ${payload.org_name || "—"}\n✅ Começou a usar a plataforma!`;
+
+    case "milestone_100":
+      return `🏆 *100 serviços atingidos!*\n\nEmpresa: ${payload.org_name || "—"}\n⭐ Cliente forte — considere upgrade!`;
+
+    case "cancellation_attempt":
+      return `⚠️ *Tentativa de cancelamento*\n\nEmpresa: ${payload.org_name || "—"}\nPlano: ${payload.plan || "—"}\n🚨 Ação de retenção necessária!`;
+
+    case "plan_expired":
+      return `💳 *Plano expirado*\n\nEmpresa: ${payload.org_name || "—"}\nPlano anterior: ${payload.old_plan || "—"}`;
+
+    case "inactive_7_days":
+      return `😴 *7 dias sem atividade*\n\nEmpresa: ${payload.org_name || "—"}\n⚠️ Risco de abandono.`;
+
+    case "inactive_30_days":
+      return `🚨 *30 dias sem atividade*\n\nEmpresa: ${payload.org_name || "—"}\n🔴 Alto risco de churn!`;
+
+    case "system_error":
+      return `🔴 *Erro crítico no sistema*\n\n${payload.error_details || "Sem detalhes"}`;
+
+    default:
+      return `📢 *Notificação Admin*\nTipo: ${type}\n${JSON.stringify(payload, null, 2).substring(0, 500)}`;
+  }
+}
+
 function buildEmail(payload: NotificationPayload): { subject: string; html: string } {
   const { type } = payload;
   // Admin notifications use a fixed timezone (platform admin is in Brazil)
