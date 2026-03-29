@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
 import { 
   ArrowLeft, 
   User, 
@@ -60,6 +61,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
+  const { isOwner } = useUserRole();
   
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -279,6 +281,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
       </Card>
 
       {/* IA e Notificações */}
+      {isOwner && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -351,6 +354,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Aparência */}
       <Card>
