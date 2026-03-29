@@ -349,6 +349,9 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
     a.assigned_to === b.assigned_to &&
     a.is_private === b.is_private &&
     a.profile_picture_url === b.profile_picture_url &&
+    a.channel_id === b.channel_id &&
+    a.channel?.is_connected === b.channel?.is_connected &&
+    a.channel?.channel_status === b.channel?.channel_status &&
     JSON.stringify(a.tags) === JSON.stringify(b.tags) &&
     prev.teamMembers === next.teamMembers &&
     prev.orgTags === next.orgTags;
