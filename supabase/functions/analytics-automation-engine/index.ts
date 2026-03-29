@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
+import { resolveOwnerContact, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
