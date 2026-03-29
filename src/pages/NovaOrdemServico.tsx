@@ -110,16 +110,28 @@ function QuickServiceForm({
           <div className="space-y-4 max-w-md mx-auto">
             <div>
               <Label>Cliente</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger className="h-12 text-base">
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {clients.length > 0 ? (
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger className="h-12 text-base">
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full h-12 text-base gap-2 border-dashed"
+                  onClick={() => navigate("/clientes/novo?from=checklist")}
+                >
+                  <Plus className="h-4 w-4" />
+                  Cadastrar um cliente primeiro
+                </Button>
+              )}
             </div>
 
             <div>
