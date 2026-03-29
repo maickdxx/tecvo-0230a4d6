@@ -189,6 +189,10 @@ export default function Admin() {
             <AdminWhatsAppStatus />
           </TabsContent>
 
+          <TabsContent value="campaigns">
+            <AdminCampaigns />
+          </TabsContent>
+
           <TabsContent value="whatsapp-tecvo">
             <AdminWhatsAppTecvo />
           </TabsContent>
