@@ -57,6 +57,7 @@ const ROLE_COLORS: Record<AppRole, string> = {
 export function TeamSettings({ onBack }: TeamSettingsProps) {
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [expandedPermissions, setExpandedPermissions] = useState<string | null>(null);
+  const [expandedDetails, setExpandedDetails] = useState<string | null>(null);
   const { members, isLoading, error, updateRole, isUpdating, updateFieldWorker, isUpdatingFieldWorker, deleteMember, isDeleting } = useTeamMembers();
   const { isOwner, isAdmin } = useUserRole();
   const { user } = useAuth();
