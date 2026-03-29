@@ -92,6 +92,7 @@ const FUNCIONARIO_PRESET = [
 ];
 
 export const ROLE_PRESETS: Record<AppRole, string[]> = {
+  super_admin: GESTOR_PRESET,
   owner: GESTOR_PRESET,
   admin: ADM_PRESET,
   member: ATENDENTE_PRESET,
