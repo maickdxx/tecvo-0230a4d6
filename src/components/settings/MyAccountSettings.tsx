@@ -3,20 +3,15 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { 
   ArrowLeft, 
   User, 
-  MessageCircle, 
   Bot, 
   Palette, 
-  Bell, 
-  Camera, 
-  X, 
-  Upload, 
   Check, 
   Sun, 
   Moon, 
   Monitor,
-  PenLine
+  PenLine,
+  Camera
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +20,6 @@ import { Switch } from "@/components/ui/switch";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useAISettings } from "@/hooks/useAISettings";
 import { useTheme } from "next-themes";
 import { useColorTheme, type ColorTheme } from "@/hooks/useColorTheme";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,10 +58,10 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { colorTheme, setColorTheme } = useColorTheme();
   const { role, isOwner, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
   
-  // Log de diagnóstico obrigatório
+  // Log de diagnóstico obrigatório conforme item 2 da solicitação
   useEffect(() => {
     if (!isLoadingRole) {
-      console.log("[MyAccountSettings] Diagnóstico de Permissão:", { 
+      console.log("[MyAccountSettings] Diagnóstico de Perfil:", { 
         role, 
         isOwner, 
         isSuperAdmin,
@@ -76,9 +70,8 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
     }
   }, [role, isLoadingRole, isOwner, isSuperAdmin, profile?.user_id]);
 
-  // Condição explícita de acesso total (Owner ou Super Admin)
-  const hasFullAccess = isOwner || isSuperAdmin || role === 'owner' || role === 'super_admin';
-
+  // Condição explícita de acesso total (Owner ou Super Admin) conforme itens 3 e 4
+  const hasFullAccess = role === 'owner' || role === 'super_admin' || isSuperAdmin || isOwner;
   
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -181,7 +174,6 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
     );
   }
 
-
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center gap-3">
@@ -265,7 +257,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Assinatura de Mensagens - Only for Owner */}
+      {/* Assinatura de Mensagens - Only for Owner/SuperAdmin */}
       {hasFullAccess && (
         <Card>
           <CardHeader>
@@ -310,10 +302,83 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
         </Card>
       )}
 
-      {/* IA e Notificações - Only for Owner */}
+      {/* IA e Notificações - Only for Owner/SuperAdmin */}
       {hasFullAccess && (
         <Card>
-...
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Bot className="h-5 w-5 text-primary" />
+              Assistente IA & Notificações
+            </CardTitle>
+            <CardDescription>Como a IA interage com você</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="whatsappAiEnabled" className="text-sm font-medium cursor-pointer">
+                  Receber mensagens da IA no WhatsApp
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Dicas de negócio, resumos diários e alertas operacionais.
+                </p>
+              </div>
+              <Switch
+                id="whatsappAiEnabled"
+                checked={whatsappAiEnabled}
+                onCheckedChange={setWhatsappAiEnabled}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border/50">
+              <div className="space-y-2">
+                <Label htmlFor="aiName">Nome do Assistente</Label>
+                <Input
+                  id="aiName"
+                  value={aiAssistantName}
+                  onChange={(e) => setAiAssistantName(e.target.value)}
+                  placeholder="Ex: TecBot"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="aiVoice">Voz / Personalidade</Label>
+                <select 
+                  id="aiVoice"
+                  value={aiAssistantVoice}
+                  onChange={(e) => setAiAssistantVoice(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="neutral">Neutro</option>
+                  <option value="professional">Profissional</option>
+                  <option value="friendly">Amigável</option>
+                  <option value="enthusiastic">Entusiasta</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border/50">
+              <h4 className="text-sm font-semibold mb-3">Preferências de Alerta</h4>
+              <div className="space-y-3">
+                {[
+                  { key: "new_service", label: "Novo serviço concluído" },
+                  { key: "new_schedule", label: "Novo agendamento" },
+                  { key: "whatsapp_message", label: "Mensagens recebidas" },
+                ].map((notif) => (
+                  <div key={notif.key} className="flex items-center justify-between">
+                    <Label htmlFor={`notif-${notif.key}`} className="text-sm cursor-pointer">{notif.label}</Label>
+                    <Switch 
+                      id={`notif-${notif.key}`}
+                      checked={(preferences as any)[notif.key]}
+                      onCheckedChange={(checked) => updatePreferences({ [notif.key]: checked })}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Aparência - Only for Owner/SuperAdmin per request */}
       {hasFullAccess && (
         <Card>
           <CardHeader>
