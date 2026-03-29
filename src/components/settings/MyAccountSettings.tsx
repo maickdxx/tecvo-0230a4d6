@@ -266,7 +266,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
       </Card>
 
       {/* Assinatura de Mensagens - Only for Owner */}
-      {isOwner && (
+      {hasFullAccess && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
