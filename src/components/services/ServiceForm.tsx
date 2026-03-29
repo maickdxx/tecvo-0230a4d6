@@ -126,7 +126,7 @@ export function ServiceForm({
     SERVICE_TYPE_OPTIONS.find(o => o.slug === slug)?.label || slug;
 
   // Prevent rendering form before async data is ready (avoids React DOM removeChild crash)
-  const isDataReady = !!organizationId && !isLoadingPaymentMethods && !isLoadingServiceTypes;
+  const isDataReady = !!organizationId;
 
   const isCompleted = service?.status === "completed";
 
