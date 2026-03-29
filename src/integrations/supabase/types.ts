@@ -2586,6 +2586,7 @@ export type Database = {
           updated_at: string
           user_id: string
           whatsapp_ai_enabled: boolean
+          whatsapp_signature: string | null
           whatsapp_signature_enabled: boolean
         }
         Insert: {
@@ -2625,6 +2626,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           whatsapp_ai_enabled?: boolean
+          whatsapp_signature?: string | null
           whatsapp_signature_enabled?: boolean
         }
         Update: {
@@ -2664,6 +2666,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           whatsapp_ai_enabled?: boolean
+          whatsapp_signature?: string | null
           whatsapp_signature_enabled?: boolean
         }
         Relationships: [
