@@ -13,13 +13,13 @@ const corsHeaders = {
 };
 
 // ── Channel Decision ──
-function decideChannels(phone: string | null, email: string | null, emailTemplate: string | null): {
+function decideChannels(phone: string | null, email: string | null): {
   primaryChannel: "whatsapp" | "email" | "none";
   sendWhatsapp: boolean;
   sendEmail: boolean;
 } {
   const hasWhatsapp = !!phone;
-  const hasEmail = !!email && !!emailTemplate;
+  const hasEmail = !!email;
 
   if (hasWhatsapp && hasEmail) {
     return { primaryChannel: "whatsapp", sendWhatsapp: true, sendEmail: true };
