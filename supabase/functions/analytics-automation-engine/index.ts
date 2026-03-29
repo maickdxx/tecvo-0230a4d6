@@ -25,6 +25,9 @@ const TRIGGER_PRIORITY: Record<string, number> = {
   new_user_activation: 15,
   signup_recovery: 5,
   churn_recovery: 15,
+  inactive_3d: 12,
+  inactive_7d: 18,
+  inactive_15d: 22,
 };
 
 const TRIAL_DAY_MAP: Record<string, number> = {
@@ -133,8 +136,11 @@ const EMAIL_SUBJECTS: Record<string, string> = {
   post_trial_d3: "🚀 Sentimos sua falta!",
   post_trial_d7: "⏰ Última chamada — reative agora",
   new_user_activation: "🚀 Crie sua primeira Ordem de Serviço",
-  signup_recovery: "😊 Precisa de ajuda para finalizar?",
-  churn_recovery: "Sentimos sua ausência na Tecvo",
+  signup_recovery: "😊 Falta pouco pra finalizar seu cadastro",
+  churn_recovery: "{{name}}, seus clientes continuam precisando de manutenção",
+  inactive_3d: "{{name}}, seus clientes podem estar esperando",
+  inactive_7d: "{{name}}, faz 1 semana — quanto dinheiro ficou na mesa?",
+  inactive_15d: "{{name}}, última chamada antes de perder o controle",
 };
 
 Deno.serve(async (req) => {
@@ -182,6 +188,7 @@ Deno.serve(async (req) => {
       metadata?: any;
     }
     const candidatesByUser = new Map<string, Candidate[]>();
+    const emailCache = new Map<string, string | null>();
 
     function addCandidate(c: Candidate) {
       const existing = candidatesByUser.get(c.user_id) || [];
@@ -215,8 +222,7 @@ Deno.serve(async (req) => {
       } else if (profiles && profiles.length > 0) {
         console.log(`[AUTOMATION-ENGINE] Found ${profiles.length} recent profiles to evaluate`);
 
-        // Batch get emails for all users
-        const emailCache = new Map<string, string | null>();
+        // Email cache is declared at outer scope
 
         for (const profile of profiles) {
           const org = profile.organizations as any;
@@ -412,7 +418,95 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ──────────────────────────────────────────────
+    // ── 2e. Inactivity Detection (3d, 7d, 15d) + Churn Recovery ──
+    const INACTIVITY_MAP: Record<string, number> = {
+      inactive_3d: 3,
+      inactive_7d: 7,
+      inactive_15d: 15,
+    };
+
+    const inactivityTriggers = automations.filter((a: any) => INACTIVITY_MAP[a.trigger_type] !== undefined);
+    const churnAuto = automationsByType.get("churn_recovery");
+
+    if (inactivityTriggers.length > 0 || churnAuto) {
+      // Get all users who have logged in at some point (use auth.users last_sign_in_at)
+      const { data: allProfiles } = await supabase
+        .from("profiles")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at, organizations!inner(subscription_status, plan, trial_ends_at)")
+        .not("organization_id", "is", null);
+
+      if (allProfiles && allProfiles.length > 0) {
+        for (const profile of allProfiles) {
+          const org = profile.organizations as any;
+
+          // Skip users in active trial (they get trial automations instead)
+          const trialEndsAt = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
+          const trialActive = trialEndsAt && trialEndsAt > now;
+          if (trialActive) continue;
+
+          // Skip users who expired less than 7 days ago (they get post_trial automations)
+          const daysSinceExpiry = trialEndsAt ? daysBetween(trialEndsAt, now) : 999;
+          if (daysSinceExpiry <= 7 && daysSinceExpiry >= 0) continue;
+
+          // Use auth admin to get last_sign_in_at
+          let lastSignIn: Date | null = null;
+          try {
+            const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
+            if (authUser?.user?.last_sign_in_at) {
+              lastSignIn = new Date(authUser.user.last_sign_in_at);
+            }
+          } catch { /* skip */ }
+
+          if (!lastSignIn) continue;
+
+          const daysSinceAccess = daysBetween(lastSignIn, now);
+          if (daysSinceAccess < 3) continue; // Active user, skip
+
+          const phone = profile.whatsapp_personal || profile.phone;
+          const firstName = profile.full_name?.split(" ")[0] || "amigo(a)";
+
+          // Cache email
+          if (!emailCache.has(profile.user_id)) {
+            emailCache.set(profile.user_id, await getUserEmail(profile.user_id));
+          }
+          const userEmail = emailCache.get(profile.user_id) || null;
+
+          // Match to inactivity automations
+          for (const auto of inactivityTriggers) {
+            const targetDays = INACTIVITY_MAP[auto.trigger_type];
+            // Use range: target ± 1 day to handle cron timing
+            if (daysSinceAccess >= targetDays && daysSinceAccess <= targetDays + 1) {
+              addCandidate({
+                user_id: profile.id,
+                org_id: profile.organization_id,
+                phone,
+                user_email: userEmail,
+                name: firstName,
+                trigger_type: auto.trigger_type,
+                automation_id: auto.id,
+                priority: TRIGGER_PRIORITY[auto.trigger_type] || 0,
+              });
+            }
+          }
+
+          // Churn recovery: 30+ days inactive
+          if (churnAuto && daysSinceAccess >= 30 && daysSinceAccess <= 31) {
+            addCandidate({
+              user_id: profile.id,
+              org_id: profile.organization_id,
+              phone,
+              user_email: userEmail,
+              name: firstName,
+              trigger_type: "churn_recovery",
+              automation_id: churnAuto.id,
+              priority: TRIGGER_PRIORITY["churn_recovery"] || 0,
+            });
+          }
+        }
+      }
+    }
+
+
     // 3. DEDUP & SEND
     // ──────────────────────────────────────────────
     const results: any[] = [];
