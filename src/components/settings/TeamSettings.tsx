@@ -188,11 +188,25 @@ export function TeamSettings({ onBack }: TeamSettingsProps) {
                   )}
 
                   {canManageRoles && !isOwnerRole && (
-                    <div className="flex items-center gap-2 border-t border-border pt-3">
+                    <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-muted-foreground flex-1"
+                        className="text-muted-foreground flex-1 min-w-[120px]"
+                        onClick={() =>
+                          setExpandedDetails(prev =>
+                            prev === member.user_id ? null : member.user_id
+                          )
+                        }
+                      >
+                        <Briefcase className="h-4 w-4 mr-1" />
+                        Dados RH
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-muted-foreground flex-1 min-w-[120px]"
                         onClick={() =>
                           setExpandedPermissions(prev =>
                             prev === member.user_id ? null : member.user_id
@@ -211,12 +225,15 @@ export function TeamSettings({ onBack }: TeamSettingsProps) {
                           onClick={() => setMemberToDelete(member)}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
-                          Remover
                         </Button>
                       )}
                     </div>
                   )}
                 </div>
+
+                {expandedDetails === member.user_id && (
+                  <MemberDetailsEditor userId={member.user_id} />
+                )}
 
                 {expandedPermissions === member.user_id && organization && (
                   <MemberPermissionsEditor
