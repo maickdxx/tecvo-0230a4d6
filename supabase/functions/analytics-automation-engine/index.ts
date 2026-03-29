@@ -386,8 +386,9 @@ Deno.serve(async (req) => {
       const delay = activationAuto.delay_minutes || 1440;
       const targetDate = new Date(now.getTime() - delay * 60000);
 
-      const startTime = new Date(targetDate.getTime() - 3600000).toISOString();
-      const endTime = new Date(targetDate.getTime() + 3600000).toISOString();
+      // Use a wider 24-hour window to not miss users due to cron timing
+      const startTime = new Date(targetDate.getTime() - 12 * 3600000).toISOString();
+      const endTime = new Date(targetDate.getTime() + 12 * 3600000).toISOString();
 
       const { data: profiles } = await supabase
         .from("profiles")
