@@ -56,7 +56,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
-  const { role, isOwner, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
+  const { role, isOwner, isAdmin, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
   
   // Log de diagnóstico obrigatório conforme item 2 da solicitação
   useEffect(() => {
