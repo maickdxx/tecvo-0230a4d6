@@ -9,7 +9,7 @@
  * on (organization_id, message_type, sent_date) to prevent duplicate sends.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { resolveOwnerPhone, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 import { idempotentSend } from "../_shared/idempotentSend.ts";
 
 const corsHeaders = {
