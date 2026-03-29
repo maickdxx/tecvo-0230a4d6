@@ -65,18 +65,7 @@ export function AISettings({ onBack }: AISettingsProps) {
   const { sensitiveData } = useProfileSensitiveData();
   const { organization, update: updateOrganization, isUpdating: isUpdatingOrganization } = useOrganization();
   const { isOwner } = useUserRole();
-  const [whatsappPersonal, setWhatsappPersonal] = useState("");
-
-  useEffect(() => {
-    const whatsappOwner = organization?.whatsapp_owner || sensitiveData?.whatsapp_personal || "";
-    setWhatsappPersonal(whatsappOwner);
-  }, [sensitiveData, organization]);
-
-  const handleSaveWhatsApp = () => {
-    updateOrganization({
-      whatsapp_owner: whatsappPersonal.trim() || null,
-    });
-  };
+  // WhatsApp personal logic removed - now in My Account settings
 
   if (isLoading) {
     return (
@@ -103,44 +92,7 @@ export function AISettings({ onBack }: AISettingsProps) {
         </div>
       </div>
 
-      {isOwner && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <MessageCircle className="h-5 w-5 text-primary" />
-              Seu WhatsApp para a IA
-            </CardTitle>
-            <CardDescription>
-              Somente o proprietário pode conversar com a IA pelo WhatsApp. Informe o número que você usa pessoalmente.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="whatsappPersonal">WhatsApp pessoal</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="whatsappPersonal"
-                  type="tel"
-                  value={whatsappPersonal}
-                  onChange={(e) => setWhatsappPersonal(formatPhone(e.target.value))}
-                  placeholder="(11) 99999-9999"
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleSaveWhatsApp}
-                  disabled={isUpdatingOrganization}
-                  size="sm"
-                >
-                  {isUpdatingOrganization ? "Salvando..." : "Salvar"}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                A IA só responderá mensagens vindas deste número. Se for o mesmo do telefone comercial do seu perfil, deixe em branco.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* WhatsApp card removed - now in My Account settings */}
 
       {/* Comportamento da IA */}
       <div className="space-y-1">

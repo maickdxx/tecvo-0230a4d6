@@ -49,7 +49,7 @@ export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRou
 
   // WhatsApp gate: redirect users without WhatsApp to onboarding to collect it
   // Exempt: employees (invited), onboarding page itself, settings page
-  const hasWhatsappPersonal = !!(profile?.phone || sensitiveData?.whatsapp_personal);
+  const hasWhatsappPersonal = !!profile?.phone;
   const whatsappExemptRoutes = ["/onboarding", "/configuracoes", "/planos", "/assinatura/parabens"];
   if (!isEmployee && !hasWhatsappPersonal && !matchAnyRoute(location.pathname, whatsappExemptRoutes)) {
     return <Navigate to="/onboarding" replace />;

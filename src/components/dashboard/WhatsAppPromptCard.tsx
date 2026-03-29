@@ -19,7 +19,7 @@ export function WhatsAppPromptCard() {
   const [whatsapp, setWhatsapp] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const hasWhatsapp = !!(profile?.phone || sensitiveData?.whatsapp_personal);
+  const hasWhatsapp = !!profile?.phone;
 
   useEffect(() => {
     if (!user || isDemoMode || hasWhatsapp) {
@@ -55,7 +55,7 @@ export function WhatsAppPromptCard() {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ phone: digits, whatsapp_personal: digits })
+      .update({ phone: digits })
       .eq("user_id", user!.id);
 
     if (error) {
