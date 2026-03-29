@@ -189,9 +189,10 @@ export default function NovaOrdemServico() {
   const [formKey, setFormKey] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const [forceFullForm, setForceFullForm] = useState(false);
   const isActivationMode = showGuide && !steps[1]?.completed;
   const fromChecklist = searchParams.get("from") === "checklist";
-  const useQuickForm = isActivationMode || fromChecklist;
+  const useQuickForm = (isActivationMode || fromChecklist) && !forceFullForm;
 
   // Filter out demo clients for quick form
   const realClients = (clients || []).filter((c: any) => !c.is_demo_data && !c.deleted_at);
