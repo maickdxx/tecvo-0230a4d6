@@ -1,0 +1,1 @@
+DELETE FROM onboarding_delivery_logs WHERE user_id = 'ce8e2d68-aae1-4cfc-96fe-0dfcccad00d7' AND channel = 'email' AND status = 'failed';
