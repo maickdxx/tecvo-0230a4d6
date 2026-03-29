@@ -990,6 +990,7 @@ export type Database = {
         Row: {
           cooldown_hours: number
           current_campaign: string | null
+          current_campaign_started_at: string | null
           id: number
           is_paused: boolean
           max_interval_seconds: number
@@ -1001,6 +1002,7 @@ export type Database = {
         Insert: {
           cooldown_hours?: number
           current_campaign?: string | null
+          current_campaign_started_at?: string | null
           id?: number
           is_paused?: boolean
           max_interval_seconds?: number
@@ -1012,6 +1014,7 @@ export type Database = {
         Update: {
           cooldown_hours?: number
           current_campaign?: string | null
+          current_campaign_started_at?: string | null
           id?: number
           is_paused?: boolean
           max_interval_seconds?: number

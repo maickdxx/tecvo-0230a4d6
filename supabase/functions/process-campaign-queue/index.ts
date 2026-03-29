@@ -1,7 +1,7 @@
 /**
  * process-campaign-queue — Controlled campaign sender.
- * Processes campaign_sends queue one-by-one with rate limiting.
- * Channel priority: WhatsApp first, then email. Both if available.
+ * Processes campaign_sends queue one-by-one with rate limiting,
+ * progressive scaling, error blacklisting, and randomized delays.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
@@ -11,6 +11,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+// ── Progressive Volume Scaling ──
+// Returns max sends/hour based on campaign age in days
+function getProgressiveLimit(baseSendsPerHour: number, campaignStartDate: string | null): number {
+  if (!campaignStartDate) return Math.min(baseSendsPerHour, 10);
+  const daysSinceStart = Math.floor((Date.now() - new Date(campaignStartDate).getTime()) / 86400000);
+  // Day 0-1: 25% of limit (max 5)
+  // Day 2-3: 50% of limit (max 10)  
+  // Day 4-6: 75% of limit (max 15)
+  // Day 7+: full limit
+  if (daysSinceStart <= 1) return Math.max(3, Math.min(Math.floor(baseSendsPerHour * 0.25), 5));
+  if (daysSinceStart <= 3) return Math.min(Math.floor(baseSendsPerHour * 0.5), 10);
+  if (daysSinceStart <= 6) return Math.min(Math.floor(baseSendsPerHour * 0.75), 15);
+  return baseSendsPerHour;
+}
+
+// ── Randomized Delay ──
+function getRandomInterval(minSec: number, maxSec: number): number {
+  return minSec + Math.floor(Math.random() * (maxSec - minSec));
+}
 
 // ── Channel Decision ──
 function decideChannels(phone: string | null, email: string | null): {
@@ -31,6 +51,34 @@ function decideChannels(phone: string | null, email: string | null): {
     return { primaryChannel: "email", sendWhatsapp: false, sendEmail: true };
   }
   return { primaryChannel: "none", sendWhatsapp: false, sendEmail: false };
+}
+
+// ── Check if phone was already blacklisted (previously failed) ──
+async function isPhoneBlacklisted(supabase: any, phone: string, campaignName: string): Promise<boolean> {
+  const cleanPhone = phone.replace(/\D/g, "");
+  // Check if this phone already failed in ANY campaign send
+  const { data } = await supabase
+    .from("campaign_sends")
+    .select("id")
+    .eq("whatsapp_status", "error")
+    .limit(1);
+  
+  // Check specifically for this phone number across all sends
+  const { data: failedSends } = await supabase
+    .from("campaign_sends")
+    .select("id, whatsapp_error")
+    .eq("phone", phone)
+    .eq("whatsapp_status", "error")
+    .limit(1);
+  
+  if (failedSends && failedSends.length > 0) {
+    const err = failedSends[0].whatsapp_error || "";
+    // If the error indicates number doesn't exist on WhatsApp, blacklist it
+    if (err.includes("exists\":false") || err.includes("not registered") || err.includes("Bad Request")) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // ── Email via Lovable Transactional Email System ──
@@ -89,7 +137,10 @@ Deno.serve(async (req) => {
     if (!config) return jsonResponse({ error: "No campaign config found" }, 500);
     if (config.is_paused) return jsonResponse({ skipped: true, reason: "campaign_paused" });
 
-    // 2. Check hourly rate limit
+    // 2. Progressive volume: calculate effective limit based on campaign age
+    const effectiveLimit = getProgressiveLimit(config.sends_per_hour, config.current_campaign_started_at || null);
+    
+    // 3. Check hourly rate limit with progressive cap
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
     const { count: sentLastHour } = await supabase
       .from("campaign_sends")
@@ -97,11 +148,19 @@ Deno.serve(async (req) => {
       .eq("status", "sent")
       .gte("processed_at", oneHourAgo);
 
-    if ((sentLastHour || 0) >= config.sends_per_hour) {
-      return jsonResponse({ skipped: true, reason: "rate_limit", sent_last_hour: sentLastHour });
+    if ((sentLastHour || 0) >= effectiveLimit) {
+      return jsonResponse({ 
+        skipped: true, reason: "rate_limit", 
+        sent_last_hour: sentLastHour, 
+        effective_limit: effectiveLimit,
+        base_limit: config.sends_per_hour,
+        scaling: effectiveLimit < config.sends_per_hour ? "progressive" : "full"
+      });
     }
 
-    // 3. Check minimum interval
+    // 4. Check minimum interval with RANDOMIZED delay
+    const randomInterval = getRandomInterval(config.min_interval_seconds, config.max_interval_seconds);
+    
     const { data: lastSent } = await supabase
       .from("campaign_sends")
       .select("processed_at")
@@ -112,12 +171,17 @@ Deno.serve(async (req) => {
 
     if (lastSent?.processed_at) {
       const elapsed = (Date.now() - new Date(lastSent.processed_at).getTime()) / 1000;
-      if (elapsed < config.min_interval_seconds) {
-        return jsonResponse({ skipped: true, reason: "interval_cooldown", elapsed_seconds: Math.round(elapsed) });
+      if (elapsed < randomInterval) {
+        return jsonResponse({ 
+          skipped: true, reason: "interval_cooldown", 
+          elapsed_seconds: Math.round(elapsed),
+          required_interval: randomInterval,
+          next_send_in: Math.round(randomInterval - elapsed)
+        });
       }
     }
 
-    // 4. Get next pending item
+    // 5. Get next pending item (order by priority DESC, then created_at ASC)
     const { data: nextItem } = await supabase
       .from("campaign_sends")
       .select("*")
@@ -129,15 +193,43 @@ Deno.serve(async (req) => {
 
     if (!nextItem) return jsonResponse({ skipped: true, reason: "queue_empty" });
 
-    // 5. Decide channels BEFORE processing
+    // 6. Check if phone is blacklisted (previously failed on WA)
+    let skipWhatsapp = false;
+    if (nextItem.phone) {
+      skipWhatsapp = await isPhoneBlacklisted(supabase, nextItem.phone, nextItem.campaign_name);
+      if (skipWhatsapp) {
+        console.log(`[CAMPAIGN] Phone ${nextItem.phone} blacklisted (previous WA failure), skipping WA`);
+      }
+    }
+
+    // 7. Decide channels with blacklist awareness
     const channelDecision = decideChannels(
-      nextItem.phone && vpsUrl && apiKey ? nextItem.phone : null,
+      !skipWhatsapp && nextItem.phone && vpsUrl && apiKey ? nextItem.phone : null,
       nextItem.email
     );
 
+    // If no channel available at all, mark as failed
+    if (channelDecision.primaryChannel === "none") {
+      await supabase
+        .from("campaign_sends")
+        .update({
+          status: "failed",
+          whatsapp_status: skipWhatsapp ? "blacklisted" : "skipped",
+          email_status: "skipped",
+          whatsapp_error: skipWhatsapp ? "Number previously failed - blacklisted" : null,
+          processed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", nextItem.id);
+      
+      return jsonResponse({ 
+        processed: { id: nextItem.id, user: nextItem.user_name, status: "failed", reason: "no_channel_available" }
+      });
+    }
+
     const now = new Date().toISOString();
 
-    // 6. Mark as processing with channel decision
+    // 8. Mark as processing
     await supabase
       .from("campaign_sends")
       .update({
@@ -148,11 +240,11 @@ Deno.serve(async (req) => {
       })
       .eq("id", nextItem.id);
 
-    console.log(`[CAMPAIGN] Processing: user=${nextItem.user_name}, phone=${nextItem.phone}, email=${nextItem.email}, primary=${channelDecision.primaryChannel}`);
+    console.log(`[CAMPAIGN] Processing: user=${nextItem.user_name}, phone=${nextItem.phone}, email=${nextItem.email}, primary=${channelDecision.primaryChannel}, wa_blacklisted=${skipWhatsapp}, interval=${randomInterval}s`);
 
-    // 7. Send WhatsApp (priority channel)
-    let waStatus = "skipped";
-    let waError: string | null = null;
+    // 9. Send WhatsApp (priority channel)
+    let waStatus = skipWhatsapp ? "blacklisted" : "skipped";
+    let waError: string | null = skipWhatsapp ? "Number previously failed - blacklisted" : null;
     let waSentAt: string | null = null;
 
     if (channelDecision.sendWhatsapp && nextItem.phone && vpsUrl && apiKey) {
@@ -186,7 +278,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 8. Send Email
+    // 10. Send Email (always as fallback or complement)
     let emailStatus = "skipped";
     let emailError: string | null = null;
     let emailSentAt: string | null = null;
@@ -215,7 +307,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 9. Determine final status
+    // 11. Determine final status
     const finalStatus = waStatus === "sent" || emailStatus === "sent" ? "sent" : "failed";
 
     await supabase
@@ -244,8 +336,14 @@ Deno.serve(async (req) => {
         whatsapp: waStatus,
         email: emailStatus,
         final: finalStatus,
+        wa_blacklisted: skipWhatsapp,
       },
-      rate: { sent_last_hour: (sentLastHour || 0) + (finalStatus === "sent" ? 1 : 0), limit: config.sends_per_hour },
+      rate: { 
+        sent_last_hour: (sentLastHour || 0) + (finalStatus === "sent" ? 1 : 0), 
+        effective_limit: effectiveLimit,
+        base_limit: config.sends_per_hour,
+        interval_used: randomInterval,
+      },
     });
   } catch (error: any) {
     console.error("[CAMPAIGN] Critical error:", error);
