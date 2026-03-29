@@ -56,24 +56,32 @@ function daysBetween(dateA: Date, dateB: Date): number {
   return Math.floor((b.getTime() - a.getTime()) / 86400000);
 }
 
-// ── Email sending via transactional email queue (Lovable Email) ──
-async function sendEmailViaQueue(
-  supabase: any,
+// ── Email sending via Resend ──
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const FROM_EMAIL = "Tecvo <noreply@notify.tecvo.com.br>";
+
+async function sendEmail(
   to: string,
   subject: string,
   html: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!RESEND_API_KEY) {
+    return { success: false, error: "RESEND_API_KEY not configured" };
+  }
   try {
-    const { data, error } = await supabase.functions.invoke("send-transactional-email", {
-      body: {
-        templateName: "automation",
-        to,
-        subject,
-        html,
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${RESEND_API_KEY}`,
       },
+      body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
     });
-    if (error) return { success: false, error: error.message || String(error) };
-    if (data?.error) return { success: false, error: data.error };
+    if (!res.ok) {
+      const errText = await res.text();
+      return { success: false, error: `Resend ${res.status}: ${errText}` };
+    }
+    await res.json();
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
