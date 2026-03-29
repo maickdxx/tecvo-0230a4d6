@@ -62,7 +62,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
-  const { isOwner } = useUserRole();
+  const { isOwner, isLoading: isLoadingRole } = useUserRole();
   
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
