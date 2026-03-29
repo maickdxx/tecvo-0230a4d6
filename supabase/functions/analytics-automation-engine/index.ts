@@ -428,9 +428,11 @@ Deno.serve(async (req) => {
 
     if (inactivityTriggers.length > 0 || churnAuto) {
       // Get all users who have logged in at some point (use auth.users last_sign_in_at)
+      // ── Resolve ONLY owners for inactivity alerts (STRICT rule) ──
       const { data: allProfiles } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan, trial_ends_at)")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan, trial_ends_at), user_roles!inner(role)")
+        .eq("user_roles.role", "owner")
         .not("organization_id", "is", null);
 
       if (allProfiles && allProfiles.length > 0) {
