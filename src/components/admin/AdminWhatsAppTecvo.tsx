@@ -250,7 +250,9 @@ export function AdminWhatsAppTecvo() {
     };
   }, [status?.state, qrCode, qrString, fetchStatus, fetchQR]);
 
-  const isConnected = status?.state === "open";
+  // Infer operational status: if status check says unknown but messages were sent recently, it's likely operational
+  const hasRecentSends = metrics && metrics.sent_24h > 0;
+  const isConnected = status?.state === "open" || (status?.state === "unknown" && hasRecentSends);
   const isConnecting = status?.state === "connecting";
 
   const formatDate = (date: string | null) => {
@@ -305,11 +307,15 @@ export function AdminWhatsAppTecvo() {
               </div>
               <div>
                 <CardTitle className="text-lg">
-                  {isConnected ? "Conectado" : isConnecting ? "Conectando..." : "Desconectado"}
+                  {isConnected
+                    ? status?.state === "open" ? "Conectado" : "Operacional"
+                    : isConnecting ? "Conectando..." : "Desconectado"}
                 </CardTitle>
                 <CardDescription>
-                  {isConnected && status?.phone_number
+                  {isConnected && status?.state === "open" && status?.phone_number
                     ? `Número: ${status.phone_number}`
+                    : isConnected && status?.state !== "open"
+                    ? `Status da API indisponível, mas ${metrics?.sent_24h} mensagens enviadas nas últimas 24h`
                     : isConnected
                     ? "Sessão ativa"
                     : "O canal institucional não está conectado"
@@ -318,7 +324,7 @@ export function AdminWhatsAppTecvo() {
               </div>
             </div>
 
-            <StatusBadge state={status?.state || "unknown"} />
+            <StatusBadge state={isConnected && status?.state !== "open" ? "operational" : (status?.state || "unknown")} />
           </div>
         </CardHeader>
         <CardContent>
@@ -329,7 +335,13 @@ export function AdminWhatsAppTecvo() {
             </div>
             <div>
               <span className="text-muted-foreground text-xs">Estado</span>
-              <p className="font-medium">{status?.state || "Desconhecido"}</p>
+              <p className="font-medium">
+                {isConnected && status?.state !== "open"
+                  ? "Operacional (API indisponível)"
+                  : status?.state === "open"
+                  ? "Conectado"
+                  : status?.state || "Desconhecido"}
+              </p>
             </div>
             <div>
               <span className="text-muted-foreground text-xs">Número</span>
@@ -687,6 +699,13 @@ function StatusBadge({ state }: { state: string }) {
         <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-sm px-3 py-1">
           <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
           Conectado
+        </Badge>
+      );
+    case "operational":
+      return (
+        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-sm px-3 py-1">
+          <Activity className="h-3.5 w-3.5 mr-1.5" />
+          Operacional
         </Badge>
       );
     case "close":

@@ -98,9 +98,11 @@ Deno.serve(async (req) => {
       }
 
       let state = "unknown";
+      let rawState: string | null = null;
       let phoneNumber: string | null = null;
       let errorMsg: string | null = null;
 
+      // Try connectionState first, then fetchInstances as fallback
       try {
         const evoRes = await fetch(`${vpsUrl}/instance/connectionState/${instance_name}`, {
           method: "GET",
@@ -109,19 +111,60 @@ Deno.serve(async (req) => {
 
         if (evoRes.ok) {
           const evoData = await evoRes.json();
-          state = evoData.instance?.state || "unknown";
-          phoneNumber = evoData.instance?.phoneNumber || null;
+          console.log("[WHATSAPP-ADMIN-STATUS] connectionState raw:", JSON.stringify(evoData));
+          rawState = evoData.instance?.state || evoData.state || null;
+          phoneNumber = evoData.instance?.phoneNumber || evoData.instance?.ownerJid?.split("@")[0] || null;
+          
+          // Normalize state - Evolution API may return different values
+          const normalizedState = (rawState || "").toLowerCase();
+          if (normalizedState === "open" || normalizedState === "connected") {
+            state = "open";
+          } else if (normalizedState === "close" || normalizedState === "closed" || normalizedState === "disconnected") {
+            state = "close";
+          } else if (normalizedState === "connecting") {
+            state = "connecting";
+          } else {
+            state = rawState || "unknown";
+          }
         } else {
-          errorMsg = `Evolution API returned ${evoRes.status}`;
+          const errBody = await evoRes.text().catch(() => "");
+          console.log("[WHATSAPP-ADMIN-STATUS] connectionState error:", evoRes.status, errBody);
+          
+          // Fallback: try fetchInstances endpoint
+          try {
+            const fallbackRes = await fetch(`${vpsUrl}/instance/fetchInstances?instanceName=${instance_name}`, {
+              method: "GET",
+              headers: { apikey: apiKey },
+            });
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              console.log("[WHATSAPP-ADMIN-STATUS] fetchInstances fallback:", JSON.stringify(fallbackData).slice(0, 500));
+              const inst = Array.isArray(fallbackData) ? fallbackData[0] : fallbackData;
+              if (inst) {
+                rawState = inst.instance?.status || inst.connectionStatus || null;
+                const ns = (rawState || "").toLowerCase();
+                if (ns === "open" || ns === "connected") state = "open";
+                else if (ns === "close" || ns === "closed") state = "close";
+                else state = rawState || "unknown";
+                phoneNumber = inst.instance?.ownerJid?.split("@")[0] || phoneNumber;
+              }
+            }
+          } catch (_) { /* ignore fallback error */ }
+          
+          if (state === "unknown") {
+            errorMsg = `Evolution API returned ${evoRes.status}`;
+          }
         }
       } catch (e) {
         errorMsg = `Connection failed: ${e.message}`;
+        console.error("[WHATSAPP-ADMIN-STATUS] Connection error:", e.message);
       }
 
       return new Response(JSON.stringify({
         ok: true,
         instance_name,
         state,
+        raw_state: rawState,
         phone_number: phoneNumber,
         error_message: errorMsg,
         checked_at: new Date().toISOString(),
