@@ -115,11 +115,11 @@ Deno.serve(async (req) => {
       // Find user profile to get phone number
       const { data: profile } = await supabaseAdmin
         .from("profiles")
-        .select("phone, whatsapp_personal, organization_id")
+        .select("phone, organization_id")
         .eq("user_id", users.users.find((u) => u.email?.toLowerCase() === normalizedEmail)?.id ?? "")
         .maybeSingle();
 
-      const phone = profile?.whatsapp_personal || profile?.phone;
+      const phone = profile?.phone;
 
       if (phone && profile?.organization_id) {
         // Check if org has an active WhatsApp channel
