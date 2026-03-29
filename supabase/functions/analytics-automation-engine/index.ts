@@ -25,6 +25,9 @@ const TRIGGER_PRIORITY: Record<string, number> = {
   new_user_activation: 15,
   signup_recovery: 5,
   churn_recovery: 15,
+  inactive_3d: 12,
+  inactive_7d: 18,
+  inactive_15d: 22,
 };
 
 const TRIAL_DAY_MAP: Record<string, number> = {
