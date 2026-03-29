@@ -222,8 +222,7 @@ Deno.serve(async (req) => {
       } else if (profiles && profiles.length > 0) {
         console.log(`[AUTOMATION-ENGINE] Found ${profiles.length} recent profiles to evaluate`);
 
-        // Batch get emails for all users
-        const emailCache = new Map<string, string | null>();
+        // Email cache is declared at outer scope
 
         for (const profile of profiles) {
           const org = profile.organizations as any;
