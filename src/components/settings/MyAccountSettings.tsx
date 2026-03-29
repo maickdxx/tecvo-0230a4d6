@@ -130,25 +130,25 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <MessageCircle className="h-5 w-5 text-primary" />
-            WhatsApp Pessoal
+            Notificações da IA
           </CardTitle>
           <CardDescription>
-            Número usado pela IA para reconhecer suas mensagens e para assinatura automática no atendimento
+            Defina se deseja receber comunicações automáticas da Tecvo no seu WhatsApp
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="whatsappPersonal">Seu WhatsApp pessoal</Label>
-            <Input
-              id="whatsappPersonal"
-              type="tel"
-              value={whatsappPersonal}
-              onChange={(e) => setWhatsappPersonal(formatPhone(e.target.value))}
-              placeholder="(11) 99999-9999"
+          <div className="flex items-center justify-between">
+            <Label htmlFor="whatsappAiEnabled" className="flex-1 cursor-pointer">
+              <span className="block font-medium">Receber mensagens da IA no WhatsApp</span>
+              <span className="block text-xs text-muted-foreground font-normal">
+                Dicas de negócio, resumos diários e notificações automáticas
+              </span>
+            </Label>
+            <Switch
+              id="whatsappAiEnabled"
+              checked={whatsappAiEnabled}
+              onCheckedChange={setWhatsappAiEnabled}
             />
-            <p className="text-xs text-muted-foreground">
-              Opcional — informe apenas se for diferente do telefone acima. É usado para que a IA identifique suas mensagens e para assinar automaticamente respostas no WhatsApp.
-            </p>
           </div>
         </CardContent>
       </Card>
