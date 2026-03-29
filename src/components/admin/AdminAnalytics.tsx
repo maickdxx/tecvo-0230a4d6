@@ -535,7 +535,7 @@ export function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {/* Evolution Chart */}
             <Card className="col-span-1">
               <CardHeader>
@@ -637,7 +637,7 @@ export function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="funnel" className="space-y-6 pt-4">
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Funil de Negócio Completo</CardTitle>
@@ -743,7 +743,7 @@ export function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6 pt-4">
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
             <Card className="md:col-span-2">
               <CardHeader>
                 <CardTitle>Classificação de Comportamento</CardTitle>
