@@ -33,9 +33,10 @@ export function useAutoSeedDemo() {
       try {
         const { count } = await supabase
           .from("clients")
-          .select("*", { count: "exact", head: true })
+          .select("id", { count: "exact", head: false })
           .eq("organization_id", profile.organization_id)
-          .is("deleted_at", null);
+          .is("deleted_at", null)
+          .limit(1);
 
         if ((count ?? 0) > 0) {
           seeded.current = true;
@@ -45,9 +46,10 @@ export function useAutoSeedDemo() {
 
         const { count: svcCount } = await supabase
           .from("services")
-          .select("*", { count: "exact", head: true })
+          .select("id", { count: "exact", head: false })
           .eq("organization_id", profile.organization_id)
-          .is("deleted_at", null);
+          .is("deleted_at", null)
+          .limit(1);
 
         if ((svcCount ?? 0) > 0) {
           seeded.current = true;

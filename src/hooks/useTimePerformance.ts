@@ -91,7 +91,7 @@ export function useTimePerformance(startDate?: string, endDate?: string) {
       if (!organizationId) return [];
       let q = supabase
         .from("services")
-        .select("id, entry_date, exit_date, estimated_duration, assigned_to, service_type, status, profiles!services_assigned_to_fkey(full_name)")
+        .select("id, entry_date, exit_date, estimated_duration, assigned_to, service_type, status")
         .eq("organization_id", organizationId)
         .eq("status", "completed")
         .not("entry_date", "is", null)
@@ -103,8 +103,29 @@ export function useTimePerformance(startDate?: string, endDate?: string) {
       if (startDate) q = q.gte("completed_date", startDate);
       if (endDate) q = q.lte("completed_date", endDate);
 
-      const { data } = await q.order("completed_date", { ascending: false }).limit(500);
-      return data || [];
+      const { data, error } = await q.order("completed_date", { ascending: false }).limit(500);
+      if (error) throw error;
+
+      // Fetch profiles separately to avoid join issues with auth.users
+      const assignedIds = [...new Set((data || []).map(s => s.assigned_to).filter(Boolean))] as string[];
+      let profilesMap: Record<string, string> = {};
+
+      if (assignedIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", assignedIds);
+        if (profiles) {
+          profilesMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name || ""]));
+        }
+      }
+
+      return (data || []).map(s => ({
+        ...s,
+        profiles: s.assigned_to && profilesMap[s.assigned_to] 
+          ? { full_name: profilesMap[s.assigned_to] } 
+          : null
+      }));
     },
     enabled: !!organizationId,
   });

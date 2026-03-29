@@ -39,27 +39,30 @@ export function useGuidedOnboarding(): GuidedOnboardingData {
       // Count real clients (exclude demo data)
       const { count: clientCount } = await supabase
         .from("clients")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: false })
         .eq("organization_id", organizationId)
         .eq("is_demo_data", false)
-        .is("deleted_at", null);
+        .is("deleted_at", null)
+        .limit(1);
 
       // Count real services (exclude demo data)
       const { count: serviceCount } = await supabase
         .from("services")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: false })
         .eq("organization_id", organizationId)
         .eq("is_demo_data", false)
-        .is("deleted_at", null);
+        .is("deleted_at", null)
+        .limit(1);
 
       // Count real scheduled services (exclude demo data)
       const { count: scheduledCount } = await supabase
         .from("services")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: false })
         .eq("organization_id", organizationId)
         .eq("is_demo_data", false)
         .is("deleted_at", null)
-        .not("scheduled_date", "is", null);
+        .not("scheduled_date", "is", null)
+        .limit(1);
 
       return {
         dismissed,
