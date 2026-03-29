@@ -44,6 +44,7 @@ const Agenda = lazy(() => import("./pages/Agenda"));
 const MeusServicos = lazy(() => import("./pages/MeusServicos"));
 const CatalogoServicos = lazy(() => import("./pages/CatalogoServicos"));
 const Instalar = lazy(() => import("./pages/Instalar"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const ContasPagar = lazy(() => import("./pages/ContasPagar"));
 const ContasReceber = lazy(() => import("./pages/ContasReceber"));
 const RelatoriosFinanceiros = lazy(() => import("./pages/RelatoriosFinanceiros"));
