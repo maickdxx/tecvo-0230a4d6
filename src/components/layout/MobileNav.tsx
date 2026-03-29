@@ -584,7 +584,7 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
                     size="icon"
                     onClick={() => {
                       closeMenu();
-                      setProfileDialogOpen(true);
+                      navigate("/configuracoes?view=my-account");
                     }}
                     className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
                     title="Editar Perfil"

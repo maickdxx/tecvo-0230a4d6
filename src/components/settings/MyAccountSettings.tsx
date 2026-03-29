@@ -56,7 +56,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
-  const { role, isOwner, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
+  const { role, isOwner, isAdmin, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
   
   // Log de diagnóstico obrigatório conforme item 2 da solicitação
   useEffect(() => {
@@ -71,7 +71,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   }, [role, isLoadingRole, isOwner, isSuperAdmin, profile?.user_id]);
 
   // Condição explícita de acesso total (Owner ou Super Admin) conforme itens 3 e 4
-  const hasFullAccess = role === 'owner' || role === 'super_admin' || isSuperAdmin || isOwner;
+  const hasFullAccess = role === 'owner' || role === 'super_admin' || role === 'admin' || isSuperAdmin || isOwner || isAdmin;
   
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
