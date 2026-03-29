@@ -1,5 +1,13 @@
+/**
+ * ── SEND FLOW: PLATFORM_NOTIFICATION ──
+ * Auto weather notifications sent to org owners via their personal phone.
+ *
+ * PHONE SOURCE: Uses owner's personal phone (profiles.whatsapp_personal)
+ * with fallback to profiles.phone, then legacy organizations.whatsapp_owner.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { getTodayInTz } from "../_shared/timezone.ts";
+import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,7 +86,6 @@ async function sendWhatsApp(phone: string, text: string) {
   const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
   if (!vpsUrl || !apiKey) return false;
 
-  // Format number for WhatsApp
   let cleanNumber = phone.replace(/\D/g, "");
   if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
     cleanNumber = "55" + cleanNumber;
@@ -119,19 +126,24 @@ Deno.serve(async (req) => {
 
     const { data: orgs, error: orgsErr } = await supabase
       .from("organizations")
-      .select("id, whatsapp_owner, city, timezone")
-      .eq("id", ALLOWED_ORG_ID)
-      .not("whatsapp_owner", "is", null)
-      .neq("whatsapp_owner", "");
+      .select("id, city, timezone")
+      .eq("id", ALLOWED_ORG_ID);
 
     if (orgsErr) throw orgsErr;
-    console.log(`[AUTO-WEATHER] Found ${orgs?.length || 0} orgs with whatsapp_owner`);
+    console.log(`[AUTO-WEATHER] Found ${orgs?.length || 0} orgs`);
 
     let sent = 0;
     for (const org of orgs || []) {
-      if (!org.city || !org.whatsapp_owner) continue;
+      if (!org.city) continue;
 
-      // Check rate limit: max 2 non-operational messages per day — use org timezone
+      // Resolve owner's personal phone
+      const ownerPhone = await resolveOwnerPhone(supabase, org.id);
+      if (!ownerPhone.phone) {
+        console.log(`[AUTO-WEATHER] No phone for org ${org.id} owner`);
+        continue;
+      }
+
+      // Check rate limit
       const orgTz = org.timezone || "America/Sao_Paulo";
       const todayStr = getTodayInTz(orgTz);
       const { count } = await supabase
@@ -158,7 +170,7 @@ Deno.serve(async (req) => {
 
       const message = `☀️ Bom dia!\n\nPrevisão para ${org.city} hoje:\n🌡️ ${weather.tempMin}°C — ${weather.tempMax}°C | ${desc}\n💧 Chance de chuva: ${weather.precipProb}%\n\n${insight}\n\n— Tecvo`;
 
-      const ok = await sendWhatsApp(org.whatsapp_owner, message);
+      const ok = await sendWhatsApp(ownerPhone.phone, message);
       if (ok) {
         await supabase.from("auto_message_log").insert({
           organization_id: org.id,

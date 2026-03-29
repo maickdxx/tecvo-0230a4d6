@@ -1,6 +1,14 @@
+/**
+ * ── SEND FLOW: PLATFORM_NOTIFICATION ──
+ * Auto business tips sent to org owners via their personal phone.
+ *
+ * PHONE SOURCE: Uses owner's personal phone (profiles.whatsapp_personal)
+ * with fallback to profiles.phone, then legacy organizations.whatsapp_owner.
+ */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { getTodayInTz } from "../_shared/timezone.ts";
+import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,16 +81,19 @@ Deno.serve(async (req) => {
 
     const { data: orgs } = await supabase
       .from("organizations")
-      .select("id, whatsapp_owner, timezone")
-      .eq("id", ALLOWED_ORG_ID)
-      .not("whatsapp_owner", "is", null)
-      .neq("whatsapp_owner", "");
+      .select("id, timezone")
+      .eq("id", ALLOWED_ORG_ID);
 
     console.log(`[AUTO-TIPS] Found ${orgs?.length || 0} orgs`);
     let sent = 0;
 
     for (const org of orgs || []) {
-      if (!org.whatsapp_owner) continue;
+      // Resolve owner's personal phone
+      const ownerPhone = await resolveOwnerPhone(supabase, org.id);
+      if (!ownerPhone.phone) {
+        console.log(`[AUTO-TIPS] No phone for org ${org.id} owner`);
+        continue;
+      }
 
       // Check if tip was sent in last 3 days
       const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
@@ -98,8 +109,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Check daily rate limit (max 2 non-operational) — use org timezone for "today"
-      const orgTz = (org as any).timezone || "America/Sao_Paulo";
+      // Check daily rate limit
+      const orgTz = org.timezone || "America/Sao_Paulo";
       const todayStr = getTodayInTz(orgTz);
       const { count: todayNonOp } = await supabase
         .from("auto_message_log")
@@ -113,7 +124,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Pick a tip — use count of previous tips to rotate
+      // Pick a tip
       const { count: totalTips } = await supabase
         .from("auto_message_log")
         .select("id", { count: "exact", head: true })
@@ -124,14 +135,13 @@ Deno.serve(async (req) => {
       const tipText = BUSINESS_TIPS[tipIndex];
       const message = `${tipText}\n\n— Tecvo`;
 
-      // Send guard check
       const guard = await checkSendLimit(supabase, org.id, null, "tips");
       if (!guard.allowed) {
         console.log(`[AUTO-TIPS] Org ${org.id} blocked by send guard: ${guard.reason}`);
         continue;
       }
 
-      const ok = await sendWhatsApp(org.whatsapp_owner, message);
+      const ok = await sendWhatsApp(ownerPhone.phone, message);
       if (ok) {
         await supabase.from("auto_message_log").insert({
           organization_id: org.id,

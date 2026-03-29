@@ -3,10 +3,14 @@
  * Broadcasts messages from the Tecvo platform to organization owners.
  * Always uses TECVO_PLATFORM_INSTANCE ("tecvo") — never an org channel.
  * These messages are NOT part of any customer conversation.
+ *
+ * PHONE SOURCE: Uses owner's personal phone (profiles.whatsapp_personal)
+ * with fallback to profiles.phone, then legacy organizations.whatsapp_owner.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
+import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +23,6 @@ async function sendWhatsApp(phone: string, text: string) {
   if (!vpsUrl || !apiKey) return false;
 
   let cleanNumber = phone.replace(/\D/g, "");
-  // Add Brazil country code if not present
   if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
     cleanNumber = "55" + cleanNumber;
   }
@@ -54,7 +57,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Optional: custom message or single org target from body
     let customMessage = "";
     let singleOrgId = "";
     try {
@@ -88,15 +90,12 @@ Também envio *automaticamente*:
 
     const message = customMessage || defaultMessage;
 
-    // Get orgs - single or all
     // TEMP: Only send to Space Ar Condicionado
     const ALLOWED_ORG_ID = "f46f0514-fecf-4939-b1fa-6a0247f96540";
 
     let query = supabase
       .from("organizations")
-      .select("id, name, whatsapp_owner")
-      .not("whatsapp_owner", "is", null)
-      .neq("whatsapp_owner", "");
+      .select("id, name");
 
     if (singleOrgId) {
       query = query.eq("id", singleOrgId);
@@ -110,29 +109,34 @@ Também envio *automaticamente*:
       throw new Error(`DB error: ${error.message}`);
     }
 
-    console.log(`[BROADCAST] Found ${orgs?.length || 0} organizations with whatsapp_owner`);
+    console.log(`[BROADCAST] Found ${orgs?.length || 0} organizations`);
 
-    const results: { org: string; phone: string; sent: boolean }[] = [];
+    const results: { org: string; phone: string; sent: boolean; source: string }[] = [];
 
     for (const org of orgs || []) {
-      // Small delay between messages to avoid rate limiting
       if (results.length > 0) {
         await new Promise((r) => setTimeout(r, 2000));
       }
 
-      // Send guard check
-      const guard = await checkSendLimit(supabase, org.id, null, "broadcast");
-      if (!guard.allowed) {
-        console.log(`[BROADCAST] ${org.name}: BLOCKED by send guard — ${guard.reason}`);
-        results.push({ org: org.name, phone: org.whatsapp_owner!, sent: false });
+      // Resolve owner's personal phone
+      const ownerPhone = await resolveOwnerPhone(supabase, org.id);
+      if (!ownerPhone.phone) {
+        console.log(`[BROADCAST] ${org.name}: No phone found for owner`);
+        results.push({ org: org.name, phone: "none", sent: false, source: "none" });
         continue;
       }
 
-      const sent = await sendWhatsApp(org.whatsapp_owner!, message);
-      results.push({ org: org.name, phone: org.whatsapp_owner!, sent });
-      console.log(`[BROADCAST] ${org.name} (${org.whatsapp_owner}): ${sent ? "✅" : "❌"}`);
+      const guard = await checkSendLimit(supabase, org.id, null, "broadcast");
+      if (!guard.allowed) {
+        console.log(`[BROADCAST] ${org.name}: BLOCKED by send guard — ${guard.reason}`);
+        results.push({ org: org.name, phone: ownerPhone.phone, sent: false, source: ownerPhone.source! });
+        continue;
+      }
 
-      // Log the message
+      const sent = await sendWhatsApp(ownerPhone.phone, message);
+      results.push({ org: org.name, phone: ownerPhone.phone, sent, source: ownerPhone.source! });
+      console.log(`[BROADCAST] ${org.name} (${ownerPhone.phone} via ${ownerPhone.source}): ${sent ? "✅" : "❌"}`);
+
       if (sent) {
         await supabase.from("auto_message_log").insert({
           organization_id: org.id,

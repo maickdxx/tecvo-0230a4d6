@@ -17,6 +17,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
+import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,15 +119,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get org whatsapp_owner, timezone and auto_notify setting
+    // Get org settings
     const { data: org } = await supabase
       .from("organizations")
-      .select("whatsapp_owner, name, timezone, auto_notify_client_completion")
+      .select("name, timezone, auto_notify_client_completion")
       .eq("id", organization_id)
       .single();
 
-    if (!org?.whatsapp_owner) {
-      console.log("[AUTO-SERVICE] No whatsapp_owner for org:", organization_id);
+    // Resolve owner's personal phone
+    const ownerPhone = await resolveOwnerPhone(supabase, organization_id);
+    if (!ownerPhone.phone) {
+      console.log("[AUTO-SERVICE] No phone for org owner:", organization_id);
       return new Response(JSON.stringify({ ok: true, skipped: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -203,8 +206,8 @@ Deno.serve(async (req) => {
     if (!ownerGuard.allowed) {
       console.log(`[AUTO-SERVICE] Owner notification blocked by send guard: ${ownerGuard.reason}`);
     } else {
-      // Send notification to org owner via Tecvo instance
-      ok = await sendWhatsApp(org.whatsapp_owner, message, TECVO_PLATFORM_INSTANCE);
+      // Send notification to org owner via Tecvo instance using their personal phone
+      ok = await sendWhatsApp(ownerPhone.phone, message, TECVO_PLATFORM_INSTANCE);
     }
 
     // Resolve the client's channel instance for client-facing messages

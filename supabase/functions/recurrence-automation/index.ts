@@ -183,15 +183,15 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Check WhatsApp connectivity — org must have whatsapp_owner set AND messaging not paused
+      // Check WhatsApp connectivity — org must not have messaging paused
       const { data: org } = await supabase
         .from("organizations")
-        .select("whatsapp_owner, messaging_paused")
+        .select("messaging_paused")
         .eq("id", orgId)
         .single();
 
-      if (!org?.whatsapp_owner || org.messaging_paused) {
-        console.log(`[RECURRENCE] ${orgId}: WhatsApp not connected or messaging paused`);
+      if (org?.messaging_paused) {
+        console.log(`[RECURRENCE] ${orgId}: Messaging paused`);
         results.push({ org_id: orgId, sent: 0, blocked: 0, errors: 0, no_whatsapp: true });
         continue;
       }
