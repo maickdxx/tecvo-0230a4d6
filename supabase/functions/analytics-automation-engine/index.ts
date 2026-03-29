@@ -499,7 +499,7 @@ Deno.serve(async (req) => {
           emailBody.replace("{{name}}", best.name).replace(/\n/g, "<br>")
         );
 
-        const result = await sendEmailViaResend(contactEmail, subject, htmlBody);
+        const result = await sendEmailViaQueue(supabase, contactEmail, subject, htmlBody);
         emailStatus = result.success ? "sent" : "error";
         emailError = result.error || null;
 
