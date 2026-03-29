@@ -49,10 +49,11 @@ export const tutorialModules: TutorialModuleData[] = [
       },
       {
         title: "Conhecer o Dashboard",
-        description: "O Dashboard é sua tela inicial após o login. Aqui você vê a Situação Atual com previsão de caixa de 15 dias, Motor de Receita com ticket médio, Eficiência Operacional e gráficos de fluxo de caixa. Use os cards de ação rápida para acessar as funções mais usadas.",
+        description: "O Dashboard é sua central de comando. Use o bloco \"Situação Atual\" para ver a saúde da empresa e a previsão de caixa para os próximos 15 dias. O \"Motor de Receita\" analisa seu ticket médio e taxa de conversão, enquanto a \"Eficiência Operacional\" monitora o tempo médio de atendimento.",
         tips: [
-          "Personalize o Dashboard clicando no botão de engrenagem para reorganizar ou ocultar seções.",
-          "A previsão do tempo aparece no topo — útil para serviços externos."
+          "Personalize seu Dashboard ocultando ou reorganizando os blocos conforme sua necessidade.",
+          "O \"Radar\" no topo oferece uma visão rápida das métricas mais críticas do dia.",
+          "A previsão do tempo integrada ajuda a planejar serviços externos com antecedência."
         ]
       },
       {
