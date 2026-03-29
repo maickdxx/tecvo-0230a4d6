@@ -256,7 +256,7 @@ function ConfigRow({
   const changed = parseInt(value, 10) !== config.credits_cost;
 
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
       <div className="min-w-0">
         <p className="text-sm font-medium text-foreground">{config.label}</p>
         <p className="text-[10px] text-muted-foreground font-mono">{config.action_slug}</p>

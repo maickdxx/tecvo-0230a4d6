@@ -80,33 +80,42 @@ export default function Admin() {
         </div>
       </div>
 
-      <div className="container mx-auto px-2 py-4 space-y-4 sm:px-4 sm:py-6 sm:space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="w-full justify-start overflow-x-auto flex-nowrap">
-            <TabsTrigger value="dashboard" className="gap-2">
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="financial" className="gap-2">
-              <DollarSign className="h-4 w-4" />
-              Financeiro
-            </TabsTrigger>
-            <TabsTrigger value="organizations">Empresas</TabsTrigger>
-            <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="logs" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Auditoria
-            </TabsTrigger>
-            <TabsTrigger value="superadmins">Admins</TabsTrigger>
-            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-            <TabsTrigger value="whatsapp-tecvo">WA Tecvo</TabsTrigger>
-            <TabsTrigger value="ai-credits">IA</TabsTrigger>
-            <TabsTrigger value="backups">Backups</TabsTrigger>
-          </TabsList>
+      <div className="mx-auto px-2 py-3 space-y-3 sm:px-4 sm:py-6 sm:space-y-6 max-w-[100vw] overflow-x-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 sm:space-y-4">
+          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:w-full justify-start flex-nowrap h-auto p-1 gap-0.5">
+              <TabsTrigger value="dashboard" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Dashboard</span>
+                <span className="sm:hidden">Dash</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+                <span className="sm:hidden">Stats</span>
+              </TabsTrigger>
+              <TabsTrigger value="financial" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Financeiro</span>
+                <span className="sm:hidden">Fin</span>
+              </TabsTrigger>
+              <TabsTrigger value="organizations" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Empresas</TabsTrigger>
+              <TabsTrigger value="users" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Usuários</TabsTrigger>
+              <TabsTrigger value="logs" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Auditoria</span>
+                <span className="sm:hidden">Logs</span>
+              </TabsTrigger>
+              <TabsTrigger value="superadmins" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Admins</TabsTrigger>
+              <TabsTrigger value="whatsapp" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">WA</TabsTrigger>
+              <TabsTrigger value="whatsapp-tecvo" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <span className="hidden sm:inline">WA Tecvo</span>
+                <span className="sm:hidden">Tecvo</span>
+              </TabsTrigger>
+              <TabsTrigger value="ai-credits" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">IA</TabsTrigger>
+              <TabsTrigger value="backups" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Backups</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="dashboard">
             <ExecutiveDashboard onNavigateTab={setActiveTab} />

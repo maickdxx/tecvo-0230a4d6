@@ -316,7 +316,7 @@ export function AdminWhatsAppStatus() {
                   {/* Expanded section */}
                   {isSelected && (
                     <div className="mt-4 pt-4 border-t space-y-4">
-                      <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <div>
                           <span className="text-muted-foreground">Última conexão:</span>
                           <p className="font-mono">{formatDate(ch.last_connected_at)}</p>

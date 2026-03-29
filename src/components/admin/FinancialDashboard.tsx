@@ -174,14 +174,14 @@ export function FinancialDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
         <Card className="border-primary bg-primary/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">MRR</CardTitle>
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(mrr)}</div>
+            <div className="text-xl sm:text-2xl font-bold truncate">{formatCurrency(mrr)}</div>
             <p className="text-xs text-muted-foreground">
               Receita mensal recorrente ({activeCount} assinantes)
             </p>
@@ -194,7 +194,7 @@ export function FinancialDashboard() {
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(arr)}</div>
+            <div className="text-xl sm:text-2xl font-bold truncate">{formatCurrency(arr)}</div>
             <p className="text-xs text-muted-foreground">
               Receita anual recorrente
             </p>
@@ -207,7 +207,7 @@ export function FinancialDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(averageTicket)}</div>
+            <div className="text-xl sm:text-2xl font-bold truncate">{formatCurrency(averageTicket)}</div>
             <p className="text-xs text-muted-foreground">
               Por assinante
             </p>
@@ -220,7 +220,7 @@ export function FinancialDashboard() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalOverdue)}</div>
+            <div className="text-xl sm:text-2xl font-bold truncate">{formatCurrency(totalOverdue)}</div>
             <p className="text-xs text-muted-foreground">
               {overdueOrgs.length} conta{overdueOrgs.length !== 1 ? "s" : ""}
             </p>
@@ -291,7 +291,7 @@ export function FinancialDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Eventos de Billing Recentes</CardTitle>
@@ -306,15 +306,15 @@ export function FinancialDashboard() {
                 {recentPayments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
+                    className="flex items-center justify-between gap-2 p-3 border rounded-lg"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-primary" />
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       </div>
-                      <div>
-                        <div className="font-medium">{payment.orgName}</div>
-                        <div className="text-sm text-muted-foreground">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{payment.orgName}</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground truncate">
                           {payment.plan} — {payment.eventType.replace(/_/g, " ")}
                         </div>
                       </div>

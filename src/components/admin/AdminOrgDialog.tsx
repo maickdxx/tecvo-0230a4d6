@@ -152,7 +152,7 @@ export function AdminOrgDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -273,13 +273,13 @@ export function AdminOrgDialog({
               </div>
 
               {/* Plan change */}
-              <div className="flex items-center gap-3 pt-1">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 pt-1">
                 <Select
                   value={selectedPlan || organization.plan || "free"}
                   onValueChange={handlePlanChange}
                   disabled={isUpdating}
                 >
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Alterar plano" />
                   </SelectTrigger>
                   <SelectContent>
@@ -301,7 +301,7 @@ export function AdminOrgDialog({
                 <BarChart3 className="h-4 w-4 text-primary" />
                 Uso da Plataforma
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <MetricCard label="Serviços (mês)" value={usageData?.currentMonthServices ?? 0} />
                 <MetricCard label="Serviços (total)" value={usageData?.totalServices ?? 0} />
                 <MetricCard label="Membros" value={organization.profiles.length} />
@@ -368,10 +368,10 @@ export function AdminOrgDialog({
 // Helper components
 function InfoRow({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2">
-      {icon && <span className="text-muted-foreground">{icon}</span>}
-      <span className="text-muted-foreground">{label}:</span>
-      <span className="font-medium truncate">{value}</span>
+    <div className="flex items-start gap-2 min-w-0">
+      {icon && <span className="text-muted-foreground shrink-0 mt-0.5">{icon}</span>}
+      <span className="text-muted-foreground shrink-0">{label}:</span>
+      <span className="font-medium truncate min-w-0">{value}</span>
     </div>
   );
 }

@@ -322,7 +322,7 @@ export function AdminWhatsAppTecvo() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             <div>
               <span className="text-muted-foreground text-xs">Instância</span>
               <p className="font-mono font-medium">{INSTANCE_NAME}</p>
