@@ -176,18 +176,39 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Get owner email
-      const { data: profiles } = await supabase
+      // Get owner email via user_roles
+      const { data: ownerRole } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("organization_id", org.id)
+        .eq("role", "owner")
+        .limit(1)
+        .maybeSingle();
+
+      if (!ownerRole) {
+        console.log(`[BILLING-EXPIRATION] Skipping org ${org.id}: No owner role found`);
+        continue;
+      }
+
+      const { data: ownerProfile } = await supabase
         .from("profiles")
         .select("full_name, user_id")
-        .eq("organization_id", org.id);
+        .eq("user_id", ownerRole.user_id)
+        .maybeSingle();
 
-      if (!profiles?.length) continue;
+      if (!ownerProfile) {
+        console.log(`[BILLING-EXPIRATION] Skipping org ${org.id}: No profile found for owner ${ownerRole.user_id}`);
+        continue;
+      }
 
-      const ownerProfile = profiles[0];
       const { data: authData } = await supabase.auth.admin.getUserById(ownerProfile.user_id);
       const ownerEmail = authData?.user?.email;
-      if (!ownerEmail) continue;
+      if (!ownerEmail) {
+        console.log(`[BILLING-EXPIRATION] Skipping org ${org.id}: No email found for owner ${ownerProfile.user_id}`);
+        continue;
+      }
+
+      console.log(`[BILLING-EXPIRATION] Target: org_id=${org.id} user_id=${ownerProfile.user_id} role=owner function=billing-expiration-check`);
 
       const planName = PLAN_NAMES[org.plan] || org.plan || "Seu plano";
       const userName = ownerProfile.full_name || org.name || "Cliente";
