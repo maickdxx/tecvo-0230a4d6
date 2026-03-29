@@ -1,9 +1,9 @@
 /**
  * ── SEND FLOW: PLATFORM_NOTIFICATION ──
- * Auto business tips sent to org owners via their personal phone.
+ * Auto business tips sent to org owners via their phone.
  *
- * PHONE SOURCE: Uses owner's personal phone (profiles.whatsapp_personal)
- * with fallback to profiles.phone, then legacy organizations.whatsapp_owner.
+ * PHONE SOURCE: Uses owner's phone (profiles.phone)
+ * with fallback to legacy organizations.whatsapp_owner.
  *
  * IDEMPOTENCY: Uses INSERT-before-send pattern with unique constraint
  * on (organization_id, message_type, sent_date) to prevent duplicate sends.

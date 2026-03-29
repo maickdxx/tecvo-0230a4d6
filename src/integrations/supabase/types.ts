@@ -2586,6 +2586,7 @@ export type Database = {
           updated_at: string
           user_id: string
           whatsapp_ai_enabled: boolean
+          whatsapp_personal: string | null
           whatsapp_signature: string | null
           whatsapp_signature_enabled: boolean
         }
@@ -2626,6 +2627,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           whatsapp_ai_enabled?: boolean
+          whatsapp_personal?: string | null
           whatsapp_signature?: string | null
           whatsapp_signature_enabled?: boolean
         }
@@ -2666,6 +2668,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           whatsapp_ai_enabled?: boolean
+          whatsapp_personal?: string | null
           whatsapp_signature?: string | null
           whatsapp_signature_enabled?: boolean
         }
@@ -6237,66 +6240,126 @@ export type Database = {
     Views: {
       profiles_safe: {
         Row: {
+          address_cep: string | null
+          address_city: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
           ai_assistant_name: string | null
           ai_assistant_voice: string | null
           avatar_url: string | null
+          birth_date: string | null
+          cpf: string | null
           created_at: string | null
           dashboard_layout: Json | null
           demo_tour_completed: boolean | null
           employee_type: string | null
           field_worker: boolean | null
+          first_landing_page: string | null
+          first_referrer: string | null
+          first_utm_campaign: string | null
+          first_utm_medium: string | null
+          first_utm_source: string | null
           full_name: string | null
+          hire_date: string | null
+          hourly_rate: number | null
           id: string | null
           last_access: string | null
+          notes: string | null
           notification_preferences: Json | null
+          onboarding_completed: boolean | null
           organization_id: string | null
           phone: string | null
           position: string | null
+          rg: string | null
           updated_at: string | null
           user_id: string | null
           whatsapp_ai_enabled: boolean | null
+          whatsapp_personal: string | null
+          whatsapp_signature: string | null
           whatsapp_signature_enabled: boolean | null
         }
         Insert: {
+          address_cep?: string | null
+          address_city?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
           ai_assistant_name?: string | null
           ai_assistant_voice?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
+          cpf?: string | null
           created_at?: string | null
           dashboard_layout?: Json | null
           demo_tour_completed?: boolean | null
           employee_type?: string | null
           field_worker?: boolean | null
+          first_landing_page?: string | null
+          first_referrer?: string | null
+          first_utm_campaign?: string | null
+          first_utm_medium?: string | null
+          first_utm_source?: string | null
           full_name?: string | null
+          hire_date?: string | null
+          hourly_rate?: number | null
           id?: string | null
           last_access?: string | null
+          notes?: string | null
           notification_preferences?: Json | null
+          onboarding_completed?: boolean | null
           organization_id?: string | null
           phone?: string | null
           position?: string | null
+          rg?: string | null
           updated_at?: string | null
           user_id?: string | null
           whatsapp_ai_enabled?: boolean | null
+          whatsapp_personal?: string | null
+          whatsapp_signature?: string | null
           whatsapp_signature_enabled?: boolean | null
         }
         Update: {
+          address_cep?: string | null
+          address_city?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
           ai_assistant_name?: string | null
           ai_assistant_voice?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
+          cpf?: string | null
           created_at?: string | null
           dashboard_layout?: Json | null
           demo_tour_completed?: boolean | null
           employee_type?: string | null
           field_worker?: boolean | null
+          first_landing_page?: string | null
+          first_referrer?: string | null
+          first_utm_campaign?: string | null
+          first_utm_medium?: string | null
+          first_utm_source?: string | null
           full_name?: string | null
+          hire_date?: string | null
+          hourly_rate?: number | null
           id?: string | null
           last_access?: string | null
+          notes?: string | null
           notification_preferences?: Json | null
+          onboarding_completed?: boolean | null
           organization_id?: string | null
           phone?: string | null
           position?: string | null
+          rg?: string | null
           updated_at?: string | null
           user_id?: string | null
           whatsapp_ai_enabled?: boolean | null
+          whatsapp_personal?: string | null
+          whatsapp_signature?: string | null
           whatsapp_signature_enabled?: boolean | null
         }
         Relationships: [
