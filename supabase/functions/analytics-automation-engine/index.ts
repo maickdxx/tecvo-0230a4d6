@@ -415,12 +415,14 @@ Deno.serve(async (req) => {
 
       console.log(`[AUTOMATION-ENGINE] User ${userId}: ${candidates.length} eligible, best=${best.trigger_type} (pri=${best.priority})`);
 
-      // Check if already sent THIS automation to this user
+      // Check if already SUCCESSFULLY sent THIS automation to this user
+      // Failed sends should be retried
       const { count: alreadySentThis } = await supabase
         .from("analytics_automation_logs")
         .select("*", { count: "exact", head: true })
         .eq("automation_id", best.automation_id)
-        .eq(best.email ? "email" : "user_id", best.email || userId);
+        .eq(best.email ? "email" : "user_id", best.email || userId)
+        .eq("status", "sent");
 
       if ((alreadySentThis || 0) > 0) {
         console.log(`[AUTOMATION-ENGINE] User ${userId}: already received ${best.trigger_type}, skipping`);
