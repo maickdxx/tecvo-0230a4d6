@@ -107,6 +107,7 @@ const EditarLaudo = lazy(() => import("./pages/EditarLaudo"));
 const LaudoDetalhes = lazy(() => import("./pages/LaudoDetalhes"));
 const SecretariaIA = lazy(() => import("./pages/SecretariaIA"));
 const ExecutarServico = lazy(() => import("./pages/ExecutarServico"));
+const ParaVoce = lazy(() => import("./pages/ParaVoce"));
 
 // Portal do Cliente
 const PortalLogin = lazy(() => import("./pages/portal/PortalLogin"));
@@ -172,6 +173,7 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/cadastro" element={<Auth />} />
+            <Route path="/para-voce" element={<ParaVoce />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route
               path="/planos"
