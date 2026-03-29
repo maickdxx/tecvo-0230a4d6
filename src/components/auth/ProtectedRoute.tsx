@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { Loader2 } from "lucide-react";
 import { getRoutePermission, STRUCTURAL_BLOCKED_ROUTES, matchAnyRoute, matchRoute } from "@/lib/routePermissions";
 
