@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
 import { 
   ArrowLeft, 
   User, 
@@ -15,6 +16,7 @@ import {
   Monitor,
   PenLine
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,6 +62,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
+  const { isOwner } = useUserRole();
   
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -288,49 +291,53 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
           <CardDescription>Como a IA interage com você</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="whatsappAiEnabled" className="text-sm font-medium cursor-pointer">
-                Receber mensagens da IA no WhatsApp
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Dicas de negócio, resumos diários e alertas operacionais.
-              </p>
-            </div>
-            <Switch
-              id="whatsappAiEnabled"
-              checked={whatsappAiEnabled}
-              onCheckedChange={setWhatsappAiEnabled}
-            />
-          </div>
+          {isOwner && (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="whatsappAiEnabled" className="text-sm font-medium cursor-pointer">
+                    Receber mensagens da IA no WhatsApp
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Dicas de negócio, resumos diários e alertas operacionais.
+                  </p>
+                </div>
+                <Switch
+                  id="whatsappAiEnabled"
+                  checked={whatsappAiEnabled}
+                  onCheckedChange={setWhatsappAiEnabled}
+                />
+              </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border/50">
-            <div className="space-y-2">
-              <Label htmlFor="aiName">Nome do Assistente</Label>
-              <Input
-                id="aiName"
-                value={aiAssistantName}
-                onChange={(e) => setAiAssistantName(e.target.value)}
-                placeholder="Ex: TecBot"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="aiVoice">Voz / Personalidade</Label>
-              <select 
-                id="aiVoice"
-                value={aiAssistantVoice}
-                onChange={(e) => setAiAssistantVoice(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="neutral">Neutro</option>
-                <option value="professional">Profissional</option>
-                <option value="friendly">Amigável</option>
-                <option value="enthusiastic">Entusiasta</option>
-              </select>
-            </div>
-          </div>
+              <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border/50">
+                <div className="space-y-2">
+                  <Label htmlFor="aiName">Nome do Assistente</Label>
+                  <Input
+                    id="aiName"
+                    value={aiAssistantName}
+                    onChange={(e) => setAiAssistantName(e.target.value)}
+                    placeholder="Ex: TecBot"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="aiVoice">Voz / Personalidade</Label>
+                  <select 
+                    id="aiVoice"
+                    value={aiAssistantVoice}
+                    onChange={(e) => setAiAssistantVoice(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="neutral">Neutro</option>
+                    <option value="professional">Profissional</option>
+                    <option value="friendly">Amigável</option>
+                    <option value="enthusiastic">Entusiasta</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
 
-          <div className="pt-4 border-t border-border/50">
+          <div className={cn("pt-4", isOwner && "border-t border-border/50")}>
             <h4 className="text-sm font-semibold mb-3">Preferências de Alerta</h4>
             <div className="space-y-3">
               {[

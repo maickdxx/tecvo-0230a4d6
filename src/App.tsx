@@ -15,6 +15,7 @@ import { DemoTourProvider } from "@/hooks/useDemoTour";
 import { SessionTrackerProvider } from "@/components/SessionTrackerProvider";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { AdminProtectedRoute } from "@/components/admin";
+import { OwnerProtectedRoute } from "@/components/auth/OwnerProtectedRoute";
 import { CookieConsent } from "./components/CookieConsent";
 
 // ============================
@@ -394,9 +395,9 @@ const App = () => (
             <Route
               path="/configuracoes"
               element={
-                <ProtectedRoute>
+                <OwnerProtectedRoute>
                   <Configuracoes />
-                </ProtectedRoute>
+                </OwnerProtectedRoute>
               }
             />
             <Route
