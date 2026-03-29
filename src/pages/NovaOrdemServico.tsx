@@ -161,7 +161,7 @@ function QuickServiceForm({
             </div>
           </div>
 
-          <div className="flex justify-center pt-2">
+          <div className="flex flex-col items-center gap-4 pt-2">
             <Button type="submit" size="lg" disabled={isSubmitting} className="min-w-[240px] gap-2">
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -170,6 +170,16 @@ function QuickServiceForm({
               )}
               {isSubmitting ? "Salvando..." : "Salvar e continuar"}
               {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+            </Button>
+            
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              onClick={onShowFullForm}
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              Desejo preencher todos os dados (OS completa)
             </Button>
           </div>
         </CardContent>
