@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { usePendingAdjustmentsCount } from "@/hooks/usePendingAdjustments";
 import {
   LayoutDashboard, Wallet, Wrench, Users, Settings,
@@ -233,6 +233,7 @@ let _sidebarCollapsed = false;
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(_sidebarCollapsed);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -476,7 +477,7 @@ export function Sidebar() {
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => setProfileDialogOpen(true)}
+                  onClick={() => navigate("/configuracoes?view=my-account")}
                   className="h-8 w-8 rounded-full overflow-hidden bg-sidebar-primary/15 border border-sidebar-primary/20 flex items-center justify-center"
                 >
                   {profile?.avatar_url ? (
@@ -503,7 +504,7 @@ export function Sidebar() {
         ) : (
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => setProfileDialogOpen(true)}
+              onClick={() => navigate("/configuracoes?view=my-account")}
               className="h-8 w-8 rounded-full overflow-hidden bg-sidebar-primary/15 border border-sidebar-primary/20 flex items-center justify-center shrink-0 hover:border-sidebar-primary/40 transition-colors"
             >
               {profile?.avatar_url ? (
