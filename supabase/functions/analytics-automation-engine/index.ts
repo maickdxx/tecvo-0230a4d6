@@ -11,30 +11,24 @@ const corsHeaders = {
  * When multiple automations are eligible on the same day, only the highest priority fires.
  */
 const TRIGGER_PRIORITY: Record<string, number> = {
-  // Trial journey (ascending urgency)
+  trial_d0: 5,
   trial_d1: 10,
   trial_d3: 20,
   trial_d5: 30,
   trial_d7: 40,
-  // Trial ending alerts (highest urgency)
   trial_ending_3d: 50,
   trial_ending_1d: 60,
   trial_ending_0d: 70,
-  // Post-trial recovery
   post_trial_d1: 45,
   post_trial_d3: 35,
   post_trial_d7: 25,
-  // Activation & recovery
   new_user_activation: 15,
   signup_recovery: 5,
   churn_recovery: 15,
 };
 
-/**
- * Maps trigger_type to the number of days after signup when it should fire.
- * trial_d0 is handled by welcome whatsapp and is disabled.
- */
 const TRIAL_DAY_MAP: Record<string, number> = {
+  trial_d0: 0,
   trial_d1: 1,
   trial_d3: 3,
   trial_d5: 5,
@@ -51,6 +45,95 @@ function daysBetween(dateA: Date, dateB: Date): number {
   const msPerDay = 86400000;
   return Math.floor((dateB.getTime() - dateA.getTime()) / msPerDay);
 }
+
+// ── Email sending via Resend ──
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const FROM_EMAIL = "Tecvo <contato@tecvo.com.br>";
+
+async function sendEmailViaResend(
+  to: string,
+  subject: string,
+  html: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!RESEND_API_KEY) {
+    return { success: false, error: "RESEND_API_KEY not configured" };
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [to],
+        subject,
+        html,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return { success: false, error: `Resend ${res.status}: ${errText}` };
+    }
+
+    await res.json();
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+function buildAutomationEmailHtml(userName: string, bodyText: string): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 20px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+  <tr><td style="background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:24px 40px;text-align:center;">
+    <h1 style="color:#ffffff;font-size:22px;margin:0;font-weight:700;">Tecvo</h1>
+  </td></tr>
+  <tr><td style="padding:32px 40px;">
+    <p style="color:#3f3f46;font-size:15px;line-height:1.6;margin:0 0 16px;">${bodyText}</p>
+    <table cellpadding="0" cellspacing="0" style="margin:24px auto;">
+    <tr><td style="background:#2563eb;border-radius:8px;padding:14px 32px;">
+      <a href="https://tecvo.com.br/dashboard" style="color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">
+        Acessar a Tecvo →
+      </a>
+    </td></tr></table>
+  </td></tr>
+  <tr><td style="background:#fafafa;padding:20px 40px;border-top:1px solid #e4e4e7;text-align:center;">
+    <p style="color:#a1a1aa;font-size:12px;margin:0;">
+      Tecvo — Gestão inteligente para empresas de serviço<br>
+      <a href="https://tecvo.com.br" style="color:#2563eb;text-decoration:none;">tecvo.com.br</a>
+    </p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+}
+
+// ── Email subject map ──
+const EMAIL_SUBJECTS: Record<string, string> = {
+  trial_d0: "🚀 Bem-vindo à Tecvo!",
+  trial_d1: "📊 Como está sua experiência na Tecvo?",
+  trial_d3: "🏆 Resultados Reais com a Tecvo",
+  trial_d5: "🔥 Chega de planilhas e papelada!",
+  trial_d7: "📊 Sua primeira semana com a Tecvo",
+  trial_ending_3d: "⏳ Seu trial termina em 3 dias",
+  trial_ending_1d: "⚠️ Seu trial expira amanhã!",
+  trial_ending_0d: "🕒 Último dia do seu trial",
+  post_trial_d1: "💪 Seus dados ainda estão salvos",
+  post_trial_d3: "🚀 Sentimos sua falta!",
+  post_trial_d7: "⏰ Última chamada — reative agora",
+  new_user_activation: "🚀 Crie sua primeira Ordem de Serviço",
+  signup_recovery: "😊 Precisa de ajuda para finalizar?",
+  churn_recovery: "Sentimos sua ausência na Tecvo",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -79,20 +162,21 @@ Deno.serve(async (req) => {
 
     const automationsByType = new Map(automations.map((a: any) => [a.trigger_type, a]));
     const now = new Date();
-    const todayStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
+    const todayStr = now.toISOString().split("T")[0];
 
     // ──────────────────────────────────────────────
-    // 2. Build candidate list: all (user, automation) pairs eligible RIGHT NOW
+    // 2. Build candidate list
     // ──────────────────────────────────────────────
     interface Candidate {
       user_id: string;
       org_id: string;
       phone: string | null;
+      user_email: string | null;
       name: string;
       trigger_type: string;
       automation_id: string;
       priority: number;
-      email?: string;
+      email?: string; // for signup_recovery
       metadata?: any;
     }
     const candidatesByUser = new Map<string, Candidate[]>();
@@ -103,23 +187,34 @@ Deno.serve(async (req) => {
       candidatesByUser.set(c.user_id, existing);
     }
 
-    // ── 2a. Trial journey (D1, D3, D5, D7) ──
-    // Get all profiles in active trial (trial hasn't ended yet OR ended within 7 days for post-trial)
+    // Helper to get user email from auth
+    async function getUserEmail(userId: string): Promise<string | null> {
+      try {
+        const { data } = await supabase.auth.admin.getUserById(userId);
+        return data?.user?.email || null;
+      } catch {
+        return null;
+      }
+    }
+
+    // ── 2a. Trial journey (D0, D1, D3, D5, D7) ──
     const trialTriggers = automations.filter((a: any) => TRIAL_DAY_MAP[a.trigger_type] !== undefined);
     const postTrialTriggers = automations.filter((a: any) => POST_TRIAL_DAY_MAP[a.trigger_type] !== undefined);
 
     if (trialTriggers.length > 0 || postTrialTriggers.length > 0) {
-      // Fetch profiles created in the last 30 days (covers all trial + post-trial windows)
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
       const { data: profiles, error: profError } = await supabase
         .from("profiles")
-        .select("id, full_name, organization_id, phone, whatsapp_personal, created_at, organizations!inner(trial_ends_at, subscription_status, plan)")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at, organizations!inner(trial_ends_at, subscription_status, plan)")
         .gte("created_at", thirtyDaysAgo);
 
       if (profError) {
         console.error("[AUTOMATION-ENGINE] Profile query error:", profError);
       } else if (profiles && profiles.length > 0) {
         console.log(`[AUTOMATION-ENGINE] Found ${profiles.length} recent profiles to evaluate`);
+
+        // Batch get emails for all users
+        const emailCache = new Map<string, string | null>();
 
         for (const profile of profiles) {
           const org = profile.organizations as any;
@@ -129,9 +224,13 @@ Deno.serve(async (req) => {
           const phone = profile.whatsapp_personal || profile.phone;
           const firstName = profile.full_name?.split(" ")[0] || "amigo(a)";
 
-          // Check if trial is still active
+          // Get user email (cached)
+          if (!emailCache.has(profile.user_id)) {
+            emailCache.set(profile.user_id, await getUserEmail(profile.user_id));
+          }
+          const userEmail = emailCache.get(profile.user_id) || null;
+
           const trialActive = trialEndsAt && trialEndsAt > now;
-          // Check if trial expired (for post-trial)
           const trialExpired = trialEndsAt && trialEndsAt <= now;
           const daysSinceExpiry = trialEndsAt ? daysBetween(trialEndsAt, now) : -1;
 
@@ -140,7 +239,7 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Trial automations: only if trial is active
+          // Trial automations
           if (trialActive) {
             for (const auto of trialTriggers) {
               const targetDay = TRIAL_DAY_MAP[auto.trigger_type];
@@ -149,6 +248,7 @@ Deno.serve(async (req) => {
                   user_id: profile.id,
                   org_id: profile.organization_id,
                   phone,
+                  user_email: userEmail,
                   name: firstName,
                   trigger_type: auto.trigger_type,
                   automation_id: auto.id,
@@ -158,7 +258,7 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Post-trial automations: only if trial expired
+          // Post-trial automations
           if (trialExpired && daysSinceExpiry >= 0) {
             for (const auto of postTrialTriggers) {
               const targetDay = POST_TRIAL_DAY_MAP[auto.trigger_type];
@@ -167,6 +267,7 @@ Deno.serve(async (req) => {
                   user_id: profile.id,
                   org_id: profile.organization_id,
                   phone,
+                  user_email: userEmail,
                   name: firstName,
                   trigger_type: auto.trigger_type,
                   automation_id: auto.id,
@@ -201,17 +302,19 @@ Deno.serve(async (req) => {
         for (const org of orgs) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("id, full_name, phone, whatsapp_personal")
+            .select("id, user_id, full_name, phone, whatsapp_personal")
             .eq("organization_id", org.id)
             .order("created_at", { ascending: true })
             .limit(1)
             .single();
 
           if (profile) {
+            const userEmail = await getUserEmail(profile.user_id);
             addCandidate({
               user_id: profile.id,
               org_id: org.id,
               phone: profile.whatsapp_personal || profile.phone,
+              user_email: userEmail,
               name: profile.full_name?.split(" ")[0] || "amigo(a)",
               trigger_type: auto.trigger_type,
               automation_id: auto.id,
@@ -238,28 +341,28 @@ Deno.serve(async (req) => {
 
       if (events) {
         for (const event of events) {
-          const email = event.metadata?.email;
+          const eventEmail = event.metadata?.email;
           const phone = event.metadata?.phone;
           const name = event.metadata?.fullName || "amigo(a)";
-          if (!email) continue;
+          if (!eventEmail) continue;
 
           const { count: completedCount } = await supabase
             .from("user_activity_events")
             .select("*", { count: "exact", head: true })
             .eq("event_type", "signup_completed")
-            .or(`metadata->>email.eq.${email},metadata->>email.eq.${email.toLowerCase()}`);
+            .or(`metadata->>email.eq.${eventEmail},metadata->>email.eq.${eventEmail.toLowerCase()}`);
 
           if (completedCount === 0) {
-            // Use email as pseudo user_id for signup recovery
             addCandidate({
-              user_id: `signup_${email}`,
+              user_id: `signup_${eventEmail}`,
               org_id: "",
               phone,
+              user_email: eventEmail,
               name: name.split(" ")[0],
               trigger_type: "signup_recovery",
               automation_id: signupRecovery.id,
               priority: TRIGGER_PRIORITY["signup_recovery"] || 0,
-              email,
+              email: eventEmail,
               metadata: event.metadata,
             });
           }
@@ -272,15 +375,13 @@ Deno.serve(async (req) => {
     if (activationAuto) {
       const delay = activationAuto.delay_minutes || 1440;
       const targetDate = new Date(now.getTime() - delay * 60000);
-      const daysSinceSignup = 1; // activation fires at D1
 
-      // Get profiles created ~24h ago
       const startTime = new Date(targetDate.getTime() - 3600000).toISOString();
       const endTime = new Date(targetDate.getTime() + 3600000).toISOString();
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, organization_id, phone, whatsapp_personal, created_at")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at")
         .gte("created_at", startTime)
         .lte("created_at", endTime);
 
@@ -292,10 +393,12 @@ Deno.serve(async (req) => {
             .eq("organization_id", profile.organization_id);
 
           if (osCount === 0) {
+            const userEmail = await getUserEmail(profile.user_id);
             addCandidate({
               user_id: profile.id,
               org_id: profile.organization_id,
               phone: profile.whatsapp_personal || profile.phone,
+              user_email: userEmail,
               name: profile.full_name?.split(" ")[0] || "amigo(a)",
               trigger_type: "new_user_activation",
               automation_id: activationAuto.id,
@@ -307,13 +410,11 @@ Deno.serve(async (req) => {
     }
 
     // ──────────────────────────────────────────────
-    // 3. DEDUP: For each user, pick only the highest-priority candidate
-    //    AND check that no automation was sent to them today already
+    // 3. DEDUP & SEND
     // ──────────────────────────────────────────────
     const results: any[] = [];
 
     for (const [userId, candidates] of candidatesByUser) {
-      // Sort by priority descending
       candidates.sort((a, b) => b.priority - a.priority);
       const best = candidates[0];
 
@@ -331,7 +432,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Check if ANY automation was sent to this user today (1/day limit)
+      // Check 1/day limit
       const { count: sentToday } = await supabase
         .from("analytics_automation_logs")
         .select("*", { count: "exact", head: true })
@@ -343,23 +444,27 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // 4. Send message
-      if (!best.phone) {
-        console.log(`[AUTOMATION-ENGINE] User ${userId}: no phone, skipping`);
+      // ── DETERMINE CHANNELS ──
+      const hasPhone = !!best.phone;
+      const hasEmail = !!(best.user_email || best.email);
+      const contactEmail = best.user_email || best.email;
+
+      if (!hasPhone && !hasEmail) {
+        console.log(`[AUTOMATION-ENGINE] User ${userId}: no phone AND no email, skipping`);
         continue;
       }
 
       const automation = automationsByType.get(best.trigger_type)!;
-      const message = automation.message_template.replace("{{name}}", best.name);
+      const waMessage = automation.message_template.replace("{{name}}", best.name);
+      const emailBody = automation.email_template || waMessage;
 
-      console.log(`[AUTOMATION-ENGINE] Sending ${best.trigger_type} to ${best.phone}`);
-
+      // ── SEND VIA WHATSAPP (if phone available) ──
       let waStatus = "skipped";
       let waError: string | null = null;
 
-      if (vpsUrl && apiKey) {
+      if (hasPhone && vpsUrl && apiKey) {
         try {
-          let cleanNumber = best.phone.replace(/\D/g, "");
+          let cleanNumber = best.phone!.replace(/\D/g, "");
           if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
             cleanNumber = "55" + cleanNumber;
           }
@@ -368,7 +473,7 @@ Deno.serve(async (req) => {
           const res = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
             method: "POST",
             headers: { "Content-Type": "application/json", apikey: apiKey },
-            body: JSON.stringify({ number: jid, text: message }),
+            body: JSON.stringify({ number: jid, text: waMessage }),
           });
 
           if (res.ok) {
@@ -385,27 +490,64 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── SEND VIA EMAIL (if email available AND (no phone OR wa failed)) ──
+      let emailStatus = "skipped";
+      let emailError: string | null = null;
+
+      const shouldSendEmail = hasEmail && (!hasPhone || waStatus === "error" || waStatus === "skipped");
+
+      if (shouldSendEmail && contactEmail) {
+        const subject = EMAIL_SUBJECTS[best.trigger_type] || "Novidades da Tecvo";
+        const htmlBody = buildAutomationEmailHtml(
+          best.name,
+          emailBody.replace("{{name}}", best.name).replace(/\n/g, "<br>")
+        );
+
+        const result = await sendEmailViaResend(contactEmail, subject, htmlBody);
+        emailStatus = result.success ? "sent" : "error";
+        emailError = result.error || null;
+
+        if (result.success) {
+          console.log(`[AUTOMATION-ENGINE] Email sent to ${contactEmail} for ${best.trigger_type}`);
+        } else {
+          console.error(`[AUTOMATION-ENGINE] Email failed for ${contactEmail}:`, result.error);
+        }
+      }
+
+      // Determine overall status
+      const overallStatus = waStatus === "sent" || emailStatus === "sent" ? "sent" : "error";
+      const channelUsed = waStatus === "sent" && emailStatus === "sent"
+        ? "whatsapp+email"
+        : waStatus === "sent"
+        ? "whatsapp"
+        : emailStatus === "sent"
+        ? "email"
+        : waStatus === "error" ? "whatsapp" : "email";
+
       // 5. Log the result
       await supabase.from("analytics_automation_logs").insert({
         automation_id: best.automation_id,
         user_id: best.email ? null : userId,
-        email: best.email || null,
+        email: contactEmail || null,
         organization_id: best.org_id || null,
-        status: waStatus === "sent" ? "sent" : waStatus === "error" ? "error" : "processed",
-        channel: "whatsapp",
-        error_message: waError,
+        status: overallStatus,
+        channel: channelUsed,
+        error_message: waError || emailError,
         metadata: {
           phone: best.phone,
           name: best.name,
           wa_status: waStatus,
-          message_sent: message,
+          email_status: emailStatus,
+          email_error: emailError,
+          wa_error: waError,
+          message_sent: waMessage,
           trigger_type: best.trigger_type,
           candidates_count: candidates.length,
           all_eligible: candidates.map((c) => c.trigger_type),
         },
       });
 
-      // 6. Update journey state
+      // 6. Update journey state (for ALL users, not just those with phone)
       if (!best.email) {
         await supabase
           .from("user_journey_state")
@@ -425,7 +567,14 @@ Deno.serve(async (req) => {
           );
       }
 
-      results.push({ user: userId, trigger: best.trigger_type, status: waStatus });
+      results.push({
+        user: userId,
+        trigger: best.trigger_type,
+        wa_status: waStatus,
+        email_status: emailStatus,
+        channel: channelUsed,
+        status: overallStatus,
+      });
     }
 
     console.log(`[AUTOMATION-ENGINE] Done. Processed ${results.length} sends.`);
