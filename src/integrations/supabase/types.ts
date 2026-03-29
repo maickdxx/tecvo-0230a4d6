@@ -2585,7 +2585,7 @@ export type Database = {
           rg: string | null
           updated_at: string
           user_id: string
-          whatsapp_personal: string | null
+          whatsapp_ai_enabled: boolean
           whatsapp_signature_enabled: boolean
         }
         Insert: {
@@ -2624,7 +2624,7 @@ export type Database = {
           rg?: string | null
           updated_at?: string
           user_id: string
-          whatsapp_personal?: string | null
+          whatsapp_ai_enabled?: boolean
           whatsapp_signature_enabled?: boolean
         }
         Update: {
@@ -2663,7 +2663,7 @@ export type Database = {
           rg?: string | null
           updated_at?: string
           user_id?: string
-          whatsapp_personal?: string | null
+          whatsapp_ai_enabled?: boolean
           whatsapp_signature_enabled?: boolean
         }
         Relationships: [
@@ -6251,7 +6251,7 @@ export type Database = {
           position: string | null
           updated_at: string | null
           user_id: string | null
-          whatsapp_personal: string | null
+          whatsapp_ai_enabled: boolean | null
           whatsapp_signature_enabled: boolean | null
         }
         Insert: {
@@ -6272,7 +6272,7 @@ export type Database = {
           position?: string | null
           updated_at?: string | null
           user_id?: string | null
-          whatsapp_personal?: string | null
+          whatsapp_ai_enabled?: boolean | null
           whatsapp_signature_enabled?: boolean | null
         }
         Update: {
@@ -6293,7 +6293,7 @@ export type Database = {
           position?: string | null
           updated_at?: string | null
           user_id?: string | null
-          whatsapp_personal?: string | null
+          whatsapp_ai_enabled?: boolean | null
           whatsapp_signature_enabled?: boolean | null
         }
         Relationships: [
