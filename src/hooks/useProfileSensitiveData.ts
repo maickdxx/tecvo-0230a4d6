@@ -15,7 +15,7 @@ export interface SensitiveProfileData {
   address_neighborhood: string | null;
   address_city: string | null;
   address_state: string | null;
-  whatsapp_personal: string | null;
+  whatsapp_ai_enabled: boolean;
   avatar_url: string | null;
   notes: string | null;
   position: string | null;
@@ -52,7 +52,7 @@ export function useProfileSensitiveData(targetUserId?: string) {
         .select(
           "cpf, rg, hourly_rate, birth_date, hire_date, " +
           "address_cep, address_street, address_number, address_neighborhood, " +
-          "address_city, address_state, whatsapp_personal, avatar_url, notes, " +
+          "address_city, address_state, whatsapp_ai_enabled, avatar_url, notes, " +
           "position, employee_type, whatsapp_signature_enabled, " +
           "ai_assistant_name, ai_assistant_voice"
         )
