@@ -257,6 +257,24 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
               Esta assinatura é usada para identificar você nas mensagens enviadas aos clientes.
             </p>
           </div>
+          <div className="space-y-3 pt-4 border-t border-border/50">
+            <p className="text-sm font-medium">Dashboard</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                if (confirm("Deseja restaurar a organização padrão das ferramentas no Dashboard?")) {
+                  updateProfile({ dashboardLayout: null });
+                }
+              }}
+              className="w-full sm:w-auto"
+            >
+              Restaurar layout padrão
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Remove a personalização e volta para a organização padrão dos widgets.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
