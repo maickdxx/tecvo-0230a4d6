@@ -186,43 +186,64 @@ Deno.serve(async (req: Request) => {
   try {
     const payload: NotificationPayload = await req.json();
 
-    if (!RESEND_API_KEY) {
-      console.error("RESEND_API_KEY not configured");
-      return new Response(JSON.stringify({ error: "Email service not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // ── Send WhatsApp to Super Admin ──
+    const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
+    const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+    let waStatus = "skipped";
+
+    if (vpsUrl && apiKey) {
+      try {
+        const waText = buildWhatsAppText(payload);
+        const jid = `${SUPER_ADMIN_PHONE}@s.whatsapp.net`;
+
+        const waRes = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ number: jid, text: waText }),
+        });
+
+        waStatus = waRes.ok ? "sent" : "error";
+        if (!waRes.ok) {
+          console.error("[admin-notify] WA error:", waRes.status, await waRes.text());
+        }
+      } catch (err) {
+        waStatus = "error";
+        console.error("[admin-notify] WA exception:", err);
+      }
+    }
+    console.log(`[admin-notify] WA to super admin: ${waStatus}`);
+
+    // ── Send Email ──
+    let emailId = null;
+    if (RESEND_API_KEY) {
+      const { subject, html } = buildEmail(payload);
+
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: `TecVo Admin <${FROM_EMAIL}>`,
+          to: [SUPER_ADMIN_EMAIL],
+          subject,
+          html,
+        }),
       });
+
+      if (!emailRes.ok) {
+        const errText = await emailRes.text();
+        console.error("[admin-notify] Resend error:", errText);
+      } else {
+        const result = await emailRes.json();
+        emailId = result.id;
+      }
     }
 
-    const { subject, html } = buildEmail(payload);
+    console.log("Admin notification sent:", payload.type, { waStatus, emailId });
 
-    const emailRes = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: `TecVo Admin <${FROM_EMAIL}>`,
-        to: [SUPER_ADMIN_EMAIL],
-        subject,
-        html,
-      }),
-    });
-
-    if (!emailRes.ok) {
-      const errText = await emailRes.text();
-      console.error("Resend error:", errText);
-      return new Response(JSON.stringify({ error: "Failed to send email", details: errText }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const result = await emailRes.json();
-    console.log("Admin notification sent:", payload.type, result.id);
-
-    return new Response(JSON.stringify({ success: true, email_id: result.id }), {
+    return new Response(JSON.stringify({ success: true, email_id: emailId, wa_status: waStatus }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
