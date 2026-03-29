@@ -155,6 +155,15 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
     }
   };
 
+  if (isLoadingRole) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Bot className="h-12 w-12 animate-pulse text-primary/20" />
+        <p className="text-sm text-muted-foreground animate-pulse">Carregando seu perfil...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center gap-3">
