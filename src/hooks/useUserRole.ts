@@ -74,7 +74,7 @@ export function useUserRole() {
     : isOwner || isAdmin;
 
   // Role label mapping for UI
-  const roleLabel = ROLE_LABELS[primaryRole];
+  const roleLabel = primaryRole ? ROLE_LABELS[primaryRole] : "Carregando...";
 
   return {
     role: primaryRole,
@@ -84,6 +84,7 @@ export function useUserRole() {
     isMember,
     isAdmin,
     isOwner,
+    isSuperAdmin,
     canEdit,
     canCreate,
     canDelete,
@@ -93,6 +94,7 @@ export function useUserRole() {
 }
 
 export const ROLE_LABELS: Record<AppRole, string> = {
+  super_admin: "Super ADM",
   owner: "Gestor",
   admin: "ADM",
   member: "Atendente",
