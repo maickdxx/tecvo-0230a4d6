@@ -46,10 +46,12 @@ function QuickServiceForm({
   clients,
   onSubmit,
   isSubmitting,
+  onShowFullForm,
 }: {
   clients: { id: string; name: string }[];
   onSubmit: (data: ServiceFormData) => Promise<void>;
   isSubmitting: boolean;
+  onShowFullForm: () => void;
 }) {
   const tz = useOrgTimezone();
   const [clientId, setClientId] = useState(clients[0]?.id || "");
