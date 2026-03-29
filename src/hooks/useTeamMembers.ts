@@ -153,6 +153,52 @@ export function useTeamMembers() {
     },
   });
 
+  const updateMemberDetailsMutation = useMutation({
+    mutationFn: async ({ 
+      userId, 
+      details 
+    }: { 
+      userId: string; 
+      details: {
+        position?: string;
+        cpf?: string;
+        rg?: string;
+        hire_date?: string | null;
+        employee_type?: string;
+        hourly_rate?: number | null;
+        address_cep?: string;
+        address_street?: string;
+        address_number?: string;
+        address_neighborhood?: string;
+        address_city?: string;
+        address_state?: string;
+        notes?: string;
+      } 
+    }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update(details as any)
+        .eq("user_id", userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-sensitive"] });
+      toast({
+        title: "Atualizado",
+        description: "Dados administrativos atualizados com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar os dados administrativos.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteMemberMutation = useMutation({
     mutationFn: async (userId: string) => {
       const { data: { session } } = await supabase.auth.getSession();
