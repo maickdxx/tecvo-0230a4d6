@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
@@ -10,31 +9,21 @@ export function useOnboarding() {
   const { data: onboardingStatus, isLoading } = useQuery({
     queryKey: ["onboarding", profile?.organization_id],
     queryFn: async () => {
-      if (!profile?.organization_id) return { completed: true, welcomeSent: true };
+      if (!profile?.organization_id) return { completed: true };
 
       const { data, error } = await supabase
         .from("organizations")
-        .select("onboarding_completed, welcome_whatsapp_sent")
+        .select("onboarding_completed")
         .eq("id", profile.organization_id)
         .maybeSingle();
 
       if (error) throw error;
       return {
         completed: data?.onboarding_completed ?? false,
-        welcomeSent: data?.welcome_whatsapp_sent ?? false,
       };
     },
     enabled: !!profile?.organization_id,
   });
-
-  // Retry welcome WhatsApp if onboarding is done but message wasn't sent
-  useEffect(() => {
-    if (onboardingStatus?.completed && !onboardingStatus?.welcomeSent) {
-      supabase.functions.invoke("send-welcome-whatsapp").catch((err) => {
-        console.warn("Welcome WhatsApp retry failed:", err);
-      });
-    }
-  }, [onboardingStatus?.completed, onboardingStatus?.welcomeSent]);
 
   const completeOnboardingMutation = useMutation({
     mutationFn: async () => {
@@ -47,7 +36,8 @@ export function useOnboarding() {
 
       if (error) throw error;
 
-      // Send welcome WhatsApp message (fire-and-forget)
+      // Single point of welcome message dispatch — fire-and-forget
+      // The edge function itself has atomic deduplication protection
       supabase.functions.invoke("send-welcome-whatsapp").catch((err) => {
         console.warn("Welcome WhatsApp failed:", err);
       });
