@@ -26,9 +26,14 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const campaignName = body.campaign_name || "reengagement";
-    const messageTemplate = body.message_template;
-    const emailTemplate = body.email_template || null;
-    const emailSubject = body.email_subject || null;
+    const minDays = body.min_days || 20;
+    
+    // Default templates for auto-population (cron doesn't send body)
+    const messageTemplate = body.message_template || 
+      "Olá {{name}}! 👋 Vimos que você criou sua conta na Tecvo há um tempo. Queremos te ajudar a aproveitar ao máximo a plataforma. Tem alguma dúvida? Responda aqui que te ajudamos! 🚀";
+    const emailTemplate = body.email_template || 
+      "Olá {{name}},\n\nVimos que você criou sua conta na Tecvo há algum tempo e gostaríamos de ajudar.\n\nA Tecvo pode simplificar a gestão da sua empresa de serviços — ordens de serviço, clientes, agenda e muito mais.\n\nQue tal dar uma olhada? Estamos aqui para ajudar!\n\nEquipe Tecvo";
+    const emailSubject = body.email_subject || "Precisando de ajuda com a Tecvo? 🤝";
 
     if (!messageTemplate) {
       return jsonResponse({ error: "message_template is required" }, 400);
@@ -65,15 +70,18 @@ Deno.serve(async (req) => {
       excludeUserIds.add(q.user_id);
     }
 
-    // Fetch all profiles with org data
+    // Fetch all profiles with org data — filter by registration age
+    const cutoffDate = new Date(Date.now() - minDays * 86400000).toISOString();
+    
     const { data: profiles, error: profError } = await supabase
       .from("profiles")
       .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at, organizations!inner(subscription_status, plan, trial_ends_at, created_at)")
-      .not("organization_id", "is", null);
+      .not("organization_id", "is", null)
+      .lte("created_at", cutoffDate);
 
     if (profError) throw profError;
     if (!profiles || profiles.length === 0) {
-      return jsonResponse({ success: true, queued: 0, message: "No profiles found" });
+      return jsonResponse({ success: true, queued: 0, message: `No profiles found with ${minDays}+ days` });
     }
 
     const now = new Date();
@@ -89,25 +97,21 @@ Deno.serve(async (req) => {
       // Skip users with active paid subscription
       if (org?.subscription_status === "active" && org?.plan && org.plan !== "trial") continue;
 
-      // Must have at least phone or email
+      // Fetch auth user data once (email + last sign in)
       let userEmail: string | null = null;
+      let lastSignIn: Date | null = null;
       try {
         const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
         userEmail = authUser?.user?.email || null;
+        if (authUser?.user?.last_sign_in_at) {
+          lastSignIn = new Date(authUser.user.last_sign_in_at);
+        }
       } catch { /* skip */ }
 
       if (!phone && !userEmail) continue;
 
       // Calculate priority based on activity level
       let priority = 0;
-      let lastSignIn: Date | null = null;
-
-      try {
-        const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
-        if (authUser?.user?.last_sign_in_at) {
-          lastSignIn = new Date(authUser.user.last_sign_in_at);
-        }
-      } catch { /* skip */ }
 
       const trialEndsAt = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
       const trialExpired = trialEndsAt && trialEndsAt <= now;
