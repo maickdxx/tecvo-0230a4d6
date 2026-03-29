@@ -318,6 +318,7 @@ export default function NovaOrdemServico() {
             clients={realClients}
             onSubmit={handleQuickSubmit}
             isSubmitting={isCreating}
+            onShowFullForm={() => setForceFullForm(true)}
           />
         </div>
         <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} servicesUsed={servicesUsed} />
