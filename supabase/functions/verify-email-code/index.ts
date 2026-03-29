@@ -88,6 +88,32 @@ Deno.serve(async (req) => {
 
     logger.step("Email confirmed successfully", { email: maskEmail(email) });
 
+    // ── Dispatch welcome messages (WhatsApp + email) AFTER verification ──
+    // Find user's profile to get organization_id
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id, organization_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profile?.organization_id) {
+      logger.step("Dispatching welcome after verification", { userId: user.id });
+      try {
+        await supabaseAdmin.functions.invoke("dispatch-welcome", {
+          body: {
+            user_id: user.id,
+            organization_id: profile.organization_id,
+          },
+        });
+        logger.step("Welcome dispatched successfully");
+      } catch (welcomeErr) {
+        logger.error("Failed to dispatch welcome (non-blocking)", welcomeErr);
+        // Non-blocking — user is already verified, welcome failure shouldn't break flow
+      }
+    } else {
+      logger.step("No profile/org found, skipping welcome dispatch");
+    }
+
     // Generate a magic link token for auto-login
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
@@ -96,21 +122,18 @@ Deno.serve(async (req) => {
 
     if (linkError || !linkData) {
       logger.error("Failed to generate auto-login link", linkError);
-      // Still return success even if auto-login fails - user can login manually
       return new Response(
         JSON.stringify({ success: true, autoLogin: false }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Extract the token from the link properties
     const token = linkData.properties?.hashed_token;
     
     return new Response(
       JSON.stringify({ 
         success: true, 
         autoLogin: true,
-        // Return the token hash so frontend can use verifyOtp
         token_hash: token,
         email: email.toLowerCase(),
       }),
