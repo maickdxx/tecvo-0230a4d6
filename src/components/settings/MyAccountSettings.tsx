@@ -311,87 +311,10 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
       )}
 
       {/* IA e Notificações - Only for Owner */}
-      {isOwner && (
+      {hasFullAccess && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Bot className="h-5 w-5 text-primary" />
-              Assistente IA & Notificações
-            </CardTitle>
-            <CardDescription>Como a IA interage com você</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="whatsappAiEnabled" className="text-sm font-medium cursor-pointer">
-                  Receber mensagens da IA no WhatsApp
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Dicas de negócio, resumos diários e alertas operacionais.
-                </p>
-              </div>
-              <Switch
-                id="whatsappAiEnabled"
-                checked={whatsappAiEnabled}
-                onCheckedChange={setWhatsappAiEnabled}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border/50">
-              <div className="space-y-2">
-                <Label htmlFor="aiName">Nome do Assistente</Label>
-                <Input
-                  id="aiName"
-                  value={aiAssistantName}
-                  onChange={(e) => setAiAssistantName(e.target.value)}
-                  placeholder="Ex: TecBot"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="aiVoice">Voz / Personalidade</Label>
-                <select 
-                  id="aiVoice"
-                  value={aiAssistantVoice}
-                  onChange={(e) => setAiAssistantVoice(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="neutral">Neutro</option>
-                  <option value="professional">Profissional</option>
-                  <option value="friendly">Amigável</option>
-                  <option value="enthusiastic">Entusiasta</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-border/50">
-              <h4 className="text-sm font-semibold mb-3">Preferências de Alerta</h4>
-              <div className="space-y-3">
-                {[
-                  { key: "new_service", label: "Novo serviço concluído" },
-                  { key: "new_schedule", label: "Novo agendamento" },
-                  { key: "whatsapp_message", label: "Mensagens recebidas" },
-                ].map((notif) => (
-                  <div key={notif.key} className="flex items-center justify-between">
-                    <Label htmlFor={`notif-${notif.key}`} className="text-sm cursor-pointer">{notif.label}</Label>
-                    <Switch 
-                      id={`notif-${notif.key}`}
-                      checked={(preferences as any)[notif.key]}
-                      onCheckedChange={(checked) => updatePreferences({ [notif.key]: checked })}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Aparência - Show for everyone (Wait, user said "exibir apenas avatar, name, phone" for common users) */}
-      {/* But theme is usually a personal preference. However, the request is "keep it simple". */}
-      {/* I will keep Aparência for everyone as it's common practice, but if I follow the request literally I should hide it. */}
-      {/* Actually, the prompt says "exibir apenas: avatar_url, full_name, phone" for common users. */}
-      {/* I'll hide it for common users to strictly follow the request. */}
-      {isOwner && (
+...
+      {hasFullAccess && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
