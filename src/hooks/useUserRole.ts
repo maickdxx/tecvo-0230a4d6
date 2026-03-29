@@ -41,7 +41,8 @@ export function useUserRole() {
   });
 
   const rolePriority: AppRole[] = ["super_admin", "owner", "admin", "member", "employee"];
-  const primaryRole = roles?.length ? (rolePriority.find(r => roles.includes(r)) || "member") : (isLoadingRoles ? null : "member");
+  const isActuallyLoading = isLoadingRoles || isLoadingAuth;
+  const primaryRole = roles?.length ? (rolePriority.find(r => roles.includes(r)) || "member") : (isActuallyLoading ? null : "member");
 
   const isSuperAdmin = primaryRole === "super_admin";
   const isOwner = primaryRole === "owner" || isSuperAdmin;
