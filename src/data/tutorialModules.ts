@@ -7,7 +7,8 @@ import {
   UsersRound,
   Settings,
   CreditCard,
-  
+  MessageSquare,
+  Bot,
   Briefcase,
   Trash2,
   HelpCircle,
@@ -17,6 +18,7 @@ import {
   Receipt,
   Shield,
   CloudSun,
+  Sparkles,
 } from "lucide-react";
 import { TutorialModuleData } from "@/components/tutorial";
 
@@ -528,6 +530,76 @@ export const tutorialModules: TutorialModuleData[] = [
         description: "O relatório de Recebimentos por Técnico mostra todos os pagamentos recebidos por cada membro da equipe, com detalhamento por serviço e forma de pagamento. Exporte em PDF para controle e comissionamento.",
         tips: [
           "Filtre por período e técnico para análises mais específicas."
+        ]
+      }
+    ]
+  },
+  {
+    id: "whatsapp",
+    title: "WhatsApp",
+    icon: MessageSquare,
+    description: "Central de atendimento e automação",
+    steps: [
+      {
+        title: "Conectar seu WhatsApp",
+        description: "Acesse a Central WhatsApp e escaneie o QR Code com seu celular (Configurações > Aparelhos Conectados). Uma vez conectado, você poderá receber e enviar mensagens diretamente pelo Tecvo.",
+        tips: [
+          "Use um número exclusivo para a empresa para melhor organização.",
+          "Mantenha o celular com bateria e conexão à internet para estabilidade."
+        ]
+      },
+      {
+        title: "Multi-atendimento e Atendentes",
+        description: "Vários membros da sua equipe podem atender o mesmo número de WhatsApp simultaneamente. As conversas podem ser transferidas entre atendentes e organizadas por departamentos.",
+        tips: [
+          "Cada atendente vê apenas as conversas atribuídas a ele ou as novas pendentes.",
+          "Administradores podem monitorar todos os atendimentos em tempo real."
+        ]
+      },
+      {
+        title: "Chatbots e Automação",
+        description: "Crie fluxos de atendimento automático para responder dúvidas frequentes, coletar dados do cliente ou agendar serviços sem intervenção humana. Configure o bot em WhatsApp > Bots.",
+        tips: [
+          "Comece com um menu simples de opções (ex: 1. Suporte, 2. Comercial).",
+          "O bot pode ser desativado automaticamente quando um atendente assume a conversa."
+        ]
+      },
+      {
+        title: "Respostas Rápidas e Etiquetas",
+        description: "Cadastre modelos de mensagens para as perguntas mais comuns e use etiquetas coloridas (Novo Cliente, Aguardando Peça, Urgente) para organizar seu funil de atendimento.",
+        tips: [
+          "Use atalhos de teclado (ex: /ola) para inserir respostas rápidas instantaneamente.",
+          "Filtre as conversas por etiqueta para priorizar o que é mais importante."
+        ]
+      }
+    ]
+  },
+  {
+    id: "ia-tecvo",
+    title: "Tecvo IA",
+    icon: Sparkles,
+    description: "Inteligência Artificial a seu serviço",
+    steps: [
+      {
+        title: "Secretária IA",
+        description: "A IA do Tecvo analisa suas mensagens de WhatsApp e pode sugerir o agendamento de serviços, identificar urgências e até redigir respostas educadas e profissionais para seus clientes.",
+        tips: [
+          "A IA aprende com seu estilo de atendimento ao longo do tempo.",
+          "Sempre revise as sugestões da IA antes de enviar ou confirmar um agendamento."
+        ]
+      },
+      {
+        title: "Alertas Inteligentes",
+        description: "Receba notificações proativas sobre contas que vão vencer, clientes inativos há muito tempo ou conflitos na agenda de técnicos. A IA atua como um assistente que nunca dorme.",
+        tips: [
+          "Configure quais alertas você deseja receber nas configurações de notificações."
+        ]
+      },
+      {
+        title: "Análise de Sentimento",
+        description: "O sistema identifica automaticamente se um cliente está satisfeito ou insatisfeito com base nas mensagens enviadas, permitindo que você priorize atendimentos críticos.",
+        tips: [
+          "Clientes insatisfeitos aparecem com um ícone de alerta vermelho na lista de conversas."
         ]
       }
     ]
