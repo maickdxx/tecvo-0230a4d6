@@ -36,11 +36,8 @@ export function useOnboarding() {
 
       if (error) throw error;
 
-      // Single point of welcome message dispatch — fire-and-forget
-      // The edge function itself has atomic deduplication protection
-      supabase.functions.invoke("send-welcome-whatsapp").catch((err) => {
-        console.warn("Welcome WhatsApp failed:", err);
-      });
+      // Welcome is now dispatched automatically by DB trigger on profile creation.
+      // No client-side welcome dispatch needed — idempotent dispatch-welcome handles it.
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["onboarding"] });

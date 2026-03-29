@@ -1838,6 +1838,48 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_delivery_logs: {
+        Row: {
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          organization_id: string
+          payload_snapshot: Json | null
+          provider_message_id: string | null
+          sent_at: string | null
+          status: string
+          trigger_type: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organization_id: string
+          payload_snapshot?: Json | null
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          trigger_type: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organization_id?: string
+          payload_snapshot?: Json | null
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          trigger_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       operational_capacity_config: {
         Row: {
           active_teams: number
