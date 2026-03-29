@@ -80,10 +80,7 @@ export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRou
     }
   }
 
-  // Non-employee trying to access /meu-dia without being a field worker (owners/admins always allowed)
-  if (!isEmployee && !isFieldWorker && !isOwner && !isAdmin && matchRoute(location.pathname, "/meu-dia")) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  // "Meu Dia" is now accessible to all authenticated non-employee users
 
   // Member (Atendente): check structural blocks first, then permission-based access
   if (isMember) {

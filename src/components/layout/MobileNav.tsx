@@ -312,10 +312,9 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
   const timeClockEnabled = !!(organization as any)?.time_clock_enabled && hasTimeClock;
 
   const bottomNavItems = isEmployee 
-    ? (isFieldWorker ? employeeBottomNavItems : employeeBottomNavItems.filter(i => i.href !== "/meu-dia"))
-        .filter(i => i.href !== "/ponto" || timeClockEnabled)
+    ? employeeBottomNavItems.filter(i => i.href !== "/ponto" || timeClockEnabled)
     : isMember
-      ? (isFieldWorker ? atendenteBottomNavItems : atendenteBottomNavItems.filter(i => i.href !== "/meu-dia"))
+      ? atendenteBottomNavItems
       : hasWhatsAppFull ? adminBottomNavItemsWithWhatsApp : adminBottomNavItems;
 
   const handleSignOut = async () => {
@@ -385,7 +384,6 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
                 {isEmployee ? (
                   employeeMenuItems
                     .filter(item => {
-                      if (item.href === "/meu-dia" && !isFieldWorker) return false;
                       if (item.href === "/ponto" && !timeClockEnabled) return false;
                       return true;
                     })
@@ -397,7 +395,7 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
                     <SectionLabel label="Operação" />
                     <div className="space-y-0.5">
                       <MenuNavItem item={{ label: "Visão Geral", href: "/dashboard", icon: LayoutDashboard }} onClick={closeMenu} />
-                      {isFieldWorker && <MenuNavItem item={{ label: "Meu Dia", href: "/meu-dia", icon: Briefcase }} onClick={closeMenu} />}
+                      <MenuNavItem item={{ label: "Meu Dia", href: "/meu-dia", icon: Briefcase }} onClick={closeMenu} />
                       <MenuNavItem item={{ label: "Agenda", href: "/agenda", icon: CalendarDays }} onClick={closeMenu} />
                       <MenuNavItem item={{ label: "Ordens de Serviço", href: "/ordens-servico", icon: ClipboardList }} onClick={closeMenu} />
                       <MenuNavItem item={{ label: "Laudos Técnicos", href: "/laudos", icon: FileText }} onClick={closeMenu} />
@@ -446,7 +444,6 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
                       <MenuNavItem item={{ label: "Visão Geral", href: "/dashboard", icon: LayoutDashboard }} onClick={closeMenu} />
                       {operacaoItems
                         .filter(item => {
-                          if (item.href === "/meu-dia" && !isFieldWorker) return false;
                           return true;
                         })
                         .map((item) => (
