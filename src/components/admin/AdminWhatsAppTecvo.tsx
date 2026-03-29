@@ -250,7 +250,9 @@ export function AdminWhatsAppTecvo() {
     };
   }, [status?.state, qrCode, qrString, fetchStatus, fetchQR]);
 
-  const isConnected = status?.state === "open";
+  // Infer operational status: if status check says unknown but messages were sent recently, it's likely operational
+  const hasRecentSends = metrics && metrics.sent_24h > 0;
+  const isConnected = status?.state === "open" || (status?.state === "unknown" && hasRecentSends);
   const isConnecting = status?.state === "connecting";
 
   const formatDate = (date: string | null) => {
