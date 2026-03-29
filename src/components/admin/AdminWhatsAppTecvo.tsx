@@ -695,6 +695,13 @@ function StatusBadge({ state }: { state: string }) {
           Conectado
         </Badge>
       );
+    case "operational":
+      return (
+        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-sm px-3 py-1">
+          <Activity className="h-3.5 w-3.5 mr-1.5" />
+          Operacional
+        </Badge>
+      );
     case "close":
       return (
         <Badge variant="destructive" className="bg-red-500/10 text-red-600 border-red-500/20 text-sm px-3 py-1">
