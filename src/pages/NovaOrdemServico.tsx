@@ -54,6 +54,7 @@ function QuickServiceForm({
   onShowFullForm: () => void;
 }) {
   const tz = useOrgTimezone();
+  const navigate = useNavigate();
   const [clientId, setClientId] = useState(clients[0]?.id || "");
   const [serviceType, setServiceType] = useState("cleaning");
   const [value, setValue] = useState("");
