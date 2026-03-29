@@ -4615,6 +4615,65 @@ export type Database = {
           },
         ]
       }
+      user_journey_state: {
+        Row: {
+          created_at: string
+          current_step: string | null
+          id: string
+          journey_ended_at: string | null
+          journey_started_at: string
+          journey_type: string
+          last_automation_id: string | null
+          last_sent_at: string | null
+          last_sent_date: string | null
+          metadata: Json | null
+          organization_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_step?: string | null
+          id?: string
+          journey_ended_at?: string | null
+          journey_started_at?: string
+          journey_type?: string
+          last_automation_id?: string | null
+          last_sent_at?: string | null
+          last_sent_date?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_step?: string | null
+          id?: string
+          journey_ended_at?: string | null
+          journey_started_at?: string
+          journey_type?: string
+          last_automation_id?: string | null
+          last_sent_at?: string | null
+          last_sent_date?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_journey_state_last_automation_id_fkey"
+            columns: ["last_automation_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_automations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_organizations: {
         Row: {
           created_at: string
