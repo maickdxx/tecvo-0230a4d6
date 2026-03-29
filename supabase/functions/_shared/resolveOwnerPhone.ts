@@ -1,10 +1,10 @@
 /**
- * Resolves the personal phone number of an organization's owner.
+ * Resolves the phone number of an organization's owner for AI/Automation messages.
  *
- * Priority:
- *   1. profiles.whatsapp_personal  (preferred — explicit personal WA)
- *   2. profiles.phone              (fallback)
- *   3. organizations.whatsapp_owner (legacy fallback — will be phased out)
+ * Rules (updated):
+ *   1. Uses ONLY profiles.phone
+ *   2. Checks if whatsapp_ai_enabled is TRUE
+ *   3. NO legacy fallbacks to organizations.whatsapp_owner
  *
  * All values are normalized to digits-only with country code 55.
  */
@@ -20,12 +20,13 @@ export function normalizeToDigits(raw: string | null | undefined): string {
 
 export interface OwnerPhoneResult {
   phone: string | null;
-  source: "whatsapp_personal" | "profile_phone" | "whatsapp_owner" | null;
+  source: "profile_phone" | null;
   userId: string | null;
+  aiEnabled: boolean;
 }
 
 /**
- * Fetches the owner's personal phone for a given org.
+ * Fetches the owner's phone for a given org.
  * Uses service-role supabase client.
  */
 export async function resolveOwnerPhone(
@@ -44,28 +45,20 @@ export async function resolveOwnerPhone(
   if (ownerRole?.user_id) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("whatsapp_personal, phone")
+      .select("phone, whatsapp_ai_enabled")
       .eq("user_id", ownerRole.user_id)
       .maybeSingle();
 
     if (profile) {
-      const wp = normalizeToDigits(profile.whatsapp_personal);
-      if (wp) return { phone: wp, source: "whatsapp_personal", userId: ownerRole.user_id };
-
       const ph = normalizeToDigits(profile.phone);
-      if (ph) return { phone: ph, source: "profile_phone", userId: ownerRole.user_id };
+      return { 
+        phone: profile.whatsapp_ai_enabled ? ph : null, 
+        source: profile.whatsapp_ai_enabled && ph ? "profile_phone" : null, 
+        userId: ownerRole.user_id,
+        aiEnabled: profile.whatsapp_ai_enabled
+      };
     }
   }
 
-  // 2. Legacy fallback: organizations.whatsapp_owner
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("whatsapp_owner")
-    .eq("id", organizationId)
-    .maybeSingle();
-
-  const wo = normalizeToDigits(org?.whatsapp_owner);
-  if (wo) return { phone: wo, source: "whatsapp_owner", userId: ownerRole?.user_id || null };
-
-  return { phone: null, source: null, userId: ownerRole?.user_id || null };
+  return { phone: null, source: null, userId: ownerRole?.user_id || null, aiEnabled: false };
 }
