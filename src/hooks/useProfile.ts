@@ -2,9 +2,11 @@ import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export function useProfile() {
   const { profile, user } = useAuth();
+  const { isOwner } = useUserRole();
 
   const updateProfileMutation = useMutation({
     mutationFn: async ({ 
@@ -32,11 +34,15 @@ export function useProfile() {
       if (fullName !== undefined) updateData.full_name = fullName;
       if (phone !== undefined) updateData.phone = phone;
       if (position !== undefined) updateData.position = position || null;
-      if (whatsappAiEnabled !== undefined) updateData.whatsapp_ai_enabled = whatsappAiEnabled;
-      if (whatsappSignature !== undefined) updateData.whatsapp_signature = whatsappSignature;
-      if (aiAssistantName !== undefined) updateData.ai_assistant_name = aiAssistantName;
-      if (aiAssistantVoice !== undefined) updateData.ai_assistant_voice = aiAssistantVoice;
-      if (dashboardLayout !== undefined) updateData.dashboard_layout = dashboardLayout;
+      
+      // Restricted fields: only owner can update
+      if (isOwner) {
+        if (whatsappAiEnabled !== undefined) updateData.whatsapp_ai_enabled = whatsappAiEnabled;
+        if (whatsappSignature !== undefined) updateData.whatsapp_signature = whatsappSignature;
+        if (aiAssistantName !== undefined) updateData.ai_assistant_name = aiAssistantName;
+        if (aiAssistantVoice !== undefined) updateData.ai_assistant_voice = aiAssistantVoice;
+        if (dashboardLayout !== undefined) updateData.dashboard_layout = dashboardLayout;
+      }
 
       const { error } = await supabase
         .from("profiles")

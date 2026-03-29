@@ -238,181 +238,187 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Assinatura de Mensagens */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <PenLine className="h-5 w-5 text-primary" />
-            Assinatura de Mensagens
-          </CardTitle>
-          <CardDescription>Texto adicionado ao final das comunicações no WhatsApp</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="whatsappSignature">Assinatura personalizada</Label>
-            <Input
-              id="whatsappSignature"
-              value={whatsappSignature}
-              onChange={(e) => setWhatsappSignature(e.target.value)}
-              placeholder="Ex: Att, João Silva - Técnico Especialista"
-            />
-            <p className="text-xs text-muted-foreground">
-              Esta assinatura é usada para identificar você nas mensagens enviadas aos clientes.
-            </p>
-          </div>
-          <div className="space-y-3 pt-4 border-t border-border/50">
-            <p className="text-sm font-medium">Dashboard</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                if (confirm("Deseja restaurar a organização padrão das ferramentas no Dashboard?")) {
-                  updateProfile({ dashboardLayout: null });
-                }
-              }}
-              className="w-full sm:w-auto"
-            >
-              Restaurar layout padrão
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              Remove a personalização e volta para a organização padrão dos widgets.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Assinatura de Mensagens - Only for Owner */}
+      {isOwner && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <PenLine className="h-5 w-5 text-primary" />
+              Assinatura de Mensagens
+            </CardTitle>
+            <CardDescription>Texto adicionado ao final das comunicações no WhatsApp</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="whatsappSignature">Assinatura personalizada</Label>
+              <Input
+                id="whatsappSignature"
+                value={whatsappSignature}
+                onChange={(e) => setWhatsappSignature(e.target.value)}
+                placeholder="Ex: Att, João Silva - Técnico Especialista"
+              />
+              <p className="text-xs text-muted-foreground">
+                Esta assinatura é usada para identificar você nas mensagens enviadas aos clientes.
+              </p>
+            </div>
+            <div className="space-y-3 pt-4 border-t border-border/50">
+              <p className="text-sm font-medium">Dashboard</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  if (confirm("Deseja restaurar a organização padrão das ferramentas no Dashboard?")) {
+                    updateProfile({ dashboardLayout: null });
+                  }
+                }}
+                className="w-full sm:w-auto"
+              >
+                Restaurar layout padrão
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Remove a personalização e volta para a organização padrão dos widgets.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* IA e Notificações */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Bot className="h-5 w-5 text-primary" />
-            Assistente IA & Notificações
-          </CardTitle>
-          <CardDescription>Como a IA interage com você</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {isOwner && (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="whatsappAiEnabled" className="text-sm font-medium cursor-pointer">
-                    Receber mensagens da IA no WhatsApp
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Dicas de negócio, resumos diários e alertas operacionais.
-                  </p>
-                </div>
-                <Switch
-                  id="whatsappAiEnabled"
-                  checked={whatsappAiEnabled}
-                  onCheckedChange={setWhatsappAiEnabled}
+      {/* IA e Notificações - Only for Owner */}
+      {isOwner && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Bot className="h-5 w-5 text-primary" />
+              Assistente IA & Notificações
+            </CardTitle>
+            <CardDescription>Como a IA interage com você</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="whatsappAiEnabled" className="text-sm font-medium cursor-pointer">
+                  Receber mensagens da IA no WhatsApp
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Dicas de negócio, resumos diários e alertas operacionais.
+                </p>
+              </div>
+              <Switch
+                id="whatsappAiEnabled"
+                checked={whatsappAiEnabled}
+                onCheckedChange={setWhatsappAiEnabled}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border/50">
+              <div className="space-y-2">
+                <Label htmlFor="aiName">Nome do Assistente</Label>
+                <Input
+                  id="aiName"
+                  value={aiAssistantName}
+                  onChange={(e) => setAiAssistantName(e.target.value)}
+                  placeholder="Ex: TecBot"
                 />
               </div>
-
-              <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border/50">
-                <div className="space-y-2">
-                  <Label htmlFor="aiName">Nome do Assistente</Label>
-                  <Input
-                    id="aiName"
-                    value={aiAssistantName}
-                    onChange={(e) => setAiAssistantName(e.target.value)}
-                    placeholder="Ex: TecBot"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="aiVoice">Voz / Personalidade</Label>
-                  <select 
-                    id="aiVoice"
-                    value={aiAssistantVoice}
-                    onChange={(e) => setAiAssistantVoice(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="neutral">Neutro</option>
-                    <option value="professional">Profissional</option>
-                    <option value="friendly">Amigável</option>
-                    <option value="enthusiastic">Entusiasta</option>
-                  </select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="aiVoice">Voz / Personalidade</Label>
+                <select 
+                  id="aiVoice"
+                  value={aiAssistantVoice}
+                  onChange={(e) => setAiAssistantVoice(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="neutral">Neutro</option>
+                  <option value="professional">Profissional</option>
+                  <option value="friendly">Amigável</option>
+                  <option value="enthusiastic">Entusiasta</option>
+                </select>
               </div>
-            </>
-          )}
+            </div>
 
-          <div className={cn("pt-4", isOwner && "border-t border-border/50")}>
-            <h4 className="text-sm font-semibold mb-3">Preferências de Alerta</h4>
+            <div className="pt-4 border-t border-border/50">
+              <h4 className="text-sm font-semibold mb-3">Preferências de Alerta</h4>
+              <div className="space-y-3">
+                {[
+                  { key: "new_service", label: "Novo serviço concluído" },
+                  { key: "new_schedule", label: "Novo agendamento" },
+                  { key: "whatsapp_message", label: "Mensagens recebidas" },
+                ].map((notif) => (
+                  <div key={notif.key} className="flex items-center justify-between">
+                    <Label htmlFor={`notif-${notif.key}`} className="text-sm cursor-pointer">{notif.label}</Label>
+                    <Switch 
+                      id={`notif-${notif.key}`}
+                      checked={(preferences as any)[notif.key]}
+                      onCheckedChange={(checked) => updatePreferences({ [notif.key]: checked })}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Aparência - Show for everyone (Wait, user said "exibir apenas avatar, name, phone" for common users) */}
+      {/* But theme is usually a personal preference. However, the request is "keep it simple". */}
+      {/* I will keep Aparência for everyone as it's common practice, but if I follow the request literally I should hide it. */}
+      {/* Actually, the prompt says "exibir apenas: avatar_url, full_name, phone" for common users. */}
+      {/* I'll hide it for common users to strictly follow the request. */}
+      {isOwner && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Palette className="h-5 w-5 text-primary" />
+              Aparência & Layout
+            </CardTitle>
+            <CardDescription>Personalize sua interface de trabalho</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div className="space-y-3">
-              {[
-                { key: "new_service", label: "Novo serviço concluído" },
-                { key: "new_schedule", label: "Novo agendamento" },
-                { key: "whatsapp_message", label: "Mensagens recebidas" },
-              ].map((notif) => (
-                <div key={notif.key} className="flex items-center justify-between">
-                  <Label htmlFor={`notif-${notif.key}`} className="text-sm cursor-pointer">{notif.label}</Label>
-                  <Switch 
-                    id={`notif-${notif.key}`}
-                    checked={(preferences as any)[notif.key]}
-                    onCheckedChange={(checked) => updatePreferences({ [notif.key]: checked })}
-                  />
-                </div>
-              ))}
+              <p className="text-sm font-medium">Modo do Sistema</p>
+              <div className="grid grid-cols-3 gap-3">
+                {modeOptions.map((opt) => {
+                  const Icon = opt.icon;
+                  const isSelected = theme === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => setTheme(opt.id)}
+                      className={`flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all ${
+                        isSelected ? "border-primary bg-primary/5" : "border-border bg-card"
+                      }`}
+                    >
+                      <Icon className={`h-5 w-5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="text-xs font-medium">{opt.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Aparência */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Palette className="h-5 w-5 text-primary" />
-            Aparência & Layout
-          </CardTitle>
-          <CardDescription>Personalize sua interface de trabalho</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Modo do Sistema</p>
-            <div className="grid grid-cols-3 gap-3">
-              {modeOptions.map((opt) => {
-                const Icon = opt.icon;
-                const isSelected = theme === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => setTheme(opt.id)}
-                    className={`flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all ${
-                      isSelected ? "border-primary bg-primary/5" : "border-border bg-card"
-                    }`}
-                  >
-                    <Icon className={`h-5 w-5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className="text-xs font-medium">{opt.name}</span>
-                  </button>
-                );
-              })}
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Cor de Destaque</p>
+              <div className="grid grid-cols-4 gap-2">
+                {colorThemes.map((ct) => {
+                  const isSelected = colorTheme === ct.id;
+                  return (
+                    <button
+                      key={ct.id}
+                      onClick={() => setColorTheme(ct.id)}
+                      className={`h-10 rounded-full border-2 transition-all flex items-center justify-center ${
+                        isSelected ? "border-primary scale-110" : "border-transparent"
+                      }`}
+                      style={{ backgroundColor: `hsl(${ct.hsl})` }}
+                    >
+                      {isSelected && <Check className="h-4 w-4 text-white" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Cor de Destaque</p>
-            <div className="grid grid-cols-4 gap-2">
-              {colorThemes.map((ct) => {
-                const isSelected = colorTheme === ct.id;
-                return (
-                  <button
-                    key={ct.id}
-                    onClick={() => setColorTheme(ct.id)}
-                    className={`h-10 rounded-full border-2 transition-all flex items-center justify-center ${
-                      isSelected ? "border-primary scale-110" : "border-transparent"
-                    }`}
-                    style={{ backgroundColor: `hsl(${ct.hsl})` }}
-                  >
-                    {isSelected && <Check className="h-4 w-4 text-white" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Salvar */}
       <div className="flex gap-3">
