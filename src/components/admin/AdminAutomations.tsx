@@ -66,14 +66,28 @@ const CATEGORIES: CategoryDef[] = [
     title: "🔄 Pós-Trial (Recuperação)",
     description: "Automações após expiração do trial — foco em recuperar usuários perdidos",
     icon: "🔄",
-    match: (t) => t.startsWith("trial_expired"),
+    match: (t) => t.startsWith("trial_expired") || t.startsWith("post_trial"),
+  },
+  {
+    key: "inactivity",
+    title: "😴 Inatividade (Reativação)",
+    description: "Automações para usuários inativos — foco em trazer de volta",
+    icon: "😴",
+    match: (t) => t.startsWith("inactive_") || t === "churn_recovery",
+  },
+  {
+    key: "activation",
+    title: "🎯 Ativação (Primeiros Passos)",
+    description: "Automações para novos usuários que não completaram ações-chave",
+    icon: "🎯",
+    match: (t) => t === "new_user_activation" || t === "signup_recovery",
   },
   {
     key: "other",
     title: "⚙️ Outras Automações",
-    description: "Automações gerais do sistema — clima, dicas, reativação e outros",
+    description: "Automações gerais do sistema",
     icon: "⚙️",
-    match: () => true, // fallback
+    match: () => true,
   },
 ];
 
