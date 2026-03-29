@@ -1,6 +1,8 @@
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 
 const SUPER_ADMIN_EMAIL = "micheldouglas7991@gmail.com";
+const SUPER_ADMIN_PHONE = "5519989307608";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_EMAIL = "contato@tecvo.com.br";
 
