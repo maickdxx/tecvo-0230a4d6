@@ -58,9 +58,7 @@ Deno.serve(async (req) => {
     const userName = profile?.full_name || org?.name || "empreendedor";
 
     // Resolve WhatsApp
-    const waPersonal = normalizeToDigits(profile?.whatsapp_personal);
-    const waFallback = normalizeToDigits(profile?.phone);
-    const waNumber = waPersonal || waFallback || null;
+    const waNumber = profile?.whatsapp_ai_enabled ? normalizeToDigits(profile?.phone) : null;
 
     const results: Record<string, string> = {};
 
