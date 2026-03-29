@@ -126,14 +126,16 @@ Deno.serve(async (req) => {
       .eq("id", organization_id)
       .single();
 
-    // Resolve owner's personal phone
+    // Resolve owner's personal phone via user_roles
     const ownerPhone = await resolveOwnerPhone(supabase, organization_id);
     if (!ownerPhone.phone) {
-      console.log("[AUTO-SERVICE] No phone for org owner:", organization_id);
-      return new Response(JSON.stringify({ ok: true, skipped: true }), {
+      console.log(`[AUTO-SERVICE] No phone for org ${organization_id} owner (userId=${ownerPhone.userId})`);
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: "no_owner_phone" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log(`[AUTO-SERVICE] Targeting: org_id=${organization_id} user_id=${ownerPhone.userId} role=owner function=auto-service-notify`);
 
     // Get service details with client
     const { data: service } = await supabase
