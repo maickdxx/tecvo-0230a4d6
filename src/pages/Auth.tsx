@@ -285,20 +285,17 @@ export default function Auth() {
 
   // Main auth screen — high conversion, zero distractions
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+      <div className="w-full max-w-[440px] space-y-5">
         {/* Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-1.5">
           <h1 className="text-2xl font-bold text-foreground">
             {mode === "signup"
               ? invite ? "Você foi convidado!" : "Crie sua conta gratuita"
               : "Acesse sua conta"}
           </h1>
           {mode === "signup" && !invite && (
-            <p className="text-sm text-muted-foreground">Leva menos de 1 minuto</p>
-          )}
-          {mode === "signup" && !invite && (
-            <p className="text-xs text-muted-foreground">Sem cartão de crédito • 7 dias grátis</p>
+            <p className="text-sm text-muted-foreground">Leva menos de 1 minuto • Sem cartão • 7 dias grátis</p>
           )}
         </div>
 
@@ -321,7 +318,7 @@ export default function Auth() {
         {/* Google CTA — primary action */}
         <Button
           type="button"
-          className="w-full h-12 text-base font-semibold bg-foreground text-background hover:bg-foreground/90"
+          className="w-full h-12 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-xl"
           onClick={handleGoogleAuth}
         >
           <GoogleIcon />
@@ -346,18 +343,18 @@ export default function Auth() {
                 Já tem uma conta? Faça login para aceitar o convite.
               </div>
             )}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="login-email">Email</Label>
-              <Input id="login-email" type="email" placeholder="seu@email.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="h-11" />
+              <Input id="login-email" type="email" placeholder="seu@email.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="h-12 rounded-xl text-base" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="login-password">Senha</Label>
                 <Link to="/redefinir-senha" className="text-xs text-primary hover:underline">Esqueci minha senha</Link>
               </div>
-              <Input id="login-password" type="password" placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="h-11" />
+              <Input id="login-password" type="password" placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="h-12 rounded-xl text-base" />
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={isLoading}>
+            <Button type="submit" className="w-full h-12 text-base font-semibold rounded-xl" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {invite ? "Entrar e Aceitar Convite" : "Entrar"}
             </Button>
@@ -366,21 +363,21 @@ export default function Auth() {
 
         {/* Signup form */}
         {mode === "signup" && (
-          <form onSubmit={handleSignup} className="space-y-4">
-            <div className="space-y-2">
+          <form onSubmit={handleSignup} className="space-y-3.5">
+            <div className="space-y-1.5">
               <Label htmlFor="signup-name">Nome completo</Label>
-              <Input id="signup-name" type="text" placeholder="João Silva" value={signupName} onChange={(e) => setSignupName(e.target.value)} required className="h-11" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="signup-email">Email</Label>
-              <Input id="signup-email" type="email" placeholder="seu@email.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required readOnly={!!invite} className={`h-11 ${invite ? "bg-muted" : ""}`} />
-              {invite && <p className="text-xs text-muted-foreground">Email do convite (não pode ser alterado)</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="signup-password">Senha</Label>
-              <Input id="signup-password" type="password" placeholder="Mínimo 6 caracteres" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required className="h-11" />
+              <Input id="signup-name" type="text" placeholder="Ex: João Silva" value={signupName} onChange={(e) => setSignupName(e.target.value)} required className="h-12 rounded-xl text-base" />
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="signup-email">Email</Label>
+              <Input id="signup-email" type="email" placeholder="voce@suaempresa.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required readOnly={!!invite} className={`h-12 rounded-xl text-base ${invite ? "bg-muted" : ""}`} />
+              {invite && <p className="text-xs text-muted-foreground">Email do convite (não pode ser alterado)</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="signup-password">Senha</Label>
+              <Input id="signup-password" type="password" placeholder="Mínimo 6 caracteres" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required className="h-12 rounded-xl text-base" />
+            </div>
+            <div className="space-y-1">
               <Label htmlFor="signup-whatsapp">WhatsApp</Label>
               <Input
                 id="signup-whatsapp"
@@ -395,36 +392,40 @@ export default function Auth() {
                   if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
                   setSignupWhatsapp(formatted);
                 }}
-                className="h-11"
+                className="h-12 rounded-xl text-base"
                 required
               />
-              <p className="text-xs text-muted-foreground">Receba notificações e automações direto no seu WhatsApp</p>
+              <p className="text-xs text-muted-foreground">Usado para notificações e automações</p>
             </div>
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2.5 py-1">
               <input
                 type="checkbox"
                 id="accept-terms"
                 checked={acceptedTerms}
                 onChange={(e) => setAcceptedTerms(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                className="mt-0.5 h-5 w-5 rounded border-border accent-primary cursor-pointer shrink-0"
                 required
               />
-              <label htmlFor="accept-terms" className="text-xs text-muted-foreground cursor-pointer select-none">
+              <label htmlFor="accept-terms" className="text-sm text-muted-foreground cursor-pointer select-none leading-snug">
                 Li e concordo com os{" "}
                 <Link to="/termos-de-uso" target="_blank" className="text-primary hover:underline">Termos de Uso</Link>{" "}e a{" "}
                 <Link to="/politica-de-privacidade" target="_blank" className="text-primary hover:underline">Política de Privacidade</Link>.
               </label>
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={isLoading || !acceptedTerms}>
+            <Button
+              type="submit"
+              className="w-full h-13 text-base font-semibold rounded-xl bg-[#2547D0] hover:bg-[#1e3cb8] text-white shadow-lg shadow-[#2547D0]/25 transition-all active:scale-[0.98]"
+              disabled={isLoading || !acceptedTerms}
+              style={{ opacity: (!acceptedTerms || isLoading) ? 0.6 : 1 }}
+            >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {invite ? "Aceitar Convite" : "Criar conta grátis"}
+              {invite ? "Aceitar Convite" : "Começar meu teste grátis agora"}
             </Button>
-            <p className="text-xs text-muted-foreground text-center">Leva menos de 1 minuto</p>
           </form>
         )}
 
         {/* Toggle login/signup */}
-        <p className="text-sm text-center text-muted-foreground">
+        <p className="text-sm text-center text-muted-foreground pt-1">
           {mode === "login" ? (
             <>Não tem uma conta?{" "}<button type="button" onClick={() => setMode("signup")} className="text-primary font-medium hover:underline">Criar conta</button></>
           ) : (
