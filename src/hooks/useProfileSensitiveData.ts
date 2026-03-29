@@ -23,6 +23,7 @@ export interface SensitiveProfileData {
   whatsapp_signature_enabled: boolean;
   ai_assistant_name: string | null;
   ai_assistant_voice: string | null;
+  whatsapp_signature: string | null;
 }
 
 /**
