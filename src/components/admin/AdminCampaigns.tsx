@@ -108,7 +108,7 @@ export function AdminCampaigns() {
         .from("campaign_sends")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(100) as any;
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter);
