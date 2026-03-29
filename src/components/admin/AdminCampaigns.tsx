@@ -72,7 +72,7 @@ export function AdminCampaigns() {
   const { data: stats } = useQuery({
     queryKey: ["campaign-stats"],
     queryFn: async () => {
-      const statuses = ["pending", "processing", "sent", "failed"];
+      const statuses = ["pending", "processing", "sent", "failed"] as const;
       const counts: Record<string, number> = {};
       for (const s of statuses) {
         const { count } = await supabase
@@ -82,18 +82,20 @@ export function AdminCampaigns() {
         counts[s] = count || 0;
       }
 
-      // Channel breakdown for sent
-      const { data: channelData } = await supabase
+      // Channel breakdown for sent items
+      const { data: sentItems } = await supabase
         .from("campaign_sends")
-        .select("primary_channel")
+        .select("whatsapp_status, email_status")
         .eq("status", "sent");
 
-      const channels: Record<string, number> = { whatsapp: 0, email: 0, none: 0 };
-      for (const row of channelData || []) {
-        const ch = (row as any).primary_channel || "none";
-        channels[ch] = (channels[ch] || 0) + 1;
+      const channels = { whatsapp: 0, email: 0, none: 0 };
+      for (const row of sentItems || []) {
+        const r = row as any;
+        if (r.whatsapp_status === "sent") channels.whatsapp++;
+        if (r.email_status === "sent") channels.email++;
+        if (r.whatsapp_status !== "sent" && r.email_status !== "sent") channels.none++;
       }
-      return { ...counts, channels };
+      return { pending: counts.pending, processing: counts.processing, sent: counts.sent, failed: counts.failed, channels };
     },
     refetchInterval: 10000,
   });
