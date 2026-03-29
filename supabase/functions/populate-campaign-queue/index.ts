@@ -70,15 +70,18 @@ Deno.serve(async (req) => {
       excludeUserIds.add(q.user_id);
     }
 
-    // Fetch all profiles with org data
+    // Fetch all profiles with org data — filter by registration age
+    const cutoffDate = new Date(Date.now() - minDays * 86400000).toISOString();
+    
     const { data: profiles, error: profError } = await supabase
       .from("profiles")
       .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at, organizations!inner(subscription_status, plan, trial_ends_at, created_at)")
-      .not("organization_id", "is", null);
+      .not("organization_id", "is", null)
+      .lte("created_at", cutoffDate);
 
     if (profError) throw profError;
     if (!profiles || profiles.length === 0) {
-      return jsonResponse({ success: true, queued: 0, message: "No profiles found" });
+      return jsonResponse({ success: true, queued: 0, message: `No profiles found with ${minDays}+ days` });
     }
 
     const now = new Date();
