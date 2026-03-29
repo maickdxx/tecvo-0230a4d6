@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     // Fetch all necessary data
     const [profileRes, orgRes, authRes] = await Promise.all([
-      adminClient.from("profiles").select("full_name, whatsapp_personal, phone").eq("user_id", user_id).maybeSingle(),
+      adminClient.from("profiles").select("full_name, phone, whatsapp_ai_enabled").eq("user_id", user_id).maybeSingle(),
       adminClient.from("organizations").select("name").eq("id", organization_id).maybeSingle(),
       adminClient.auth.admin.getUserById(user_id),
     ]);
