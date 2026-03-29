@@ -164,6 +164,7 @@ Deno.serve(async (req) => {
         ok: true,
         instance_name,
         state,
+        raw_state: rawState,
         phone_number: phoneNumber,
         error_message: errorMsg,
         checked_at: new Date().toISOString(),
