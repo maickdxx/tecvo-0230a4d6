@@ -505,7 +505,8 @@ Deno.serve(async (req) => {
       let emailStatus = "skipped";
       let emailError: string | null = null;
 
-      const shouldSendEmail = hasEmail && (!hasPhone || waStatus === "error" || waStatus === "skipped");
+      // Send email alongside WhatsApp (both channels), not just as fallback
+      const shouldSendEmail = hasEmail && !!automation.email_template;
 
       if (shouldSendEmail && contactEmail) {
         const subject = EMAIL_SUBJECTS[best.trigger_type] || "Novidades da Tecvo";
