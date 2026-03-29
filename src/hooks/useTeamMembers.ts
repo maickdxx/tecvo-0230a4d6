@@ -256,5 +256,7 @@ export function useTeamMembers() {
     isUpdatingFieldWorker: updateFieldWorkerMutation.isPending,
     deleteMember: deleteMemberMutation.mutate,
     isDeleting: deleteMemberMutation.isPending,
+    updateMemberDetails: updateMemberDetailsMutation.mutate,
+    isUpdatingDetails: updateMemberDetailsMutation.isPending,
   };
 }
