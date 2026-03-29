@@ -15,6 +15,7 @@ export function useWhatsAppConversations() {
 
   // Fetch contacts by organization_id only — completely independent of channel state.
   // Conversations persist regardless of channel being connected, disconnected, deleted, or recreated.
+  // has_conversation=false is ONLY used for explicit user "delete conversation" action.
   const fetchPage = useCallback(async (offset: number, append: boolean) => {
     if (!organization?.id) {
       if (!append) { setContacts([]); setLoading(false); }
@@ -26,7 +27,7 @@ export function useWhatsAppConversations() {
       .select("*, linked_client:linked_client_id(name), channel:channel_id(id, name, phone_number, is_connected, channel_status)")
       .eq("organization_id", organization.id)
       .eq("is_blocked", false)
-      .eq("has_conversation", true)
+      .not("last_message_at", "is", null)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .range(offset, offset + PAGE_SIZE - 1);
 
@@ -80,7 +81,6 @@ export function useWhatsAppConversations() {
       }
       const newList = [...prev];
       newList[idx] = merged;
-      // Don't re-sort here to preserve scroll position
       return newList;
     });
   }, []);
@@ -98,7 +98,9 @@ export function useWhatsAppConversations() {
         filter: `organization_id=eq.${organization.id}`,
       }, (payload) => {
         const newContact = payload.new as any;
-        if (newContact.is_blocked || !newContact.has_conversation) return;
+        if (newContact.is_blocked) return;
+        // Only add to list if it has message history
+        if (!newContact.last_message_at) return;
         setContacts(prev => {
           if (prev.some(c => c.id === newContact.id)) return prev;
           return [newContact, ...prev];
@@ -111,48 +113,47 @@ export function useWhatsAppConversations() {
         filter: `organization_id=eq.${organization.id}`,
       }, (payload) => {
         const updated = payload.new as any;
-        if (updated.has_conversation && !updated.is_blocked) {
-          setContacts(prev => {
-            if (prev.some(c => c.id === updated.id)) {
-              // Use applyContactUpdate logic inline to avoid unnecessary re-renders
-              const idx = prev.findIndex(c => c.id === updated.id);
-              const current = prev[idx];
-              // Only update if something meaningful changed
-              if (current.last_message_at === updated.last_message_at &&
-                  current.is_unread === updated.is_unread &&
-                  current.unread_count === updated.unread_count &&
-                  current.conversation_status === updated.conversation_status &&
-                  current.conversion_status === updated.conversion_status &&
-                  current.assigned_to === updated.assigned_to &&
-                  current.is_private === updated.is_private &&
-                  current.last_message_content === updated.last_message_content &&
-                  current.name === updated.name &&
-                  current.tags === updated.tags &&
-                  current.channel_id === updated.channel_id) {
-                return prev; // No change — preserve array reference & scroll
-              }
-              const newList = [...prev];
-              // Preserve joined fields, but clear stale channel if channel_id changed
-              const channelChanged = current.channel_id !== updated.channel_id;
-              newList[idx] = {
-                ...current,
-                ...updated,
-                linked_client: current.linked_client,
-                channel: channelChanged ? null : current.channel,
-              };
-              // If channel changed, trigger full refetch to get fresh join data
-              if (channelChanged) {
-                setTimeout(() => fetchContacts(), 500);
-              }
-              return newList;
-            }
-            // New conversation, add to top
-            return [updated, ...prev];
-          });
-        } else {
-          // Contact was blocked or no longer has conversation — remove from list
+        if (updated.is_blocked) {
+          // Contact was blocked — remove from list
           setContacts(prev => prev.filter(c => c.id !== updated.id));
+          return;
         }
+        setContacts(prev => {
+          if (prev.some(c => c.id === updated.id)) {
+            const idx = prev.findIndex(c => c.id === updated.id);
+            const current = prev[idx];
+            if (current.last_message_at === updated.last_message_at &&
+                current.is_unread === updated.is_unread &&
+                current.unread_count === updated.unread_count &&
+                current.conversation_status === updated.conversation_status &&
+                current.conversion_status === updated.conversion_status &&
+                current.assigned_to === updated.assigned_to &&
+                current.is_private === updated.is_private &&
+                current.last_message_content === updated.last_message_content &&
+                current.name === updated.name &&
+                current.tags === updated.tags &&
+                current.channel_id === updated.channel_id) {
+              return prev;
+            }
+            const newList = [...prev];
+            const channelChanged = current.channel_id !== updated.channel_id;
+            newList[idx] = {
+              ...current,
+              ...updated,
+              linked_client: current.linked_client,
+              channel: channelChanged ? null : current.channel,
+            };
+            if (channelChanged) {
+              setTimeout(() => fetchContacts(), 500);
+            }
+            return newList;
+          }
+          // New conversation with messages, add to top
+          if (updated.last_message_at) {
+            return [updated, ...prev];
+          }
+          return prev;
+        });
       })
       .on("postgres_changes", {
         event: "DELETE",
@@ -179,7 +180,11 @@ export function useWhatsAppConversations() {
             : "";
         setContacts(prev => {
           const idx = prev.findIndex(c => c.id === msg.contact_id);
-          if (idx < 0) return prev;
+          if (idx < 0) {
+            // Contact not in list yet — trigger refetch to bring it in
+            setTimeout(() => fetchContacts(), 300);
+            return prev;
+          }
           const current = prev[idx];
           const currentTs = current.last_message_at ? new Date(current.last_message_at).getTime() : 0;
           const newTs = msgTs ? new Date(msgTs).getTime() : 0;
@@ -193,7 +198,6 @@ export function useWhatsAppConversations() {
           };
           const newList = [...prev];
           newList.splice(idx, 1);
-          // Move conversation to top so latest activity is always visible
           newList.unshift(merged);
           return newList;
         });
@@ -204,7 +208,6 @@ export function useWhatsAppConversations() {
         table: "whatsapp_channels",
       }, (payload) => {
         const updated = payload.new as any;
-        // Update channel data on all contacts using this channel
         setContacts(prev => {
           let changed = false;
           const newList = prev.map(c => {
@@ -215,7 +218,6 @@ export function useWhatsAppConversations() {
                 channel_status: updated.channel_status,
                 phone_number: updated.phone_number || c.channel.phone_number,
               };
-              // Check if actually changed
               if (c.channel.is_connected !== newChannel.is_connected ||
                   c.channel.channel_status !== newChannel.channel_status) {
                 changed = true;
@@ -232,8 +234,8 @@ export function useWhatsAppConversations() {
     return () => { supabase.removeChannel(channel); };
   }, [organization?.id, applyContactUpdate]);
 
-  // Local filtering
-  const [dbSearchResults, setDbSearchResults] = useState<string[] | null>(null);
+  // Search: local + DB fallback for contacts AND messages
+  const [dbSearchResults, setDbSearchResults] = useState<any[] | null>(null);
   const [searching, setSearching] = useState(false);
 
   const normalizeDigits = (s: string) => (s || "").replace(/\D/g, "");
@@ -259,17 +261,54 @@ export function useWhatsAppConversations() {
       return;
     }
     setSearching(true);
-    const searchMessages = async () => {
-      const { data } = await supabase
+    const searchDb = async () => {
+      const termDigits = normalizeDigits(term);
+      
+      // Search contacts directly in DB (all contacts with message history, regardless of status)
+      const contactSearchPromise = supabase
+        .from("whatsapp_contacts")
+        .select("*, linked_client:linked_client_id(name), channel:channel_id(id, name, phone_number, is_connected, channel_status)")
+        .eq("organization_id", organization?.id || "")
+        .eq("is_blocked", false)
+        .not("last_message_at", "is", null)
+        .or(`name.ilike.%${term}%,phone.ilike.%${term}%`)
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(50);
+
+      // Also search messages for content matches
+      const messageSearchPromise = supabase
         .from("whatsapp_messages")
         .select("contact_id")
         .eq("organization_id", organization?.id || "")
         .ilike("content", `%${term}%`)
         .limit(50);
-      setDbSearchResults(data ? [...new Set(data.map(m => m.contact_id))] : null);
+
+      const [contactRes, messageRes] = await Promise.all([contactSearchPromise, messageSearchPromise]);
+      
+      const dbContacts = contactRes.data || [];
+      const messageContactIds = messageRes.data ? [...new Set(messageRes.data.map(m => m.contact_id))] : [];
+      
+      // For message matches not already in dbContacts, fetch those contacts too
+      const dbContactIds = new Set(dbContacts.map(c => c.id));
+      const missingIds = messageContactIds.filter(id => !dbContactIds.has(id));
+      
+      let allResults = [...dbContacts];
+      
+      if (missingIds.length > 0) {
+        const { data: msgContacts } = await supabase
+          .from("whatsapp_contacts")
+          .select("*, linked_client:linked_client_id(name), channel:channel_id(id, name, phone_number, is_connected, channel_status)")
+          .in("id", missingIds)
+          .eq("is_blocked", false);
+        if (msgContacts) {
+          allResults = [...allResults, ...msgContacts];
+        }
+      }
+      
+      setDbSearchResults(allResults);
       setSearching(false);
     };
-    const debounce = setTimeout(searchMessages, 400);
+    const debounce = setTimeout(searchDb, 400);
     return () => clearTimeout(debounce);
   }, [searchTerm, contacts, organization?.id, contactMatchesTerm]);
 
@@ -278,9 +317,13 @@ export function useWhatsAppConversations() {
     const term = searchTerm.toLowerCase();
     const localMatches = contacts.filter(c => contactMatchesTerm(c, term));
     if (localMatches.length > 0) return localMatches;
-    if (dbSearchResults) {
-      const dbMatches = contacts.filter(c => dbSearchResults.includes(c.id));
-      return dbMatches.length > 0 ? dbMatches : localMatches;
+    // Use full DB search results (already include joined data)
+    if (dbSearchResults && dbSearchResults.length > 0) {
+      // Merge: prefer in-memory version, add DB-only results
+      const inMemoryIds = new Set(contacts.map(c => c.id));
+      const dbOnly = dbSearchResults.filter(c => !inMemoryIds.has(c.id));
+      const inMemoryMatches = contacts.filter(c => dbSearchResults.some(d => d.id === c.id));
+      return [...inMemoryMatches, ...dbOnly];
     }
     return localMatches;
   }, [searchTerm, contacts, dbSearchResults, contactMatchesTerm]);
@@ -304,7 +347,6 @@ export function useWhatsAppConversations() {
     const currentConvStatus = contact.conversation_status || "novo";
     const currentPipelineStatus = contact.conversion_status || "novo_contato";
     
-    // Only promote if still in initial state
     if (currentConvStatus !== "novo" && currentPipelineStatus !== "novo_contato") return;
     
     const updates: Record<string, any> = {};
@@ -340,6 +382,7 @@ export function useWhatsAppConversations() {
       .eq("id", contactId);
   }, []);
 
+  // Finalize: only change status, NEVER hide the conversation
   const finalizeConversation = useCallback(async (contactId: string) => {
     setContacts(prev => prev.map(c =>
       c.id === contactId ? { ...c, conversation_status: "resolvido" } : c
@@ -350,10 +393,10 @@ export function useWhatsAppConversations() {
       .eq("id", contactId);
   }, []);
 
+  // Delete: explicit user action to hide conversation from list (soft delete)
   const deleteConversation = useCallback(async (contactId: string) => {
     if (!organization?.id) return;
     setContacts(prev => prev.filter(c => c.id !== contactId));
-    // Soft-delete: hide conversation but preserve messages permanently
     await supabase
       .from("whatsapp_contacts")
       .update({ has_conversation: false, conversation_status: "resolvido" })
@@ -364,7 +407,7 @@ export function useWhatsAppConversations() {
   const moveContactToTop = useCallback((contactId: string, lastMessageContent?: string) => {
     setContacts(prev => {
       const idx = prev.findIndex(c => c.id === contactId);
-      if (idx <= 0) return prev; // already at top or not found
+      if (idx <= 0) return prev;
       const newList = [...prev];
       const [contact] = newList.splice(idx, 1);
       const updated = {

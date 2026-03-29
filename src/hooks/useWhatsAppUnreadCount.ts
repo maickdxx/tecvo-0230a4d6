@@ -27,7 +27,7 @@ export function useWhatsAppUnreadCount() {
         .eq("organization_id", organization.id)
         .in("channel_id", channelIds)
         .eq("is_blocked", false)
-        .eq("has_conversation", true)
+        .not("last_message_at", "is", null)
         .gt("unread_count", 0)
         .neq("conversation_status", "resolvido");
 
