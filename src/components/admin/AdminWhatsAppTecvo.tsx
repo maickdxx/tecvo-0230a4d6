@@ -324,7 +324,7 @@ export function AdminWhatsAppTecvo() {
               </div>
             </div>
 
-            <StatusBadge state={status?.state || "unknown"} />
+            <StatusBadge state={isConnected && status?.state !== "open" ? "operational" : (status?.state || "unknown")} />
           </div>
         </CardHeader>
         <CardContent>
