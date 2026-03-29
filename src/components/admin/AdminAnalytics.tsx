@@ -109,7 +109,7 @@ export function AdminAnalytics() {
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Sessões Totais</CardTitle>
@@ -156,43 +156,45 @@ export function AdminAnalytics() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="flex w-full overflow-x-auto flex-nowrap justify-start h-auto p-1 bg-muted/50">
-          <TabsTrigger value="leads" className="gap-2 whitespace-nowrap">
-            <Filter className="h-4 w-4 text-primary" />
-            Leads
-          </TabsTrigger>
-          <TabsTrigger value="journey" className="gap-2 whitespace-nowrap">
-            <History className="h-4 w-4 text-primary" />
-            Jornada do Lead
-          </TabsTrigger>
-          <TabsTrigger value="campaigns" className="gap-2 whitespace-nowrap">
-            <Globe className="h-4 w-4 text-primary" />
-            Canais & Campanhas
-          </TabsTrigger>
-          <TabsTrigger value="overview" className="whitespace-nowrap">Visão Geral</TabsTrigger>
-          <TabsTrigger value="funnel" className="whitespace-nowrap">Funil & Conversão</TabsTrigger>
-          <TabsTrigger value="retention" className="whitespace-nowrap">Retenção</TabsTrigger>
-          <TabsTrigger value="users" className="whitespace-nowrap">Usuários</TabsTrigger>
-          <TabsTrigger value="automations" className="gap-2 whitespace-nowrap">
-            <Zap className="h-4 w-4 text-primary" />
-            Automações
-          </TabsTrigger>
-          <TabsTrigger value="ab_tests" className="gap-2 whitespace-nowrap">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            Testes A/B
-          </TabsTrigger>
-          <TabsTrigger value="patterns" className="gap-2 whitespace-nowrap">
-            <Trophy className="h-4 w-4 text-primary" />
-            Padrões Vencedores
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="gap-2 whitespace-nowrap">
-            <FileText className="h-4 w-4 text-primary" />
-            Templates
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex w-auto min-w-full sm:w-full justify-start flex-nowrap h-auto p-1 bg-muted/50 gap-0.5">
+            <TabsTrigger value="leads" className="gap-1.5 whitespace-nowrap text-xs px-2 py-1.5">
+              <Filter className="h-3.5 w-3.5 text-primary" />
+              Leads
+            </TabsTrigger>
+            <TabsTrigger value="journey" className="gap-1.5 whitespace-nowrap text-xs px-2 py-1.5">
+              <History className="h-3.5 w-3.5 text-primary" />
+              Jornada
+            </TabsTrigger>
+            <TabsTrigger value="campaigns" className="gap-1.5 whitespace-nowrap text-xs px-2 py-1.5">
+              <Globe className="h-3.5 w-3.5 text-primary" />
+              Canais
+            </TabsTrigger>
+            <TabsTrigger value="overview" className="whitespace-nowrap text-xs px-2 py-1.5">Visão Geral</TabsTrigger>
+            <TabsTrigger value="funnel" className="whitespace-nowrap text-xs px-2 py-1.5">Funil</TabsTrigger>
+            <TabsTrigger value="retention" className="whitespace-nowrap text-xs px-2 py-1.5">Retenção</TabsTrigger>
+            <TabsTrigger value="users" className="whitespace-nowrap text-xs px-2 py-1.5">Usuários</TabsTrigger>
+            <TabsTrigger value="automations" className="gap-1.5 whitespace-nowrap text-xs px-2 py-1.5">
+              <Zap className="h-3.5 w-3.5 text-primary" />
+              Automações
+            </TabsTrigger>
+            <TabsTrigger value="ab_tests" className="gap-1.5 whitespace-nowrap text-xs px-2 py-1.5">
+              <TrendingUp className="h-3.5 w-3.5 text-primary" />
+              A/B
+            </TabsTrigger>
+            <TabsTrigger value="patterns" className="gap-1.5 whitespace-nowrap text-xs px-2 py-1.5">
+              <Trophy className="h-3.5 w-3.5 text-primary" />
+              Padrões
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="gap-1.5 whitespace-nowrap text-xs px-2 py-1.5">
+              <FileText className="h-3.5 w-3.5 text-primary" />
+              Templates
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="leads" className="space-y-6 pt-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Visitantes Únicos</CardTitle>
@@ -242,7 +244,7 @@ export function AdminAnalytics() {
             </Card>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Funil de Venda (Leads)</CardTitle>
@@ -377,7 +379,7 @@ export function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-6 pt-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
             <Card className="bg-primary/5 border-primary/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Melhor Campanha</CardTitle>

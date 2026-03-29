@@ -170,8 +170,8 @@ export function AdminUserList({ users, isLoading, onGrantSuperAdmin, isGranting,
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nome, email ou empresa..."
@@ -180,45 +180,47 @@ export function AdminUserList({ users, isLoading, onGrantSuperAdmin, isGranting,
             className="pl-9"
           />
         </div>
-        <Select value={planFilter} onValueChange={setPlanFilter}>
-          <SelectTrigger className="w-[150px]">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Plano" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os planos</SelectItem>
-            <SelectItem value="free">Free</SelectItem>
-            <SelectItem value="starter">Starter</SelectItem>
-            <SelectItem value="essential">Essencial</SelectItem>
-            <SelectItem value="pro">Pro</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-[160px]">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            <SelectItem value="super_admin">Super Admin</SelectItem>
-            <SelectItem value="owner">Proprietário</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="member">Membro</SelectItem>
-            <SelectItem value="employee">Funcionário</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={engagementFilter} onValueChange={setEngagementFilter}>
-          <SelectTrigger className="w-[160px]">
-            <Activity className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Engajamento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="active">🟢 Ativo</SelectItem>
-            <SelectItem value="warm">🟡 Morno</SelectItem>
-            <SelectItem value="risk">🔴 Risco</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-2">
+          <Select value={planFilter} onValueChange={setPlanFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <Filter className="h-3.5 w-3.5 mr-1" />
+              <SelectValue placeholder="Plano" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos planos</SelectItem>
+              <SelectItem value="free">Free</SelectItem>
+              <SelectItem value="starter">Starter</SelectItem>
+              <SelectItem value="essential">Essencial</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <Filter className="h-3.5 w-3.5 mr-1" />
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos tipos</SelectItem>
+              <SelectItem value="super_admin">Super Admin</SelectItem>
+              <SelectItem value="owner">Proprietário</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="member">Membro</SelectItem>
+              <SelectItem value="employee">Funcionário</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={engagementFilter} onValueChange={setEngagementFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <Activity className="h-3.5 w-3.5 mr-1" />
+              <SelectValue placeholder="Engajamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">🟢 Ativo</SelectItem>
+              <SelectItem value="warm">🟡 Morno</SelectItem>
+              <SelectItem value="risk">🔴 Risco</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground">

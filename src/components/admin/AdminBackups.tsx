@@ -319,9 +319,9 @@ export function AdminBackups() {
 
       {/* Actions bar */}
       <Card>
-        <CardContent className="py-3 px-4 flex flex-wrap items-center gap-3">
+        <CardContent className="py-3 px-3 sm:px-4 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
           <Select value={selectedOrg} onValueChange={setSelectedOrg}>
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder="Filtrar por organização" />
             </SelectTrigger>
             <SelectContent>

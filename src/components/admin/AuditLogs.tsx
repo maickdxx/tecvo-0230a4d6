@@ -161,36 +161,36 @@ export function AuditLogs() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle>Logs de Auditoria</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">Logs de Auditoria</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Registros reais de operações no banco de dados
               </CardDescription>
             </div>
-            <Button variant="outline" onClick={handleExport} disabled={filteredLogs.length === 0}>
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredLogs.length === 0} className="w-full sm:w-auto">
               <Download className="h-4 w-4 mr-2" />
               Exportar CSV
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 mb-6 md:flex-row">
+          <div className="flex flex-col gap-3 mb-4 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por operação, tabela ou organização..."
+                placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
             <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Tipo de ação" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as ações</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="INSERT">Criação</SelectItem>
                 <SelectItem value="UPDATE">Atualização</SelectItem>
                 <SelectItem value="DELETE">Exclusão</SelectItem>
@@ -281,7 +281,7 @@ export function AuditLogs() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Ações</CardTitle>
