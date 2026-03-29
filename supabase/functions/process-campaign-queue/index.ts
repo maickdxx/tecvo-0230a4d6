@@ -33,55 +33,39 @@ function decideChannels(phone: string | null, email: string | null, emailTemplat
   return { primaryChannel: "none", sendWhatsapp: false, sendEmail: false };
 }
 
-// ── Email via Resend ──
-async function sendEmail(
-  to: string, subject: string, html: string, resendKey: string, fromEmail: string
+// ── Email via Lovable Transactional Email System ──
+async function sendCampaignEmail(
+  supabase: any,
+  to: string,
+  subject: string,
+  userName: string,
+  bodyText: string,
+  campaignSendId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
-      body: JSON.stringify({ from: fromEmail, to: [to], subject, html }),
+    const { data, error } = await supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "campaign_recovery",
+        recipientEmail: to,
+        idempotencyKey: `campaign-recovery-${campaignSendId}`,
+        templateData: {
+          userName,
+          bodyText: bodyText.replace(/\n/g, "<br>"),
+          emailSubject: subject,
+        },
+      },
     });
-    if (!res.ok) {
-      const errText = await res.text();
-      return { success: false, error: `Resend ${res.status}: ${errText}` };
+
+    if (error) {
+      return { success: false, error: error.message || String(error) };
+    }
+    if (data?.error) {
+      return { success: false, error: data.error };
     }
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
-}
-
-function buildEmailHtml(userName: string, bodyText: string): string {
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 20px;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-  <tr><td style="background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:24px 40px;text-align:center;">
-    <h1 style="color:#ffffff;font-size:22px;margin:0;font-weight:700;">Tecvo</h1>
-  </td></tr>
-  <tr><td style="padding:32px 40px;">
-    <p style="color:#3f3f46;font-size:15px;line-height:1.6;margin:0 0 16px;">${bodyText}</p>
-    <table cellpadding="0" cellspacing="0" style="margin:24px auto;">
-    <tr><td style="background:#2563eb;border-radius:8px;padding:14px 32px;">
-      <a href="https://tecvo.com.br/dashboard" style="color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">
-        Acessar a Tecvo →
-      </a>
-    </td></tr></table>
-  </td></tr>
-  <tr><td style="background:#fafafa;padding:20px 40px;border-top:1px solid #e4e4e7;text-align:center;">
-    <p style="color:#a1a1aa;font-size:12px;margin:0;">
-      Tecvo — Gestão inteligente para empresas de serviço<br>
-      <a href="https://tecvo.com.br" style="color:#2563eb;text-decoration:none;">tecvo.com.br</a>
-    </p>
-  </td></tr>
-</table>
-</td></tr></table>
-</body></html>`;
 }
 
 Deno.serve(async (req) => {
