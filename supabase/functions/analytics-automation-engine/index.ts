@@ -41,9 +41,19 @@ const POST_TRIAL_DAY_MAP: Record<string, number> = {
   post_trial_d7: 7,
 };
 
+/**
+ * Calculate days between two dates using Brazil timezone (America/Sao_Paulo).
+ * This avoids off-by-one errors for users in BRT/BRST timezones.
+ */
 function daysBetween(dateA: Date, dateB: Date): number {
-  const msPerDay = 86400000;
-  return Math.floor((dateB.getTime() - dateA.getTime()) / msPerDay);
+  // Convert to BRT date strings and compare calendar days
+  const fmt = (d: Date) => {
+    const parts = d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).split("-");
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  };
+  const a = fmt(dateA);
+  const b = fmt(dateB);
+  return Math.floor((b.getTime() - a.getTime()) / 86400000);
 }
 
 // ── Email sending via Resend ──
