@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 
 export function useProfile() {
   const { profile, user } = useAuth();
+  const { isOwner } = useUserRole();
 
   const updateProfileMutation = useMutation({
     mutationFn: async ({ 
