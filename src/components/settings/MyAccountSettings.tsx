@@ -171,14 +171,16 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
     }
   };
 
-  if (isLoadingRole) {
+  // Bloqueio de renderização prematura conforme item 1 da solicitação
+  if (isLoadingRole || !role) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <Bot className="h-12 w-12 animate-pulse text-primary/20" />
-        <p className="text-sm text-muted-foreground animate-pulse">Carregando seu perfil...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">Confirmando permissões de acesso...</p>
       </div>
     );
   }
+
 
   return (
     <div className="space-y-6 pb-20">
