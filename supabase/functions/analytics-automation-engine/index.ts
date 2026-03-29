@@ -429,11 +429,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Check 1/day limit
+      // Check 1/day limit (only count successful sends)
       const { count: sentToday } = await supabase
         .from("analytics_automation_logs")
         .select("*", { count: "exact", head: true })
         .eq(best.email ? "email" : "user_id", best.email || userId)
+        .eq("status", "sent")
         .gte("sent_at", `${todayStr}T00:00:00`);
 
       if ((sentToday || 0) > 0) {
