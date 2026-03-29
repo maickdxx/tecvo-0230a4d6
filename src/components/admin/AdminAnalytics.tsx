@@ -24,7 +24,7 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AdminAutomations } from "./AdminAutomations";
+import { AdminAutomationFlows } from "./AdminAutomationFlows";
 import { AdminABTests } from "./AdminABTests";
 import { AdminPatterns } from "./AdminPatterns";
 import { LeadJourneyTab } from "./analytics/LeadJourneyTab";
@@ -821,7 +821,7 @@ export function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="automations" className="space-y-6 pt-4">
-          <AdminAutomations />
+          <AdminAutomationFlows />
         </TabsContent>
       </Tabs>
     </div>
