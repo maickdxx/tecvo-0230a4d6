@@ -97,7 +97,7 @@ const SYSTEM_FLOWS: SystemFlow[] = [
     name: "Notificação Admin — Novo Cadastro",
     trigger: "Criação de organização (trigger DB)",
     channel: "whatsapp",
-    description: "Alerta interno para administradores da plataforma quando uma nova empresa se cadastra.",
+    description: "Alerta interno para o Super Admin (WhatsApp + E-mail) quando uma nova empresa se cadastra. Enviado para 19989307608 via instância Tecvo e para o e-mail do administrador.",
     stage: "onboarding",
   },
   {

@@ -1,6 +1,8 @@
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 
 const SUPER_ADMIN_EMAIL = "micheldouglas7991@gmail.com";
+const SUPER_ADMIN_PHONE = "5519989307608";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_EMAIL = "contato@tecvo.com.br";
 
@@ -19,6 +21,45 @@ interface NotificationPayload {
   responsible_name?: string;
   responsible_email?: string;
   responsible_phone?: string;
+}
+
+function buildWhatsAppText(payload: NotificationPayload): string {
+  const { type } = payload;
+  const timestamp = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+  switch (type) {
+    case "new_account":
+      return `🚀 *Nova empresa cadastrada*\n\n` +
+        `Empresa: ${payload.org_name || "—"}\n` +
+        `E-mail: ${payload.org_email || payload.responsible_email || "—"}\n` +
+        `Telefone: ${payload.org_phone || payload.responsible_phone || "—"}\n` +
+        `Plano: ${payload.plan || "trial"}\n` +
+        `Data: ${timestamp}`;
+
+    case "first_service":
+      return `🎯 *Primeiro serviço criado!*\n\nEmpresa: ${payload.org_name || "—"}\n✅ Começou a usar a plataforma!`;
+
+    case "milestone_100":
+      return `🏆 *100 serviços atingidos!*\n\nEmpresa: ${payload.org_name || "—"}\n⭐ Cliente forte — considere upgrade!`;
+
+    case "cancellation_attempt":
+      return `⚠️ *Tentativa de cancelamento*\n\nEmpresa: ${payload.org_name || "—"}\nPlano: ${payload.plan || "—"}\n🚨 Ação de retenção necessária!`;
+
+    case "plan_expired":
+      return `💳 *Plano expirado*\n\nEmpresa: ${payload.org_name || "—"}\nPlano anterior: ${payload.old_plan || "—"}`;
+
+    case "inactive_7_days":
+      return `😴 *7 dias sem atividade*\n\nEmpresa: ${payload.org_name || "—"}\n⚠️ Risco de abandono.`;
+
+    case "inactive_30_days":
+      return `🚨 *30 dias sem atividade*\n\nEmpresa: ${payload.org_name || "—"}\n🔴 Alto risco de churn!`;
+
+    case "system_error":
+      return `🔴 *Erro crítico no sistema*\n\n${payload.error_details || "Sem detalhes"}`;
+
+    default:
+      return `📢 *Notificação Admin*\nTipo: ${type}\n${JSON.stringify(payload, null, 2).substring(0, 500)}`;
+  }
 }
 
 function buildEmail(payload: NotificationPayload): { subject: string; html: string } {
@@ -145,43 +186,64 @@ Deno.serve(async (req: Request) => {
   try {
     const payload: NotificationPayload = await req.json();
 
-    if (!RESEND_API_KEY) {
-      console.error("RESEND_API_KEY not configured");
-      return new Response(JSON.stringify({ error: "Email service not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // ── Send WhatsApp to Super Admin ──
+    const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
+    const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+    let waStatus = "skipped";
+
+    if (vpsUrl && apiKey) {
+      try {
+        const waText = buildWhatsAppText(payload);
+        const jid = `${SUPER_ADMIN_PHONE}@s.whatsapp.net`;
+
+        const waRes = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ number: jid, text: waText }),
+        });
+
+        waStatus = waRes.ok ? "sent" : "error";
+        if (!waRes.ok) {
+          console.error("[admin-notify] WA error:", waRes.status, await waRes.text());
+        }
+      } catch (err) {
+        waStatus = "error";
+        console.error("[admin-notify] WA exception:", err);
+      }
+    }
+    console.log(`[admin-notify] WA to super admin: ${waStatus}`);
+
+    // ── Send Email ──
+    let emailId = null;
+    if (RESEND_API_KEY) {
+      const { subject, html } = buildEmail(payload);
+
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: `TecVo Admin <${FROM_EMAIL}>`,
+          to: [SUPER_ADMIN_EMAIL],
+          subject,
+          html,
+        }),
       });
+
+      if (!emailRes.ok) {
+        const errText = await emailRes.text();
+        console.error("[admin-notify] Resend error:", errText);
+      } else {
+        const result = await emailRes.json();
+        emailId = result.id;
+      }
     }
 
-    const { subject, html } = buildEmail(payload);
+    console.log("Admin notification sent:", payload.type, { waStatus, emailId });
 
-    const emailRes = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: `TecVo Admin <${FROM_EMAIL}>`,
-        to: [SUPER_ADMIN_EMAIL],
-        subject,
-        html,
-      }),
-    });
-
-    if (!emailRes.ok) {
-      const errText = await emailRes.text();
-      console.error("Resend error:", errText);
-      return new Response(JSON.stringify({ error: "Failed to send email", details: errText }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const result = await emailRes.json();
-    console.log("Admin notification sent:", payload.type, result.id);
-
-    return new Response(JSON.stringify({ success: true, email_id: result.id }), {
+    return new Response(JSON.stringify({ success: true, email_id: emailId, wa_status: waStatus }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
