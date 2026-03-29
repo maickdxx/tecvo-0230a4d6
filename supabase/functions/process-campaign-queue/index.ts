@@ -132,8 +132,7 @@ Deno.serve(async (req) => {
     // 5. Decide channels BEFORE processing
     const channelDecision = decideChannels(
       nextItem.phone && vpsUrl && apiKey ? nextItem.phone : null,
-      nextItem.email,
-      nextItem.email_template
+      nextItem.email
     );
 
     const now = new Date().toISOString();
