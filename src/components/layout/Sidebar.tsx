@@ -331,7 +331,6 @@ export function Sidebar() {
           <div className="space-y-0.5">
             {employeeNavItems
               .filter(item => {
-                if (item.href === "/meu-dia" && !isFieldWorker) return false;
                 if (item.href === "/ponto" && (!(organization as any)?.time_clock_enabled || !hasTimeClock)) return false;
                 return true;
               })
@@ -344,7 +343,7 @@ export function Sidebar() {
             <SectionLabel label="Operação" collapsed={collapsed} />
             <div className="space-y-0.5">
               <SidebarNavItem item={{ label: "Visão Geral", href: "/dashboard", icon: LayoutDashboard }} collapsed={collapsed} />
-              {isFieldWorker && <SidebarNavItem item={{ label: "Meu Dia", href: "/meu-dia", icon: Briefcase }} collapsed={collapsed} />}
+              <SidebarNavItem item={{ label: "Meu Dia", href: "/meu-dia", icon: Briefcase }} collapsed={collapsed} />
               <SidebarNavItem item={{ label: "Agenda", href: "/agenda", icon: CalendarDays }} collapsed={collapsed} />
               <SidebarNavItem item={{ label: "Ordens de Serviço", href: "/ordens-servico", icon: ClipboardList }} collapsed={collapsed} />
               <SidebarNavItem item={{ label: "Laudos Técnicos", href: "/laudos", icon: FileText }} collapsed={collapsed} />
