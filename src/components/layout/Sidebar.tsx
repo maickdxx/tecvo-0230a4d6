@@ -513,7 +513,10 @@ export function Sidebar() {
                 <span className="text-xs font-semibold text-sidebar-primary">{userInitial}</span>
               )}
             </button>
-            <div className="flex-1 min-w-0">
+            <div 
+              className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate("/configuracoes?view=my-account")}
+            >
               <p className="text-[13px] font-medium text-sidebar-foreground truncate leading-tight">{userName}</p>
               <p className="text-[11px] text-sidebar-foreground/40 truncate">{roleLabel}</p>
             </div>
