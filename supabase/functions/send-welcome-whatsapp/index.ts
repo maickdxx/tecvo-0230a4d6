@@ -10,6 +10,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
+import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,14 +67,12 @@ Deno.serve(async (req) => {
     }
 
     // ── ATOMIC LOCK: claim the welcome send right ──
-    // UPDATE only succeeds if welcome_whatsapp_sent is still false.
-    // Concurrent calls will get count=0 and exit early.
     const { data: claimResult, error: claimError } = await adminClient
       .from("organizations")
       .update({ welcome_whatsapp_sent: true })
       .eq("id", profile.organization_id)
       .eq("welcome_whatsapp_sent", false)
-      .select("id, whatsapp_owner, name");
+      .select("id, name");
 
     if (claimError) {
       console.error("[WELCOME] Claim error:", claimError);
@@ -83,7 +82,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If no rows updated, another call already claimed it
     if (!claimResult || claimResult.length === 0) {
       console.log("[WELCOME] Already sent (atomic lock) — skipping");
       return new Response(JSON.stringify({ message: "Already sent" }), {
@@ -93,15 +91,19 @@ Deno.serve(async (req) => {
     }
 
     const org = claimResult[0];
-    const phone = org.whatsapp_owner;
 
-    if (!phone) {
-      // No WhatsApp number — already marked as sent to avoid retries
-      return new Response(JSON.stringify({ message: "No WhatsApp number configured" }), {
+    // Resolve owner's personal phone (profile-first, then legacy fallback)
+    const ownerPhone = await resolveOwnerPhone(adminClient, profile.organization_id);
+
+    if (!ownerPhone.phone) {
+      // No phone — already marked as sent to avoid retries
+      return new Response(JSON.stringify({ message: "No phone configured for owner" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const phone = ownerPhone.phone;
 
     // Send welcome message via WhatsApp bridge
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
