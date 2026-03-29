@@ -335,7 +335,13 @@ export function AdminWhatsAppTecvo() {
             </div>
             <div>
               <span className="text-muted-foreground text-xs">Estado</span>
-              <p className="font-medium">{status?.state || "Desconhecido"}</p>
+              <p className="font-medium">
+                {isConnected && status?.state !== "open"
+                  ? "Operacional (API indisponível)"
+                  : status?.state === "open"
+                  ? "Conectado"
+                  : status?.state || "Desconhecido"}
+              </p>
             </div>
             <div>
               <span className="text-muted-foreground text-xs">Número</span>
