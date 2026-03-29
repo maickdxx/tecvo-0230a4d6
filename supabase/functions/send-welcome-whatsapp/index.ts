@@ -3,6 +3,9 @@
  * Sends a one-time welcome message from the Tecvo platform to new org owners.
  * Always uses TECVO_PLATFORM_INSTANCE ("tecvo") — never an org channel.
  * This is NOT a customer conversation message.
+ *
+ * DEDUPLICATION: Uses atomic UPDATE ... WHERE welcome_whatsapp_sent = false
+ * to guarantee exactly-once delivery even under concurrent calls.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
@@ -62,28 +65,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if welcome was already sent
-    const { data: org } = await adminClient
+    // ── ATOMIC LOCK: claim the welcome send right ──
+    // UPDATE only succeeds if welcome_whatsapp_sent is still false.
+    // Concurrent calls will get count=0 and exit early.
+    const { data: claimResult, error: claimError } = await adminClient
       .from("organizations")
-      .select("welcome_whatsapp_sent, whatsapp_owner, name")
+      .update({ welcome_whatsapp_sent: true })
       .eq("id", profile.organization_id)
-      .single();
+      .eq("welcome_whatsapp_sent", false)
+      .select("id, whatsapp_owner, name");
 
-    if (org?.welcome_whatsapp_sent) {
+    if (claimError) {
+      console.error("[WELCOME] Claim error:", claimError);
+      return new Response(JSON.stringify({ error: "Internal error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // If no rows updated, another call already claimed it
+    if (!claimResult || claimResult.length === 0) {
+      console.log("[WELCOME] Already sent (atomic lock) — skipping");
       return new Response(JSON.stringify({ message: "Already sent" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const phone = org?.whatsapp_owner;
-    if (!phone) {
-      // No WhatsApp number configured, mark as sent to avoid retries
-      await adminClient
-        .from("organizations")
-        .update({ welcome_whatsapp_sent: true })
-        .eq("id", profile.organization_id);
+    const org = claimResult[0];
+    const phone = org.whatsapp_owner;
 
+    if (!phone) {
+      // No WhatsApp number — already marked as sent to avoid retries
       return new Response(JSON.stringify({ message: "No WhatsApp number configured" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -99,14 +112,18 @@ Deno.serve(async (req) => {
       const guard = await checkSendLimit(adminClient, profile.organization_id, null, "welcome");
       if (!guard.allowed) {
         console.log(`[WELCOME] Blocked by send guard: ${guard.reason}`);
-        // Don't mark as sent — allow retry later
+        // Revert the flag so it can be retried later
+        await adminClient
+          .from("organizations")
+          .update({ welcome_whatsapp_sent: false })
+          .eq("id", profile.organization_id);
         return new Response(JSON.stringify({ message: "Rate limited, will retry" }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const userName = profile.full_name || org?.name || "empreendedor";
+      const userName = profile.full_name || org.name || "empreendedor";
       const welcomeText = `👋 Olá, ${userName}! Bem-vindo(a) à *Tecvo*!\n\nSua conta foi configurada com sucesso. Estamos aqui para facilitar a gestão do seu negócio.\n\nSe precisar de ajuda, é só mandar uma mensagem! 🚀`;
 
       let cleanNumber = phone.replace(/\D/g, "");
@@ -124,7 +141,11 @@ Deno.serve(async (req) => {
 
         if (!res.ok) {
           console.error("[WELCOME] Send failed:", res.status, await res.text());
-          // Don't mark as sent on failure — allow retry
+          // Revert flag on failure — allow retry
+          await adminClient
+            .from("organizations")
+            .update({ welcome_whatsapp_sent: false })
+            .eq("id", profile.organization_id);
           return new Response(JSON.stringify({ error: "Send failed" }), {
             status: 502,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -132,7 +153,11 @@ Deno.serve(async (req) => {
         }
       } catch (err) {
         console.error("[WELCOME] Send error:", err);
-        // Don't mark as sent on error — allow retry
+        // Revert flag on error — allow retry
+        await adminClient
+          .from("organizations")
+          .update({ welcome_whatsapp_sent: false })
+          .eq("id", profile.organization_id);
         return new Response(JSON.stringify({ error: "Send error" }), {
           status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -140,11 +165,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Only mark as sent AFTER successful send (or if no WhatsApp bridge configured)
-    await adminClient
-      .from("organizations")
-      .update({ welcome_whatsapp_sent: true })
-      .eq("id", profile.organization_id);
+    console.log(`[WELCOME] Successfully sent to org ${profile.organization_id}`);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
