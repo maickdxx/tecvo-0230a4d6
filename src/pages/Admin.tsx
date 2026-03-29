@@ -115,6 +115,10 @@ export default function Admin() {
               </TabsTrigger>
               <TabsTrigger value="ai-credits" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">IA</TabsTrigger>
               <TabsTrigger value="backups" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Backups</TabsTrigger>
+              <TabsTrigger value="campaigns" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <span className="hidden sm:inline">Campanhas</span>
+                <span className="sm:hidden">Camp</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
