@@ -43,10 +43,14 @@ export function WhatsAppPromptCard() {
   };
 
   const handleSave = async () => {
-    const digits = whatsapp.replace(/\D/g, "");
+    let digits = whatsapp.replace(/\D/g, "");
     if (digits.length < 10) {
       toast.error("Número inválido. Use DDD + número.");
       return;
+    }
+    // Normalize to 55 + DDD + number
+    if (!digits.startsWith("55") && digits.length <= 11) {
+      digits = "55" + digits;
     }
     setSaving(true);
     const { error } = await supabase
