@@ -125,9 +125,12 @@ export default function ParaVoce() {
                 <p className="text-white/55 text-lg leading-relaxed mb-4">
                   Você faz o serviço, o cliente some... e você nunca mais fala com ele.
                 </p>
-                <p className="text-white/70 text-lg font-medium mb-12">
+                <p className="text-white/70 text-lg font-medium mb-6">
                   Isso não é falta de cliente.<br />
                   <span className="text-white">É falta de sistema.</span>
+                </p>
+                <p className="text-white/40 text-sm leading-relaxed mb-12">
+                  Essa é só uma das dezenas de funcionalidades que a Tecvo usa para ajudar empresas de ar-condicionado a crescer com organização e recorrência.
                 </p>
                 <ContinueButton onClick={next} />
               </motion.div>
