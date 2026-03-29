@@ -421,6 +421,7 @@ const App = () => (
               }
             />
             <Route path="/instalar" element={<Instalar />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route
               path="/suporte"
               element={
