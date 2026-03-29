@@ -5904,6 +5904,8 @@ export type Database = {
           id: string
           message_preview: string | null
           organization_id: string
+          recipient_role: string | null
+          recipient_user_id: string | null
           source: string
           status: string
         }
@@ -5915,6 +5917,8 @@ export type Database = {
           id?: string
           message_preview?: string | null
           organization_id: string
+          recipient_role?: string | null
+          recipient_user_id?: string | null
           source: string
           status?: string
         }
@@ -5926,6 +5930,8 @@ export type Database = {
           id?: string
           message_preview?: string | null
           organization_id?: string
+          recipient_role?: string | null
+          recipient_user_id?: string | null
           source?: string
           status?: string
         }

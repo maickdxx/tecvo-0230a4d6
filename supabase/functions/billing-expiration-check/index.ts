@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { resolveOwnerContact, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -176,39 +177,17 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Get owner email via user_roles
-      const { data: ownerRole } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("organization_id", org.id)
-        .eq("role", "owner")
-        .limit(1)
-        .maybeSingle();
+      // ── Resolve SHIELDED owner contact (STRICT: only owner role, no fallback) ──
+      const ownerContact = await resolveOwnerContact(supabase, org.id);
 
-      if (!ownerRole) {
-        console.log(`[BILLING-EXPIRATION] Skipping org ${org.id}: No owner role found`);
+      if (!ownerContact.userId || !ownerContact.email) {
+        console.log(`[BILLING-EXPIRATION] Shielded block for org ${org.id}: ${ownerContact.blockedReason}`);
+        await logShieldBlocked(supabase, org.id, ownerContact, "billing_expiration", `Billing expiration notification: ${emailConfig.type}`);
         continue;
       }
 
-      const { data: ownerProfile } = await supabase
-        .from("profiles")
-        .select("full_name, user_id")
-        .eq("user_id", ownerRole.user_id)
-        .maybeSingle();
-
-      if (!ownerProfile) {
-        console.log(`[BILLING-EXPIRATION] Skipping org ${org.id}: No profile found for owner ${ownerRole.user_id}`);
-        continue;
-      }
-
-      const { data: authData } = await supabase.auth.admin.getUserById(ownerProfile.user_id);
-      const ownerEmail = authData?.user?.email;
-      if (!ownerEmail) {
-        console.log(`[BILLING-EXPIRATION] Skipping org ${org.id}: No email found for owner ${ownerProfile.user_id}`);
-        continue;
-      }
-
-      console.log(`[BILLING-EXPIRATION] Target: org_id=${org.id} user_id=${ownerProfile.user_id} role=owner function=billing-expiration-check`);
+      const ownerEmail = ownerContact.email;
+      console.log(`[BILLING-EXPIRATION] Target: org_id=${org.id} user_id=${ownerContact.userId} role=owner function=billing-expiration-check`);
 
       const planName = PLAN_NAMES[org.plan] || org.plan || "Seu plano";
       const userName = ownerProfile.full_name || org.name || "Cliente";

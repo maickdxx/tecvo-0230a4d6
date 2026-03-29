@@ -17,7 +17,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
-import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { resolveOwnerPhone, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,16 +126,16 @@ Deno.serve(async (req) => {
       .eq("id", organization_id)
       .single();
 
-    // Resolve owner's personal phone via user_roles
+    // Resolve owner's personal phone via SHIELDED logic (only owner, no fallback)
     const ownerPhone = await resolveOwnerPhone(supabase, organization_id);
     if (!ownerPhone.phone) {
-      console.log(`[AUTO-SERVICE] No phone for org ${organization_id} owner (userId=${ownerPhone.userId})`);
-      return new Response(JSON.stringify({ ok: true, skipped: true, reason: "no_owner_phone" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.log(`[AUTO-SERVICE] No phone for org ${organization_id} owner (userId=${ownerPhone.userId} reason=${ownerPhone.blockedReason})`);
+      // Log shield block for owner notification
+      await logShieldBlocked(supabase, organization_id, ownerPhone, "auto_notify_owner", `Service event notification for: ${service_id}`);
+      // Note: we continue because we might still need to notify the client (operational)
     }
 
-    console.log(`[AUTO-SERVICE] Targeting: org_id=${organization_id} user_id=${ownerPhone.userId} role=owner function=auto-service-notify`);
+    console.log(`[AUTO-SERVICE] Shielded owner: org_id=${organization_id} user_id=${ownerPhone.userId} role=owner function=auto-service-notify`);
 
     // Get service details with client
     const { data: service } = await supabase

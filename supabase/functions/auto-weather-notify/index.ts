@@ -9,7 +9,7 @@
  * on (organization_id, message_type, sent_date) to prevent duplicate sends.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { resolveOwnerPhone, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 import { idempotentSend } from "../_shared/idempotentSend.ts";
 
 const corsHeaders = {
@@ -139,10 +139,11 @@ Deno.serve(async (req) => {
     for (const org of orgs || []) {
       if (!org.city) continue;
 
-      // Resolve owner's personal phone
+      // Resolve owner's personal phone via SHIELDED logic
       const ownerPhone = await resolveOwnerPhone(supabase, org.id);
       if (!ownerPhone.phone) {
-        console.log(`[AUTO-WEATHER] No phone for org ${org.id} owner`);
+        console.log(`[AUTO-WEATHER] No phone for org ${org.id} owner (userId=${ownerPhone.userId} reason=${ownerPhone.blockedReason})`);
+        await logShieldBlocked(supabase, org.id, ownerPhone, "weather", `Weather notification: ${org.city}`);
         continue;
       }
 

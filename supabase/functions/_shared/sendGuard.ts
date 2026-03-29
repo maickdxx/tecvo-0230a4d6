@@ -147,6 +147,8 @@ export async function logSend(
   status: "sent" | "blocked" | "error",
   blockedReason?: string,
   messagePreview?: string,
+  recipientUserId?: string,
+  recipientRole?: string
 ): Promise<void> {
   try {
     await supabase.from("whatsapp_message_log").insert({
@@ -156,6 +158,8 @@ export async function logSend(
       status,
       blocked_reason: blockedReason || null,
       message_preview: messagePreview ? messagePreview.substring(0, 200) : null,
+      recipient_user_id: recipientUserId || null,
+      recipient_role: recipientRole || null
     });
   } catch (err: any) {
     console.error("[SEND-GUARD] logSend error:", err.message);

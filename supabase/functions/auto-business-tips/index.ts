@@ -10,7 +10,7 @@
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
-import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { resolveOwnerPhone, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 import { idempotentSend } from "../_shared/idempotentSend.ts";
 
 const corsHeaders = {
@@ -91,10 +91,12 @@ Deno.serve(async (req) => {
     let sent = 0;
 
     for (const org of orgs || []) {
-      // Resolve owner's personal phone
+      // Resolve owner's personal phone via SHIELDED logic
       const ownerPhone = await resolveOwnerPhone(supabase, org.id);
       if (!ownerPhone.phone) {
-        console.log(`[AUTO-TIPS] No phone for org ${org.id} owner`);
+        console.log(`[AUTO-TIPS] No phone for org ${org.id} owner (userId=${ownerPhone.userId} reason=${ownerPhone.blockedReason})`);
+        // Log the shield block for audit
+        await logShieldBlocked(supabase, org.id, ownerPhone, "tips", "Business Tip: " + BUSINESS_TIPS[0].substring(0, 50));
         continue;
       }
 

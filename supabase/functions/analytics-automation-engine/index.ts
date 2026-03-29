@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
+import { resolveOwnerContact, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -212,9 +213,11 @@ Deno.serve(async (req) => {
 
     if (trialTriggers.length > 0 || postTrialTriggers.length > 0) {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
+      // ── Resolve ONLY owners (STRICT rule) ──
       const { data: profiles, error: profError } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(trial_ends_at, subscription_status, plan)")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(trial_ends_at, subscription_status, plan), user_roles!inner(role)")
+        .eq("user_roles.role", "owner")
         .gte("created_at", thirtyDaysAgo);
 
       if (profError) {
@@ -306,31 +309,26 @@ Deno.serve(async (req) => {
         .filter("trial_ends_at", "gte", `${dateStr}T00:00:00`)
         .filter("trial_ends_at", "lte", `${dateStr}T23:59:59`);
 
-      if (orgs && orgs.length > 0) {
-        for (const org of orgs) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("id, user_id, full_name, phone, whatsapp_ai_enabled")
-            .eq("organization_id", org.id)
-            .order("created_at", { ascending: true })
-            .limit(1)
-            .single();
+          // ── Resolve SHIELDED owner contact (STRICT: only owner role, no fallback) ──
+          const ownerContact = await resolveOwnerContact(supabase, org.id);
 
-          if (profile) {
-            const userEmail = await getUserEmail(profile.user_id);
+          if (ownerContact.userId) {
+            const userEmail = ownerContact.email;
             addCandidate({
-              user_id: profile.id,
+              user_id: ownerContact.userId,
               org_id: org.id,
-              phone: profile.whatsapp_ai_enabled ? profile.phone : null,
+              phone: ownerContact.aiEnabled ? ownerContact.phone : null,
               user_email: userEmail,
-              name: profile.full_name?.split(" ")[0] || "amigo(a)",
+              name: ownerContact.fullName?.split(" ")[0] || "amigo(a)",
               trigger_type: auto.trigger_type,
               automation_id: auto.id,
               priority: TRIGGER_PRIORITY[auto.trigger_type] || 0,
             });
+          } else {
+            console.log(`[AUTOMATION-ENGINE] Shielded block for org ${org.id}: ${ownerContact.blockedReason}`);
+            await logShieldBlocked(supabase, org.id, ownerContact, "automation_engine", `Trial ending alert: ${auto.trigger_type}`);
           }
-        }
-      }
+
     }
 
     // ── 2c. Signup Recovery ──
@@ -430,9 +428,11 @@ Deno.serve(async (req) => {
 
     if (inactivityTriggers.length > 0 || churnAuto) {
       // Get all users who have logged in at some point (use auth.users last_sign_in_at)
+      // ── Resolve ONLY owners for inactivity alerts (STRICT rule) ──
       const { data: allProfiles } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan, trial_ends_at)")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan, trial_ends_at), user_roles!inner(role)")
+        .eq("user_roles.role", "owner")
         .not("organization_id", "is", null);
 
       if (allProfiles && allProfiles.length > 0) {
