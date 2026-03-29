@@ -8,6 +8,17 @@ import type { ChangelogEntry, ChangeType } from "@/components/updates/ChangelogT
 
 const changelog: ChangelogEntry[] = [
   {
+    version: "v2.6",
+    date: "10 de Março de 2026",
+    changes: [
+      { type: "novidade", description: "Central de WhatsApp: Multi-atendimento, Bots e Respostas Rápidas" },
+      { type: "novidade", description: "Secretária IA: Agendamento inteligente e sugestão de respostas" },
+      { type: "melhoria", description: "Novo sistema de Etiquetas e Gestão de Contatos no WhatsApp" },
+      { type: "melhoria", description: "Relatórios de atendimento com tempo médio de resposta (TMR)" },
+      { type: "correcao", description: "Otimização de performance no carregamento de conversas longas" },
+    ],
+  },
+  {
     version: "v2.5",
     date: "6 de Março de 2026",
     changes: [
