@@ -41,16 +41,26 @@ const POST_TRIAL_DAY_MAP: Record<string, number> = {
   post_trial_d7: 7,
 };
 
+/**
+ * Calculate days between two dates using Brazil timezone (America/Sao_Paulo).
+ * This avoids off-by-one errors for users in BRT/BRST timezones.
+ */
 function daysBetween(dateA: Date, dateB: Date): number {
-  const msPerDay = 86400000;
-  return Math.floor((dateB.getTime() - dateA.getTime()) / msPerDay);
+  // Convert to BRT date strings and compare calendar days
+  const fmt = (d: Date) => {
+    const parts = d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).split("-");
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  };
+  const a = fmt(dateA);
+  const b = fmt(dateB);
+  return Math.floor((b.getTime() - a.getTime()) / 86400000);
 }
 
 // ── Email sending via Resend ──
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = "Tecvo <contato@tecvo.com.br>";
+const FROM_EMAIL = "Tecvo <noreply@notify.tecvo.com.br>";
 
-async function sendEmailViaResend(
+async function sendEmail(
   to: string,
   subject: string,
   html: string
@@ -58,7 +68,6 @@ async function sendEmailViaResend(
   if (!RESEND_API_KEY) {
     return { success: false, error: "RESEND_API_KEY not configured" };
   }
-
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -66,19 +75,12 @@ async function sendEmailViaResend(
         "Content-Type": "application/json",
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: [to],
-        subject,
-        html,
-      }),
+      body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
     });
-
     if (!res.ok) {
       const errText = await res.text();
       return { success: false, error: `Resend ${res.status}: ${errText}` };
     }
-
     await res.json();
     return { success: true };
   } catch (err: any) {
@@ -376,8 +378,9 @@ Deno.serve(async (req) => {
       const delay = activationAuto.delay_minutes || 1440;
       const targetDate = new Date(now.getTime() - delay * 60000);
 
-      const startTime = new Date(targetDate.getTime() - 3600000).toISOString();
-      const endTime = new Date(targetDate.getTime() + 3600000).toISOString();
+      // Use a wider 24-hour window to not miss users due to cron timing
+      const startTime = new Date(targetDate.getTime() - 12 * 3600000).toISOString();
+      const endTime = new Date(targetDate.getTime() + 12 * 3600000).toISOString();
 
       const { data: profiles } = await supabase
         .from("profiles")
@@ -420,23 +423,26 @@ Deno.serve(async (req) => {
 
       console.log(`[AUTOMATION-ENGINE] User ${userId}: ${candidates.length} eligible, best=${best.trigger_type} (pri=${best.priority})`);
 
-      // Check if already sent THIS automation to this user
+      // Check if already SUCCESSFULLY sent THIS automation to this user
+      // Failed sends should be retried
       const { count: alreadySentThis } = await supabase
         .from("analytics_automation_logs")
         .select("*", { count: "exact", head: true })
         .eq("automation_id", best.automation_id)
-        .eq(best.email ? "email" : "user_id", best.email || userId);
+        .eq(best.email ? "email" : "user_id", best.email || userId)
+        .eq("status", "sent");
 
       if ((alreadySentThis || 0) > 0) {
         console.log(`[AUTOMATION-ENGINE] User ${userId}: already received ${best.trigger_type}, skipping`);
         continue;
       }
 
-      // Check 1/day limit
+      // Check 1/day limit (only count successful sends)
       const { count: sentToday } = await supabase
         .from("analytics_automation_logs")
         .select("*", { count: "exact", head: true })
         .eq(best.email ? "email" : "user_id", best.email || userId)
+        .eq("status", "sent")
         .gte("sent_at", `${todayStr}T00:00:00`);
 
       if ((sentToday || 0) > 0) {
@@ -494,7 +500,8 @@ Deno.serve(async (req) => {
       let emailStatus = "skipped";
       let emailError: string | null = null;
 
-      const shouldSendEmail = hasEmail && (!hasPhone || waStatus === "error" || waStatus === "skipped");
+      // Send email alongside WhatsApp (both channels), not just as fallback
+      const shouldSendEmail = hasEmail && !!automation.email_template;
 
       if (shouldSendEmail && contactEmail) {
         const subject = EMAIL_SUBJECTS[best.trigger_type] || "Novidades da Tecvo";
@@ -503,7 +510,7 @@ Deno.serve(async (req) => {
           emailBody.replace("{{name}}", best.name).replace(/\n/g, "<br>")
         );
 
-        const result = await sendEmailViaResend(contactEmail, subject, htmlBody);
+        const result = await sendEmail(contactEmail, subject, htmlBody);
         emailStatus = result.success ? "sent" : "error";
         emailError = result.error || null;
 
