@@ -60,10 +60,8 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
 
     update({ name: formData.name, phone: formData.phone }, {
       onSuccess: async () => {
-        const trimmedPhone = formData.phone.trim();
         if (user) {
-          // Save company phone to org whatsapp_owner
-          const updateData: Record<string, string> = {};
+          const updateData: any = {};
 
           // If user has no phone, save the one they just entered
           if (!hasWhatsappPersonal) {
@@ -72,13 +70,15 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
               personalDigits = "55" + personalDigits;
             }
             updateData.phone = personalDigits;
-            updateData.whatsapp_ai_enabled = "true";
+            updateData.whatsapp_ai_enabled = true;
           }
 
-          await supabase
-            .from("profiles")
-            .update(updateData)
-            .eq("user_id", user.id);
+          if (Object.keys(updateData).length > 0) {
+            await supabase
+              .from("profiles")
+              .update(updateData)
+              .eq("user_id", user.id);
+          }
         }
         onNext();
       },
