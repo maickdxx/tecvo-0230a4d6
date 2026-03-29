@@ -26,6 +26,7 @@ import { useUserRole, type AppRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { InviteForm } from "./InviteForm";
 import { MemberPermissionsEditor } from "./MemberPermissionsEditor";
+import { MemberDetailsEditor } from "./MemberDetailsEditor";
 import { useOrganization } from "@/hooks/useOrganization";
 
 interface TeamSettingsProps {
@@ -56,6 +57,7 @@ const ROLE_COLORS: Record<AppRole, string> = {
 export function TeamSettings({ onBack }: TeamSettingsProps) {
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [expandedPermissions, setExpandedPermissions] = useState<string | null>(null);
+  const [expandedDetails, setExpandedDetails] = useState<string | null>(null);
   const { members, isLoading, error, updateRole, isUpdating, updateFieldWorker, isUpdatingFieldWorker, deleteMember, isDeleting } = useTeamMembers();
   const { isOwner, isAdmin } = useUserRole();
   const { user } = useAuth();
@@ -186,11 +188,25 @@ export function TeamSettings({ onBack }: TeamSettingsProps) {
                   )}
 
                   {canManageRoles && !isOwnerRole && (
-                    <div className="flex items-center gap-2 border-t border-border pt-3">
+                    <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-muted-foreground flex-1"
+                        className="text-muted-foreground flex-1 min-w-[120px]"
+                        onClick={() =>
+                          setExpandedDetails(prev =>
+                            prev === member.user_id ? null : member.user_id
+                          )
+                        }
+                      >
+                        <Briefcase className="h-4 w-4 mr-1" />
+                        Dados RH
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-muted-foreground flex-1 min-w-[120px]"
                         onClick={() =>
                           setExpandedPermissions(prev =>
                             prev === member.user_id ? null : member.user_id
@@ -209,12 +225,15 @@ export function TeamSettings({ onBack }: TeamSettingsProps) {
                           onClick={() => setMemberToDelete(member)}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
-                          Remover
                         </Button>
                       )}
                     </div>
                   )}
                 </div>
+
+                {expandedDetails === member.user_id && (
+                  <MemberDetailsEditor userId={member.user_id} />
+                )}
 
                 {expandedPermissions === member.user_id && organization && (
                   <MemberPermissionsEditor

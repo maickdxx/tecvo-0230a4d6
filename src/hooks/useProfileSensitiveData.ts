@@ -23,6 +23,7 @@ export interface SensitiveProfileData {
   whatsapp_signature_enabled: boolean;
   ai_assistant_name: string | null;
   ai_assistant_voice: string | null;
+  whatsapp_signature: string | null;
 }
 
 /**
@@ -53,7 +54,7 @@ export function useProfileSensitiveData(targetUserId?: string) {
           "cpf, rg, hourly_rate, birth_date, hire_date, " +
           "address_cep, address_street, address_number, address_neighborhood, " +
           "address_city, address_state, whatsapp_ai_enabled, avatar_url, notes, " +
-          "position, employee_type, whatsapp_signature_enabled, " +
+          "position, employee_type, whatsapp_signature_enabled, whatsapp_signature, " +
           "ai_assistant_name, ai_assistant_voice"
         )
         .eq("user_id", userId!)
