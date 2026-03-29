@@ -136,8 +136,11 @@ const EMAIL_SUBJECTS: Record<string, string> = {
   post_trial_d3: "🚀 Sentimos sua falta!",
   post_trial_d7: "⏰ Última chamada — reative agora",
   new_user_activation: "🚀 Crie sua primeira Ordem de Serviço",
-  signup_recovery: "😊 Precisa de ajuda para finalizar?",
-  churn_recovery: "Sentimos sua ausência na Tecvo",
+  signup_recovery: "😊 Falta pouco pra finalizar seu cadastro",
+  churn_recovery: "{{name}}, seus clientes continuam precisando de manutenção",
+  inactive_3d: "{{name}}, seus clientes podem estar esperando",
+  inactive_7d: "{{name}}, faz 1 semana — quanto dinheiro ficou na mesa?",
+  inactive_15d: "{{name}}, última chamada antes de perder o controle",
 };
 
 Deno.serve(async (req) => {
