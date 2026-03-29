@@ -1,7 +1,7 @@
 /**
  * process-campaign-queue — Controlled campaign sender.
  * Processes campaign_sends queue one-by-one with rate limiting.
- * Designed for re-engagement: slow, safe, no mass blast.
+ * Channel priority: WhatsApp first, then email. Both if available.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
@@ -12,13 +12,30 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// ── Channel Decision ──
+function decideChannels(phone: string | null, email: string | null, emailTemplate: string | null): {
+  primaryChannel: "whatsapp" | "email" | "none";
+  sendWhatsapp: boolean;
+  sendEmail: boolean;
+} {
+  const hasWhatsapp = !!phone;
+  const hasEmail = !!email && !!emailTemplate;
+
+  if (hasWhatsapp && hasEmail) {
+    return { primaryChannel: "whatsapp", sendWhatsapp: true, sendEmail: true };
+  }
+  if (hasWhatsapp) {
+    return { primaryChannel: "whatsapp", sendWhatsapp: true, sendEmail: false };
+  }
+  if (hasEmail) {
+    return { primaryChannel: "email", sendWhatsapp: false, sendEmail: true };
+  }
+  return { primaryChannel: "none", sendWhatsapp: false, sendEmail: false };
+}
+
 // ── Email via Resend ──
 async function sendEmail(
-  to: string,
-  subject: string,
-  html: string,
-  resendKey: string,
-  fromEmail: string
+  to: string, subject: string, html: string, resendKey: string, fromEmail: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -87,14 +104,8 @@ Deno.serve(async (req) => {
       .eq("id", 1)
       .single();
 
-    if (!config) {
-      return jsonResponse({ error: "No campaign config found" }, 500);
-    }
-
-    // Check pause
-    if (config.is_paused) {
-      return jsonResponse({ skipped: true, reason: "campaign_paused", message: config.paused_reason });
-    }
+    if (!config) return jsonResponse({ error: "No campaign config found" }, 500);
+    if (config.is_paused) return jsonResponse({ skipped: true, reason: "campaign_paused" });
 
     // 2. Check hourly rate limit
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
@@ -105,11 +116,10 @@ Deno.serve(async (req) => {
       .gte("processed_at", oneHourAgo);
 
     if ((sentLastHour || 0) >= config.sends_per_hour) {
-      console.log(`[CAMPAIGN] Rate limit reached: ${sentLastHour}/${config.sends_per_hour} per hour`);
       return jsonResponse({ skipped: true, reason: "rate_limit", sent_last_hour: sentLastHour });
     }
 
-    // 3. Check minimum interval since last send
+    // 3. Check minimum interval
     const { data: lastSent } = await supabase
       .from("campaign_sends")
       .select("processed_at")
@@ -121,12 +131,11 @@ Deno.serve(async (req) => {
     if (lastSent?.processed_at) {
       const elapsed = (Date.now() - new Date(lastSent.processed_at).getTime()) / 1000;
       if (elapsed < config.min_interval_seconds) {
-        console.log(`[CAMPAIGN] Too soon: ${Math.round(elapsed)}s < ${config.min_interval_seconds}s min`);
         return jsonResponse({ skipped: true, reason: "interval_cooldown", elapsed_seconds: Math.round(elapsed) });
       }
     }
 
-    // 4. Get next pending item (ordered by priority DESC, created_at ASC)
+    // 4. Get next pending item
     const { data: nextItem } = await supabase
       .from("campaign_sends")
       .select("*")
@@ -136,23 +145,36 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (!nextItem) {
-      return jsonResponse({ skipped: true, reason: "queue_empty" });
-    }
+    if (!nextItem) return jsonResponse({ skipped: true, reason: "queue_empty" });
 
-    // 5. Mark as processing
+    // 5. Decide channels BEFORE processing
+    const channelDecision = decideChannels(
+      nextItem.phone && vpsUrl && apiKey ? nextItem.phone : null,
+      nextItem.email,
+      nextItem.email_template
+    );
+
+    const now = new Date().toISOString();
+
+    // 6. Mark as processing with channel decision
     await supabase
       .from("campaign_sends")
-      .update({ status: "processing", updated_at: new Date().toISOString() })
+      .update({
+        status: "processing",
+        primary_channel: channelDecision.primaryChannel,
+        channel_decided_at: now,
+        updated_at: now,
+      })
       .eq("id", nextItem.id);
 
-    console.log(`[CAMPAIGN] Processing: user=${nextItem.user_id}, phone=${nextItem.phone}, email=${nextItem.email}`);
+    console.log(`[CAMPAIGN] Processing: user=${nextItem.user_name}, phone=${nextItem.phone}, email=${nextItem.email}, primary=${channelDecision.primaryChannel}`);
 
-    // 6. Send WhatsApp
+    // 7. Send WhatsApp (priority channel)
     let waStatus = "skipped";
     let waError: string | null = null;
+    let waSentAt: string | null = null;
 
-    if (nextItem.phone && vpsUrl && apiKey) {
+    if (channelDecision.sendWhatsapp && nextItem.phone && vpsUrl && apiKey) {
       try {
         let cleanNumber = nextItem.phone.replace(/\D/g, "");
         if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
@@ -167,6 +189,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ number: jid, text: message }),
         });
 
+        waSentAt = new Date().toISOString();
         if (res.ok) {
           waStatus = "sent";
           console.log(`[CAMPAIGN] WhatsApp sent to ${nextItem.phone}`);
@@ -178,14 +201,16 @@ Deno.serve(async (req) => {
       } catch (err: any) {
         waStatus = "error";
         waError = err.message;
+        waSentAt = new Date().toISOString();
       }
     }
 
-    // 7. Send Email
+    // 8. Send Email
     let emailStatus = "skipped";
     let emailError: string | null = null;
+    let emailSentAt: string | null = null;
 
-    if (nextItem.email && nextItem.email_template && resendKey) {
+    if (channelDecision.sendEmail && nextItem.email && nextItem.email_template && resendKey) {
       const subject = nextItem.email_subject || "Novidades da Tecvo";
       const bodyText = nextItem.email_template
         .replace("{{name}}", nextItem.user_name || "")
@@ -193,6 +218,7 @@ Deno.serve(async (req) => {
       const html = buildEmailHtml(nextItem.user_name || "", bodyText);
 
       const result = await sendEmail(nextItem.email, subject, html, resendKey, fromEmail);
+      emailSentAt = new Date().toISOString();
       emailStatus = result.success ? "sent" : "error";
       emailError = result.error || null;
 
@@ -203,7 +229,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 8. Determine final status
+    // 9. Determine final status
     const finalStatus = waStatus === "sent" || emailStatus === "sent" ? "sent" : "failed";
 
     await supabase
@@ -214,29 +240,26 @@ Deno.serve(async (req) => {
         email_status: emailStatus,
         whatsapp_error: waError,
         email_error: emailError,
+        whatsapp_sent_at: waSentAt,
+        email_sent_at: emailSentAt,
         processed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", nextItem.id);
-
-    // 9. Random delay for next call (between min and max interval)
-    const delayInfo = {
-      min: config.min_interval_seconds,
-      max: config.max_interval_seconds,
-      next_eligible: new Date(Date.now() + config.min_interval_seconds * 1000).toISOString(),
-    };
 
     return jsonResponse({
       success: true,
       processed: {
         id: nextItem.id,
         user: nextItem.user_name,
+        phone: nextItem.phone,
+        email: nextItem.email,
+        primary_channel: channelDecision.primaryChannel,
         whatsapp: waStatus,
         email: emailStatus,
         final: finalStatus,
       },
       rate: { sent_last_hour: (sentLastHour || 0) + (finalStatus === "sent" ? 1 : 0), limit: config.sends_per_hour },
-      delay: delayInfo,
     });
   } catch (error: any) {
     console.error("[CAMPAIGN] Critical error:", error);

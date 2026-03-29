@@ -1025,9 +1025,11 @@ export type Database = {
       campaign_sends: {
         Row: {
           campaign_name: string
+          channel_decided_at: string | null
           created_at: string
           email: string | null
           email_error: string | null
+          email_sent_at: string | null
           email_status: string | null
           email_subject: string | null
           email_template: string | null
@@ -1035,6 +1037,7 @@ export type Database = {
           message_template: string
           organization_id: string | null
           phone: string | null
+          primary_channel: string | null
           priority: number
           processed_at: string | null
           status: string
@@ -1042,13 +1045,16 @@ export type Database = {
           user_id: string
           user_name: string | null
           whatsapp_error: string | null
+          whatsapp_sent_at: string | null
           whatsapp_status: string | null
         }
         Insert: {
           campaign_name?: string
+          channel_decided_at?: string | null
           created_at?: string
           email?: string | null
           email_error?: string | null
+          email_sent_at?: string | null
           email_status?: string | null
           email_subject?: string | null
           email_template?: string | null
@@ -1056,6 +1062,7 @@ export type Database = {
           message_template: string
           organization_id?: string | null
           phone?: string | null
+          primary_channel?: string | null
           priority?: number
           processed_at?: string | null
           status?: string
@@ -1063,13 +1070,16 @@ export type Database = {
           user_id: string
           user_name?: string | null
           whatsapp_error?: string | null
+          whatsapp_sent_at?: string | null
           whatsapp_status?: string | null
         }
         Update: {
           campaign_name?: string
+          channel_decided_at?: string | null
           created_at?: string
           email?: string | null
           email_error?: string | null
+          email_sent_at?: string | null
           email_status?: string | null
           email_subject?: string | null
           email_template?: string | null
@@ -1077,6 +1087,7 @@ export type Database = {
           message_template?: string
           organization_id?: string | null
           phone?: string | null
+          primary_channel?: string | null
           priority?: number
           processed_at?: string | null
           status?: string
@@ -1084,6 +1095,7 @@ export type Database = {
           user_id?: string
           user_name?: string | null
           whatsapp_error?: string | null
+          whatsapp_sent_at?: string | null
           whatsapp_status?: string | null
         }
         Relationships: []
