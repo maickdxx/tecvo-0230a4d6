@@ -239,12 +239,28 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               )}
               {channelLabel && (
                 <span className={cn(
-                  "text-[9px] rounded-full px-1.5 py-0.5 border",
+                  "text-[9px] rounded-full px-1.5 py-0.5 border inline-flex items-center gap-0.5",
                   isChannelOffline
-                    ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
+                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
                     : "bg-muted/80 text-muted-foreground border-border/60"
                 )}>
-                  {isChannelOffline ? `Canal offline • ${channelLabel}` : `Canal • ${channelLabel}`}
+                  {isChannelOffline ? (
+                    <>
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                      {`Desconectado • ${channelLabel}`}
+                    </>
+                  ) : (
+                    <>
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      {channelLabel}
+                    </>
+                  )}
+                </span>
+              )}
+              {!channelLabel && contact.channel_id && (
+                <span className="text-[9px] rounded-full px-1.5 py-0.5 border bg-muted/60 text-muted-foreground/60 border-border/40 inline-flex items-center gap-0.5">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                  Canal removido
                 </span>
               )}
               {tags.slice(0, 2).map((tag) => (
