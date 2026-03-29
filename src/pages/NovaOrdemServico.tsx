@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Wrench, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, Wrench, ArrowRight, CheckCircle2, Loader2, Plus } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,12 +46,15 @@ function QuickServiceForm({
   clients,
   onSubmit,
   isSubmitting,
+  onShowFullForm,
 }: {
   clients: { id: string; name: string }[];
   onSubmit: (data: ServiceFormData) => Promise<void>;
   isSubmitting: boolean;
+  onShowFullForm: () => void;
 }) {
   const tz = useOrgTimezone();
+  const navigate = useNavigate();
   const [clientId, setClientId] = useState(clients[0]?.id || "");
   const [serviceType, setServiceType] = useState("cleaning");
   const [value, setValue] = useState("");
@@ -108,16 +111,28 @@ function QuickServiceForm({
           <div className="space-y-4 max-w-md mx-auto">
             <div>
               <Label>Cliente</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger className="h-12 text-base">
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {clients.length > 0 ? (
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger className="h-12 text-base">
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full h-12 text-base gap-2 border-dashed"
+                  onClick={() => navigate("/clientes/novo?from=checklist")}
+                >
+                  <Plus className="h-4 w-4" />
+                  Cadastrar um cliente primeiro
+                </Button>
+              )}
             </div>
 
             <div>
@@ -159,7 +174,7 @@ function QuickServiceForm({
             </div>
           </div>
 
-          <div className="flex justify-center pt-2">
+          <div className="flex flex-col items-center gap-4 pt-2">
             <Button type="submit" size="lg" disabled={isSubmitting} className="min-w-[240px] gap-2">
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -168,6 +183,16 @@ function QuickServiceForm({
               )}
               {isSubmitting ? "Salvando..." : "Salvar e continuar"}
               {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+            </Button>
+            
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              onClick={onShowFullForm}
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              Desejo preencher todos os dados (OS completa)
             </Button>
           </div>
         </CardContent>
@@ -189,9 +214,10 @@ export default function NovaOrdemServico() {
   const [formKey, setFormKey] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const [forceFullForm, setForceFullForm] = useState(false);
   const isActivationMode = showGuide && !steps[1]?.completed;
   const fromChecklist = searchParams.get("from") === "checklist";
-  const useQuickForm = isActivationMode || fromChecklist;
+  const useQuickForm = (isActivationMode || fromChecklist) && !forceFullForm;
 
   // Filter out demo clients for quick form
   const realClients = (clients || []).filter((c: any) => !c.is_demo_data && !c.deleted_at);
@@ -305,6 +331,7 @@ export default function NovaOrdemServico() {
             clients={realClients}
             onSubmit={handleQuickSubmit}
             isSubmitting={isCreating}
+            onShowFullForm={() => setForceFullForm(true)}
           />
         </div>
         <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} servicesUsed={servicesUsed} />

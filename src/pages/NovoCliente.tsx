@@ -15,9 +15,11 @@ import { toast } from "@/hooks/use-toast";
 function QuickClientForm({
   onSubmit,
   isSubmitting,
+  onShowFullForm,
 }: {
   onSubmit: (data: ClientFormData) => Promise<void>;
   isSubmitting: boolean;
+  onShowFullForm: () => void;
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -81,7 +83,7 @@ function QuickClientForm({
             </div>
           </div>
 
-          <div className="flex justify-center pt-2">
+          <div className="flex flex-col items-center gap-4 pt-2">
             <Button type="submit" size="lg" disabled={isSubmitting} className="min-w-[240px] gap-2">
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -90,6 +92,16 @@ function QuickClientForm({
               )}
               {isSubmitting ? "Salvando..." : "Salvar e continuar"}
               {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+            </Button>
+            
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              onClick={onShowFullForm}
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              Desejo preencher todos os dados (Cadastro completo)
             </Button>
           </div>
         </CardContent>
@@ -106,10 +118,11 @@ export default function NovoCliente() {
   const queryClient = useQueryClient();
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const [forceFullForm, setForceFullForm] = useState(false);
   // Activation mode: first client hasn't been created yet
   const isActivationMode = showGuide && !steps[0]?.completed;
   const fromChecklist = searchParams.get("from") === "checklist";
-  const useQuickForm = isActivationMode || fromChecklist;
+  const useQuickForm = (isActivationMode || fromChecklist) && !forceFullForm;
 
   const handleQuickSubmit = async (data: ClientFormData) => {
     await create(data);
@@ -147,7 +160,11 @@ export default function NovoCliente() {
     return (
       <AppLayout>
         <div className="max-w-lg mx-auto py-8">
-          <QuickClientForm onSubmit={handleQuickSubmit} isSubmitting={isCreating} />
+          <QuickClientForm 
+            onSubmit={handleQuickSubmit} 
+            isSubmitting={isCreating} 
+            onShowFullForm={() => setForceFullForm(true)}
+          />
         </div>
       </AppLayout>
     );
