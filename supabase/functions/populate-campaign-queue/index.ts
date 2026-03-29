@@ -97,25 +97,21 @@ Deno.serve(async (req) => {
       // Skip users with active paid subscription
       if (org?.subscription_status === "active" && org?.plan && org.plan !== "trial") continue;
 
-      // Must have at least phone or email
+      // Fetch auth user data once (email + last sign in)
       let userEmail: string | null = null;
+      let lastSignIn: Date | null = null;
       try {
         const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
         userEmail = authUser?.user?.email || null;
+        if (authUser?.user?.last_sign_in_at) {
+          lastSignIn = new Date(authUser.user.last_sign_in_at);
+        }
       } catch { /* skip */ }
 
       if (!phone && !userEmail) continue;
 
       // Calculate priority based on activity level
       let priority = 0;
-      let lastSignIn: Date | null = null;
-
-      try {
-        const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
-        if (authUser?.user?.last_sign_in_at) {
-          lastSignIn = new Date(authUser.user.last_sign_in_at);
-        }
-      } catch { /* skip */ }
 
       const trialEndsAt = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
       const trialExpired = trialEndsAt && trialEndsAt <= now;
