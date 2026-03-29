@@ -123,7 +123,7 @@ const EMAIL_SUBJECTS: Record<string, string> = {
   trial_d1: "📊 Como está sua experiência na Tecvo?",
   trial_d3: "🏆 Resultados Reais com a Tecvo",
   trial_d5: "🔥 Chega de planilhas e papelada!",
-  trial_d7: "📊 Sua primeira semana com a Tecvo",
+  trial_d7: "{{name}}, testar sem usar não mostra resultado",
   trial_ending_3d: "{{name}}, em 3 dias você perde o controle dos seus clientes",
   trial_ending_1d: "Amanhã você perde seus clientes de vista, {{name}}",
   trial_ending_0d: "{{name}}, seu faturamento automático parou agora",
