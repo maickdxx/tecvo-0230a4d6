@@ -307,11 +307,15 @@ export function AdminWhatsAppTecvo() {
               </div>
               <div>
                 <CardTitle className="text-lg">
-                  {isConnected ? "Conectado" : isConnecting ? "Conectando..." : "Desconectado"}
+                  {isConnected
+                    ? status?.state === "open" ? "Conectado" : "Operacional"
+                    : isConnecting ? "Conectando..." : "Desconectado"}
                 </CardTitle>
                 <CardDescription>
-                  {isConnected && status?.phone_number
+                  {isConnected && status?.state === "open" && status?.phone_number
                     ? `Número: ${status.phone_number}`
+                    : isConnected && status?.state !== "open"
+                    ? `Status da API indisponível, mas ${metrics?.sent_24h} mensagens enviadas nas últimas 24h`
                     : isConnected
                     ? "Sessão ativa"
                     : "O canal institucional não está conectado"
