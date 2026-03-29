@@ -40,11 +40,12 @@ export function useUserRole() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const rolePriority: AppRole[] = ["owner", "admin", "member", "employee"];
-  const primaryRole = rolePriority.find(r => roles?.includes(r)) || "member";
+  const rolePriority: AppRole[] = ["super_admin", "owner", "admin", "member", "employee"];
+  const primaryRole = roles?.length ? (rolePriority.find(r => roles.includes(r)) || "member") : (isLoadingRoles ? null : "member");
 
-  const isAdmin = primaryRole === "admin" || primaryRole === "owner";
-  const isOwner = primaryRole === "owner";
+  const isSuperAdmin = primaryRole === "super_admin";
+  const isOwner = primaryRole === "owner" || isSuperAdmin;
+  const isAdmin = primaryRole === "admin" || isOwner;
   const isMember = primaryRole === "member";
 
   // field_worker flag from profile - independent of role
