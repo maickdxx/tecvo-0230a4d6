@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 
@@ -24,7 +25,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { sensitiveData } = useProfileSensitiveData();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [whatsappPersonal, setWhatsappPersonal] = useState("");
+  const [whatsappAiEnabled, setWhatsappAiEnabled] = useState(true);
   const [position, setPosition] = useState("");
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
       setFullName(profile.full_name || "");
       setPhone(profile.phone || "");
       setPosition(profile.position || "");
-      setWhatsappPersonal(sensitiveData?.whatsapp_personal || "");
+      setWhatsappAiEnabled(sensitiveData?.whatsapp_ai_enabled ?? true);
     }
   }, [profile, sensitiveData]);
 
@@ -42,7 +43,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
       fullName: fullName.trim(),
       phone: phone.trim(),
       position: position.trim(),
-      whatsappPersonal: whatsappPersonal.trim(),
+      whatsappAiEnabled: whatsappAiEnabled,
     });
   };
 
