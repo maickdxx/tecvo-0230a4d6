@@ -19,7 +19,7 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
   const { user, profile } = useAuth();
   const { sensitiveData } = useProfileSensitiveData();
 
-  const hasWhatsappPersonal = !!(profile?.phone || sensitiveData?.whatsapp_personal);
+  const hasWhatsappPersonal = !!profile?.phone;
 
   const [formData, setFormData] = useState({
     name: organization?.name || "",
@@ -60,28 +60,25 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
 
     update({ name: formData.name, phone: formData.phone }, {
       onSuccess: async () => {
-        const trimmedPhone = formData.phone.trim();
         if (user) {
-          // Save company phone to org whatsapp_owner
-          const updateData: Record<string, string> = {};
+          const updateData: any = {};
 
-          // If user has no personal WhatsApp, save the one they just entered
+          // If user has no phone, save the one they just entered
           if (!hasWhatsappPersonal) {
             let personalDigits = formData.personalWhatsapp.replace(/\D/g, "");
             if (!personalDigits.startsWith("55") && personalDigits.length <= 11) {
               personalDigits = "55" + personalDigits;
             }
-            updateData.whatsapp_personal = personalDigits;
             updateData.phone = personalDigits;
-          } else {
-            // Legacy behavior: sync company phone to personal if no personal set
-            updateData.whatsapp_personal = trimmedPhone;
+            updateData.whatsapp_ai_enabled = true;
           }
 
-          await supabase
-            .from("profiles")
-            .update(updateData)
-            .eq("user_id", user.id);
+          if (Object.keys(updateData).length > 0) {
+            await supabase
+              .from("profiles")
+              .update(updateData)
+              .eq("user_id", user.id);
+          }
         }
         onNext();
       },

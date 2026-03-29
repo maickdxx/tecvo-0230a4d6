@@ -44,7 +44,7 @@ export function DashboardBanners() {
   const infoSuppressed = isSuppressed("info");
 
   // --- Resolve which soft banner to show (only one) ---
-  const hasWhatsapp = !!(profile?.phone || sensitiveData?.whatsapp_personal);
+  const hasWhatsapp = !!profile?.phone;
   const whatsappDismissed = (() => {
     const ts = localStorage.getItem("whatsapp_prompt_dismissed_at");
     if (!ts) return false;

@@ -28,7 +28,6 @@ export function EmployeeProfileDialog({ open, onOpenChange }: EmployeeProfileDia
   const { user } = useAuth();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [whatsappPersonal, setWhatsappPersonal] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +35,6 @@ export function EmployeeProfileDialog({ open, onOpenChange }: EmployeeProfileDia
   useEffect(() => {
     if (profile?.full_name) setFullName(profile.full_name);
     if (profile?.phone) setPhone(profile.phone);
-    if (sensitiveData?.whatsapp_personal) setWhatsappPersonal(sensitiveData.whatsapp_personal);
     if (sensitiveData?.avatar_url) setAvatarUrl(sensitiveData.avatar_url);
   }, [profile, sensitiveData]);
 
@@ -90,7 +88,10 @@ export function EmployeeProfileDialog({ open, onOpenChange }: EmployeeProfileDia
 
   const handleSave = () => {
     if (!fullName.trim()) return;
-    updateProfile({ fullName: fullName.trim(), phone: phone.trim(), whatsappPersonal: whatsappPersonal.trim() });
+    updateProfile({ 
+      fullName: fullName.trim(), 
+      phone: phone.trim() 
+    });
   };
 
   const userInitial = fullName?.charAt(0).toUpperCase() || "U";
@@ -158,19 +159,6 @@ export function EmployeeProfileDialog({ open, onOpenChange }: EmployeeProfileDia
               onChange={(e) => setPhone(formatPhone(e.target.value))}
               placeholder="(11) 99999-9999"
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="whatsappPersonal">WhatsApp Pessoal (para IA)</Label>
-            <Input
-              id="whatsappPersonal"
-              type="tel"
-              value={whatsappPersonal}
-              onChange={(e) => setWhatsappPersonal(formatPhone(e.target.value))}
-              placeholder="(11) 99999-9999"
-            />
-            <p className="text-xs text-muted-foreground">
-              Número pessoal de WhatsApp do funcionário
-            </p>
           </div>
         </div>
 

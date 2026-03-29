@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
       const { data: profiles, error: profError } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at, organizations!inner(trial_ends_at, subscription_status, plan)")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(trial_ends_at, subscription_status, plan)")
         .gte("created_at", thirtyDaysAgo);
 
       if (profError) {
@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
           const trialEndsAt = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
           const signupDate = new Date(profile.created_at);
           const daysSinceSignup = daysBetween(signupDate, now);
-          const phone = profile.whatsapp_personal || profile.phone;
+          const phone = profile.whatsapp_ai_enabled ? profile.phone : null;
           const firstName = profile.full_name?.split(" ")[0] || "amigo(a)";
 
           // Get user email (cached)
@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
         for (const org of orgs) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("id, user_id, full_name, phone, whatsapp_personal")
+            .select("id, user_id, full_name, phone, whatsapp_ai_enabled")
             .eq("organization_id", org.id)
             .order("created_at", { ascending: true })
             .limit(1)
@@ -321,7 +321,7 @@ Deno.serve(async (req) => {
             addCandidate({
               user_id: profile.id,
               org_id: org.id,
-              phone: profile.whatsapp_personal || profile.phone,
+              phone: profile.whatsapp_ai_enabled ? profile.phone : null,
               user_email: userEmail,
               name: profile.full_name?.split(" ")[0] || "amigo(a)",
               trigger_type: auto.trigger_type,
@@ -390,7 +390,7 @@ Deno.serve(async (req) => {
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at")
         .gte("created_at", startTime)
         .lte("created_at", endTime);
 
@@ -406,7 +406,7 @@ Deno.serve(async (req) => {
             addCandidate({
               user_id: profile.id,
               org_id: profile.organization_id,
-              phone: profile.whatsapp_personal || profile.phone,
+              phone: profile.whatsapp_ai_enabled ? profile.phone : null,
               user_email: userEmail,
               name: profile.full_name?.split(" ")[0] || "amigo(a)",
               trigger_type: "new_user_activation",
@@ -432,7 +432,7 @@ Deno.serve(async (req) => {
       // Get all users who have logged in at some point (use auth.users last_sign_in_at)
       const { data: allProfiles } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at, organizations!inner(subscription_status, plan, trial_ends_at)")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan, trial_ends_at)")
         .not("organization_id", "is", null);
 
       if (allProfiles && allProfiles.length > 0) {
@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
           const daysSinceAccess = daysBetween(lastSignIn, now);
           if (daysSinceAccess < 3) continue; // Active user, skip
 
-          const phone = profile.whatsapp_personal || profile.phone;
+          const phone = profile.whatsapp_ai_enabled ? profile.phone : null;
           const firstName = profile.full_name?.split(" ")[0] || "amigo(a)";
 
           // Cache email

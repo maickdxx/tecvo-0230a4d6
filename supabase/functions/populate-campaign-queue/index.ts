@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     
     const { data: profiles, error: profError } = await supabase
       .from("profiles")
-      .select("id, user_id, full_name, organization_id, phone, whatsapp_personal, created_at, organizations!inner(subscription_status, plan, trial_ends_at, created_at)")
+      .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan, trial_ends_at, created_at)")
       .not("organization_id", "is", null)
       .lte("created_at", cutoffDate);
 
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       if (excludeUserIds.has(profile.id)) continue;
 
       const org = profile.organizations as any;
-      const phone = profile.whatsapp_personal || profile.phone;
+      const phone = profile.whatsapp_ai_enabled ? profile.phone : null;
       const firstName = profile.full_name?.split(" ")[0] || "";
 
       // Skip users with active paid subscription

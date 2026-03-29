@@ -7,15 +7,25 @@ export function useProfile() {
   const { profile, user } = useAuth();
 
   const updateProfileMutation = useMutation({
-    mutationFn: async ({ fullName, phone, position, whatsappPersonal }: { fullName: string; phone: string; position?: string; whatsappPersonal?: string }) => {
+    mutationFn: async ({ 
+      fullName, 
+      phone, 
+      position, 
+      whatsappAiEnabled 
+    }: { 
+      fullName: string; 
+      phone: string; 
+      position?: string; 
+      whatsappAiEnabled?: boolean 
+    }) => {
       if (!user) throw new Error("Não autenticado");
 
-      const updateData: Record<string, string | null> = { full_name: fullName, phone };
+      const updateData: any = { full_name: fullName, phone };
       if (position !== undefined) {
         updateData.position = position || null;
       }
-      if (whatsappPersonal !== undefined) {
-        updateData.whatsapp_personal = whatsappPersonal || null;
+      if (whatsappAiEnabled !== undefined) {
+        updateData.whatsapp_ai_enabled = whatsappAiEnabled;
       }
 
       const { error } = await supabase
