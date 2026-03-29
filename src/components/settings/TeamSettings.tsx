@@ -26,6 +26,7 @@ import { useUserRole, type AppRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { InviteForm } from "./InviteForm";
 import { MemberPermissionsEditor } from "./MemberPermissionsEditor";
+import { MemberDetailsEditor } from "./MemberDetailsEditor";
 import { useOrganization } from "@/hooks/useOrganization";
 
 interface TeamSettingsProps {
