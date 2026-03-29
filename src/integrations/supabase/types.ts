@@ -986,6 +986,108 @@ export type Database = {
           },
         ]
       }
+      campaign_config: {
+        Row: {
+          cooldown_hours: number
+          current_campaign: string | null
+          id: number
+          is_paused: boolean
+          max_interval_seconds: number
+          min_interval_seconds: number
+          paused_reason: string | null
+          sends_per_hour: number
+          updated_at: string
+        }
+        Insert: {
+          cooldown_hours?: number
+          current_campaign?: string | null
+          id?: number
+          is_paused?: boolean
+          max_interval_seconds?: number
+          min_interval_seconds?: number
+          paused_reason?: string | null
+          sends_per_hour?: number
+          updated_at?: string
+        }
+        Update: {
+          cooldown_hours?: number
+          current_campaign?: string | null
+          id?: number
+          is_paused?: boolean
+          max_interval_seconds?: number
+          min_interval_seconds?: number
+          paused_reason?: string | null
+          sends_per_hour?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      campaign_sends: {
+        Row: {
+          campaign_name: string
+          created_at: string
+          email: string | null
+          email_error: string | null
+          email_status: string | null
+          email_subject: string | null
+          email_template: string | null
+          id: string
+          message_template: string
+          organization_id: string | null
+          phone: string | null
+          priority: number
+          processed_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          user_name: string | null
+          whatsapp_error: string | null
+          whatsapp_status: string | null
+        }
+        Insert: {
+          campaign_name?: string
+          created_at?: string
+          email?: string | null
+          email_error?: string | null
+          email_status?: string | null
+          email_subject?: string | null
+          email_template?: string | null
+          id?: string
+          message_template: string
+          organization_id?: string | null
+          phone?: string | null
+          priority?: number
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+          whatsapp_error?: string | null
+          whatsapp_status?: string | null
+        }
+        Update: {
+          campaign_name?: string
+          created_at?: string
+          email?: string | null
+          email_error?: string | null
+          email_status?: string | null
+          email_subject?: string | null
+          email_template?: string | null
+          id?: string
+          message_template?: string
+          organization_id?: string | null
+          phone?: string | null
+          priority?: number
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+          whatsapp_error?: string | null
+          whatsapp_status?: string | null
+        }
+        Relationships: []
+      }
       catalog_services: {
         Row: {
           category: string | null
