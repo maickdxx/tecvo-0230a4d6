@@ -34,6 +34,7 @@ interface TeamSettingsProps {
 }
 
 const ROLE_LABELS: Record<AppRole, string> = {
+  super_admin: "Super ADM",
   owner: "Gestor",
   admin: "ADM",
   member: "Atendente",
@@ -41,6 +42,7 @@ const ROLE_LABELS: Record<AppRole, string> = {
 };
 
 const ROLE_ICONS: Record<AppRole, typeof Crown> = {
+  super_admin: Shield,
   owner: Crown,
   admin: Shield,
   member: User,
@@ -48,6 +50,7 @@ const ROLE_ICONS: Record<AppRole, typeof Crown> = {
 };
 
 const ROLE_COLORS: Record<AppRole, string> = {
+  super_admin: "bg-red-500/10 text-red-600 border-red-200",
   owner: "bg-amber-500/10 text-amber-600 border-amber-200",
   admin: "bg-blue-500/10 text-blue-600 border-blue-200",
   member: "bg-green-500/10 text-green-600 border-green-200",

@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "owner" | "admin" | "member" | "employee";
+export type AppRole = "owner" | "admin" | "member" | "employee" | "super_admin";
 
 export function useUserRole() {
-  const { user, profile } = useAuth();
+  const { user, profile, isLoading: isLoadingAuth } = useAuth();
   const organizationId = profile?.organization_id;
 
   const { data: roles, isLoading: isLoadingRoles } = useQuery({
@@ -40,11 +40,13 @@ export function useUserRole() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const rolePriority: AppRole[] = ["owner", "admin", "member", "employee"];
-  const primaryRole = rolePriority.find(r => roles?.includes(r)) || "member";
+  const rolePriority: AppRole[] = ["super_admin", "owner", "admin", "member", "employee"];
+  const isActuallyLoading = isLoadingRoles || isLoadingAuth;
+  const primaryRole = roles?.length ? (rolePriority.find(r => roles.includes(r)) || "member") : (isActuallyLoading ? null : "member");
 
-  const isAdmin = primaryRole === "admin" || primaryRole === "owner";
-  const isOwner = primaryRole === "owner";
+  const isSuperAdmin = primaryRole === "super_admin";
+  const isOwner = primaryRole === "owner" || isSuperAdmin;
+  const isAdmin = primaryRole === "admin" || isOwner;
   const isMember = primaryRole === "member";
 
   // field_worker flag from profile - independent of role
@@ -73,16 +75,17 @@ export function useUserRole() {
     : isOwner || isAdmin;
 
   // Role label mapping for UI
-  const roleLabel = ROLE_LABELS[primaryRole];
+  const roleLabel = primaryRole ? ROLE_LABELS[primaryRole] : "Carregando...";
 
   return {
     role: primaryRole,
-    isLoading: isLoadingRoles,
+    isLoading: isActuallyLoading,
     isEmployee: primaryRole === "employee",
     isFieldWorker,
     isMember,
     isAdmin,
     isOwner,
+    isSuperAdmin,
     canEdit,
     canCreate,
     canDelete,
@@ -92,6 +95,7 @@ export function useUserRole() {
 }
 
 export const ROLE_LABELS: Record<AppRole, string> = {
+  super_admin: "Super ADM",
   owner: "Gestor",
   admin: "ADM",
   member: "Atendente",

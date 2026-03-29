@@ -62,7 +62,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
-  const { isOwner } = useUserRole();
+  const { isOwner, isLoading: isLoadingRole } = useUserRole();
   
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -154,6 +154,15 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
       toast({ title: "Erro", description: "Não foi possível remover o avatar.", variant: "destructive" });
     }
   };
+
+  if (isLoadingRole) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Bot className="h-12 w-12 animate-pulse text-primary/20" />
+        <p className="text-sm text-muted-foreground animate-pulse">Carregando seu perfil...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20">
