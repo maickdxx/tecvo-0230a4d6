@@ -4,10 +4,13 @@
  *
  * PHONE SOURCE: Uses owner's personal phone (profiles.whatsapp_personal)
  * with fallback to profiles.phone, then legacy organizations.whatsapp_owner.
+ *
+ * IDEMPOTENCY: Uses INSERT-before-send pattern with unique constraint
+ * on (organization_id, message_type, sent_date) to prevent duplicate sends.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { getTodayInTz } from "../_shared/timezone.ts";
 import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { idempotentSend } from "../_shared/idempotentSend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -143,41 +146,36 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Check rate limit
-      const orgTz = org.timezone || "America/Sao_Paulo";
-      const todayStr = getTodayInTz(orgTz);
-      const { count } = await supabase
-        .from("auto_message_log")
-        .select("id", { count: "exact", head: true })
-        .eq("organization_id", org.id)
-        .in("message_type", ["weather", "business_tip"])
-        .gte("sent_at", `${todayStr}T00:00:00`);
-
-      if ((count || 0) >= 2) {
-        console.log(`[AUTO-WEATHER] Rate limit reached for org ${org.id}`);
-        continue;
-      }
-
       const coords = await fetchCoordinates(org.city);
       if (!coords) {
         console.log(`[AUTO-WEATHER] No coords for city: ${org.city}`);
         continue;
       }
 
-      const weather = await fetchTodayWeather(coords.lat, coords.lon, org.timezone || "America/Sao_Paulo");
+      const orgTz = org.timezone || "America/Sao_Paulo";
+      const weather = await fetchTodayWeather(coords.lat, coords.lon, orgTz);
       const desc = getWeatherDescription(weather.weatherCode);
       const insight = getBusinessInsight(weather.tempMax, weather.precipProb);
 
       const message = `☀️ Bom dia!\n\nPrevisão para ${org.city} hoje:\n🌡️ ${weather.tempMin}°C — ${weather.tempMax}°C | ${desc}\n💧 Chance de chuva: ${weather.precipProb}%\n\n${insight}\n\n— Tecvo`;
 
-      const ok = await sendWhatsApp(ownerPhone.phone, message);
-      if (ok) {
-        await supabase.from("auto_message_log").insert({
-          organization_id: org.id,
-          message_type: "weather",
-          content: message,
-        });
+      // IDEMPOTENT: Insert log first, send only if insert succeeds
+      const result = await idempotentSend({
+        supabase,
+        organizationId: org.id,
+        messageType: "weather",
+        content: message,
+        timezone: orgTz,
+        sendFn: () => sendWhatsApp(ownerPhone.phone!, message),
+      });
+
+      if (result.sent) {
         sent++;
+        console.log(`[AUTO-WEATHER] ✅ Sent to org ${org.id}`);
+      } else if (result.skipped) {
+        console.log(`[AUTO-WEATHER] ⏭️ Skipped org ${org.id} (already sent today)`);
+      } else {
+        console.log(`[AUTO-WEATHER] ❌ Failed for org ${org.id}: ${result.error}`);
       }
     }
 

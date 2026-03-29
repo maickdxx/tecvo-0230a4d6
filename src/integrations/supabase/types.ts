@@ -807,21 +807,27 @@ export type Database = {
           id: string
           message_type: string
           organization_id: string
+          send_status: string
           sent_at: string | null
+          sent_date: string | null
         }
         Insert: {
           content?: string | null
           id?: string
           message_type: string
           organization_id: string
+          send_status?: string
           sent_at?: string | null
+          sent_date?: string | null
         }
         Update: {
           content?: string | null
           id?: string
           message_type?: string
           organization_id?: string
+          send_status?: string
           sent_at?: string | null
+          sent_date?: string | null
         }
         Relationships: [
           {

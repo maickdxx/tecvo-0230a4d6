@@ -4,11 +4,14 @@
  *
  * PHONE SOURCE: Uses owner's personal phone (profiles.whatsapp_personal)
  * with fallback to profiles.phone, then legacy organizations.whatsapp_owner.
+ *
+ * IDEMPOTENCY: Uses INSERT-before-send pattern with unique constraint
+ * on (organization_id, message_type, sent_date) to prevent duplicate sends.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
-import { getTodayInTz } from "../_shared/timezone.ts";
 import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { idempotentSend } from "../_shared/idempotentSend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,7 +98,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Check if tip was sent in last 3 days
+      // Check if tip was sent in last 3 days (business_tip has its own cadence)
       const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
       const { count: recentTips } = await supabase
         .from("auto_message_log")
@@ -106,21 +109,6 @@ Deno.serve(async (req) => {
 
       if ((recentTips || 0) > 0) {
         console.log(`[AUTO-TIPS] Tip sent recently for org ${org.id}, skipping`);
-        continue;
-      }
-
-      // Check daily rate limit
-      const orgTz = org.timezone || "America/Sao_Paulo";
-      const todayStr = getTodayInTz(orgTz);
-      const { count: todayNonOp } = await supabase
-        .from("auto_message_log")
-        .select("id", { count: "exact", head: true })
-        .eq("organization_id", org.id)
-        .in("message_type", ["weather", "business_tip"])
-        .gte("sent_at", `${todayStr}T00:00:00`);
-
-      if ((todayNonOp || 0) >= 2) {
-        console.log(`[AUTO-TIPS] Rate limit for org ${org.id}`);
         continue;
       }
 
@@ -141,14 +129,25 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const ok = await sendWhatsApp(ownerPhone.phone, message);
-      if (ok) {
-        await supabase.from("auto_message_log").insert({
-          organization_id: org.id,
-          message_type: "business_tip",
-          content: message,
-        });
+      const orgTz = org.timezone || "America/Sao_Paulo";
+
+      // IDEMPOTENT: Insert log first, send only if insert succeeds
+      const result = await idempotentSend({
+        supabase,
+        organizationId: org.id,
+        messageType: "business_tip",
+        content: message,
+        timezone: orgTz,
+        sendFn: () => sendWhatsApp(ownerPhone.phone!, message),
+      });
+
+      if (result.sent) {
         sent++;
+        console.log(`[AUTO-TIPS] ✅ Sent to org ${org.id}`);
+      } else if (result.skipped) {
+        console.log(`[AUTO-TIPS] ⏭️ Skipped org ${org.id} (already sent today)`);
+      } else {
+        console.log(`[AUTO-TIPS] ❌ Failed for org ${org.id}: ${result.error}`);
       }
     }
 
