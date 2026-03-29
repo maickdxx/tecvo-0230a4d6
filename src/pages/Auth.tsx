@@ -154,8 +154,12 @@ export default function Auth() {
       toast({ variant: "destructive", title: "Erro", description: "A senha deve ter pelo menos 6 caracteres" });
       return;
     }
-    setIsLoading(true);
     const cleanPhone = signupWhatsapp.replace(/\D/g, "");
+    if (cleanPhone.length < 10) {
+      toast({ variant: "destructive", title: "WhatsApp obrigatório", description: "Informe seu WhatsApp com DDD para receber notificações" });
+      return;
+    }
+    setIsLoading(true);
     const { error } = await signUp(signupEmail, signupPassword, signupName, cleanPhone);
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
@@ -377,9 +381,7 @@ export default function Auth() {
               <Input id="signup-password" type="password" placeholder="Mínimo 6 caracteres" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required className="h-11" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="signup-whatsapp" className="text-muted-foreground font-normal">
-                WhatsApp <span className="text-xs">(opcional)</span>
-              </Label>
+              <Label htmlFor="signup-whatsapp">WhatsApp</Label>
               <Input
                 id="signup-whatsapp"
                 type="tel"
@@ -394,6 +396,7 @@ export default function Auth() {
                   setSignupWhatsapp(formatted);
                 }}
                 className="h-11"
+                required
               />
               <p className="text-xs text-muted-foreground">Receba notificações e automações direto no seu WhatsApp</p>
             </div>

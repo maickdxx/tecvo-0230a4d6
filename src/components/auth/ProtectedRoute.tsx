@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { Loader2 } from "lucide-react";
 import { getRoutePermission, STRUCTURAL_BLOCKED_ROUTES, matchAnyRoute, matchRoute } from "@/lib/routePermissions";
 
@@ -27,13 +28,14 @@ const EMPLOYEE_ROUTES = ["/meu-dia", "/ponto", "/historico-ponto", "/espelho-pon
 const PLAN_EXEMPT_ROUTES = ["/planos", "/configuracoes"];
 
 export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRouteProps) {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, profile, isLoading: authLoading } = useAuth();
   const { isEmployee, isFieldWorker, isMember, isAdmin, isOwner, hasPermission, isLoading: roleLoading } = useUserRole();
   const { isOnboardingCompleted, isLoading: onboardingLoading } = useOnboarding();
   const { isFreePlan, isTrial, isTrialExpired, welcomeShown, hasTimeClock, hasWhatsAppFull, isLoading: subscriptionLoading } = useSubscription();
+  const { sensitiveData, isLoading: sensitiveLoading } = useProfileSensitiveData();
   const location = useLocation();
 
-  if (authLoading || roleLoading || onboardingLoading || subscriptionLoading) {
+  if (authLoading || roleLoading || onboardingLoading || subscriptionLoading || sensitiveLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -43,6 +45,14 @@ export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRou
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // WhatsApp gate: redirect users without WhatsApp to onboarding to collect it
+  // Exempt: employees (invited), onboarding page itself, settings page
+  const hasWhatsappPersonal = !!(profile?.phone || sensitiveData?.whatsapp_personal);
+  const whatsappExemptRoutes = ["/onboarding", "/configuracoes", "/planos", "/assinatura/parabens"];
+  if (!isEmployee && !hasWhatsappPersonal && !matchAnyRoute(location.pathname, whatsappExemptRoutes)) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   // Welcome page: show once after plan activation
