@@ -188,6 +188,7 @@ Deno.serve(async (req) => {
       metadata?: any;
     }
     const candidatesByUser = new Map<string, Candidate[]>();
+    const emailCache = new Map<string, string | null>();
 
     function addCandidate(c: Candidate) {
       const existing = candidatesByUser.get(c.user_id) || [];
