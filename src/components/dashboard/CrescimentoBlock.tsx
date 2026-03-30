@@ -15,6 +15,7 @@ import { useClients } from "@/hooks/useClients";
 import { format, subMonths } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
