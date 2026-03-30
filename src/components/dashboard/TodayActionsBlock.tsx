@@ -573,8 +573,31 @@ export function TodayActionsBlock() {
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all">
-                Ver detalhes <ArrowRight className="h-3 w-3" />
+              <div className="mt-4 flex items-center justify-between">
+                {item.directAction ? (
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      item.directAction?.action();
+                    }}
+                    className="h-8 rounded-lg px-3 text-[11px] font-bold gap-1.5 border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-primary transition-all"
+                  >
+                    {item.directAction.icon && <item.directAction.icon className="h-3 w-3" />}
+                    {item.directAction.label}
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all">
+                    Ver detalhes <ArrowRight className="h-3 w-3" />
+                  </div>
+                )}
+                
+                {item.directAction && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                )}
               </div>
             </button>
           ))}
