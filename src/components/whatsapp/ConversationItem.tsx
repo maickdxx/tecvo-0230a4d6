@@ -119,13 +119,14 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
         <button
           onClick={selectionMode ? (onToggleCheck || onClick) : onClick}
           className={cn(
-            "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-200 border-b border-border/30",
+            "w-full flex items-start gap-3 px-4 py-3.5 text-left transition-all duration-150 border-l-[3px]",
             selectionMode && isChecked
-              ? "bg-primary/[0.08]"
+              ? "bg-primary/[0.08] border-l-primary/40"
               : isSelected
-                ? "bg-primary/[0.06] border-l-[3px] border-l-primary shadow-[inset_0_0_0_0.5px_hsl(var(--primary)/0.1)]"
-                : "hover:bg-muted/60 border-l-[3px] border-l-transparent",
-            !selectionMode && !isSelected && "border-l-[3px] border-l-transparent"
+                ? "bg-[hsl(222,70%,96%)] dark:bg-primary/[0.12] border-l-[hsl(222,69%,49%)] shadow-[inset_0_1px_0_0_hsl(222,69%,49%,0.08)]"
+                : contact.is_unread
+                  ? "bg-primary/[0.03] hover:bg-primary/[0.06] border-l-transparent"
+                  : "hover:bg-muted/50 border-l-transparent"
           )}
         >
           {/* Selection checkbox */}
@@ -166,7 +167,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               )}
             </div>
             {contact.is_unread && (
-              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-card animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[hsl(222,69%,49%)] border-2 border-card shadow-sm" />
             )}
           </div>
 
@@ -179,8 +180,8 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
                 )}
                 <span
                   className={cn(
-                    "text-sm truncate",
-                    contact.is_unread ? "font-bold text-foreground" : "font-semibold text-foreground/90"
+                    "text-[13px] truncate",
+                    contact.is_unread ? "font-bold text-foreground" : "font-semibold text-foreground/80"
                   )}
                 >
                   {displayName}
@@ -190,7 +191,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
                 <span
                   className={cn(
                     "text-[10px] shrink-0",
-                    contact.is_unread ? "text-primary font-semibold" : "text-muted-foreground/60"
+                    contact.is_unread ? "text-[hsl(222,69%,49%)] font-bold" : "text-muted-foreground/50"
                   )}
                 >
                   {timeAgo}
@@ -199,8 +200,8 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
             </div>
             <p
               className={cn(
-                "text-xs truncate mt-0.5",
-                contact.is_unread ? "text-foreground/70 font-medium" : "text-muted-foreground/70"
+                "text-[12px] truncate mt-0.5 leading-relaxed",
+                contact.is_unread ? "text-foreground/80 font-medium" : "text-muted-foreground/60"
               )}
             >
               {lastMessage}
@@ -274,7 +275,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
 
           {/* Unread counter */}
           {(contact.unread_count > 0 || contact.is_unread) && (
-            <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1.5 shrink-0 mt-0.5 shadow-sm">
+            <span className="bg-[hsl(222,69%,49%)] text-white text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1.5 shrink-0 mt-0.5 shadow-md shadow-primary/20">
               {contact.unread_count > 0 ? (contact.unread_count > 99 ? "99+" : contact.unread_count) : "•"}
             </span>
           )}
