@@ -126,7 +126,7 @@ export async function generateTimeClockPDF(data: TimeClockPDFData): Promise<jsPD
     const aspect = logoImg.width / logoImg.height;
     const logoH = 16;
     const logoW = logoH * aspect;
-    doc.addImage(logoImg, "PNG", MARGIN, 10, Math.min(logoW, 30), logoH);
+    doc.addImage(logoImg, "AUTO", MARGIN, 10, Math.min(logoW, 30), logoH);
     headerX = MARGIN + Math.min(logoW, 30) + 4;
   }
 
