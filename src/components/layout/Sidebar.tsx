@@ -296,8 +296,13 @@ export function Sidebar() {
       )}>
         {collapsed ? (
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary/90">
-            {organization?.logo_url ? (
-              <img src={organization.logo_url} alt="Logo" className="h-full w-full rounded-lg object-contain" />
+            {organization?.logo_url && !logoError ? (
+              <img 
+                src={organization.logo_url} 
+                alt="Logo" 
+                className="h-full w-full rounded-lg object-contain" 
+                onError={() => setLogoError(true)}
+              />
             ) : (
               <Snowflake className="h-4 w-4 text-sidebar-primary-foreground" />
             )}
