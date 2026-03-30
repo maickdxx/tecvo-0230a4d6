@@ -1,10 +1,8 @@
 import { useMemo, useState } from "react";
-import { ShoppingBag, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SERVICE_TYPE_LABELS } from "@/hooks/useServices";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,7 +38,6 @@ export function ClosedPeriodServices() {
   const { organizationId } = useAuth();
   const { isDemoMode } = useDemoMode();
   const [currentDate, setCurrentDate] = useState<string>(() => toDateStr(getHojeBRT()));
-  const [expanded, setExpanded] = useState(false);
 
   const navigate = (dir: -1 | 1) => {
     setCurrentDate((prev) => {
@@ -48,28 +45,24 @@ export function ClosedPeriodServices() {
       d.setDate(d.getDate() + dir);
       return d.toISOString().substring(0, 10);
     });
-    setExpanded(false);
   };
 
-  // Query only services for the specific date instead of loading ALL services
   const { data: closedServices = [], isLoading } = useQuery({
     queryKey: ["closed-period-services", organizationId, currentDate, isDemoMode],
     queryFn: async () => {
       if (!organizationId) return [];
 
-      // Query services created on this specific date
       const dayStart = `${currentDate}T00:00:00`;
       const dayEnd = `${currentDate}T23:59:59`;
 
       let query = supabase
         .from("services")
-        .select("id, value, service_type, status, created_at, document_type, client:clients(name)")
+        .select("id, value, service_type, status, created_at, document_type")
         .is("deleted_at", null)
         .neq("status", "cancelled")
         .neq("document_type", "quote")
         .gte("created_at", dayStart)
-        .lte("created_at", dayEnd)
-        .order("created_at", { ascending: false });
+        .lte("created_at", dayEnd);
 
       if (!isDemoMode) {
         query = query.eq("is_demo_data", false);
@@ -78,7 +71,6 @@ export function ClosedPeriodServices() {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Post-filter by local date (to handle timezone edge cases)
       return (data || []).filter((s) => getDatePartInTz(s.created_at, DEFAULT_TIMEZONE) === currentDate);
     },
     enabled: !!organizationId,
@@ -97,9 +89,6 @@ export function ClosedPeriodServices() {
       </Card>
     );
   }
-
-  const MAX_VISIBLE = 4;
-  const visible = expanded ? closedServices : closedServices.slice(0, MAX_VISIBLE);
 
   return (
     <Card className="overflow-hidden">
@@ -129,7 +118,7 @@ export function ClosedPeriodServices() {
         </div>
       </CardHeader>
       <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-3">
           <div className="text-center p-3 rounded-lg bg-muted/50">
             <p className="text-[11px] text-muted-foreground">Quantidade</p>
             <p className="text-2xl font-bold text-foreground">{closedServices.length}</p>
@@ -139,36 +128,6 @@ export function ClosedPeriodServices() {
             <p className="text-2xl font-bold text-foreground">{formatCurrency(totalValue)}</p>
           </div>
         </div>
-
-        {closedServices.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-2">Nenhum serviço fechado.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {visible.map((s) => {
-              const clientName = (s.client as any)?.name || "Cliente";
-              return (
-                <div key={s.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="truncate font-medium">{clientName}</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-4 flex-shrink-0">
-                      {SERVICE_TYPE_LABELS[s.service_type] || s.service_type}
-                    </Badge>
-                  </div>
-                  <span className="font-semibold text-xs whitespace-nowrap">{formatCurrency(Number(s.value) || 0)}</span>
-                </div>
-              );
-            })}
-            {closedServices.length > MAX_VISIBLE && !expanded && (
-              <button
-                onClick={() => setExpanded(true)}
-                className="w-full text-center text-xs text-primary font-medium py-1 hover:underline flex items-center justify-center gap-1"
-              >
-                Ver todos ({closedServices.length})
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
