@@ -198,6 +198,7 @@ export function TodayActionsBlock() {
         score: adjustedScore,
         action: () => {
           recordInteraction("overdue_payments", "click");
+          markAlertAsCompleted("overdue_payments");
           navigate("/financeiro?tab=receivable&status=overdue");
         },
         directAction: {
@@ -224,7 +225,9 @@ export function TodayActionsBlock() {
                 icon: <CheckCircle2 className="h-4 w-4 text-success" />
               });
             } else {
-...
+              toast.error("Erro", {
+                description: "Cliente sem telefone cadastrado para WhatsApp."
+              });
             }
           }
         },
@@ -258,6 +261,7 @@ export function TodayActionsBlock() {
         score: adjustedScore,
         action: () => {
           recordInteraction("pending_quotes", "click");
+          markAlertAsCompleted("pending_quotes");
           navigate("/orcamentos");
         },
         directAction: {
@@ -275,6 +279,8 @@ export function TodayActionsBlock() {
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              markAlertAsCompleted("pending_quotes");
+              recordResult("pending_quotes", Number(s.value) || 0, "conversion");
               window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
               toast.success("Ação iniciada", {
                 description: `Impacto potencial de ${formatCurrency(Number(s.value) || 0)}.`,
@@ -313,6 +319,7 @@ export function TodayActionsBlock() {
         score: adjustedScore,
         action: () => {
           recordInteraction("inactive_clients", "click");
+          markAlertAsCompleted("inactive_clients");
           navigate("/clientes");
         },
         directAction: {
@@ -328,6 +335,8 @@ export function TodayActionsBlock() {
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              markAlertAsCompleted("inactive_clients");
+              recordResult("inactive_clients", 250, "revenue"); // Estimated revenue
               window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
               toast.success("Reativação iniciada", {
                 description: "Agindo sobre a base de clientes inativos.",
@@ -367,6 +376,7 @@ export function TodayActionsBlock() {
         score: adjustedScore,
         action: () => {
           recordInteraction("today_services", "click");
+          markAlertAsCompleted("today_services");
           navigate("/agenda");
         },
         color: "text-info",
