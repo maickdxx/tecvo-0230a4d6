@@ -31,6 +31,7 @@ export default function Clientes() {
   const navigate = useNavigate();
 
   // Paginated data for the list
+  const [search, setSearch] = useState("");
   const {
     clients,
     totalCount,
@@ -38,7 +39,7 @@ export default function Clientes() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = usePaginatedClients();
+  } = usePaginatedClients(search);
 
   // Mutations only (skip data query)
   const { create, update, remove, isCreating, isUpdating } = useClients();
