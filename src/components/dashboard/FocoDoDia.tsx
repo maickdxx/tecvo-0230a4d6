@@ -54,7 +54,7 @@ export function FocoDoDia() {
       <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
         <Card className={cn(
           "border-none shadow-lg transition-all duration-500 overflow-hidden relative h-full",
-          isComplete ? "bg-emerald-500/10 dark:bg-emerald-500/5 ring-1 ring-emerald-500/20" : "bg-gradient-to-br from-card to-muted/20"
+          isComplete ? "bg-success/10 dark:bg-success/5 ring-1 ring-success/20" : "bg-gradient-to-br from-card to-muted/20"
         )}>
           {/* Progress Background */}
           <div 
