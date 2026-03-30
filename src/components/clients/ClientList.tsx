@@ -92,7 +92,7 @@ export function ClientList({
     if (activeFilter === "all") return searchFiltered;
     return searchFiltered.filter((c) => {
       const m = clientMetrics[c.id];
-      const status = getStatusFromMetrics(m);
+      const status = getStatusFromMetrics(m, c.created_at);
       switch (activeFilter) {
         case "active": return status === "active";
         case "inactive": return status === "inactive";
