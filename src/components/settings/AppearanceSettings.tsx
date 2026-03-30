@@ -26,6 +26,49 @@ const colorThemes: { id: ColorTheme; name: string; hsl: string }[] = [
 export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
+  const { user, profile, refreshProfile } = useAuth();
+
+  const handleModeChange = async (mode: string) => {
+    setTheme(mode);
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ theme_mode: mode })
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      refreshProfile();
+    } catch (err) {
+      console.error("Error saving theme mode:", err);
+      toast({
+        title: "Erro ao salvar preferência",
+        description: "Suas alterações podem não ser sincronizadas entre dispositivos.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleColorChange = async (newColorTheme: ColorTheme) => {
+    setColorTheme(newColorTheme);
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ color_theme: newColorTheme })
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      refreshProfile();
+    } catch (err) {
+      console.error("Error saving color theme:", err);
+      toast({
+        title: "Erro ao salvar preferência",
+        description: "Suas alterações podem não ser sincronizadas entre dispositivos.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-8">
