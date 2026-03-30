@@ -180,8 +180,8 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
                 )}
                 <span
                   className={cn(
-                    "text-sm truncate",
-                    contact.is_unread ? "font-bold text-foreground" : "font-semibold text-foreground/90"
+                    "text-[13px] truncate",
+                    contact.is_unread ? "font-bold text-foreground" : "font-semibold text-foreground/80"
                   )}
                 >
                   {displayName}
