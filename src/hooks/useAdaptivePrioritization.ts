@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUserRole } from "./useUserRole";
 
+export interface ActionResult {
+  timestamp: string;
+  value: number;
+  type: 'conversion' | 'recovery' | 'revenue';
+}
+
 export interface ActionHistory {
   id: string;
   impressions: number;
@@ -10,6 +16,9 @@ export interface ActionHistory {
   lastInteraction: string;
   firstSeen: string;
   consecutiveIgnores: number;
+  results: ActionResult[];
+  totalValueGenerated: number;
+  successFrequency: number; // 0 to 1
 }
 
 export function useAdaptivePrioritization() {
