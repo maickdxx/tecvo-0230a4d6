@@ -19,21 +19,17 @@ const TimePerformanceDashboard = lazy(() => import("@/components/dashboard/TimeP
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
-  PaymentMethodChart,
-  RevenueEvolutionChart,
   CompanyHealthCard,
   DashboardSection,
   TodayActionsBlock,
   RevenueOpportunitiesBlock,
 } from "@/components/dashboard";
-import { TimePerformanceDashboard } from "@/components/dashboard/TimePerformanceDashboard";
 import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBlock";
 import { ExecutiveHeroBlock } from "@/components/dashboard/ExecutiveHeroBlock";
 import { RevenueEngineBlock } from "@/components/dashboard/RevenueEngineBlock";
 
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
-import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { DashboardCustomizeDialog } from "@/components/dashboard/DashboardCustomizeDialog";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useUserRole } from "@/hooks/useUserRole";
