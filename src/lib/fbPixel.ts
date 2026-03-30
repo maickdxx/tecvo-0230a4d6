@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-const PIXEL_ID = "2649558955418661";
+const PIXEL_ID = "26761775376753591";
 
 /** Track a standard FB event */
 export function trackFBEvent(eventName: string, params?: Record<string, unknown>) {
