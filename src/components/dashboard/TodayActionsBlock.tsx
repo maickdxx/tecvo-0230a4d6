@@ -151,6 +151,18 @@ export function TodayActionsBlock() {
           recordInteraction("overdue_services", "click");
           navigate("/ordens-servico?status=overdue");
         },
+        directAction: {
+          label: "Resolver agora",
+          icon: ExternalLink,
+          description: "Abre a OS em atraso para atualização",
+          action: () => {
+            const firstId = counts.overdue_services[0].id;
+            navigate(`/ordens-servico/${firstId}`);
+            toast.success("Ação iniciada", {
+              description: "Você está no caminho para resolver um serviço atrasado."
+            });
+          }
+        },
         color: "text-destructive",
         bg: "bg-destructive/10",
         insight: getAdaptiveInsight("overdue_services", "Resolver isso libera o fluxo operacional."),
@@ -174,7 +186,7 @@ export function TodayActionsBlock() {
         impactValue: total,
         impactText: historyData?.totalValueGenerated ? `Recuperou ${formatCurrency(historyData.totalValueGenerated)} com cobrança` : `Recupere ${formatCurrency(total)} parados`,
         timeLabel: `há ${daysOverdue} d`,
-        estimatedTime: "5 min",
+        estimatedTime: "3 min",
         icon: DollarSign,
         priorityLevel: "high",
         confidence: getConfidence("overdue_payments"),
@@ -182,6 +194,34 @@ export function TodayActionsBlock() {
         action: () => {
           recordInteraction("overdue_payments", "click");
           navigate("/financeiro?tab=receivable&status=overdue");
+        },
+        directAction: {
+          label: "Cobrar agora",
+          icon: MessageSquare,
+          description: "Gera mensagem de cobrança no WhatsApp",
+          action: () => {
+            const t = counts.overdue_payments[0];
+            const client = clients.find(c => c.id === t.client_id);
+            const clientName = client?.name || "Cliente";
+            const phone = client?.phone || "";
+            const formattedAmount = formatCurrency(Number(t.amount));
+            const formattedDate = format(parseISO(t.due_date!), "dd/MM/yyyy");
+            
+            const message = `Olá ${clientName}, tudo bem? Consta em nosso sistema um pagamento pendente de ${formattedAmount} com vencimento em ${formattedDate}. Segue o link para regularização ou podemos conversar sobre a melhor forma?`;
+            
+            if (phone) {
+              const cleanPhone = phone.replace(/\D/g, "");
+              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              toast.success("Ação de cobrança iniciada", {
+                description: `Você acabou de agir sobre ${formattedAmount}.`,
+                icon: <CheckCircle2 className="h-4 w-4 text-success" />
+              });
+            } else {
+              toast.error("Erro", {
+                description: "Cliente sem telefone cadastrado para WhatsApp."
+              });
+            }
+          }
         },
         color: "text-destructive",
         bg: "bg-destructive/10",
@@ -206,7 +246,7 @@ export function TodayActionsBlock() {
         impactValue: totalValue,
         impactText: historyData?.totalValueGenerated ? `Já converteu ${formatCurrency(historyData.totalValueGenerated)}` : `Liberar ${formatCurrency(totalValue)} em caixa`,
         timeLabel: `há ${daysPending} dias`,
-        estimatedTime: "10 min",
+        estimatedTime: "2 min",
         icon: Zap,
         priorityLevel: "high",
         confidence: getConfidence("pending_quotes"),
@@ -214,6 +254,33 @@ export function TodayActionsBlock() {
         action: () => {
           recordInteraction("pending_quotes", "click");
           navigate("/orcamentos");
+        },
+        directAction: {
+          label: "Enviar mensagem",
+          icon: MessageCircle,
+          description: "WhatsApp com mensagem pré-preenchida",
+          action: () => {
+            const s = counts.pending_quotes[0];
+            const client = clients.find(c => c.id === s.client_id);
+            const clientName = client?.name || "Cliente";
+            const phone = client?.phone || "";
+            const serviceDesc = s.description || "seu serviço";
+            
+            const message = `Olá ${clientName}, tudo bem? Sou da equipe da Tecvo. Notamos que o orçamento para ${serviceDesc} ainda está pendente. Podemos te ajudar com alguma dúvida para fecharmos?`;
+            
+            if (phone) {
+              const cleanPhone = phone.replace(/\D/g, "");
+              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              toast.success("Ação iniciada", {
+                description: `Impacto potencial de ${formatCurrency(Number(s.value) || 0)}.`,
+                icon: <CheckCircle2 className="h-4 w-4 text-success" />
+              });
+            } else {
+              toast.error("Erro", {
+                description: "Cliente sem telefone cadastrado para WhatsApp."
+              });
+            }
+          }
         },
         color: "text-warning",
         bg: "bg-warning/10",
@@ -234,7 +301,7 @@ export function TodayActionsBlock() {
         impactValue: counts.inactive_clients.length * 250, // Impacto estimado por cliente
         impactText: historyData?.totalValueGenerated ? `Gerou ${formatCurrency(historyData.totalValueGenerated)} em novos serviços` : "Gerar novos serviços recorrentes",
         timeLabel: "inativos +6 m",
-        estimatedTime: "20 min",
+        estimatedTime: "2 min",
         icon: UserX,
         priorityLevel: "medium",
         confidence: getConfidence("inactive_clients"),
@@ -242,6 +309,31 @@ export function TodayActionsBlock() {
         action: () => {
           recordInteraction("inactive_clients", "click");
           navigate("/clientes");
+        },
+        directAction: {
+          label: "Reativar agora",
+          icon: MessageSquare,
+          description: "Mensagem sugerida de reativação",
+          action: () => {
+            const c = counts.inactive_clients[0];
+            const clientName = c.name || "Cliente";
+            const phone = c.phone || "";
+            
+            const message = `Olá ${clientName}, faz tempo que não realizamos uma manutenção preventiva em seus equipamentos. Gostaria de agendar uma visita para garantirmos a eficiência e evitar problemas futuros?`;
+            
+            if (phone) {
+              const cleanPhone = phone.replace(/\D/g, "");
+              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              toast.success("Reativação iniciada", {
+                description: "Agindo sobre a base de clientes inativos.",
+                icon: <CheckCircle2 className="h-4 w-4 text-success" />
+              });
+            } else {
+              toast.error("Erro", {
+                description: "Cliente sem telefone cadastrado para WhatsApp."
+              });
+            }
+          }
         },
         color: "text-primary",
         bg: "bg-primary/10",
