@@ -210,11 +210,12 @@ export function TodayActionsBlock() {
       const totalValue = todayServices.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
       const baseScore = 500 + (totalValue / 500);
       const adjustedScore = baseScore + getScoreAdjustment("today_services", baseScore);
+      const historyData = history["today_services"];
 
       result.push({
         id: "today_services",
         title: "Executar serviços do dia",
-        impactText: `Garantir ${formatCurrency(totalValue)} em faturamento`,
+        impactText: historyData?.totalValueGenerated ? `Já faturou ${formatCurrency(historyData.totalValueGenerated)} hoje` : `Garantir ${formatCurrency(totalValue)} em faturamento`,
         timeLabel: "para hoje",
         icon: CalendarDays,
         priorityLevel: "medium",
