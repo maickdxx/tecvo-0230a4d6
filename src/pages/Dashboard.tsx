@@ -274,16 +274,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Floating Action Button for Mobile */}
-        <div className="fixed bottom-6 right-6 md:hidden z-50">
-          <Button 
-            size="icon" 
-            className="h-14 w-14 rounded-full shadow-2xl shadow-primary/40"
-            onClick={() => navigate("/ordens-servico/nova")}
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
-        </div>
       </div>
     </AppLayout>
   );
