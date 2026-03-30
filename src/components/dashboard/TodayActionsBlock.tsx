@@ -109,11 +109,12 @@ export function TodayActionsBlock() {
 
       const baseScore = 1100 + (total / 100) + (daysOverdue * 60);
       const adjustedScore = baseScore + getScoreAdjustment("overdue_payments", baseScore);
+      const historyData = history["overdue_payments"];
 
       result.push({
         id: "overdue_payments",
         title: `${overduePayments.length} pagamento${overduePayments.length > 1 ? "s" : ""} vencido${overduePayments.length > 1 ? "s" : ""}`,
-        impactText: `Recupere ${formatCurrency(total)} parados`,
+        impactText: historyData?.totalValueGenerated ? `Recuperou ${formatCurrency(historyData.totalValueGenerated)} com cobrança` : `Recupere ${formatCurrency(total)} parados`,
         timeLabel: `vencido há ${daysOverdue} d`,
         icon: DollarSign,
         priorityLevel: "high",
