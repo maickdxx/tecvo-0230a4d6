@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppLayout } from "@/components/layout";
 import { PageTutorialBanner } from "@/components/onboarding";
 import { Plus } from "lucide-react";
@@ -13,11 +13,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTitle as AlertDialogTitleComponent,
 } from "@/components/ui/alert-dialog";
 import { useClients, type Client, type ClientFormData } from "@/hooks/useClients";
 import { usePaginatedClients } from "@/hooks/usePaginatedClients";
 import { useServices } from "@/hooks/useServices";
 import { useNavigate } from "react-router-dom";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export interface ClientMetrics {
   lastServiceDate: string | null;
@@ -29,9 +31,10 @@ export interface ClientMetrics {
 
 export default function Clientes() {
   const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
 
   // Paginated data for the list
-  const [search, setSearch] = useState("");
   const {
     clients,
     totalCount,
@@ -39,7 +42,7 @@ export default function Clientes() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = usePaginatedClients(search);
+  } = usePaginatedClients(debouncedSearch);
 
   // Mutations only (skip data query)
   const { create, update, remove, isCreating, isUpdating } = useClients();
