@@ -227,7 +227,7 @@ export function ExecutiveHeroBlock({
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
