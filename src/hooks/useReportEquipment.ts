@@ -141,7 +141,7 @@ export function useReportEquipment(reportId?: string) {
           capacity_btus: data.capacity_btus || null,
           serial_number: data.serial_number || null,
           equipment_location: data.equipment_location || null,
-          inspection_checklist: data.inspection_checklist || [],
+          inspection_checklist: JSON.parse(JSON.stringify(data.inspection_checklist || [])),
           condition_found: data.condition_found || null,
           procedure_performed: data.procedure_performed || null,
           technical_observations: data.technical_observations || null,
