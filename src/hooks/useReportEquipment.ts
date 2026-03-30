@@ -131,7 +131,7 @@ export function useReportEquipment(reportId?: string) {
       if (!reportId || !organizationId) throw new Error("Sem contexto");
       const { data: result, error } = await supabase
         .from("report_equipment")
-        .insert({
+        .insert([{
           report_id: reportId,
           organization_id: organizationId,
           equipment_number: data.equipment_number || (equipment.length + 1),
