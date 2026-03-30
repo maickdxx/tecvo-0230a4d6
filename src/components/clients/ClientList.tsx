@@ -78,7 +78,7 @@ export function ClientList({
     const counts = { all: searchFiltered.length, active: 0, inactive: 0, reactivate: 0, scheduled: 0, pending: 0 };
     for (const c of searchFiltered) {
       const m = clientMetrics[c.id];
-      const status = getStatusFromMetrics(m);
+      const status = getStatusFromMetrics(m, c.created_at);
       if (status === "active") counts.active++;
       if (status === "inactive") counts.inactive++;
       if (status === "reactivate") counts.reactivate++;
