@@ -52,7 +52,7 @@ export function useAdaptivePrioritization() {
           .maybeSingle();
 
         if (!error && profile?.dashboard_action_history) {
-          const dbData = profile.dashboard_action_history as Record<string, ActionHistory>;
+          const dbData = profile.dashboard_action_history as unknown as Record<string, ActionHistory>;
           // Merge if necessary, prioritizing database
           setHistory(dbData);
           setIsLoaded(true);
