@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { toast } from "sonner";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 const SERVICE_THRESHOLD = 3;
 
