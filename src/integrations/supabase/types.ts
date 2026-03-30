@@ -3016,7 +3016,7 @@ export type Database = {
           category: string | null
           created_at: string
           deleted_at: string | null
-          description: string
+          description: string | null
           discount: number | null
           discount_type: string | null
           estimated_duration: string | null
@@ -3034,7 +3034,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           deleted_at?: string | null
-          description: string
+          description?: string | null
           discount?: number | null
           discount_type?: string | null
           estimated_duration?: string | null
@@ -3052,7 +3052,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           deleted_at?: string | null
-          description?: string
+          description?: string | null
           discount?: number | null
           discount_type?: string | null
           estimated_duration?: string | null

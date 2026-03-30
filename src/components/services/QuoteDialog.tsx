@@ -260,7 +260,7 @@ export function QuoteDialog({ open, onOpenChange, service }: QuoteDialogProps) {
                 type="button"
                 size="icon"
                 onClick={handleAddItem}
-                disabled={isCreating || !newItem.description || !newItem.unit_price}
+                disabled={isCreating || !newItem.unit_price}
                 className="rounded-lg"
               >
                 <Plus className="h-4 w-4" />

@@ -479,7 +479,7 @@ export function ServiceCatalogSelector({
             variant="outline"
             className="w-full gap-2"
             onClick={handleAddItem}
-            disabled={!newItem.description || !newItem.unit_price}
+            disabled={!newItem.name || !newItem.unit_price}
           >
             <Plus className="h-4 w-4" />
             Adicionar Serviço
