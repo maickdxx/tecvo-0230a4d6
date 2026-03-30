@@ -355,6 +355,28 @@ export function useAccounts(options: UseAccountsOptions = {}) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // First get the transaction to check if we need to revert balance
+      const { data: tx, error: fetchError } = await supabase
+        .from("transactions")
+        .select("type, amount, status, financial_account_id")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Revert financial account balance if the transaction was paid
+      if (tx && tx.status === "paid" && tx.financial_account_id) {
+        const delta = tx.type === "income"
+          ? -Number(tx.amount)
+          : Number(tx.amount);
+
+        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
+          _account_id: tx.financial_account_id,
+          _delta: delta,
+        });
+        if (balError) throw balError;
+      }
+
       const { error } = await supabase.from("transactions").delete().eq("id", id);
       if (error) throw error;
     },
