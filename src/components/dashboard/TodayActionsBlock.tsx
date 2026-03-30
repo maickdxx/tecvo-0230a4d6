@@ -77,11 +77,12 @@ export function TodayActionsBlock() {
       
       const baseScore = 1000 + (impactValue / 100) + (daysOverdue * 50);
       const adjustedScore = baseScore + getScoreAdjustment("overdue_services", baseScore);
+      const historyData = history["overdue_services"];
 
       result.push({
         id: "overdue_services",
         title: `${overdueServices.length} serviço${overdueServices.length > 1 ? "s" : ""} em atraso`,
-        impactText: `Evite perder ${formatCurrency(impactValue)} hoje`,
+        impactText: historyData?.totalValueGenerated ? `Já evitou perda de ${formatCurrency(historyData.totalValueGenerated)}` : `Evite perder ${formatCurrency(impactValue)} hoje`,
         timeLabel: `há ${daysOverdue} dia${daysOverdue > 1 ? "s" : ""}`,
         icon: AlertTriangle,
         priorityLevel: "high",
