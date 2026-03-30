@@ -467,9 +467,9 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-12">
+      <div className={cn("grid gap-4", isLeanView ? "grid-cols-1" : "lg:grid-cols-12")}>
         {/* Priority Action (Highlight) - "Melhor ação agora" */}
-        <div className="lg:col-span-5">
+        <div className={cn(isLeanView ? "" : "lg:col-span-5")}>
           <button
             onClick={priorityAction.action}
             className={cn(
