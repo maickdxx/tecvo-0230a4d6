@@ -22,6 +22,8 @@ interface ClientListProps {
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
   totalCount?: number;
+  search?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 function getStatusFromMetrics(metrics: ClientMetrics | undefined): "active" | "inactive" | "reactivate" | null {
