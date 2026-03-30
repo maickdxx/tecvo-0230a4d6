@@ -142,11 +142,12 @@ export function TodayActionsBlock() {
 
       const baseScore = 800 + (totalValue / 200) + (daysPending * 30);
       const adjustedScore = baseScore + getScoreAdjustment("pending_quotes", baseScore);
+      const historyData = history["pending_quotes"];
 
       result.push({
         id: "pending_quotes",
         title: "Acelerar orçamentos pendentes",
-        impactText: `Liberar ${formatCurrency(totalValue)} em caixa`,
+        impactText: historyData?.totalValueGenerated ? `Já converteu ${formatCurrency(historyData.totalValueGenerated)}` : `Liberar ${formatCurrency(totalValue)} em caixa`,
         timeLabel: `há ${daysPending} dias`,
         icon: Zap,
         priorityLevel: "high",
