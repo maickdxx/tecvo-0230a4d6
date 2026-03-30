@@ -153,6 +153,8 @@ export default function Clientes() {
         isLoadingMore={isFetchingNextPage}
         onLoadMore={() => fetchNextPage()}
         totalCount={totalCount}
+        search={search}
+        onSearchChange={setSearch}
       />
 
       <ClientDialog
