@@ -71,10 +71,21 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="page-enter">
+        {/* Personalized Greeting */}
+        <DashboardGreeting />
+
+        {/* Money on Table Alert */}
+        {canViewFinance && <MoneyOnTable />}
+
+        {/* Mini Agenda - Today's services */}
+        <div className="mb-6">
+          <MiniAgenda />
+        </div>
+
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-semibold text-foreground tracking-tight">Painel de Controle</h1>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">Painel Financeiro</h2>
             <p className="text-sm text-muted-foreground mt-0.5">Resumo estratégico do seu negócio</p>
           </div>
           <div className="flex items-center gap-2">
