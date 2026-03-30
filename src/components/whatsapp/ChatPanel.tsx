@@ -274,17 +274,30 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   }, [isChannelDeleted, organization?.id]);
 
   const handleSwitchChannel = async (newChannelId: string) => {
-    if (!contact?.id || !contact.normalized_phone) return;
+    if (!contact?.id) return;
+    if (newChannelId === contact.channel_id) {
+      toast.info("O contato já está neste canal.");
+      return;
+    }
+    
     setIsMigrating(true);
     try {
-      // Check if contact already exists on the target channel to avoid unique constraint error
-      const { data: existing } = await supabase
+      // Check for existing contact by phone OR whatsapp_id to avoid unique constraint errors
+      let query = supabase
         .from("whatsapp_contacts")
         .select("id")
         .eq("organization_id", organization?.id || "")
-        .eq("normalized_phone", contact.normalized_phone)
-        .eq("channel_id", newChannelId)
-        .maybeSingle();
+        .eq("channel_id", newChannelId);
+
+      const orConditions = [];
+      if (contact.normalized_phone) orConditions.push(`normalized_phone.eq.${contact.normalized_phone}`);
+      if (contact.whatsapp_id) orConditions.push(`whatsapp_id.eq.${contact.whatsapp_id}`);
+
+      let existing = null;
+      if (orConditions.length > 0) {
+        const { data } = await query.or(orConditions.join(",")).maybeSingle();
+        existing = data;
+      }
 
       if (existing) {
         toast.info("Este contato já existe no canal selecionado, abrindo conversa existente.");
@@ -303,7 +316,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       onContactUpdate?.();
     } catch (error) {
       console.error("Error switching channel:", error);
-      toast.error("Erro ao trocar canal. Pode haver um conflito com outro contato existente.");
+      toast.error("Erro ao trocar canal. Este contato pode já estar cadastrado no canal de destino.");
     } finally {
       setIsMigrating(false);
     }
