@@ -95,7 +95,7 @@ export default function Auth() {
     if (selectedPlan === "starter" || selectedPlan === "essential" || selectedPlan === "pro") {
       return `/dashboard?checkout=${selectedPlan}`;
     }
-    return "/";
+    return "/dashboard";
   };
 
   const handleGoogleAuth = async () => {
