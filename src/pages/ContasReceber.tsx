@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { differenceInCalendarDays } from "date-fns";
+import { getTodayInTz } from "@/lib/timezone";
 import { AppLayout } from "@/components/layout";
 import { PageTutorialBanner } from "@/components/onboarding";
 import { Plus, ChevronLeft, ChevronRight, CalendarClock, AlertTriangle, TrendingUp, ListChecks, Clock } from "lucide-react";
