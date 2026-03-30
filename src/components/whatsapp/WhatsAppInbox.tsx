@@ -109,6 +109,7 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
   const [activePanel, setActivePanel] = useState<'createOS' | 'createQuote' | 'scheduleVisit' | 'analyze' | 'registerClient' | 'scheduleMessage' | null>(null);
   const [linkedClientData, setLinkedClientData] = useState<any>(null);
   const [initialMessage, setInitialMessage] = useState<string | null>(null);
+  const [prefillPhone, setPrefillPhone] = useState<string | null>(null);
   
   const { tags: orgTags, refetch: refetchTags } = useWhatsAppTags();
 
