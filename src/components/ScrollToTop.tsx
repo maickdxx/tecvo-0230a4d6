@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
-import { trackFBEvent } from "@/lib/fbPixel";
+
 
 export const ScrollToTop = () => {
   const { pathname } = useLocation();
