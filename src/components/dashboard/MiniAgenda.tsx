@@ -23,7 +23,7 @@ export function MiniAgenda() {
     queryKey: ["mini-agenda", organizationId, isDemoMode],
     queryFn: async () => {
       if (!organizationId) return [];
-      const today = getTodayInTz();
+      const today = getTodayInTz(DEFAULT_TIMEZONE);
       const dayStart = `${today}T00:00:00`;
       const dayEnd = `${today}T23:59:59`;
 

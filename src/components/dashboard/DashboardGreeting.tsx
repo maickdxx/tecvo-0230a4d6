@@ -33,7 +33,7 @@ export function DashboardGreeting() {
     queryKey: ["greeting-today-summary", organizationId, isDemoMode],
     queryFn: async () => {
       if (!organizationId) return null;
-      const today = getTodayInTz();
+      const today = getTodayInTz(DEFAULT_TIMEZONE);
       const dayStart = `${today}T00:00:00`;
       const dayEnd = `${today}T23:59:59`;
 
