@@ -18,7 +18,7 @@ const faqs = [
   { question: "Tenho contrato ou fidelidade?", answer: "Não. Cancele quando quiser, sem multa, sem burocracia. Direto nas configurações da sua conta." },
   { question: "Funciona pra técnico autônomo também?", answer: "Sim. O plano Start é ideal para quem trabalha sozinho — organiza seus serviços, clientes e financeiro sem complicação." },
   { question: "Consigo controlar minha equipe pelo Tecvo?", answer: "Sim. Você convida seus técnicos, atribui serviços, acompanha o que cada um fez e controla os gastos da equipe." },
-  { question: "O WhatsApp com IA funciona mesmo?", answer: "Funciona. A IA responde seus clientes automaticamente, sugere respostas e você pode criar ordem de serviço direto da conversa — sem sair do Tecvo." },
+  { question: "Como funciona o WhatsApp integrado?", answer: "Todas as conversas do WhatsApp ficam organizadas dentro do Tecvo. Você responde clientes, cria ordens de serviço direto da conversa e usa respostas rápidas e chatbot para atender mais rápido — tudo sem sair do sistema." },
 ];
 
 export function CTASection() {
