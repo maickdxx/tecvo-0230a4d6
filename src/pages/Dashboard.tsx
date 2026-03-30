@@ -115,20 +115,22 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="page-enter pb-20 md:pb-8">
+      <div className="page-enter pb-20 md:pb-12 max-w-7xl mx-auto">
         <DashboardBanners />
 
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 px-1">
           <div>
-            <h1 className="text-xl font-semibold text-foreground tracking-tight">Visão Geral</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Central de comando estratégica</p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Visão Geral</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base font-medium opacity-80">
+              Sua central de controle estratégica
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 hidden md:flex h-9"
+              className="gap-2 hidden md:flex h-10 border-border/60 hover:bg-muted/50 transition-all"
               onClick={handleOpenTutorial}
               disabled={resetOnboardingMutation.isPending}
             >
@@ -136,69 +138,74 @@ export default function Dashboard() {
               Tutorial
             </Button>
             <DashboardCustomizeDialog />
-            <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-1.5 h-9">
-              <Plus className="h-3.5 w-3.5" />
+            <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-2 h-10 shadow-sm shadow-primary/20">
+              <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Nova OS</span>
             </Button>
           </div>
         </div>
 
         {/* 1. FOCO DO DIA (TOPO) */}
-        <div className="mb-12">
+        <section className="mb-14">
           <FocoDoDia />
-        </div>
+        </section>
 
         {/* 2. CAIXA (SEGURANÇA) */}
         {canViewFinance && !isActivationPhase && (
-          <div className="mb-12 space-y-4">
-            <div className="flex items-center gap-2 mb-4 px-1">
-              <Wallet className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-bold text-foreground uppercase tracking-tight">Caixa & Segurança</h2>
+          <section className="mb-14 space-y-6">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Wallet className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground tracking-tight uppercase opacity-90">Caixa & Segurança</h2>
             </div>
             <div data-tour="dashboard-hero">
               <CurrentSituationBlock />
             </div>
-          </div>
+          </section>
         )}
 
         {/* 3. CRESCIMENTO */}
-        <div className="mb-12">
+        <section className="mb-14">
           <CrescimentoBlock 
             income={metrics.income} 
             monthlyGoal={organization?.monthly_goal}
             periodLabel={periodLabel}
           />
-        </div>
+        </section>
 
         {/* 4. PERFORMANCE — Análise do Período */}
-        <div className="space-y-6 mb-12">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-info" />
-              <h2 className="text-xl font-bold text-foreground uppercase tracking-tight">Análise do Período</h2>
+        <section className="space-y-8 mb-14">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-1">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-info/10">
+                <Clock className="h-5 w-5 text-info" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground tracking-tight uppercase opacity-90">Análise do Período</h2>
             </div>
 
             {canViewFinance && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4 bg-muted/30 p-1 rounded-xl border border-border/40">
                 <Tabs
                   value={granularity}
                   onValueChange={(v) => {
                     setGranularity(v as Granularity);
                     setReferenceDate(getHojeBRT());
                   }}
+                  className="w-full sm:w-auto"
                 >
-                  <TabsList className="h-9">
-                    <TabsTrigger value="day" className="text-xs px-3 h-8">Dia</TabsTrigger>
-                    <TabsTrigger value="week" className="text-xs px-3 h-8">Semana</TabsTrigger>
-                    <TabsTrigger value="month" className="text-xs px-3 h-8">Mês</TabsTrigger>
+                  <TabsList className="h-9 bg-transparent p-0">
+                    <TabsTrigger value="day" className="text-xs px-4 h-8 data-[state=active]:bg-card data-[state=active]:shadow-sm">Dia</TabsTrigger>
+                    <TabsTrigger value="week" className="text-xs px-4 h-8 data-[state=active]:bg-card data-[state=active]:shadow-sm">Semana</TabsTrigger>
+                    <TabsTrigger value="month" className="text-xs px-4 h-8 data-[state=active]:bg-card data-[state=active]:shadow-sm">Mês</TabsTrigger>
                   </TabsList>
                 </Tabs>
 
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
+                <div className="flex items-center gap-1 border-l border-border/60 pl-3">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-card" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-card" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -206,36 +213,38 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="grid gap-6">
+          <div className="grid gap-8">
             <ClosedPeriodServices />
             {canViewFinance && !isActivationPhase && (
               <CompanyHealthCard />
             )}
           </div>
-        </div>
+        </section>
 
         {/* 5. GRÁFICOS DETALHADOS — Final */}
         {canViewFinance && (
-          <div className="mt-16 space-y-6 border-t pt-12">
-            <div className="flex items-center gap-2 mb-6">
-              <BarChart3 className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-bold text-foreground uppercase tracking-tight">Relatórios & Histórico</h2>
+          <section className="mt-20 space-y-10 border-t border-border/40 pt-16">
+            <div className="flex items-center gap-2.5 mb-8">
+              <div className="p-2 rounded-lg bg-muted/10">
+                <BarChart3 className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground tracking-tight uppercase opacity-90">Relatórios & Histórico</h2>
             </div>
             
-            <div className="grid gap-8">
-              <Suspense fallback={<div className="h-[350px] w-full animate-pulse bg-muted rounded-2xl" />}>
+            <div className="grid gap-12 lg:grid-cols-2">
+              <Suspense fallback={<div className="h-[350px] w-full animate-pulse bg-muted/20 rounded-3xl" />}>
                 <RevenueEvolutionChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
               </Suspense>
               
-              <Suspense fallback={<div className="h-[350px] w-full animate-pulse bg-muted rounded-2xl" />}>
+              <Suspense fallback={<div className="h-[350px] w-full animate-pulse bg-muted/20 rounded-3xl" />}>
                 <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
               </Suspense>
             </div>
 
-            <Suspense fallback={<div className="h-[400px] w-full animate-pulse bg-muted rounded-2xl" />}>
+            <Suspense fallback={<div className="h-[400px] w-full animate-pulse bg-muted/20 rounded-3xl" />}>
               <TimePerformanceDashboard startDate={startDate} endDate={endDate} />
             </Suspense>
-          </div>
+          </section>
         )}
 
       </div>

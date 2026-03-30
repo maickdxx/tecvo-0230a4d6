@@ -6,26 +6,22 @@ import {
   AlertTriangle, 
   FileText, 
   UserX, 
-  TrendingUp,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  DollarSign,
-  AlertCircle,
-  MessageCircle,
-  TrendingDown,
-  Timer,
-  Target,
-  Rocket,
-  CheckCircle2,
-  ExternalLink,
-  MessageSquare
+  TrendingUp, 
+  ArrowRight, 
+  ShieldCheck, 
+  Zap, 
+  DollarSign, 
+  MessageCircle, 
+  Timer, 
+  Target, 
+  Rocket, 
+  CheckCircle2, 
+  MessageSquare 
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
 import { useTransactions } from "@/hooks/useTransactions";
 import { format, subDays, subMonths, differenceInDays, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -79,7 +75,6 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
   const { services, isLoading: isLoadingServices } = useServices();
   const { clients, isLoading: isLoadingClients } = useClients();
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
-  const { role, isOwner, isAdmin } = useUserRole();
   const { recordInteraction, recordResult, getScoreAdjustment, getAdaptiveInsight, history } = useAdaptivePrioritization();
   const { markAlertAsCompleted, completedAlerts } = useDailyRoutine();
 
@@ -156,7 +151,7 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
         },
         directAction: {
           label: "Resolver agora",
-          icon: ExternalLink,
+          icon: Zap,
           description: "Abre a OS em atraso para atualização",
           action: () => {
             const firstId = counts.overdue_services[0].id;
@@ -309,7 +304,7 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
         id: "inactive-high-value",
         title: "Reativação de clientes",
         recommendation: `Reative ${counts.inactive_clients.length} clientes antigos para novos serviços`,
-        impactValue: counts.inactive_clients.length * 250, // Impacto estimado por cliente
+        impactValue: counts.inactive_clients.length * 250,
         impactText: historyData?.totalValueGenerated ? `Gerou ${formatCurrency(historyData.totalValueGenerated)} em novos serviços` : "Gerar novos serviços recorrentes",
         timeLabel: "inativos +6 m",
         estimatedTime: "2 min",
@@ -336,7 +331,7 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
               markAlertAsCompleted("inactive-high-value");
-              recordResult("inactive-high-value", 250, "revenue"); // Estimated revenue
+              recordResult("inactive-high-value", 250, "revenue");
               window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
               toast.success("Reativação iniciada", {
                 description: "Agindo sobre a base de clientes inativos.",
@@ -391,17 +386,6 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
       .slice(0, 5);
   }, [counts, today, getScoreAdjustment, getAdaptiveInsight, recordInteraction, history, navigate, completedAlerts]);
 
-  // Track impressions and resolutions
-  const prevCounts = useMemo(() => {
-    return {
-      overdue_services: counts.overdue_services.length,
-      overdue_payments: counts.overdue_payments.length,
-      pending_quotes: counts.pending_quotes.length,
-      inactive_clients: counts.inactive_clients.length,
-      today_services: counts.today_services.filter(s => s.status === 'completed').length
-    };
-  }, [counts]);
-
   useEffect(() => {
     if (!isLoadingServices && !isLoadingClients && !isLoadingTransactions) {
       actions.forEach(action => {
@@ -414,7 +398,7 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
 
   if (isLoading) {
     return (
-      <div className="mb-6 h-32 w-full animate-pulse rounded-xl bg-muted/50" />
+      <div className="mb-6 h-32 w-full animate-pulse rounded-2xl bg-muted/20" />
     );
   }
 
@@ -422,28 +406,28 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
     const hasNoClients = !isLoadingClients && clients.length === 0;
     
     return (
-      <div className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-6 animate-fade-in">
-        <div className="flex items-center gap-4">
-          <div className="rounded-full bg-primary/10 p-3 text-primary">
-            <ShieldCheck className="h-6 w-6" />
+      <div className="mb-8 rounded-[2rem] border border-primary/20 bg-primary/[0.03] p-8 animate-fade-in shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+          <div className="rounded-2xl bg-primary/10 p-5 text-primary shadow-inner">
+            <ShieldCheck className="h-8 w-8" />
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-foreground">
-              {hasNoClients ? "Comece cadastrando seu primeiro cliente" : "Tudo sob controle hoje"}
+          <div className="space-y-2">
+            <h2 className="text-xl font-black text-foreground tracking-tight">
+              {hasNoClients ? "Seu dashboard está pronto para crescer" : "Tudo sob controle absoluto"}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground font-medium max-w-lg">
               {hasNoClients 
-                ? "Para gerar ações automáticas e recomendações, precisamos de dados reais." 
-                : "Nenhuma ação crítica necessária. Sua operação está em dia!"}
+                ? "Cadastre seu primeiro cliente para que nossa IA possa gerar recomendações estratégicas e otimizar sua rotina." 
+                : "Parabéns! Sua operação está em dia. Nenhuma ação crítica detectada pelo sistema no momento."}
             </p>
             {hasNoClients && (
               <Button 
-                variant="outline" 
+                variant="default" 
                 size="sm" 
-                className="mt-3 gap-2"
+                className="mt-4 gap-2 px-6 h-10 rounded-xl font-bold shadow-lg shadow-primary/20"
                 onClick={() => navigate("/clientes/novo")}
               >
-                Cadastrar agora
+                Cadastrar Primeiro Cliente
                 <ArrowRight className="h-4 w-4" />
               </Button>
             )}
@@ -457,78 +441,73 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
   const secondaryActions = actions.slice(1);
 
   return (
-    <div className={cn(isLeanView ? "" : "mb-8", "page-enter")}>
+    <div className={cn(isLeanView ? "" : "mb-12", "page-enter")}>
       {!isLeanView && (
-        <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-foreground/70">
-            🎯 Recomendações da Tecvo
+        <div className="flex items-center gap-3 mb-6 px-1">
+          <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+            <Target className="h-4 w-4" />
+          </div>
+          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-foreground/70">
+            Recomendações Estratégicas
           </h2>
-          <div className="flex-1 h-px bg-border/40" />
+          <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent" />
         </div>
       )}
 
-      <div className={cn("grid gap-4", isLeanView ? "grid-cols-1" : "lg:grid-cols-12")}>
-        {/* Priority Action (Highlight) - "Melhor ação agora" */}
+      <div className={cn("grid gap-6", isLeanView ? "grid-cols-1" : "lg:grid-cols-12")}>
+        {/* Priority Action (Highlight) */}
         <div className={cn(isLeanView ? "" : "lg:col-span-5")}>
           <button
             onClick={priorityAction.action}
             className={cn(
-              "group relative h-full w-full flex flex-col overflow-hidden rounded-3xl border-2 p-6 text-left transition-all duration-300 hover:shadow-xl active:scale-[0.99]",
-              "border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card ring-1 ring-primary/20 shadow-lg shadow-primary/5"
+              "group relative h-full w-full flex flex-col overflow-hidden rounded-[2.5rem] border-none p-10 text-left transition-all duration-500 hover:shadow-2xl active:scale-[0.99] shadow-xl",
+              "bg-gradient-to-br from-primary/20 via-card to-card ring-1 ring-primary/20"
             )}
           >
-            <div className="flex items-center justify-between mb-6">
-              <Badge className="font-bold px-3 py-1 bg-primary text-primary-foreground animate-pulse flex items-center gap-1.5 shadow-sm">
-                <Rocket className="h-3.5 w-3.5" />
+            <div className="absolute -right-16 -top-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all duration-700" />
+            
+            <div className="flex items-center justify-between mb-10 relative z-10">
+              <Badge className="font-black px-5 py-2 bg-primary text-[10px] uppercase tracking-widest animate-pulse flex items-center gap-2.5 shadow-xl shadow-primary/20 rounded-full border-none">
+                <Rocket className="h-4 w-4" />
                 MELHOR AÇÃO AGORA
               </Badge>
-              <div className={cn("p-3 rounded-2xl bg-primary/10 transition-transform group-hover:scale-110")}>
-                <priorityAction.icon className={cn("h-6 w-6 text-primary")} />
+              <div className={cn("p-4 rounded-[1.25rem] bg-primary/10 text-primary transition-all duration-500 group-hover:scale-110 group-hover:bg-primary group-hover:text-white shadow-sm border border-primary/20")}>
+                <priorityAction.icon className="h-7 w-7" />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-2xl font-black text-foreground tracking-tight leading-tight group-hover:text-primary transition-colors">
+            <div className="space-y-8 relative z-10 flex-1">
+              <h3 className="text-3xl font-black text-foreground tracking-tighter leading-[1.1] group-hover:text-primary transition-colors">
                 {priorityAction.recommendation}
               </h3>
               
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1 p-3 rounded-2xl bg-muted/50 border border-border/40">
-                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1">
-                    <Target className="h-3 w-3" /> Impacto
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5 p-5 rounded-3xl bg-muted/30 border border-border/40 backdrop-blur-sm group-hover:bg-muted/50 transition-colors">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-[0.2em] opacity-60 flex items-center gap-2">
+                    <TrendingUp className="h-3.5 w-3.5" /> IMPACTO
                   </span>
-                  <span className="text-sm font-bold text-success">{priorityAction.impactText}</span>
+                  <span className="text-base font-black text-success tracking-tight">{priorityAction.impactText}</span>
                 </div>
-                <div className="flex flex-col gap-1 p-3 rounded-2xl bg-muted/50 border border-border/40">
-                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1">
-                    <Timer className="h-3 w-3" /> Tempo
+                <div className="flex flex-col gap-1.5 p-5 rounded-3xl bg-muted/30 border border-border/40 backdrop-blur-sm group-hover:bg-muted/50 transition-colors">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-[0.2em] opacity-60 flex items-center gap-2">
+                    <Timer className="h-3.5 w-3.5" /> TEMPO
                   </span>
-                  <span className="text-sm font-bold text-foreground">{priorityAction.estimatedTime}</span>
+                  <span className="text-base font-black text-foreground tracking-tight">{priorityAction.estimatedTime}</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Confiança:</span>
-                <Badge variant="outline" className={cn(
-                  "font-bold text-[10px] px-2",
-                  priorityAction.confidence === "high" ? "bg-success/10 text-success border-success/20" :
-                  priorityAction.confidence === "medium" ? "bg-warning/10 text-warning border-warning/20" :
-                  "bg-muted text-muted-foreground"
-                )}>
-                  {priorityAction.confidence === "high" ? "Alta Chance" : 
-                   priorityAction.confidence === "medium" ? "Média Chance" : "Baixa Chance"}
-                </Badge>
-              </div>
+              {priorityAction.insight && (
+                <div className="p-6 rounded-3xl border border-primary/10 bg-primary/[0.03] text-sm text-muted-foreground relative overflow-hidden group-hover:bg-primary/[0.06] transition-all">
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/30" />
+                  <p className="font-medium italic leading-relaxed text-base">
+                    <span className="text-primary not-italic font-black mr-2 text-xl">“</span>
+                    {priorityAction.insight}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {priorityAction.insight && (
-              <div className="mt-6 p-4 rounded-2xl border border-primary/10 bg-primary/5 italic text-sm text-muted-foreground relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
-                "💡 {priorityAction.insight}"
-              </div>
-            )}
-
-            <div className="mt-auto pt-6 flex flex-col sm:flex-row items-center gap-3">
+            <div className="mt-12 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center gap-4 relative z-10">
               {priorityAction.directAction ? (
                 <TooltipProvider>
                   <Tooltip>
@@ -538,13 +517,13 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
                           e.stopPropagation();
                           priorityAction.directAction?.action();
                         }}
-                        className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md bg-primary hover:bg-primary/90"
+                        className="rounded-2xl px-10 h-14 font-black text-[11px] uppercase tracking-widest gap-3 w-full sm:w-auto shadow-2xl bg-primary hover:bg-primary/90 hover:scale-[1.02] transition-all active:scale-95 border-none"
                       >
-                        {priorityAction.directAction.icon && <priorityAction.directAction.icon className="h-4 w-4" />}
+                        {priorityAction.directAction.icon && <priorityAction.directAction.icon className="h-5 w-5" />}
                         {priorityAction.directAction.label}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="bg-foreground text-background font-bold rounded-xl p-3 border-none shadow-2xl">
                       <p>{priorityAction.directAction.description}</p>
                     </TooltipContent>
                   </Tooltip>
@@ -552,67 +531,65 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
               ) : (
                 <Button 
                   onClick={priorityAction.action}
-                  className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md"
+                  className="rounded-2xl px-10 h-14 font-black text-[11px] uppercase tracking-widest gap-3 w-full sm:w-auto shadow-2xl hover:scale-[1.02] transition-all"
                 >
-                  Executar recomendação
-                  <ArrowRight className="h-4 w-4" />
+                  Executar Agora
+                  <ArrowRight className="h-5 w-5" />
                 </Button>
               )}
               
-              {priorityAction.directAction && (
-                <Button 
-                  variant="ghost" 
-                  onClick={priorityAction.action}
-                  className="text-xs font-bold text-muted-foreground hover:text-foreground gap-1.5"
-                >
-                  Ver detalhes
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
-              )}
+              <Button 
+                variant="ghost" 
+                onClick={priorityAction.action}
+                className="text-xs font-bold text-muted-foreground hover:text-foreground gap-2.5 h-14 px-8 hover:bg-muted/50 rounded-2xl transition-all"
+              >
+                Analisar Detalhes
+                <ArrowRight className="h-4 w-4 opacity-50" />
+              </Button>
             </div>
             
-            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
-              <priorityAction.icon size={200} />
+            <div className="absolute -right-16 -bottom-16 opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-700 -rotate-12 group-hover:rotate-0 group-hover:scale-110">
+              <priorityAction.icon size={320} />
             </div>
           </button>
         </div>
 
-        <div className={cn(isLeanView ? "grid gap-3" : "lg:col-span-7 grid gap-3 sm:grid-cols-2")}>
+        <div className={cn(isLeanView ? "grid gap-6" : "lg:col-span-7 grid gap-6 sm:grid-cols-2")}>
           {secondaryActions.map((item) => (
             <button
               key={item.id}
               onClick={item.action}
-              className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left transition-all duration-300 hover:border-primary/30 hover:shadow-lg active:scale-[0.98]"
+              className="group flex flex-col justify-between overflow-hidden rounded-[2rem] border border-border/40 bg-card p-8 text-left transition-all duration-500 hover:border-primary/40 hover:shadow-2xl active:scale-[0.98] relative shadow-lg"
             >
-              <div className="flex items-start justify-between">
-                <div className={cn("rounded-xl p-2 bg-muted/50 transition-transform group-hover:scale-110")}>
-                  <item.icon className={cn("h-4 w-4", item.color)} />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
+              
+              <div className="flex items-start justify-between relative z-10 mb-8">
+                <div className={cn("rounded-2xl p-4 bg-muted/40 transition-all duration-500 group-hover:scale-110 group-hover:bg-primary/10 shadow-inner")}>
+                  <item.icon className={cn("h-6 w-6", item.color)} />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className={cn(
-                    "text-[8px] font-bold uppercase tracking-tighter px-1.5",
-                    item.confidence === "high" ? "border-success/30 text-success bg-success/5" : "border-muted text-muted-foreground"
-                  )}>
-                    {item.confidence === "high" ? "Alta chance" : "Recomendado"}
-                  </Badge>
-                </div>
+                <Badge variant="outline" className={cn(
+                  "text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full border-2 transition-colors",
+                  item.confidence === "high" ? "border-success/30 text-success bg-success/[0.03]" : "border-border/60 text-muted-foreground bg-muted/20"
+                )}>
+                  {item.confidence === "high" ? "ALTA CHANCE" : "OPORTUNIDADE"}
+                </Badge>
               </div>
 
-              <div className="mt-3 space-y-2">
-                <h4 className="text-[14px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-2">
+              <div className="space-y-6 relative z-10 flex-1">
+                <h4 className="text-[17px] font-black text-foreground/90 leading-tight group-hover:text-primary transition-colors line-clamp-2 tracking-tighter">
                   {item.recommendation}
                 </h4>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="text-[10px] font-bold text-success flex items-center gap-1">
-                    <Target className="h-3 w-3" /> {formatCurrency(item.impactValue)}
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                  <span className="text-[12px] font-black text-success flex items-center gap-2 tabular-nums">
+                    <Target className="h-4 w-4 opacity-60" /> {formatCurrency(item.impactValue)}
                   </span>
-                  <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-                    <Timer className="h-3 w-3" /> {item.estimatedTime}
+                  <span className="text-[12px] font-bold text-muted-foreground/70 flex items-center gap-2">
+                    <Timer className="h-4 w-4 opacity-60" /> {item.estimatedTime}
                   </span>
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
+              <div className="mt-8 flex items-center justify-between relative z-10 border-t border-border/40 pt-6">
                 {item.directAction ? (
                   <Button 
                     variant="outline"
@@ -621,32 +598,33 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
                       e.stopPropagation();
                       item.directAction?.action();
                     }}
-                    className="h-9 rounded-lg px-4 text-[12px] font-bold gap-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-primary transition-all active:scale-95"
+                    className="h-12 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest gap-3 border-primary/20 hover:border-primary/40 hover:bg-primary text-primary hover:text-white transition-all active:scale-95 shadow-sm"
                   >
-                    {item.directAction.icon && <item.directAction.icon className="h-3.5 w-3.5" />}
+                    {item.directAction.icon && <item.directAction.icon className="h-4 w-4" />}
                     {item.directAction.label}
                   </Button>
                 ) : (
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all">
-                    Ver detalhes <ArrowRight className="h-3 w-3" />
+                  <div className="flex items-center gap-3 text-[11px] font-black text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
+                    DETALHES <ArrowRight className="h-4 w-4" />
                   </div>
                 )}
                 
-                {item.directAction && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  </div>
-                )}
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all delay-100">
+                  <div className="h-2 w-2 rounded-full bg-primary/40" />
+                  <div className="h-2 w-2 rounded-full bg-primary/20" />
+                </div>
               </div>
             </button>
           ))}
           
           {/* Action indicator slot if less than 5 */}
           {actions.length < 5 && (
-            <div className="hidden sm:flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/5 p-4 text-center">
-              <Rocket className="h-5 w-5 text-muted-foreground/30 mb-2" />
-              <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest leading-relaxed">
-                Mais recomendações em breve
+            <div className="hidden sm:flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-border/40 bg-muted/[0.02] p-8 text-center group hover:bg-muted/[0.05] transition-colors shadow-inner">
+              <div className="p-5 rounded-[1.25rem] bg-muted/20 mb-4 group-hover:scale-110 transition-transform">
+                <Rocket className="h-8 w-8 text-muted-foreground/20" />
+              </div>
+              <p className="text-[11px] font-black text-muted-foreground/30 uppercase tracking-[0.25em] leading-relaxed max-w-[150px] mx-auto">
+                MAIS INSIGHTS EM BREVE
               </p>
             </div>
           )}
