@@ -373,22 +373,11 @@ export default function LaudoDetalhes() {
         </SectionCard>
 
         {/* Recommendation & Strategy */}
-        <SectionCard icon={MessageSquare} title="Parecer e Recomendação">
-          <div className="space-y-4">
-            {report.recommendation && (
-              <div>
-                <p className="text-[11px] font-bold text-blue-600 uppercase mb-1">Diretriz Técnica</p>
-                <p className="text-sm whitespace-pre-wrap">{report.recommendation}</p>
-              </div>
-            )}
-            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-              <p className="text-[11px] font-bold text-blue-700 uppercase mb-1">Sugestão Estratégica</p>
-              <p className="text-sm text-blue-900">
-                Implementar Plano de Manutenção Preventiva (PMOC) para garantir eficiência energética e conformidade legal.
-              </p>
-            </div>
-          </div>
-        </SectionCard>
+        {report.recommendation && (
+          <SectionCard icon={MessageSquare} title="Parecer e Recomendação">
+            <p className="text-sm whitespace-pre-wrap">{report.recommendation}</p>
+          </SectionCard>
+        )}
 
         {/* Risks */}
         {report.risks && (
