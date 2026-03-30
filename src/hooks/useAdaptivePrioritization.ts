@@ -73,42 +73,7 @@ export function useAdaptivePrioritization() {
   }, [session?.user?.id]);
 
   const seedInitialHistory = () => {
-    const now = new Date().toISOString();
-    const seed: Record<string, ActionHistory> = {
-      "pending_quotes": {
-        id: "pending_quotes",
-        impressions: 45,
-        clicks: 12,
-        resolutions: 8,
-        ignores: 2,
-        lastInteraction: now,
-        firstSeen: now,
-        consecutiveIgnores: 0,
-        totalValueGenerated: 12450,
-        successFrequency: 0.66,
-        results: [
-          { timestamp: now, value: 4500, type: 'conversion' },
-          { timestamp: now, value: 7950, type: 'conversion' }
-        ]
-      },
-      "overdue_payments": {
-        id: "overdue_payments",
-        impressions: 30,
-        clicks: 15,
-        resolutions: 10,
-        ignores: 1,
-        lastInteraction: now,
-        firstSeen: now,
-        consecutiveIgnores: 0,
-        totalValueGenerated: 8200,
-        successFrequency: 0.75,
-        results: [
-          { timestamp: now, value: 8200, type: 'recovery' }
-        ]
-      }
-    };
-    setHistory(seed);
-    localStorage.setItem("dashboard_action_history", JSON.stringify(seed));
+    setHistory({});
   };
 
   // Save history to both localStorage and Supabase
