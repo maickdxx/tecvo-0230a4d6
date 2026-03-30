@@ -58,6 +58,8 @@ export function TodayActionsBlock() {
   const { services, isLoading: isLoadingServices } = useServices();
   const { clients, isLoading: isLoadingClients } = useClients();
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
+  const { role, isOwner, isAdmin } = useUserRole();
+  const { recordInteraction, getScoreAdjustment, getAdaptiveInsight } = useAdaptivePrioritization();
 
   const actions = useMemo(() => {
     const result: DashboardAction[] = [];
@@ -73,6 +75,9 @@ export function TodayActionsBlock() {
       const oldestDate = overdueServices.reduce((oldest, s) => s.scheduled_date < oldest ? s.scheduled_date : oldest, overdueServices[0].scheduled_date);
       const daysOverdue = differenceInDays(today, new Date(oldestDate));
       
+      const baseScore = 1000 + (impactValue / 100) + (daysOverdue * 50);
+      const adjustedScore = baseScore + getScoreAdjustment("overdue_services", baseScore);
+
       result.push({
         id: "overdue_services",
         title: `${overdueServices.length} serviço${overdueServices.length > 1 ? "s" : ""} em atraso`,
@@ -80,11 +85,14 @@ export function TodayActionsBlock() {
         timeLabel: `há ${daysOverdue} dia${daysOverdue > 1 ? "s" : ""}`,
         icon: AlertTriangle,
         priorityLevel: "high",
-        score: 1000 + (impactValue / 100) + (daysOverdue * 50),
-        action: () => navigate("/ordens-servico?status=overdue"),
+        score: adjustedScore,
+        action: () => {
+          recordInteraction("overdue_services", "click");
+          navigate("/ordens-servico?status=overdue");
+        },
         color: "text-destructive",
         bg: "bg-destructive/10",
-        insight: "Resolver isso libera o fluxo operacional.",
+        insight: getAdaptiveInsight("overdue_services", "Resolver isso libera o fluxo operacional."),
       });
     }
 
@@ -98,6 +106,9 @@ export function TodayActionsBlock() {
       const oldestDate = overduePayments.reduce((oldest, t) => t.due_date! < oldest ? t.due_date! : oldest, overduePayments[0].due_date!);
       const daysOverdue = differenceInDays(today, new Date(oldestDate));
 
+      const baseScore = 1100 + (total / 100) + (daysOverdue * 60);
+      const adjustedScore = baseScore + getScoreAdjustment("overdue_payments", baseScore);
+
       result.push({
         id: "overdue_payments",
         title: `${overduePayments.length} pagamento${overduePayments.length > 1 ? "s" : ""} vencido${overduePayments.length > 1 ? "s" : ""}`,
@@ -105,11 +116,14 @@ export function TodayActionsBlock() {
         timeLabel: `vencido há ${daysOverdue} d`,
         icon: DollarSign,
         priorityLevel: "high",
-        score: 1100 + (total / 100) + (daysOverdue * 60),
-        action: () => navigate("/financeiro?tab=receivable&status=overdue"),
+        score: adjustedScore,
+        action: () => {
+          recordInteraction("overdue_payments", "click");
+          navigate("/financeiro?tab=receivable&status=overdue");
+        },
         color: "text-destructive",
         bg: "bg-destructive/10",
-        insight: "Cobrança imediata melhora o caixa hoje.",
+        insight: getAdaptiveInsight("overdue_payments", "Cobrança imediata melhora o caixa hoje."),
       });
     }
 
@@ -124,6 +138,9 @@ export function TodayActionsBlock() {
       const oldestDate = pendingQuotes.reduce((oldest, s) => s.created_at < oldest ? s.created_at : oldest, pendingQuotes[0].created_at);
       const daysPending = differenceInDays(today, new Date(oldestDate));
 
+      const baseScore = 800 + (totalValue / 200) + (daysPending * 30);
+      const adjustedScore = baseScore + getScoreAdjustment("pending_quotes", baseScore);
+
       result.push({
         id: "pending_quotes",
         title: "Acelerar orçamentos pendentes",
@@ -131,11 +148,14 @@ export function TodayActionsBlock() {
         timeLabel: `há ${daysPending} dias`,
         icon: Zap,
         priorityLevel: "high",
-        score: 800 + (totalValue / 200) + (daysPending * 30),
-        action: () => navigate("/orcamentos"),
+        score: adjustedScore,
+        action: () => {
+          recordInteraction("pending_quotes", "click");
+          navigate("/orcamentos");
+        },
         color: "text-warning",
         bg: "bg-warning/10",
-        insight: "Esse tipo de orçamento costuma fechar rápido se abordado agora.",
+        insight: getAdaptiveInsight("pending_quotes", "Esse tipo de orçamento costuma fechar rápido se abordado agora."),
       });
     }
 
@@ -156,6 +176,9 @@ export function TodayActionsBlock() {
     });
 
     if (inactiveClients.length > 0) {
+      const baseScore = 300 + (inactiveClients.length * 10);
+      const adjustedScore = baseScore + getScoreAdjustment("inactive_clients", baseScore);
+
       result.push({
         id: "inactive_clients",
         title: "Reativar clientes sumidos",
@@ -163,11 +186,14 @@ export function TodayActionsBlock() {
         timeLabel: "inativos +6 meses",
         icon: UserX,
         priorityLevel: "medium",
-        score: 300 + (inactiveClients.length * 10),
-        action: () => navigate("/clientes"),
+        score: adjustedScore,
+        action: () => {
+          recordInteraction("inactive_clients", "click");
+          navigate("/clientes");
+        },
         color: "text-primary",
         bg: "bg-primary/10",
-        insight: "Manutenção preventiva é o melhor lucro.",
+        insight: getAdaptiveInsight("inactive_clients", "Manutenção preventiva é o melhor lucro."),
       });
     }
 
@@ -178,6 +204,9 @@ export function TodayActionsBlock() {
 
     if (todayServices.length > 0) {
       const totalValue = todayServices.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
+      const baseScore = 500 + (totalValue / 500);
+      const adjustedScore = baseScore + getScoreAdjustment("today_services", baseScore);
+
       result.push({
         id: "today_services",
         title: "Executar serviços do dia",
@@ -185,16 +214,28 @@ export function TodayActionsBlock() {
         timeLabel: "para hoje",
         icon: CalendarDays,
         priorityLevel: "medium",
-        score: 500 + (totalValue / 500),
-        action: () => navigate("/agenda"),
+        score: adjustedScore,
+        action: () => {
+          recordInteraction("today_services", "click");
+          navigate("/agenda");
+        },
         color: "text-info",
         bg: "bg-info/10",
-        insight: "Check-in antecipado evita atrasos.",
+        insight: getAdaptiveInsight("today_services", "Check-in antecipado evita atrasos."),
       });
     }
 
     return result.sort((a, b) => b.score - a.score).slice(0, 5);
-  }, [services, clients, transactions, todayStr, navigate, today]);
+  }, [services, clients, transactions, todayStr, navigate, today, getScoreAdjustment, getAdaptiveInsight, recordInteraction]);
+
+  // Track impressions
+  useEffect(() => {
+    if (actions.length > 0 && !isLoadingServices && !isLoadingClients && !isLoadingTransactions) {
+      actions.forEach(action => {
+        recordInteraction(action.id, "impression");
+      });
+    }
+  }, [actions.length, isLoadingServices, isLoadingClients, isLoadingTransactions]);
 
   const isLoading = isLoadingServices || isLoadingClients || isLoadingTransactions;
 
