@@ -582,9 +582,9 @@ export function TodayActionsBlock() {
                       e.stopPropagation();
                       item.directAction?.action();
                     }}
-                    className="h-8 rounded-lg px-3 text-[11px] font-bold gap-1.5 border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-primary transition-all"
+                    className="h-9 rounded-lg px-4 text-[12px] font-bold gap-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-primary transition-all active:scale-95"
                   >
-                    {item.directAction.icon && <item.directAction.icon className="h-3 w-3" />}
+                    {item.directAction.icon && <item.directAction.icon className="h-3.5 w-3.5" />}
                     {item.directAction.label}
                   </Button>
                 ) : (
