@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const benefits = [
   { icon: TrendingUp, title: "Fature mais sem trabalhar mais", description: "Encontre onde você está perdendo dinheiro e recupere receita que hoje escapa do seu controle." },
   { icon: Clock, title: "Ganhe 3 horas por dia de volta", description: "Orçamentos, OS e cobranças que você fazia na mão agora saem com 2 cliques." },
-  { icon: Zap, title: "Atenda antes do concorrente", description: "A IA responde seu WhatsApp em segundos enquanto você está instalando um split." },
+  { icon: Zap, title: "Atenda antes do concorrente", description: "WhatsApp integrado com todas as conversas organizadas. Responda clientes entre um serviço e outro sem perder nenhuma mensagem." },
   { icon: Target, title: "Nenhum serviço cai no esquecimento", description: "A agenda avisa sua equipe automaticamente. Manutenção preventiva nunca mais passa batido." },
   { icon: ShieldCheck, title: "Passe credibilidade de empresa grande", description: "Orçamentos em PDF, portal do cliente e assinatura digital. Seu cliente percebe a diferença." },
   { icon: BarChart3, title: "Tome decisão com número, não com feeling", description: "Veja quanto faturou, quais serviços rendem mais e onde cortar custos — tudo em tempo real." },

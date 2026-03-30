@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const solutions = [
   "Cada serviço registrado com histórico, fotos e assinatura do cliente",
   "Agenda com lembretes — nenhuma manutenção esquecida",
-  "WhatsApp com IA que responde seus clientes enquanto você está em campo",
+  "WhatsApp integrado — todas as conversas organizadas num lugar só",
   "Financeiro real: saiba quanto entrou, quanto saiu e quanto lucrou",
   "Orçamentos em PDF com a cara da sua empresa, prontos em segundos",
   "Seus clientes voltam automaticamente sem você precisar lembrar",
