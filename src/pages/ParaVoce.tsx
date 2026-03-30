@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, FileText, Users, MessageCircle, History, UsersRound, ArrowRight, X, ChevronDown } from "lucide-react";
-import { trackFBEvent, trackFBCustomEvent } from "@/lib/fbPixel";
+import { trackFBCustomEvent } from "@/lib/fbPixel";
 
 const TOTAL_STEPS = 6;
 
@@ -33,7 +33,6 @@ export default function ParaVoce() {
 
   useEffect(() => {
     document.title = "Tecvo — Essa plataforma é para você?";
-    trackFBEvent("ViewContent", { content_name: "Para Você", content_category: "sales" });
     trackFBCustomEvent("ParaVocePagina");
   }, []);
 
