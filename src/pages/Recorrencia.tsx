@@ -379,6 +379,8 @@ function ClientCard({ client, onWhatsApp, typeLabels }: { client: RecurrenceClie
 export default function Recorrencia() {
   const [filter, setFilter] = useState<"all" | "pronto" | "proximo" | "futuro">("all");
   const listRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { organization } = useOrganization();
 
   const { data: statsData, isLoading: statsLoading } = useRecurrenceStats();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePaginatedRecurrence(filter);
