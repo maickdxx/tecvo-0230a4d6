@@ -4,17 +4,22 @@ import {
   CalendarDays, 
   Clock, 
   AlertTriangle, 
-  CheckCircle2, 
   FileText, 
   UserX, 
   TrendingUp,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Zap,
+  DollarSign,
+  AlertCircle
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
 import { useTransactions } from "@/hooks/useTransactions";
-import { format, subDays, subMonths } from "date-fns";
+import { format, subDays, subMonths, differenceInDays } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -23,6 +28,22 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+type PriorityLevel = "high" | "medium" | "low";
+
+interface DashboardAction {
+  id: string;
+  title: string;
+  impactText: string;
+  timeLabel: string;
+  icon: any;
+  priorityLevel: PriorityLevel;
+  score: number;
+  action: () => void;
+  color: string;
+  bg: string;
+  insight?: string;
 }
 
 export function TodayActionsBlock() {
@@ -35,18 +56,9 @@ export function TodayActionsBlock() {
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
 
   const actions = useMemo(() => {
-    const result: {
-      id: string;
-      label: string;
-      impact?: string;
-      icon: any;
-      color: string;
-      bg: string;
-      action: () => void;
-      priority: number;
-    }[] = [];
+    const result: DashboardAction[] = [];
 
-    // 1. Overdue services (High priority)
+    // 1. Overdue services (Money in Risk - High Base: 1000)
     const overdueServices = services.filter((s) => {
       if (!s.scheduled_date || s.status === "completed" || s.status === "cancelled" || s.document_type === "quote") return false;
       return s.scheduled_date.substring(0, 10) < todayStr;
@@ -54,58 +66,76 @@ export function TodayActionsBlock() {
 
     if (overdueServices.length > 0) {
       const impactValue = overdueServices.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
+      const oldestDate = overdueServices.reduce((oldest, s) => s.scheduled_date < oldest ? s.scheduled_date : oldest, overdueServices[0].scheduled_date);
+      const daysOverdue = differenceInDays(today, new Date(oldestDate));
+      
       result.push({
         id: "overdue_services",
-        label: `${overdueServices.length} serviço${overdueServices.length > 1 ? "s" : ""} atrasado${overdueServices.length > 1 ? "s" : ""}`,
-        impact: impactValue > 0 ? `${formatCurrency(impactValue)} em risco` : undefined,
-        icon: Clock,
+        title: `${overdueServices.length} serviço${overdueServices.length > 1 ? "s" : ""} em atraso`,
+        impactText: `Evite perder ${formatCurrency(impactValue)} hoje`,
+        timeLabel: `há ${daysOverdue} dia${daysOverdue > 1 ? "s" : ""}`,
+        icon: AlertTriangle,
+        priorityLevel: "high",
+        score: 1000 + (impactValue / 100) + (daysOverdue * 50),
+        action: () => navigate("/ordens-servico?status=overdue"),
         color: "text-destructive",
         bg: "bg-destructive/10",
-        action: () => navigate("/ordens-servico?status=overdue"),
-        priority: 1,
+        insight: "Resolver isso libera o fluxo operacional.",
       });
     }
 
-    // 2. Overdue payments (High priority)
+    // 2. Overdue payments (Money in Risk - High Base: 1100)
     const overduePayments = transactions.filter(
       (t) => t.status === "pending" && t.due_date && t.due_date < todayStr && t.type === "income"
     );
 
     if (overduePayments.length > 0) {
       const total = overduePayments.reduce((sum, t) => sum + Number(t.amount), 0);
+      const oldestDate = overduePayments.reduce((oldest, t) => t.due_date! < oldest ? t.due_date! : oldest, overduePayments[0].due_date!);
+      const daysOverdue = differenceInDays(today, new Date(oldestDate));
+
       result.push({
         id: "overdue_payments",
-        label: `${overduePayments.length} pagamento${overduePayments.length > 1 ? "s" : ""} vencido${overduePayments.length > 1 ? "s" : ""}`,
-        impact: `${formatCurrency(total)} pendente`,
-        icon: AlertTriangle,
+        title: `${overduePayments.length} pagamento${overduePayments.length > 1 ? "s" : ""} vencido${overduePayments.length > 1 ? "s" : ""}`,
+        impactText: `Recupere ${formatCurrency(total)} parados`,
+        timeLabel: `vencido há ${daysOverdue} d`,
+        icon: DollarSign,
+        priorityLevel: "high",
+        score: 1100 + (total / 100) + (daysOverdue * 60),
+        action: () => navigate("/financeiro?tab=receivable&status=overdue"),
         color: "text-destructive",
         bg: "bg-destructive/10",
-        action: () => navigate("/financeiro?tab=receivable&status=overdue"),
-        priority: 2,
+        insight: "Cobrança imediata melhora o caixa hoje.",
       });
     }
 
-    // 3. Quotes without response (Potential revenue)
-    const fiveDaysAgo = format(subDays(today, 5), "yyyy-MM-dd");
+    // 3. Quotes without response (Money Idle - Medium/High Base: 800)
+    const threeDaysAgo = format(subDays(today, 3), "yyyy-MM-dd");
     const pendingQuotes = services.filter(
-      (s) => s.document_type === "quote" && s.status === "scheduled" && s.created_at.substring(0, 10) <= fiveDaysAgo
+      (s) => s.document_type === "quote" && s.status === "scheduled" && s.created_at.substring(0, 10) <= threeDaysAgo
     );
 
     if (pendingQuotes.length > 0) {
       const totalValue = pendingQuotes.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
+      const oldestDate = pendingQuotes.reduce((oldest, s) => s.created_at < oldest ? s.created_at : oldest, pendingQuotes[0].created_at);
+      const daysPending = differenceInDays(today, new Date(oldestDate));
+
       result.push({
         id: "pending_quotes",
-        label: `${pendingQuotes.length} orçamento${pendingQuotes.length > 1 ? "s" : ""} sem resposta`,
-        impact: totalValue > 0 ? `${formatCurrency(totalValue)} aguardando` : undefined,
-        icon: FileText,
+        title: "Acelerar orçamentos pendentes",
+        impactText: `Liberar ${formatCurrency(totalValue)} em caixa`,
+        timeLabel: `há ${daysPending} dias`,
+        icon: Zap,
+        priorityLevel: "high",
+        score: 800 + (totalValue / 200) + (daysPending * 30),
+        action: () => navigate("/orcamentos"),
         color: "text-warning",
         bg: "bg-warning/10",
-        action: () => navigate("/orcamentos"),
-        priority: 3,
+        insight: "Esse tipo de orçamento costuma fechar rápido se abordado agora.",
       });
     }
 
-    // 4. Inactive clients (6+ months)
+    // 4. Inactive clients (Opportunity - Low Base: 300)
     const sixMonthsAgo = format(subMonths(today, 6), "yyyy-MM-dd");
     const lastServiceByClient: Record<string, string> = {};
     services.forEach((s) => {
@@ -124,35 +154,43 @@ export function TodayActionsBlock() {
     if (inactiveClients.length > 0) {
       result.push({
         id: "inactive_clients",
-        label: `${inactiveClients.length} cliente${inactiveClients.length > 1 ? "s" : ""} sem manutenção`,
-        impact: "Potencial de reativação",
+        title: "Reativar clientes sumidos",
+        impactText: "Gerar novos serviços recorrentes",
+        timeLabel: "inativos +6 meses",
         icon: UserX,
+        priorityLevel: "medium",
+        score: 300 + (inactiveClients.length * 10),
+        action: () => navigate("/clientes"),
         color: "text-primary",
         bg: "bg-primary/10",
-        action: () => navigate("/clientes"),
-        priority: 4,
+        insight: "Manutenção preventiva é o melhor lucro.",
       });
     }
 
-    // 5. Services for today
+    // 5. Services for today (Operational - Medium Base: 500)
     const todayServices = services.filter(
       (s) => s.scheduled_date?.startsWith(todayStr) && s.status !== "cancelled" && s.document_type !== "quote"
     );
 
     if (todayServices.length > 0) {
+      const totalValue = todayServices.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
       result.push({
         id: "today_services",
-        label: `${todayServices.length} serviço${todayServices.length > 1 ? "s" : ""} para hoje`,
+        title: "Executar serviços do dia",
+        impactText: `Garantir ${formatCurrency(totalValue)} em faturamento`,
+        timeLabel: "para hoje",
         icon: CalendarDays,
+        priorityLevel: "medium",
+        score: 500 + (totalValue / 500),
+        action: () => navigate("/agenda"),
         color: "text-info",
         bg: "bg-info/10",
-        action: () => navigate("/agenda"),
-        priority: 5,
+        insight: "Check-in antecipado evita atrasos.",
       });
     }
 
-    return result.sort((a, b) => a.priority - b.priority).slice(0, 5);
-  }, [services, clients, transactions, todayStr, navigate]);
+    return result.sort((a, b) => b.score - a.score).slice(0, 5);
+  }, [services, clients, transactions, todayStr, navigate, today]);
 
   const isLoading = isLoadingServices || isLoadingClients || isLoadingTransactions;
 
@@ -166,17 +204,20 @@ export function TodayActionsBlock() {
     return (
       <div className="mb-8 rounded-2xl border border-success/20 bg-success/5 p-6 animate-fade-in">
         <div className="flex items-center gap-4">
-          <div className="rounded-full bg-success/10 p-3">
-            <ShieldCheck className="h-6 w-6 text-success" />
+          <div className="rounded-full bg-success/10 p-3 text-success">
+            <ShieldCheck className="h-6 w-6" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-foreground">Tudo sob controle hoje</h2>
-            <p className="text-sm text-muted-foreground">Não há ações críticas pendentes no momento. Bom trabalho!</p>
+            <p className="text-sm text-muted-foreground">Nenhuma ação crítica necessária. Sua operação está em dia!</p>
           </div>
         </div>
       </div>
     );
   }
+
+  const priorityAction = actions[0];
+  const secondaryActions = actions.slice(1);
 
   return (
     <div className="mb-8 page-enter">
@@ -187,36 +228,103 @@ export function TodayActionsBlock() {
         <div className="flex-1 h-px bg-border/40" />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {actions.map((item) => (
+      <div className="grid gap-4 lg:grid-cols-12">
+        {/* Priority Action (Highlight) */}
+        <div className="lg:col-span-5">
           <button
-            key={item.id}
-            onClick={item.action}
-            className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98]"
+            onClick={priorityAction.action}
+            className="group relative h-full w-full flex flex-col overflow-hidden rounded-3xl border-2 border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-6 text-left transition-all duration-300 hover:border-primary/40 hover:shadow-xl active:scale-[0.99]"
           >
-            <div className="flex items-start justify-between">
-              <div className={`rounded-xl p-2.5 ${item.bg} transition-transform group-hover:scale-110`}>
-                <item.icon className={`h-5 w-5 ${item.color}`} />
+            <div className="flex items-center justify-between mb-6">
+              <Badge className="bg-primary text-primary-foreground font-bold px-3 py-1 animate-pulse">
+                👉 PRIORIDADE DO DIA
+              </Badge>
+              <div className={cn("p-3 rounded-2xl", priorityAction.bg)}>
+                <priorityAction.icon className={cn("h-6 w-6", priorityAction.color)} />
               </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground/0 transition-all group-hover:text-muted-foreground/100 group-hover:translate-x-1" />
             </div>
 
-            <div className="mt-4">
-              <h3 className="text-[15px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
-                {item.label}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className={cn(
+                  "uppercase text-[10px] font-bold tracking-widest",
+                  priorityAction.priorityLevel === "high" ? "border-destructive text-destructive bg-destructive/5" : "border-primary text-primary bg-primary/5"
+                )}>
+                  {priorityAction.priorityLevel === "high" ? "Alta Prioridade" : "Média Prioridade"}
+                </Badge>
+                <span className="text-xs text-muted-foreground">• {priorityAction.timeLabel}</span>
+              </div>
+              <h3 className="text-2xl font-black text-foreground tracking-tight leading-tight group-hover:text-primary transition-colors">
+                {priorityAction.title}
               </h3>
-              {item.impact && (
-                <p className="mt-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-success" />
-                  {item.impact}
-                </p>
-              )}
+              <p className="text-lg font-bold text-foreground/80 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-success shrink-0" />
+                {priorityAction.impactText}
+              </p>
+            </div>
+
+            {priorityAction.insight && (
+              <div className="mt-6 p-4 rounded-2xl bg-muted/30 border border-border/40 italic text-sm text-muted-foreground">
+                "💡 {priorityAction.insight}"
+              </div>
+            )}
+
+            <div className="mt-auto pt-6 flex items-center justify-between">
+              <Button className="rounded-xl px-6 font-bold gap-2">
+                Resolver agora
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
             
-            {/* Visual indicator of priority */}
-            <div className={`absolute top-0 right-0 h-1 w-12 ${item.id === "overdue_services" || item.id === "overdue_payments" ? "bg-destructive/40" : "bg-primary/20"}`} />
+            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+              <priorityAction.icon size={200} />
+            </div>
           </button>
-        ))}
+        </div>
+
+        {/* Secondary Actions */}
+        <div className="lg:col-span-7 grid gap-3 sm:grid-cols-2">
+          {secondaryActions.map((item) => (
+            <button
+              key={item.id}
+              onClick={item.action}
+              className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left transition-all duration-300 hover:border-primary/30 hover:shadow-lg active:scale-[0.98]"
+            >
+              <div className="flex items-start justify-between">
+                <div className={cn("rounded-xl p-2.5", item.bg, "transition-transform group-hover:scale-110")}>
+                  <item.icon className={cn("h-5 w-5", item.color)} />
+                </div>
+                <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-tighter opacity-70">
+                  {item.priorityLevel === "high" ? "Alta" : "Média"}
+                </Badge>
+              </div>
+
+              <div className="mt-4 space-y-1">
+                <h4 className="text-[15px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
+                  {item.title}
+                </h4>
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <span className="text-success font-bold shrink-0">{item.impactText}</span>
+                  <span className="opacity-50">•</span>
+                  <span className="opacity-60 text-[10px] uppercase font-bold tracking-tighter shrink-0">{item.timeLabel}</span>
+                </p>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all">
+                Ação direta <ArrowRight className="h-3 w-3" />
+              </div>
+            </button>
+          ))}
+          
+          {/* Empty slot placeholder if less than 5 actions */}
+          {actions.length < 5 && actions.length > 0 && (
+            <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-4">
+              <p className="text-[11px] font-medium text-muted-foreground/60 text-center uppercase tracking-widest leading-relaxed">
+                Continue assim!<br/>Sua lista está ficando limpa.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
