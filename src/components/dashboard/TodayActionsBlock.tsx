@@ -105,6 +105,14 @@ export function TodayActionsBlock() {
   const actions = useMemo(() => {
     const result: DashboardAction[] = [];
 
+    const getConfidence = (id: string): ConfidenceLevel => {
+      const data = history[id];
+      if (!data) return "low";
+      if (data.successFrequency > 0.7 || data.resolutions > 8) return "high";
+      if (data.successFrequency > 0.4 || data.resolutions > 4) return "medium";
+      return "low";
+    };
+
     // 1. Overdue services
     if (counts.overdue_services.length > 0) {
       const impactValue = counts.overdue_services.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
@@ -118,10 +126,14 @@ export function TodayActionsBlock() {
       result.push({
         id: "overdue_services",
         title: `${counts.overdue_services.length} serviço${counts.overdue_services.length > 1 ? "s" : ""} em atraso`,
-        impactText: historyData?.totalValueGenerated ? `Já evitou perda de ${formatCurrency(historyData.totalValueGenerated)}` : `Evite perder ${formatCurrency(impactValue)} hoje`,
+        recommendation: `Regularize ${counts.overdue_services.length} serviços e recupere ${formatCurrency(impactValue)}`,
+        impactValue,
+        impactText: historyData?.totalValueGenerated ? `Já evitou perda de ${formatCurrency(historyData.totalValueGenerated)}` : `Recupere ${formatCurrency(impactValue)} agora`,
         timeLabel: `há ${daysOverdue} d`,
+        estimatedTime: "15 min",
         icon: AlertTriangle,
         priorityLevel: "high",
+        confidence: getConfidence("overdue_services"),
         score: adjustedScore,
         action: () => {
           recordInteraction("overdue_services", "click");
@@ -145,11 +157,15 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "overdue_payments",
-        title: `${counts.overdue_payments.length} pagamento${counts.overdue_payments.length > 1 ? "s" : ""} vencido${counts.overdue_payments.length > 1 ? "s" : ""}`,
+        title: "Pagamentos vencidos",
+        recommendation: `Cobrar ${counts.overdue_payments.length} clientes agora para recuperar ${formatCurrency(total)}`,
+        impactValue: total,
         impactText: historyData?.totalValueGenerated ? `Recuperou ${formatCurrency(historyData.totalValueGenerated)} com cobrança` : `Recupere ${formatCurrency(total)} parados`,
         timeLabel: `há ${daysOverdue} d`,
+        estimatedTime: "5 min",
         icon: DollarSign,
         priorityLevel: "high",
+        confidence: getConfidence("overdue_payments"),
         score: adjustedScore,
         action: () => {
           recordInteraction("overdue_payments", "click");
@@ -173,11 +189,15 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "pending_quotes",
-        title: "Acelerar orçamentos pendentes",
+        title: "Orçamentos parados",
+        recommendation: `Fale com esses ${counts.pending_quotes.length} clientes agora e pode fechar ${formatCurrency(totalValue)}`,
+        impactValue: totalValue,
         impactText: historyData?.totalValueGenerated ? `Já converteu ${formatCurrency(historyData.totalValueGenerated)}` : `Liberar ${formatCurrency(totalValue)} em caixa`,
         timeLabel: `há ${daysPending} dias`,
+        estimatedTime: "10 min",
         icon: Zap,
         priorityLevel: "high",
+        confidence: getConfidence("pending_quotes"),
         score: adjustedScore,
         action: () => {
           recordInteraction("pending_quotes", "click");
@@ -197,11 +217,15 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "inactive_clients",
-        title: "Reativar clientes sumidos",
+        title: "Reativação de clientes",
+        recommendation: `Reative ${counts.inactive_clients.length} clientes antigos para novos serviços`,
+        impactValue: counts.inactive_clients.length * 250, // Impacto estimado por cliente
         impactText: historyData?.totalValueGenerated ? `Gerou ${formatCurrency(historyData.totalValueGenerated)} em novos serviços` : "Gerar novos serviços recorrentes",
         timeLabel: "inativos +6 m",
+        estimatedTime: "20 min",
         icon: UserX,
         priorityLevel: "medium",
+        confidence: getConfidence("inactive_clients"),
         score: adjustedScore,
         action: () => {
           recordInteraction("inactive_clients", "click");
@@ -222,11 +246,15 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "today_services",
-        title: "Executar serviços do dia",
+        title: "Serviços do dia",
+        recommendation: `Finalize os ${counts.today_services.length} serviços agendados para hoje`,
+        impactValue: totalValue,
         impactText: historyData?.totalValueGenerated ? `Já faturou ${formatCurrency(historyData.totalValueGenerated)} hoje` : `Garantir ${formatCurrency(totalValue)} em faturamento`,
         timeLabel: "hoje",
+        estimatedTime: "30 min",
         icon: CalendarDays,
         priorityLevel: "medium",
+        confidence: getConfidence("today_services"),
         score: adjustedScore,
         action: () => {
           recordInteraction("today_services", "click");
