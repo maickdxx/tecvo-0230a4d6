@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
-import { getTodayInTz } from "@/lib/timezone";
+import { getTodayInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

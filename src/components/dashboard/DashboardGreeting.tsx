@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "@/hooks/useDemoMode";
-import { getTodayInTz } from "@/lib/timezone";
+import { getTodayInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
 
 function getGreeting(): { text: string; Icon: typeof Sun } {
   const hour = new Date().getHours();
