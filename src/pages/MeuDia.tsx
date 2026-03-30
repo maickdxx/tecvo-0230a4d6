@@ -61,8 +61,16 @@ export default function MeuDia() {
   const timeClockEnabled = (organization as any)?.time_clock_enabled === true;
 
   const todayStr = getTodayInTz(tz);
-  const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
-  const weekEndStr = format(addDays(new Date(), 6), "yyyy-MM-dd");
+  const tomorrowDate = (() => {
+    const [y, m, d] = todayStr.split("-").map(Number);
+    return new Date(y, m - 1, d + 1);
+  })();
+  const tomorrowStr = format(tomorrowDate, "yyyy-MM-dd");
+  const weekEndDate = (() => {
+    const [y, m, d] = todayStr.split("-").map(Number);
+    return new Date(y, m - 1, d + 6);
+  })();
+  const weekEndStr = format(weekEndDate, "yyyy-MM-dd");
 
   const baseFiltered = useMemo(() => {
     if (!services) return [];
