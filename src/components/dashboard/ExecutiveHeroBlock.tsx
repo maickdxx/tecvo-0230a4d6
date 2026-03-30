@@ -206,7 +206,7 @@ export function ExecutiveHeroBlock({
               <span className="h-2 w-2 rounded-full bg-primary" />
               Previsão
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Baseado em serviços agendados (ainda não recebidos)</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Serviços agendados que podem gerar faturamento</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-4">
@@ -221,7 +221,7 @@ export function ExecutiveHeroBlock({
             </div>
             
             <div className="hidden sm:block text-xs text-muted-foreground max-w-[240px] italic">
-              Este valor representa o montante total de ordens de serviço e orçamentos agendados para este período.
+              Valor estimado dos serviços agendados para este período
             </div>
           </div>
         </div>
