@@ -489,11 +489,47 @@ export function TodayActionsBlock() {
               </div>
             )}
 
-            <div className="mt-auto pt-6 flex items-center justify-between">
-              <Button className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md">
-                Executar recomendação
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+            <div className="mt-auto pt-6 flex flex-col sm:flex-row items-center gap-3">
+              {priorityAction.directAction ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          priorityAction.directAction?.action();
+                        }}
+                        className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md bg-primary hover:bg-primary/90"
+                      >
+                        {priorityAction.directAction.icon && <priorityAction.directAction.icon className="h-4 w-4" />}
+                        {priorityAction.directAction.label}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{priorityAction.directAction.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <Button 
+                  onClick={priorityAction.action}
+                  className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md"
+                >
+                  Executar recomendação
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {priorityAction.directAction && (
+                <Button 
+                  variant="ghost" 
+                  onClick={priorityAction.action}
+                  className="text-xs font-bold text-muted-foreground hover:text-foreground gap-1.5"
+                >
+                  Ver detalhes
+                  <ArrowRight className="h-3 w-3" />
+                </Button>
+              )}
             </div>
             
             <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
