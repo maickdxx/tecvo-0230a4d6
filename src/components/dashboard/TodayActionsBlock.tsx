@@ -59,7 +59,7 @@ export function TodayActionsBlock() {
   const { clients, isLoading: isLoadingClients } = useClients();
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
   const { role, isOwner, isAdmin } = useUserRole();
-  const { recordInteraction, getScoreAdjustment, getAdaptiveInsight } = useAdaptivePrioritization();
+  const { recordInteraction, recordResult, getScoreAdjustment, getAdaptiveInsight, history } = useAdaptivePrioritization();
 
   const actions = useMemo(() => {
     const result: DashboardAction[] = [];
