@@ -155,8 +155,9 @@ export default function Auth() {
       return;
     }
     const cleanPhone = signupWhatsapp.replace(/\D/g, "");
-    if (cleanPhone.length < 10) {
-      toast({ variant: "destructive", title: "WhatsApp obrigatório", description: "Informe seu WhatsApp com DDD para receber notificações" });
+    const hasPhone = cleanPhone.length > 0;
+    if (hasPhone && cleanPhone.length < 10) {
+      toast({ variant: "destructive", title: "WhatsApp inválido", description: "Informe um número válido com DDD ou deixe em branco" });
       return;
     }
     setIsLoading(true);
