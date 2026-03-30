@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode, lazy, Suspense } from "react";
-import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen, Clock, TrendingUp } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen, Clock, TrendingUp, LayoutDashboard, Wallet, Target } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
 import { DashboardBanners } from "@/components/dashboard/DashboardBanners";
@@ -11,9 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Lazy-load heavier charts and reports
 const RevenueEvolutionChart = lazy(() => import("@/components/dashboard/RevenueEvolutionChart").then(m => ({ default: m.RevenueEvolutionChart })));
-const PaymentMethodChart = lazy(() => import("@/components/dashboard/PaymentMethodChart").then(m => ({ default: m.PaymentMethodChart })));
 const CashFlowChart = lazy(() => import("@/components/dashboard/CashFlowChart").then(m => ({ default: m.CashFlowChart })));
-const PaymentFeeReport = lazy(() => import("@/components/finance/PaymentFeeReport").then(m => ({ default: m.PaymentFeeReport })));
 const TimePerformanceDashboard = lazy(() => import("@/components/dashboard/TimePerformanceDashboard").then(m => ({ default: m.TimePerformanceDashboard })));
 
 import { useAuth } from "@/hooks/useAuth";
@@ -21,19 +19,14 @@ import { toast } from "sonner";
 import {
   CompanyHealthCard,
   DashboardSection,
-  TodayActionsBlock,
-  RevenueOpportunitiesBlock,
 } from "@/components/dashboard";
 import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBlock";
-import { ExecutiveHeroBlock } from "@/components/dashboard/ExecutiveHeroBlock";
-import { RevenueEngineBlock } from "@/components/dashboard/RevenueEngineBlock";
-
-import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
 import { DashboardCustomizeDialog } from "@/components/dashboard/DashboardCustomizeDialog";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useUserRole } from "@/hooks/useUserRole";
-import { DailyRoutineSummary } from "@/components/secretaria/DailyRoutineSummary";
+import { FocoDoDia } from "@/components/dashboard/FocoDoDia";
+import { CrescimentoBlock } from "@/components/dashboard/CrescimentoBlock";
 import {
   type Granularity,
   getPeriodoAtivo,
