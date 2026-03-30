@@ -164,6 +164,7 @@ const App = () => (
         <BrowserRouter>
           <ScrollToTop />
           <AuthProvider>
+            <ThemeSync />
             <AudioProvider>
               <AnalyticsProvider>
                 <SessionTrackerProvider>
