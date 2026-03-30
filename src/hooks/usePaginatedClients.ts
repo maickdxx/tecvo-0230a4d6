@@ -6,12 +6,12 @@ import type { Client } from "./useClients";
 
 const PAGE_SIZE = 50;
 
-export function usePaginatedClients() {
+export function usePaginatedClients(searchTerm: string = "") {
   const { organizationId } = useAuth();
   const { isDemoMode } = useDemoMode();
 
   const result = useInfiniteQuery({
-    queryKey: ["clients", "paginated", organizationId, isDemoMode],
+    queryKey: ["clients", "paginated", organizationId, isDemoMode, searchTerm],
     queryFn: async ({ pageParam = 0 }) => {
       if (!organizationId) return { data: [] as Client[], totalCount: 0, nextCursor: undefined };
 
@@ -23,6 +23,10 @@ export function usePaginatedClients() {
 
       if (!isDemoMode) {
         queryBuilder = queryBuilder.eq("is_demo_data", false);
+      }
+
+      if (searchTerm) {
+        queryBuilder = queryBuilder.or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
       }
 
       const { data, error, count } = await queryBuilder.range(pageParam, pageParam + PAGE_SIZE - 1);
@@ -49,5 +53,6 @@ export function usePaginatedClients() {
     isFetchingNextPage: result.isFetchingNextPage,
     hasNextPage: !!result.hasNextPage,
     fetchNextPage: result.fetchNextPage,
+    refetch: result.refetch,
   };
 }
