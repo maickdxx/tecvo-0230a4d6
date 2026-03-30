@@ -449,11 +449,6 @@ export function TodayActionsBlock() {
             </div>
           )}
         </div>
-                Continue assim!<br/>Sua lista está ficando limpa.
-              </p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
