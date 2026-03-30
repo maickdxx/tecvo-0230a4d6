@@ -142,16 +142,7 @@ export function useAccounts(options: UseAccountsOptions = {}) {
         .single();
 
       if (error) throw error;
-
-      // Update financial account balance atomically when created as already paid
-      if (status === "paid" && data.financial_account_id) {
-        const delta = data.type === "expense" ? -data.amount : data.amount;
-        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-          _account_id: data.financial_account_id,
-          _delta: delta,
-        });
-        if (balError) throw balError;
-      }
+      // Balance is automatically synced by the DB trigger (handle_transaction_balance_sync)
 
       return account;
     },
@@ -194,38 +185,7 @@ export function useAccounts(options: UseAccountsOptions = {}) {
         .single();
 
       if (error) throw error;
-
-      // Adjust financial account balance on status transition
-      const newStatus = data.status;
-      if (previousStatus && newStatus && previousStatus !== newStatus) {
-        const txAmount = Number((account as any).amount);
-
-        if (previousStatus === "paid" && newStatus === "pending") {
-          // Paid -> Pending: revert the balance
-          const finAccountId = (account as any).financial_account_id;
-          if (finAccountId) {
-            const txType = (account as any).type;
-            const delta = txType === "income" ? -txAmount : txAmount;
-            const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-              _account_id: finAccountId,
-              _delta: delta,
-            });
-            if (balError) throw balError;
-          }
-        } else if (previousStatus === "pending" && newStatus === "paid") {
-          // Pending -> Paid: add to balance
-          const finAccountId = data.financial_account_id || (account as any).financial_account_id;
-          if (finAccountId) {
-            const txType = (account as any).type;
-            const delta = txType === "income" ? txAmount : -txAmount;
-            const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-              _account_id: finAccountId,
-              _delta: delta,
-            });
-            if (balError) throw balError;
-          }
-        }
-      }
+      // Balance is automatically synced by the DB trigger (handle_transaction_balance_sync)
 
       return account;
     },
@@ -268,19 +228,7 @@ export function useAccounts(options: UseAccountsOptions = {}) {
         .single();
 
       if (error) throw error;
-
-      // Only update financial account balance if both are provided
-      if (financial_account_id && compensation_date) {
-        const txType = (account as any).type;
-        const txAmount = Number((account as any).amount);
-        const delta = txType === "expense" ? -txAmount : txAmount;
-
-        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-          _account_id: financial_account_id,
-          _delta: delta,
-        });
-        if (balError) throw balError;
-      }
+      // Balance is automatically synced by the DB trigger (handle_transaction_balance_sync)
 
       return account;
     },
@@ -304,28 +252,7 @@ export function useAccounts(options: UseAccountsOptions = {}) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // First get the transaction to check if we need to revert balance
-      const { data: tx, error: fetchError } = await supabase
-        .from("transactions")
-        .select("type, amount, status, financial_account_id")
-        .eq("id", id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Revert financial account balance if the transaction was paid
-      if (tx && tx.status === "paid" && tx.financial_account_id) {
-        const delta = tx.type === "income"
-          ? -Number(tx.amount)
-          : Number(tx.amount);
-
-        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-          _account_id: tx.financial_account_id,
-          _delta: delta,
-        });
-        if (balError) throw balError;
-      }
-
+      // Balance revert is automatically handled by the DB trigger (handle_transaction_balance_sync)
       const { error } = await supabase.from("transactions").delete().eq("id", id);
       if (error) throw error;
     },
