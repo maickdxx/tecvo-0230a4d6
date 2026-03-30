@@ -192,19 +192,23 @@ export function useOrphanedRecurrenceContacts() {
 
       if (error) throw error;
 
-      // Log audit
+      // Log audit (best-effort, don't block on failure)
       const oldChannelIds = [...new Set((contacts || []).map(c => c.channel_id).filter(Boolean))];
-      await (supabase as any).from("data_audit_log").insert({
-        organization_id: organization.id,
-        table_name: "whatsapp_contacts",
-        operation: "recurrence_channel_reassign",
-        metadata: {
-          old_channel_ids: oldChannelIds,
-          new_channel_id: newChannelId,
-          contact_ids: contactIds,
-          count: contactIds.length,
-        },
-      });
+      try {
+        await (supabase as any).from("data_audit_log").insert({
+          organization_id: organization.id,
+          table_name: "whatsapp_contacts",
+          operation: "recurrence_channel_reassign",
+          metadata: {
+            old_channel_ids: oldChannelIds,
+            new_channel_id: newChannelId,
+            contact_ids: contactIds,
+            count: contactIds.length,
+          },
+        });
+      } catch (auditErr) {
+        console.warn("[RECURRENCE] Audit log failed (non-blocking):", auditErr);
+      }
 
       return { count: contactIds.length };
     },
