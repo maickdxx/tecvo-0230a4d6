@@ -282,7 +282,8 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
               channelId={activeChannelId}
               onBack={() => setSelectedContactId(null)}
               onToggleInfo={() => { setShowContactInfo(!showContactInfo); setActivePanel(null); }}
-              onContactUpdate={() => {}}
+              onContactUpdate={refetchContacts}
+              onSelectContact={handleSelectContact}
               teamMembers={teamMembers}
               onAIReplyToMessage={(msg) => {
                 setAiTargetMessage(msg);

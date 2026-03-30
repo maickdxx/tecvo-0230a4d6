@@ -94,9 +94,10 @@ interface ChatPanelProps {
   onShowScheduleMessage?: () => void;
   onShowCreateQuote?: () => void;
   onMessageSent?: (contactId: string, content: string) => void;
+  onSelectContact?: (id: string) => void;
 }
 
-export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent }: ChatPanelProps) {
+export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent, onSelectContact }: ChatPanelProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile } = useAuth();
@@ -273,9 +274,25 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   }, [isChannelDeleted, organization?.id]);
 
   const handleSwitchChannel = async (newChannelId: string) => {
-    if (!contact?.id) return;
+    if (!contact?.id || !contact.normalized_phone) return;
     setIsMigrating(true);
     try {
+      // Check if contact already exists on the target channel to avoid unique constraint error
+      const { data: existing } = await supabase
+        .from("whatsapp_contacts")
+        .select("id")
+        .eq("organization_id", organization?.id || "")
+        .eq("normalized_phone", contact.normalized_phone)
+        .eq("channel_id", newChannelId)
+        .maybeSingle();
+
+      if (existing) {
+        toast.info("Este contato já existe no canal selecionado, abrindo conversa existente.");
+        onSelectContact?.(existing.id);
+        onContactUpdate?.();
+        return;
+      }
+
       const { error } = await supabase
         .from("whatsapp_contacts")
         .update({ channel_id: newChannelId })
@@ -286,7 +303,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       onContactUpdate?.();
     } catch (error) {
       console.error("Error switching channel:", error);
-      toast.error("Erro ao trocar canal");
+      toast.error("Erro ao trocar canal. Pode haver um conflito com outro contato existente.");
     } finally {
       setIsMigrating(false);
     }
