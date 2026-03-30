@@ -39,6 +39,9 @@ export function useProfile() {
       if (phone !== undefined) updateData.phone = phone;
       if (position !== undefined) updateData.position = position || null;
       
+      if (themeMode !== undefined) updateData.theme_mode = themeMode;
+      if (colorTheme !== undefined) updateData.color_theme = colorTheme;
+      
       // Restricted fields: only owner can update
       if (isOwner) {
         if (whatsappAiEnabled !== undefined) updateData.whatsapp_ai_enabled = whatsappAiEnabled;
