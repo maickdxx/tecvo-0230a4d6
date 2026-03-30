@@ -119,52 +119,54 @@ export function ExecutiveHeroBlock({
   const goalLabel = granularity === "week" ? "Meta de receita da semana" : `Meta de receita${isManualGoal ? "" : " (sugerida)"}`;
 
   return (
-    <div className="space-y-6 mb-6 animate-fade-in">
+    <div className="space-y-8 mb-8 animate-fade-in">
       {/* SEÇÃO: REALIZADO (FINANCEIRO) */}
-      <div className="rounded-xl border border-border bg-card p-6 sm:p-8 shadow-card relative overflow-hidden">
+      <div className="rounded-2xl border border-border/50 bg-card p-8 sm:p-10 shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-md">
         {/* Subtle accent line for distinction */}
-        <div className="absolute top-0 left-0 w-1.5 h-full bg-success/40" />
+        <div className="absolute top-0 left-0 w-1.5 h-full bg-success/30" />
         
-        <div className="mb-6">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-success" />
+        <div className="mb-10">
+          <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground/70 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-success/80 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
             Realizado (Financeiro)
           </h2>
-          <p className="text-xs text-muted-foreground mt-1 font-medium">Valores já realizados (caixa)</p>
+          <p className="text-sm text-muted-foreground/60 mt-1.5 font-medium">Fluxo de caixa consolidado no período</p>
         </div>
 
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/50 mb-2">
               {GRANULARITY_LABELS[granularity]} · {periodLabel}
             </p>
-            <p className={`text-4xl sm:text-5xl font-bold tracking-tight number-display animate-count-up ${balance >= 0 ? "text-success" : "text-destructive"}`}>
+            <p className={`text-5xl sm:text-6xl font-extrabold tracking-tighter number-display animate-count-up ${balance >= 0 ? "text-success" : "text-destructive"}`}>
               {formatCurrency(animatedBalance)}
             </p>
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-4 mt-4">
               {margin > 0 && (
-                <p className="text-sm font-medium text-muted-foreground">Margem {margin.toFixed(1)}%</p>
+                <div className="px-2.5 py-1 rounded-full bg-muted/50 border border-border/30">
+                  <p className="text-xs font-semibold text-muted-foreground">Margem {margin.toFixed(1)}%</p>
+                </div>
               )}
               <ChangeBadge change={balanceChange} />
             </div>
 
             {showGoal && (
-              <div className="mt-6 space-y-2 max-w-md">
+              <div className="mt-10 space-y-3 max-w-md">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1 font-medium">
-                    <Target className="h-3.5 w-3.5" /> {goalLabel}: {formatCurrency(effectiveGoal)}
+                  <span className="text-xs text-muted-foreground/70 flex items-center gap-1.5 font-semibold">
+                    <Target className="h-3.5 w-3.5 opacity-70" /> {goalLabel}: {formatCurrency(effectiveGoal)}
                   </span>
-                  <Badge variant="outline" className={`text-[10px] uppercase font-bold px-2 py-0 h-5 ${goalStatus.className}`}>
+                  <Badge variant="outline" className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 h-6 border-none shadow-none ${goalStatus.className}`}>
                     {goalStatus.label}
                   </Badge>
                 </div>
-                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-secondary/80">
+                <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary/40">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ease-out ${progressColor}`}
+                    className={`h-full rounded-full transition-all duration-700 ease-in-out ${progressColor} shadow-[0_0_10px_rgba(var(--primary),0.2)]`}
                     style={{ width: `${goalPct}%` }}
                   />
                 </div>
-                <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
                   {goalPct}% atingido
                 </p>
               </div>
@@ -172,25 +174,25 @@ export function ExecutiveHeroBlock({
           </div>
 
           {/* Realized Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-4 sm:min-w-[260px]">
-            <div className="flex items-center gap-3 rounded-xl bg-success/5 border border-success/10 p-4 transition-all duration-200 hover:bg-success/10 group">
-              <div className="rounded-lg bg-success/10 p-2.5 group-hover:scale-110 transition-transform">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-5 sm:min-w-[280px]">
+            <div className="flex items-center gap-4 rounded-2xl bg-success/[0.02] border border-success/10 p-5 transition-all duration-300 hover:bg-success/[0.04] hover:shadow-sm group">
+              <div className="rounded-xl bg-success/10 p-3 group-hover:scale-110 transition-transform duration-300 shadow-sm shadow-success/10">
                 <TrendingUp className="h-5 w-5 text-success" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">Receita</p>
-                <p className="text-xl font-bold number-display text-foreground">{formatCurrency(animatedIncome)}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-0.5">Receita</p>
+                <p className="text-2xl font-bold tracking-tight number-display text-foreground">{formatCurrency(animatedIncome)}</p>
               </div>
               <ChangeBadge change={incomeChange} />
             </div>
             
-            <div className="flex items-center gap-3 rounded-xl bg-destructive/5 border border-destructive/10 p-4 transition-all duration-200 hover:bg-destructive/10 group">
-              <div className="rounded-lg bg-destructive/10 p-2.5 group-hover:scale-110 transition-transform">
+            <div className="flex items-center gap-4 rounded-2xl bg-destructive/[0.02] border border-destructive/10 p-5 transition-all duration-300 hover:bg-destructive/[0.04] hover:shadow-sm group">
+              <div className="rounded-xl bg-destructive/10 p-3 group-hover:scale-110 transition-transform duration-300 shadow-sm shadow-destructive/10">
                 <TrendingDown className="h-5 w-5 text-destructive" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">Gastos</p>
-                <p className="text-xl font-bold number-display text-foreground">{formatCurrency(animatedExpense)}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-0.5">Gastos</p>
+                <p className="text-2xl font-bold tracking-tight number-display text-foreground">{formatCurrency(animatedExpense)}</p>
               </div>
               <ChangeBadge change={expenseChange} />
             </div>
@@ -200,28 +202,28 @@ export function ExecutiveHeroBlock({
 
       {/* SEÇÃO: PREVISÃO */}
       {forecastedRevenue > 0 && (
-        <div className="rounded-xl border border-dashed border-border bg-card/40 p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="mb-4">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary" />
+        <div className="rounded-2xl border border-border/40 bg-muted/30 p-8 shadow-sm transition-all duration-300 hover:bg-muted/40">
+          <div className="mb-6">
+            <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground/70 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-primary/40" />
               Previsão
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Serviços agendados que podem gerar faturamento</p>
+            <p className="text-sm text-muted-foreground/60 mt-1.5 font-medium">Estimativa de faturamento para serviços agendados</p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-4 bg-primary/5 border border-primary/10 rounded-xl p-4 min-w-[240px]">
-              <div className="rounded-lg bg-primary/10 p-2.5">
-                <DollarSign className="h-5 w-5 text-primary" />
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-5 bg-background border border-border/50 rounded-2xl p-5 min-w-[280px] shadow-sm">
+              <div className="rounded-xl bg-primary/5 p-3">
+                <DollarSign className="h-6 w-6 text-primary/70" />
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Faturamento previsto</p>
-                <p className="text-2xl font-bold number-display text-foreground">{formatCurrency(forecastedRevenue)}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-0.5">Faturamento previsto</p>
+                <p className="text-3xl font-bold tracking-tight number-display text-foreground/90">{formatCurrency(forecastedRevenue)}</p>
               </div>
             </div>
             
-            <div className="hidden sm:block text-xs text-muted-foreground max-w-[240px] italic">
-              Valor estimado dos serviços agendados para este período
+            <div className="hidden sm:block text-xs text-muted-foreground/50 max-w-[280px] leading-relaxed italic">
+              Este valor representa o faturamento bruto estimado de todas as ordens de serviço agendadas que ainda não foram concluídas.
             </div>
           </div>
         </div>
