@@ -53,24 +53,23 @@ const alertIcons = {
 
 function DayCard({ day }: { day: DayForecast }) {
   return (
-    <div className="flex flex-col items-center gap-1 min-w-[64px] p-2 rounded-lg bg-muted/40 shrink-0">
-      <span className="text-xs font-semibold text-foreground">{day.dayName}</span>
-      <span className="text-[10px] text-muted-foreground">
+    <div className="flex flex-col items-center gap-3 min-w-[76px] p-4 rounded-2xl bg-white border border-border/20 shadow-sm shrink-0 transition-all duration-300 hover:shadow-md hover:border-sky-200 group/day">
+      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{day.dayName}</span>
+      <span className="text-[9px] font-bold text-muted-foreground/30 -mt-2">
         {day.date.slice(8)}/{day.date.slice(5, 7)}
       </span>
-      {getWeatherIcon(day.weatherCode)}
-      <div className="flex items-center gap-1 text-xs">
-        <span className="font-medium text-foreground">{day.tempMax}°</span>
-        <span className="text-muted-foreground">{day.tempMin}°</span>
+      <div className="group-hover/day:scale-110 transition-transform duration-300">
+        {getWeatherIcon(day.weatherCode)}
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="text-sm font-black text-foreground/80 tracking-tight">{day.tempMax}°</span>
+        <span className="text-[9px] font-bold text-muted-foreground/40">{day.tempMin}°</span>
       </div>
       {day.precipProbability > 0 && (
-        <div className="flex items-center gap-0.5 text-[10px] text-blue-500">
-          <Droplets className="h-3 w-3" />
+        <div className="flex items-center gap-1 text-[9px] font-black text-sky-500/80 uppercase">
+          <Droplets className="h-2.5 w-2.5" />
           {day.precipProbability}%
         </div>
-      )}
-      {day.humidity > 0 && (
-        <span className="text-[10px] text-muted-foreground">{day.humidity}% umid.</span>
       )}
     </div>
   );
