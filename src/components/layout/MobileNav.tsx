@@ -362,11 +362,12 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
             <SheetContent side="right" className="w-[280px] p-0 flex flex-col bg-card" onAnimationEnd={handleSheetAnimationEnd}>
               {/* Sheet Header */}
               <div className="flex h-16 items-center gap-3 px-5 border-b border-border">
-                {organization?.logo_url ? (
+                {organization?.logo_url && !sheetLogoError ? (
                   <img 
                     src={organization.logo_url} 
                     alt="Logo" 
                     className="h-9 w-9 rounded-xl object-contain"
+                    onError={() => setSheetLogoError(true)}
                   />
                 ) : (
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
