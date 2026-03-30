@@ -216,7 +216,7 @@ export async function generateReportPDF({
   // Logo & Header Info
   if (logoData) {
     try {
-      doc.addImage(logoData, "PNG", margin, yPos, 35, 35, undefined, "FAST");
+      doc.addImage(logoData, 'AUTO', margin, yPos, 35, 35, undefined, "FAST");
     } catch { /* skip */ }
   }
 
