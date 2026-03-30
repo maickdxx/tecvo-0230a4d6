@@ -181,11 +181,12 @@ export function TodayActionsBlock() {
     if (inactiveClients.length > 0) {
       const baseScore = 300 + (inactiveClients.length * 10);
       const adjustedScore = baseScore + getScoreAdjustment("inactive_clients", baseScore);
+      const historyData = history["inactive_clients"];
 
       result.push({
         id: "inactive_clients",
         title: "Reativar clientes sumidos",
-        impactText: "Gerar novos serviços recorrentes",
+        impactText: historyData?.totalValueGenerated ? `Gerou ${formatCurrency(historyData.totalValueGenerated)} em novos serviços` : "Gerar novos serviços recorrentes",
         timeLabel: "inativos +6 meses",
         icon: UserX,
         priorityLevel: "medium",
