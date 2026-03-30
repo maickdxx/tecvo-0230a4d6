@@ -191,7 +191,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
                 <span
                   className={cn(
                     "text-[10px] shrink-0",
-                    contact.is_unread ? "text-primary font-semibold" : "text-muted-foreground/60"
+                    contact.is_unread ? "text-[hsl(222,69%,49%)] font-bold" : "text-muted-foreground/50"
                   )}
                 >
                   {timeAgo}
