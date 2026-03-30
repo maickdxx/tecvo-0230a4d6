@@ -189,7 +189,7 @@ export async function generateServiceOrderPDF({
     const logoData = await loadImageAsBase64(organizationLogo);
     if (logoData) {
       try {
-        doc.addImage(logoData, "PNG", margin + 5, yPos + 3, 26, 26);
+        doc.addImage(logoData, 'AUTO', margin + 5, yPos + 3, 26, 26);
         logoEndX = margin + 34;
       } catch {
         /* ignore */

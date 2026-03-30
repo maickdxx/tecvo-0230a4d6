@@ -37,7 +37,7 @@ const settingsGroups: SettingsGroup[] = [
   {
     label: "EMPRESA",
     items: [
-      { id: "profile", title: "Perfil", description: "Informações da empresa para orçamentos e OS", icon: User, enabled: true },
+      { id: "profile", title: "Perfil da Empresa", description: "Informações da empresa para orçamentos e OS", icon: User, enabled: true },
       { id: "team", title: "Equipe", description: "Gerencie membros e funções", icon: Users, enabled: true },
       { id: "signature", title: "Assinatura da Empresa", description: "Assinatura digital para ordens de serviço", icon: PenLine, enabled: true },
       { id: "operational-capacity", title: "Estrutura Operacional", description: "Equipes, jornada e capacidade da agenda", icon: Settings2, enabled: true },

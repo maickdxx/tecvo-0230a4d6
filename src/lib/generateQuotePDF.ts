@@ -93,7 +93,7 @@ export async function generateQuotePDF({
     const logoData = await loadImageAsBase64(organizationLogo);
     if (logoData) {
       try {
-        doc.addImage(logoData, "PNG", margin + 4, yPos + 3, 24, 24);
+        doc.addImage(logoData, 'AUTO', margin + 4, yPos + 3, 24, 24);
         logoWidth = 30;
       } catch {
         logoWidth = 0;
