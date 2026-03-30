@@ -160,6 +160,8 @@ export function TodayActionsBlock() {
           description: "Abre a OS em atraso para atualização",
           action: () => {
             const firstId = counts.overdue_services[0].id;
+            markAlertAsCompleted("overdue_services");
+            recordResult("overdue_services", Number(counts.overdue_services[0].value) || 0, "recovery");
             navigate(`/ordens-servico/${firstId}`);
             toast.success("Ação iniciada", {
               description: "Você está no caminho para resolver um serviço atrasado."
