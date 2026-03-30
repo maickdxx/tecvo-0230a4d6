@@ -26,6 +26,4 @@ export { TodayBlock } from "./TodayBlock";
 export { AgendaResumo } from "./AgendaResumo";
 export { AlertasInteligentes } from "./AlertasInteligentes";
 export { TimePerformanceDashboard } from "./TimePerformanceDashboard";
-export { TodayActionsBlock } from "./TodayActionsBlock";
-export { RevenueOpportunitiesBlock } from "./RevenueOpportunitiesBlock";
 

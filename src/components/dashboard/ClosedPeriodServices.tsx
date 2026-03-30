@@ -102,26 +102,24 @@ export function ClosedPeriodServices() {
   const visible = expanded ? closedServices : closedServices.slice(0, MAX_VISIBLE);
 
   return (
-    <Card className="overflow-hidden border-none shadow-lg ring-1 ring-border/40">
-      <CardHeader className="pb-6 px-6 pt-6 bg-muted/20 border-b border-border/40">
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3 px-4 sm:px-6 pt-4 sm:pt-6">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-bold flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-primary/10">
-              <ShoppingBag className="h-4 w-4 text-primary" />
-            </div>
-            <span className="opacity-90">Serviços Fechados</span>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 text-primary" />
+            Serviços Fechados
           </CardTitle>
-          <div className="flex items-center gap-1.5 bg-card/80 p-1 rounded-full border border-border/40 shadow-sm">
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-muted" onClick={() => navigate(-1)}>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-[10px] font-bold uppercase tracking-widest min-w-[70px] text-center opacity-70">
+            <span className="text-xs font-medium min-w-[70px] text-center capitalize">
               {formatDayLabel(currentDate)}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-full hover:bg-muted"
+              className="h-7 w-7"
               onClick={() => navigate(1)}
               disabled={currentDate >= toDateStr(getHojeBRT())}
             >
@@ -130,47 +128,43 @@ export function ClosedPeriodServices() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-6 pb-6 pt-6">
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="text-center p-4 rounded-2xl bg-muted/30 border border-border/40 group hover:bg-muted/50 transition-colors">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 mb-1">Quantidade</p>
-            <p className="text-3xl font-black text-foreground tabular-nums tracking-tighter">{closedServices.length}</p>
+      <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-[11px] text-muted-foreground">Quantidade</p>
+            <p className="text-2xl font-bold text-foreground">{closedServices.length}</p>
           </div>
-          <div className="text-center p-4 rounded-2xl bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-colors">
-            <p className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-1">Valor Total</p>
-            <p className="text-3xl font-black text-primary tabular-nums tracking-tighter">{formatCurrency(totalValue)}</p>
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-[11px] text-muted-foreground">Valor Total</p>
+            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalValue)}</p>
           </div>
         </div>
 
         {closedServices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-muted-foreground opacity-60">
-            <ShoppingBag className="h-8 w-8 mb-2 stroke-[1.5]" />
-            <p className="text-sm font-medium">Nenhum serviço fechado neste dia.</p>
-          </div>
+          <p className="text-sm text-muted-foreground text-center py-2">Nenhum serviço fechado.</p>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-1.5">
             {visible.map((s) => {
               const clientName = (s.client as any)?.name || "Cliente";
               return (
-                <div key={s.id} className="group flex items-center justify-between gap-4 rounded-xl border border-border/40 bg-card px-4 py-3.5 text-sm transition-all hover:border-primary/30 hover:shadow-sm">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
-                    <span className="truncate font-bold text-foreground/90">{clientName}</span>
-                    <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-tighter px-2 py-0 h-4 bg-muted/30 border-border/60">
+                <div key={s.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="truncate font-medium">{clientName}</span>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-4 flex-shrink-0">
                       {SERVICE_TYPE_LABELS[s.service_type] || s.service_type}
                     </Badge>
                   </div>
-                  <span className="font-black text-sm tabular-nums text-foreground tracking-tight">{formatCurrency(Number(s.value) || 0)}</span>
+                  <span className="font-semibold text-xs whitespace-nowrap">{formatCurrency(Number(s.value) || 0)}</span>
                 </div>
               );
             })}
             {closedServices.length > MAX_VISIBLE && !expanded && (
               <button
                 onClick={() => setExpanded(true)}
-                className="w-full text-center text-[11px] text-primary font-bold uppercase tracking-widest py-3 mt-2 hover:bg-primary/5 rounded-xl transition-all flex items-center justify-center gap-2 group"
+                className="w-full text-center text-xs text-primary font-medium py-1 hover:underline flex items-center justify-center gap-1"
               >
-                Ver todos os {closedServices.length} serviços
-                <ChevronDown className="h-4 w-4 group-hover:translate-y-0.5 transition-transform" />
+                Ver todos ({closedServices.length})
+                <ChevronDown className="h-3 w-3" />
               </button>
             )}
           </div>

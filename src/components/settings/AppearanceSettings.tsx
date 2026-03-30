@@ -2,9 +2,6 @@ import { ArrowLeft, Sun, Moon, Monitor, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useColorTheme, type ColorTheme } from "@/hooks/useColorTheme";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/hooks/use-toast";
 
 interface AppearanceSettingsProps {
   onBack: () => void;
@@ -26,33 +23,6 @@ const colorThemes: { id: ColorTheme; name: string; hsl: string }[] = [
 export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
-  const { user, profile, refreshProfile } = useAuth();
-
-  const handleModeChange = async (mode: string) => {
-    setTheme(mode);
-    if (!user) return;
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ theme_mode: mode })
-        .eq("user_id", user.id);
-      
-      if (error) throw error;
-      refreshProfile();
-    } catch (err) {
-      console.error("Error saving theme mode:", err);
-      toast({
-        title: "Erro ao salvar preferência",
-        description: "Suas alterações podem não ser sincronizadas entre dispositivos.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleColorChange = async (newColorTheme: ColorTheme) => {
-    await setColorTheme(newColorTheme);
-    if (user) refreshProfile();
-  };
 
   return (
     <div className="space-y-8">
@@ -76,7 +46,7 @@ export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
             return (
               <button
                 key={opt.id}
-                onClick={() => handleModeChange(opt.id)}
+                onClick={() => setTheme(opt.id)}
                 className={`relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all ${
                   isSelected
                     ? "border-primary bg-primary/5"
@@ -109,7 +79,7 @@ export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
             return (
               <button
                 key={ct.id}
-                onClick={() => handleColorChange(ct.id)}
+                onClick={() => setColorTheme(ct.id)}
                 className={`relative flex items-center gap-3 rounded-xl border-2 p-3.5 transition-all ${
                   isSelected
                     ? "border-primary bg-primary/5"
@@ -138,7 +108,7 @@ export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        As preferências são salvas automaticamente na sua conta e sincronizadas entre dispositivos.
+        As preferências são salvas automaticamente no seu navegador.
       </p>
     </div>
   );

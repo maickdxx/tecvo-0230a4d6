@@ -88,13 +88,13 @@ export function RevenueEngineBlock({
         {items.map((item, i) => {
           const Icon = item.icon;
           return (
-            <div key={i} className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-              <div className={`rounded-lg p-1.5 sm:p-2 flex-shrink-0 ${item.bg}`}>
-                <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${item.color}`} />
+            <div key={i} className="flex items-center gap-3">
+              <div className={`rounded-lg p-2 ${item.bg}`}>
+                <Icon className={`h-4 w-4 ${item.color}`} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{item.label}</p>
-                <p className="text-xs sm:text-sm font-semibold text-card-foreground truncate leading-tight">{item.value}</p>
+                <p className="text-[11px] text-muted-foreground">{item.label}</p>
+                <p className="text-sm font-semibold text-card-foreground truncate">{item.value}</p>
               </div>
             </div>
           );

@@ -82,23 +82,23 @@ export function PaymentFeeReport({ startDate, endDate }: PaymentFeeReportProps) 
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-          <div className="rounded-lg border bg-card p-2 sm:p-3 text-center">
-            <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 mx-auto text-muted-foreground mb-1" />
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground">Bruto</p>
-            <p className="font-semibold text-xs sm:text-sm">{formatCurrency(data.total_gross)}</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg border bg-card p-3 text-center">
+            <DollarSign className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+            <p className="text-[11px] text-muted-foreground">Bruto</p>
+            <p className="font-semibold text-sm">{formatCurrency(data.total_gross)}</p>
           </div>
-          <div className="rounded-lg border bg-card p-2 sm:p-3 text-center">
-            <TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 mx-auto text-destructive mb-1" />
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground">Taxas</p>
-            <p className="font-semibold text-xs sm:text-sm text-destructive">
+          <div className="rounded-lg border bg-card p-3 text-center">
+            <TrendingDown className="h-4 w-4 mx-auto text-destructive mb-1" />
+            <p className="text-[11px] text-muted-foreground">Taxas</p>
+            <p className="font-semibold text-sm text-destructive">
               -{formatCurrency(data.total_fees)}
             </p>
           </div>
-          <div className="rounded-lg border bg-card p-2 sm:p-3 text-center col-span-2 sm:col-span-1">
-            <Percent className="h-3.5 w-3.5 sm:h-4 sm:w-4 mx-auto text-muted-foreground mb-1" />
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground">Taxa Média</p>
-            <p className="font-semibold text-xs sm:text-sm">{data.avg_fee_pct.toFixed(1)}%</p>
+          <div className="rounded-lg border bg-card p-3 text-center">
+            <Percent className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+            <p className="text-[11px] text-muted-foreground">Taxa Média</p>
+            <p className="font-semibold text-sm">{data.avg_fee_pct.toFixed(1)}%</p>
           </div>
         </div>
 
@@ -139,22 +139,22 @@ export function PaymentFeeReport({ startDate, endDate }: PaymentFeeReportProps) 
           {data.by_method.map((m) => (
             <div
               key={m.payment_method}
-              className="flex flex-col sm:flex-row sm:items-center justify-between py-2 px-2 rounded-lg border sm:border-none sm:py-1.5 hover:bg-muted/50 gap-1 sm:gap-2"
+              className="flex items-center justify-between py-1.5 px-2 rounded text-sm hover:bg-muted/50"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <span className="truncate font-medium sm:font-normal">{formatPaymentMethod(m.payment_method)}</span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">({m.count}x)</span>
+                <span className="truncate">{formatPaymentMethod(m.payment_method)}</span>
+                <span className="text-xs text-muted-foreground">({m.count}x)</span>
               </div>
-              <div className="flex items-center justify-between sm:justify-end gap-3 text-right">
-                <span className="text-muted-foreground text-[11px] sm:text-xs">
-                  Bruto: {formatCurrency(m.gross_total)}
+              <div className="flex items-center gap-3 text-right shrink-0">
+                <span className="text-muted-foreground text-xs">
+                  {formatCurrency(m.gross_total)}
                 </span>
                 {m.fee_total > 0.01 ? (
-                  <span className="text-destructive font-semibold sm:font-medium text-[11px] sm:text-xs sm:min-w-[80px]">
+                  <span className="text-destructive font-medium text-xs min-w-[70px]">
                     -{formatCurrency(m.fee_total)} ({m.fee_percentage.toFixed(1)}%)
                   </span>
                 ) : (
-                  <span className="text-primary font-medium text-[11px] sm:text-xs sm:min-w-[80px]">
+                  <span className="text-primary font-medium text-xs min-w-[70px]">
                     Sem taxa
                   </span>
                 )}

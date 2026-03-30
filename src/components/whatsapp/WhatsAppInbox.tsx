@@ -73,34 +73,12 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
     }
   }, [location.state?.resetChat]);
 
-  // Auto-select contact from URL query params (contact id OR phone number)
+  // Auto-select contact from URL query param
   useEffect(() => {
     const contactFromUrl = searchParams.get("contact");
-    const phoneFromUrl = searchParams.get("phone");
-    const messageFromUrl = searchParams.get("message");
-
-    if (messageFromUrl) {
-      setInitialMessage(messageFromUrl);
-    }
-
     if (contactFromUrl && !selectedContactId) {
       setSelectedContactId(contactFromUrl);
       markAsRead(contactFromUrl);
-    } else if (phoneFromUrl && !selectedContactId && contacts.length > 0) {
-      const cleanPhone = phoneFromUrl.replace(/\D/g, "");
-      const matchingContact = contacts.find(c => {
-        const cPhone = (c.phone || "").replace(/\D/g, "");
-        if (!cPhone || !cleanPhone) return false;
-        return cPhone.includes(cleanPhone) || cleanPhone.includes(cPhone);
-      });
-      if (matchingContact) {
-        setSelectedContactId(matchingContact.id);
-        markAsRead(matchingContact.id);
-      } else {
-        // Fallback: No contact found — pre-fill new conversation dialog
-        setPrefillPhone(phoneFromUrl);
-        setShowNewConversation(true);
-      }
     }
   }, [searchParams, contacts]);
   const [showContactInfo, setShowContactInfo] = useState(false);
@@ -112,8 +90,6 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [activePanel, setActivePanel] = useState<'createOS' | 'createQuote' | 'scheduleVisit' | 'analyze' | 'registerClient' | 'scheduleMessage' | null>(null);
   const [linkedClientData, setLinkedClientData] = useState<any>(null);
-  const [initialMessage, setInitialMessage] = useState<string | null>(null);
-  const [prefillPhone, setPrefillPhone] = useState<string | null>(null);
   
   const { tags: orgTags, refetch: refetchTags } = useWhatsAppTags();
 
@@ -306,8 +282,6 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
               channelId={activeChannelId}
               onBack={() => setSelectedContactId(null)}
               onToggleInfo={() => { setShowContactInfo(!showContactInfo); setActivePanel(null); }}
-              initialMessage={initialMessage}
-              onInitialMessageUsed={() => setInitialMessage(null)}
               onContactUpdate={() => {}}
               teamMembers={teamMembers}
               onAIReplyToMessage={(msg) => {
@@ -555,12 +529,8 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       />
       <NewConversationDialog
         open={showNewConversation}
-        onOpenChange={(open) => {
-          setShowNewConversation(open);
-          if (!open) setPrefillPhone(null);
-        }}
+        onOpenChange={setShowNewConversation}
         channels={channelOptions}
-        prefillPhone={prefillPhone || undefined}
         onSelected={(contactId) => {
           refetchContacts();
           handleSelectContact(contactId);

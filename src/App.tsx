@@ -17,7 +17,6 @@ import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { AdminProtectedRoute } from "@/components/admin";
 import { OwnerProtectedRoute } from "@/components/auth/OwnerProtectedRoute";
 import { CookieConsent } from "./components/CookieConsent";
-import { ThemeSync } from "./components/ThemeSync";
 
 // ============================
 // Eagerly loaded (landing + auth — first paint)
@@ -164,7 +163,6 @@ const App = () => (
         <BrowserRouter>
           <ScrollToTop />
           <AuthProvider>
-            <ThemeSync />
             <AudioProvider>
               <AnalyticsProvider>
                 <SessionTrackerProvider>

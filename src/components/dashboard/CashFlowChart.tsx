@@ -40,13 +40,12 @@ export function CashFlowChart({ granularity, chartStartDate, chartEndDate }: Cas
   const hasData = data.some(d => d.receitas > 0 || d.despesas > 0);
 
   return (
-    <div className="rounded-[2.5rem] border border-border/40 bg-card p-10 shadow-xl relative overflow-hidden group">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-      <div className="mb-8 relative z-10">
-        <h3 className="text-lg font-black text-foreground tracking-tight mb-1 opacity-90">Fluxo de Caixa</h3>
-        <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.2em]">{subtitleMap[granularity]}</p>
+    <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-card-foreground">Fluxo de Caixa</h3>
+        <p className="text-sm text-muted-foreground">{subtitleMap[granularity]}</p>
       </div>
-      <div className="h-48 relative z-10">
+      <div className="h-40">
         {!hasData ? (
           <div className="flex h-full items-center justify-center text-muted-foreground">
             <p className="text-center">

@@ -49,9 +49,9 @@ export default function IAReceitaPrevista() {
             <TrendingUp className="h-5 w-5 text-purple-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Receita Prevista (Potencial)</h1>
+            <h1 className="text-xl font-bold text-foreground">Receita Prevista — 30 dias</h1>
             <p className="text-sm text-muted-foreground">
-              Projeção baseada em serviços agendados e em andamento (não faturados)
+              Serviços agendados e em andamento que compõem a projeção de receita
             </p>
           </div>
         </div>

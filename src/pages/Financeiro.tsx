@@ -21,7 +21,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
-import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 
 export default function Financeiro() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -33,9 +32,7 @@ export default function Financeiro() {
   const startDate = format(startOfMonth(currentMonth), "yyyy-MM-dd");
   const endDate = format(endOfMonth(currentMonth), "yyyy-MM-dd");
 
-  const { transactions, totals, isLoading: isLoadingTransactions } = useTransactions({ startDate, endDate });
-  const metrics = useDashboardMetrics(startDate, endDate, startDate, endDate);
-  const isLoading = isLoadingTransactions || metrics.isLoading;
+  const { transactions, totals, isLoading } = useTransactions({ startDate, endDate });
   const { organizationId } = useAuth();
   const { activeAccounts } = useFinancialAccounts();
 
@@ -90,11 +87,9 @@ export default function Financeiro() {
 
       {/* Summary cards */}
       <FinanceSummary
-        income={metrics.income}
-        expense={metrics.expense}
-        balance={metrics.balance}
-        pendingIncome={metrics.pendingIncome}
-        forecastedRevenue={metrics.forecastedRevenue}
+        income={totals.income}
+        expense={totals.expense}
+        balance={totals.balance}
       />
 
       {/* Tabs */}

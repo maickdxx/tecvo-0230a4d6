@@ -64,9 +64,9 @@ function ChangeBadge({ change }: { change?: number | null }) {
 }
 
 const GRANULARITY_LABELS: Record<Granularity, string> = {
-  day: "Performance do Dia",
-  week: "Performance da Semana",
-  month: "Performance do Mês",
+  day: "Lucro do Dia",
+  week: "Lucro da Semana",
+  month: "Lucro do Mês",
 };
 
 function useQuickInsight(income: number, goal: number, granularity: Granularity): string | null {

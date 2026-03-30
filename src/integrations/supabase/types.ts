@@ -2560,11 +2560,8 @@ export type Database = {
           ai_assistant_voice: string | null
           avatar_url: string | null
           birth_date: string | null
-          color_theme: string | null
           cpf: string | null
           created_at: string
-          daily_routine: Json | null
-          dashboard_action_history: Json | null
           dashboard_layout: Json | null
           demo_tour_completed: boolean
           employee_type: string
@@ -2586,7 +2583,6 @@ export type Database = {
           phone: string | null
           position: string | null
           rg: string | null
-          theme_mode: string | null
           updated_at: string
           user_id: string
           whatsapp_ai_enabled: boolean
@@ -2605,11 +2601,8 @@ export type Database = {
           ai_assistant_voice?: string | null
           avatar_url?: string | null
           birth_date?: string | null
-          color_theme?: string | null
           cpf?: string | null
           created_at?: string
-          daily_routine?: Json | null
-          dashboard_action_history?: Json | null
           dashboard_layout?: Json | null
           demo_tour_completed?: boolean
           employee_type?: string
@@ -2631,7 +2624,6 @@ export type Database = {
           phone?: string | null
           position?: string | null
           rg?: string | null
-          theme_mode?: string | null
           updated_at?: string
           user_id: string
           whatsapp_ai_enabled?: boolean
@@ -2650,11 +2642,8 @@ export type Database = {
           ai_assistant_voice?: string | null
           avatar_url?: string | null
           birth_date?: string | null
-          color_theme?: string | null
           cpf?: string | null
           created_at?: string
-          daily_routine?: Json | null
-          dashboard_action_history?: Json | null
           dashboard_layout?: Json | null
           demo_tour_completed?: boolean
           employee_type?: string
@@ -2676,7 +2665,6 @@ export type Database = {
           phone?: string | null
           position?: string | null
           rg?: string | null
-          theme_mode?: string | null
           updated_at?: string
           user_id?: string
           whatsapp_ai_enabled?: boolean

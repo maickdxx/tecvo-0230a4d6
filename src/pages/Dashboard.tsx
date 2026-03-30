@@ -1,5 +1,5 @@
-import { useState, useMemo, type ReactNode, lazy, Suspense } from "react";
-import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen, Clock, TrendingUp, LayoutDashboard, Wallet, Target } from "lucide-react";
+import { useState, useMemo, type ReactNode } from "react";
+import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
 import { DashboardBanners } from "@/components/dashboard/DashboardBanners";
@@ -8,25 +8,30 @@ import { useGuidedOnboarding } from "@/hooks/useGuidedOnboarding";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-// Lazy-load heavier charts and reports
-const RevenueEvolutionChart = lazy(() => import("@/components/dashboard/RevenueEvolutionChart").then(m => ({ default: m.RevenueEvolutionChart })));
-const CashFlowChart = lazy(() => import("@/components/dashboard/CashFlowChart").then(m => ({ default: m.CashFlowChart })));
-const TimePerformanceDashboard = lazy(() => import("@/components/dashboard/TimePerformanceDashboard").then(m => ({ default: m.TimePerformanceDashboard })));
-
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
+  CashFlowChart,
+  PaymentMethodChart,
+  RevenueEvolutionChart,
   CompanyHealthCard,
   DashboardSection,
 } from "@/components/dashboard";
+import { TimePerformanceDashboard } from "@/components/dashboard/TimePerformanceDashboard";
 import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBlock";
+import { ExecutiveHeroBlock } from "@/components/dashboard/ExecutiveHeroBlock";
+import { RevenueEngineBlock } from "@/components/dashboard/RevenueEngineBlock";
+import { WeatherForecast } from "@/components/dashboard/WeatherForecast";
+import { TodayBlock } from "@/components/dashboard/TodayBlock";
+
+import { AgendaResumo } from "@/components/dashboard/AgendaResumo";
+import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
+import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { DashboardCustomizeDialog } from "@/components/dashboard/DashboardCustomizeDialog";
+import { useDashboardLayout } from "@/hooks/useDashboardLayout";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useUserRole } from "@/hooks/useUserRole";
-import { FocoDoDia } from "@/components/dashboard/FocoDoDia";
-import { CrescimentoBlock } from "@/components/dashboard/CrescimentoBlock";
 import {
   type Granularity,
   getPeriodoAtivo,
@@ -92,6 +97,109 @@ export default function Dashboard() {
   const { organization } = useOrganization();
   const { hasPermission } = useUserRole();
   const canViewFinance = hasPermission("finance.view");
+  const { layout, isVisible } = useDashboardLayout();
+
+  // Build widget map
+  const widgetMap: Record<string, ReactNode> = {
+    bloco_hoje: isVisible("bloco_hoje") ? <TodayBlock startDate={startDate} endDate={endDate} periodLabel={periodLabel} /> : null,
+
+    resultado_periodo: canViewFinance && isVisible("resultado_periodo") ? (
+      <ExecutiveHeroBlock
+        income={metrics.income}
+        expense={metrics.expense}
+        balance={metrics.balance}
+        margin={metrics.margin}
+        forecastedRevenue={metrics.forecastedRevenue}
+        periodLabel={periodLabel}
+        monthlyGoal={organization?.monthly_goal}
+        incomeChange={metrics.incomeChange}
+        expenseChange={metrics.expenseChange}
+        balanceChange={metrics.balanceChange}
+        granularity={granularity}
+      />
+    ) : null,
+
+    agenda_resumida: null, // Removed — times were unreliable and block was not useful
+
+    alertas_inteligentes: isVisible("alertas_inteligentes") ? <AlertasInteligentes /> : null,
+
+    eficiencia_operacional: isVisible("eficiencia_operacional") ? (
+      <div className="min-w-0 overflow-hidden">
+        <ClosedPeriodServices />
+        <div className="mt-5">
+          <WeatherForecast />
+        </div>
+      </div>
+    ) : null,
+
+    motor_receita: canViewFinance && isVisible("motor_receita") ? (
+      <RevenueEngineBlock
+        revenueByType={metrics.revenueByType}
+        countByType={metrics.countByType}
+        averageTicket={metrics.averageTicket}
+      />
+    ) : null,
+
+    saude_empresa: canViewFinance && isVisible("saude_empresa") && !isActivationPhase ? (
+      <div className="mb-5">
+        <CompanyHealthCard />
+      </div>
+    ) : null,
+
+    graficos_detalhados: canViewFinance && isVisible("graficos_detalhados") ? (
+      <DashboardSection title="Gráficos Detalhados" icon={BarChart3}>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <RevenueEvolutionChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
+          <PaymentMethodChart startDate={startDate} endDate={endDate} />
+        </div>
+        <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
+        <PaymentFeeReport startDate={startDate} endDate={endDate} />
+      </DashboardSection>
+    ) : null,
+
+    performance_tempo: canViewFinance && isVisible("performance_tempo") ? (
+      <TimePerformanceDashboard startDate={startDate} endDate={endDate} />
+    ) : null,
+  };
+
+  // Pair motor_receita + eficiencia_operacional when adjacent
+  const orderedWidgets = (() => {
+    const result: ReactNode[] = [];
+    const ids = layout.map((w) => w.id);
+
+    let i = 0;
+    while (i < ids.length) {
+      const id = ids[i];
+      const nextId = ids[i + 1];
+
+      const isPair =
+        (id === "motor_receita" && nextId === "eficiencia_operacional") ||
+        (id === "eficiencia_operacional" && nextId === "motor_receita");
+
+      if (isPair) {
+        const firstNode = widgetMap[id];
+        const secondNode = widgetMap[nextId!];
+        if (firstNode || secondNode) {
+          const bothVisible = !!firstNode && !!secondNode;
+          result.push(
+            <div key={`pair-${id}-${nextId}`} className={`grid gap-5 mb-5 overflow-hidden ${bothVisible ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
+              <div className="min-w-0">{firstNode}</div>
+              <div className="min-w-0">{secondNode}</div>
+            </div>
+          );
+        }
+        i += 2;
+      } else {
+        const node = widgetMap[id];
+        if (node) {
+          result.push(<div key={id}>{node}</div>);
+        }
+        i += 1;
+      }
+    }
+
+    return result;
+  })();
 
   if (isPreparing) {
     return (
@@ -115,138 +223,74 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="page-enter pb-20 md:pb-12 max-w-7xl mx-auto">
+      <div className="page-enter">
         <DashboardBanners />
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 px-1">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Visão Geral</h1>
-            <p className="text-muted-foreground mt-1 text-sm sm:text-base font-medium opacity-80">
-              Sua central de controle estratégica
-            </p>
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">Painel de Controle</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Resumo do desempenho da empresa</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 hidden md:flex h-10 border-border/60 hover:bg-muted/50 transition-all"
+              className="gap-2 hidden md:flex"
               onClick={handleOpenTutorial}
               disabled={resetOnboardingMutation.isPending}
             >
               <BookOpen className="h-4 w-4" />
-              Tutorial
+              Ver tutorial
             </Button>
             <DashboardCustomizeDialog />
-            <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-2 h-10 shadow-sm shadow-primary/20">
-              <Plus className="h-4 w-4" />
+            <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Nova OS</span>
             </Button>
           </div>
         </div>
 
-        {/* 1. FOCO DO DIA (TOPO) */}
-        <section className="mb-14">
-          <FocoDoDia />
-        </section>
-
-        {/* 2. CAIXA (SEGURANÇA) */}
+        {/* Situação Atual — hidden during activation phase to avoid confusing new users */}
         {canViewFinance && !isActivationPhase && (
-          <section className="mb-14 space-y-6">
-            <div className="flex items-center gap-2.5 px-1">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Wallet className="h-5 w-5 text-primary" />
-              </div>
-              <h2 className="text-lg font-bold text-foreground tracking-tight uppercase opacity-90">Caixa & Segurança</h2>
-            </div>
-            <div data-tour="dashboard-hero">
-              <CurrentSituationBlock />
-            </div>
-          </section>
+          <div data-tour="dashboard-hero">
+            <CurrentSituationBlock />
+          </div>
         )}
 
-        {/* 3. CRESCIMENTO */}
-        <section className="mb-14">
-          <CrescimentoBlock 
-            income={metrics.income} 
-            monthlyGoal={organization?.monthly_goal}
-            periodLabel={periodLabel}
-          />
-        </section>
-
-        {/* 4. PERFORMANCE — Análise do Período */}
-        <section className="space-y-8 mb-14">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-1">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-info/10">
-                <Clock className="h-5 w-5 text-info" />
-              </div>
-              <h2 className="text-lg font-bold text-foreground tracking-tight uppercase opacity-90">Análise do Período</h2>
-            </div>
-
-            {canViewFinance && (
-              <div className="flex items-center gap-4 bg-muted/30 p-1 rounded-xl border border-border/40">
-                <Tabs
-                  value={granularity}
-                  onValueChange={(v) => {
-                    setGranularity(v as Granularity);
-                    setReferenceDate(getHojeBRT());
-                  }}
-                  className="w-full sm:w-auto"
-                >
-                  <TabsList className="h-9 bg-transparent p-0">
-                    <TabsTrigger value="day" className="text-xs px-4 h-8 data-[state=active]:bg-card data-[state=active]:shadow-sm">Dia</TabsTrigger>
-                    <TabsTrigger value="week" className="text-xs px-4 h-8 data-[state=active]:bg-card data-[state=active]:shadow-sm">Semana</TabsTrigger>
-                    <TabsTrigger value="month" className="text-xs px-4 h-8 data-[state=active]:bg-card data-[state=active]:shadow-sm">Mês</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                <div className="flex items-center gap-1 border-l border-border/60 pl-3">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-card" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-card" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="grid gap-8">
-            <ClosedPeriodServices />
-            {canViewFinance && !isActivationPhase && (
-              <CompanyHealthCard />
-            )}
-          </div>
-        </section>
-
-        {/* 5. GRÁFICOS DETALHADOS — Final */}
+        {/* Period Selector */}
         {canViewFinance && (
-          <section className="mt-20 space-y-10 border-t border-border/40 pt-16">
-            <div className="flex items-center gap-2.5 mb-8">
-              <div className="p-2 rounded-lg bg-muted/10">
-                <BarChart3 className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <h2 className="text-lg font-bold text-foreground tracking-tight uppercase opacity-90">Relatórios & Histórico</h2>
-            </div>
-            
-            <div className="grid gap-12 lg:grid-cols-2">
-              <Suspense fallback={<div className="h-[350px] w-full animate-pulse bg-muted/20 rounded-3xl" />}>
-                <RevenueEvolutionChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
-              </Suspense>
-              
-              <Suspense fallback={<div className="h-[350px] w-full animate-pulse bg-muted/20 rounded-3xl" />}>
-                <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
-              </Suspense>
-            </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+            <Tabs
+              value={granularity}
+              onValueChange={(v) => {
+                setGranularity(v as Granularity);
+                setReferenceDate(getHojeBRT());
+              }}
+            >
+              <TabsList className="h-8">
+                <TabsTrigger value="day" className="text-xs px-3 h-7">Dia</TabsTrigger>
+                <TabsTrigger value="week" className="text-xs px-3 h-7">Semana</TabsTrigger>
+                <TabsTrigger value="month" className="text-xs px-3 h-7">Mês</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-            <Suspense fallback={<div className="h-[400px] w-full animate-pulse bg-muted/20 rounded-3xl" />}>
-              <TimePerformanceDashboard startDate={startDate} endDate={endDate} />
-            </Suspense>
-          </section>
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-sm font-medium text-foreground capitalize min-w-[140px] text-center period-transition" key={periodLabel}>
+                {periodLabel}
+              </span>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
         )}
 
+        {/* Dynamic widget rendering based on saved layout order */}
+        {orderedWidgets}
       </div>
     </AppLayout>
   );
