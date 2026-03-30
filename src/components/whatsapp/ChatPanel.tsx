@@ -1050,6 +1050,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             );
           })
         )}
+        </div>
       </div>
 
       {/* Media Preview */}
