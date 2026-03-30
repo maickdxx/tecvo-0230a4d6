@@ -38,6 +38,9 @@ export function ClientCombobox({
   const selectedClient = clients.find((c) => c.id === value);
   const displayName = selectedClient?.name ?? fallbackName ?? "";
 
+  const normalize = (str: string) =>
+    str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -56,7 +59,12 @@ export function ClientCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
+        <Command
+          filter={(value, search) => {
+            if (!search) return 1;
+            return normalize(value).includes(normalize(search)) ? 1 : 0;
+          }}
+        >
           <CommandInput placeholder="Buscar cliente..." />
           <CommandList>
             <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
