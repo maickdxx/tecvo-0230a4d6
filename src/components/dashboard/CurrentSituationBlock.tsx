@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { useFinancialAccounts, type AccountType } from "@/hooks/useFinancialAccounts";
 import { useTransactions } from "@/hooks/useTransactions";
 import { format, addDays } from "date-fns";
