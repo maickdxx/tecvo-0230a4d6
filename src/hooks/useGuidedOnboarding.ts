@@ -27,14 +27,15 @@ export function useGuidedOnboarding(): GuidedOnboardingData {
     queryFn: async () => {
       if (!organizationId) return null;
 
-      // Fetch dismissed flag
+      // Fetch dismissed flag and creation date
       const { data: org } = await supabase
         .from("organizations")
-        .select("guided_onboarding_dismissed")
+        .select("guided_onboarding_dismissed, created_at")
         .eq("id", organizationId)
         .single();
 
       const dismissed = (org as any)?.guided_onboarding_dismissed ?? false;
+      const createdAt = (org as any)?.created_at;
 
       // Count real clients (exclude demo data)
       const { count: clientCount } = await supabase
@@ -63,6 +64,7 @@ export function useGuidedOnboarding(): GuidedOnboardingData {
 
       return {
         dismissed,
+        createdAt,
         hasClients: (clientCount ?? 0) > 0,
         hasServices: (serviceCount ?? 0) > 0,
         hasScheduled: (scheduledCount ?? 0) > 0,
@@ -111,11 +113,17 @@ export function useGuidedOnboarding(): GuidedOnboardingData {
     ? 3
     : steps.findIndex((s) => !s.completed) + 1;
 
+  const isOldOrg = data?.createdAt 
+    ? (new Date().getTime() - new Date(data.createdAt).getTime()) > 7 * 24 * 60 * 60 * 1000 
+    : false;
+
   const showGuide =
     !subLoading &&
     !dataLoading &&
     !!data &&
-    !data.dismissed;
+    !data.dismissed &&
+    !isOldOrg &&
+    !data.hasClients; // Per user request: user with client doesn't see this banner
 
   return {
     showGuide,

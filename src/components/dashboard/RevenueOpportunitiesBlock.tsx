@@ -108,8 +108,8 @@ export function RevenueOpportunitiesBlock() {
     {
       id: "potential",
       label: "Possíveis Retornos",
-      value: formatCurrency(opportunities.quotes.total * 0.4), // Estimation
-      sub: "Baseado em histórico",
+      value: "Baseado em histórico",
+      sub: "Análise de tendência",
       icon: TrendingUp,
       color: "text-info",
       bg: "bg-info/10",
