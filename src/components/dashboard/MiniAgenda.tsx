@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarClock, MapPin, User, ChevronRight, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
