@@ -37,46 +37,60 @@ export function CompanyHealthCard() {
   const config = LEVEL_CONFIG[level];
 
   return (
-    <Card className="animate-fade-in">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <Activity className="h-4 w-4 text-primary" />
-          Saúde da Empresa
+    <Card className="animate-fade-in border-none shadow-lg ring-1 ring-border/40 overflow-hidden">
+      <CardHeader className="pb-6 px-6 pt-6 border-b border-border/40 bg-muted/20">
+        <CardTitle className="flex items-center gap-2.5 text-base font-bold">
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <Activity className="h-4 w-4 text-primary" />
+          </div>
+          <span className="opacity-90">Saúde da Empresa</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-8 px-6 pb-8 pt-8">
         {/* Score + Badge */}
-        <div className="flex items-end gap-3">
-          <span className="text-4xl number-display text-foreground">{score}%</span>
-          <Badge variant="outline" className={config.className}>
-            {config.label}
+        <div className="flex items-end gap-5">
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Score Geral</p>
+            <span className="text-5xl font-black tracking-tighter text-foreground tabular-nums leading-none">
+              {score}<span className="text-2xl font-medium text-muted-foreground">%</span>
+            </span>
+          </div>
+          <Badge variant="outline" className={cn("font-bold px-3 py-1 text-[10px] uppercase tracking-wider h-fit mb-1.5 border-2", config.className)}>
+            Nível {config.label}
           </Badge>
         </div>
 
         {/* Main progress */}
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+        <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted shadow-inner p-0.5">
           <div
-            className={`h-full rounded-full bg-gradient-to-r ${getProgressGradient(level)} transition-all duration-700 ease-out relative overflow-hidden after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent after:animate-shimmer after:bg-[length:200%_100%]`}
+            className={cn(
+              "h-full rounded-full bg-gradient-to-r transition-all duration-1000 ease-out relative overflow-hidden shadow-[0_0_12px_rgba(var(--primary-rgb),0.2)]",
+              getProgressGradient(level)
+            )}
             style={{ width: `${score}%` }}
-          />
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+          </div>
         </div>
 
         {/* Pillar mini bars */}
-        <div className="space-y-2.5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {pillarScores.map((pillar) => {
             const pct = pillar.maxScore > 0 ? (pillar.score / pillar.maxScore) * 100 : 0;
             return (
-              <div key={pillar.name} className="flex items-center gap-2">
-                <span className="w-24 text-xs text-muted-foreground truncate">{pillar.name}</span>
-                <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
+              <div key={pillar.name} className="flex flex-col gap-2 p-4 rounded-2xl bg-muted/20 border border-border/40 group hover:bg-muted/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity truncate pr-2">{pillar.name}</span>
+                  <span className="text-[11px] font-black text-foreground tabular-nums tracking-tight">
+                    {pillar.score}/{pillar.maxScore}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-muted/60 overflow-hidden shadow-inner">
                   <div
-                    className="h-full rounded-full transition-all duration-500 ease-out"
+                    className="h-full rounded-full transition-all duration-700 ease-out shadow-sm"
                     style={{ width: `${pct}%`, backgroundColor: pillar.color }}
                   />
                 </div>
-                <span className="text-[11px] text-muted-foreground w-12 text-right tabular-nums">
-                  {pillar.score}/{pillar.maxScore}
-                </span>
               </div>
             );
           })}
@@ -84,17 +98,27 @@ export function CompanyHealthCard() {
 
         {/* Suggestions */}
         {suggestions.length > 0 && (
-          <div className="rounded-xl border border-primary/10 bg-primary/5 p-3.5 space-y-1.5">
-            <p className="text-xs font-medium text-primary flex items-center gap-1.5">
-              <Lightbulb className="h-3.5 w-3.5" />
-              Recomendações inteligentes
-            </p>
-            {suggestions.map((s, i) => (
-              <p key={i} className="text-xs text-muted-foreground">• {s}</p>
-            ))}
+          <div className="rounded-2xl border border-primary/10 bg-primary/[0.03] p-6 space-y-4 group hover:bg-primary/[0.05] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <Lightbulb className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                Recomendações Inteligentes
+              </p>
+            </div>
+            <div className="space-y-3">
+              {suggestions.map((s, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/40 mt-1 shrink-0" />
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed">{s}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
   );
+}
 }
