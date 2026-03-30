@@ -239,6 +239,7 @@ export function Sidebar() {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const { isEmployee, isFieldWorker, isMember, isAdmin, isOwner, hasPermission, roleLabel } = useUserRole();
   const { profile, signOut } = useAuth();
+  const [logoError, setLogoError] = useState(false);
   const { organization } = useOrganization();
   const { isSuperAdmin } = useSuperAdmin();
   const { plan, hasTimeClock, hasWhatsAppFull, hasRecurrence } = useSubscription();
