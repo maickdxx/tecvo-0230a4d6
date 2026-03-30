@@ -8,7 +8,7 @@ interface OwnerProtectedRouteProps {
 }
 
 export function OwnerProtectedRoute({ children }: OwnerProtectedRouteProps) {
-  const { isOwner, isLoading } = useUserRole();
+  const { isOwner, isAdmin, isLoading } = useUserRole();
 
   if (isLoading) {
     return (
@@ -18,7 +18,8 @@ export function OwnerProtectedRoute({ children }: OwnerProtectedRouteProps) {
     );
   }
 
-  if (!isOwner) {
+  // Allow both owner and admin roles to access settings
+  if (!isOwner && !isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 
