@@ -261,16 +261,26 @@ export default function Dashboard() {
             </div>
             
             <div className="grid gap-6 lg:grid-cols-2">
-              <RevenueEvolutionChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
-              <PaymentMethodChart startDate={startDate} endDate={endDate} />
+              <Suspense fallback={<div className="h-[300px] w-full animate-pulse bg-muted rounded-xl" />}>
+                <RevenueEvolutionChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
+              </Suspense>
+              <Suspense fallback={<div className="h-[300px] w-full animate-pulse bg-muted rounded-xl" />}>
+                <PaymentMethodChart startDate={startDate} endDate={endDate} />
+              </Suspense>
             </div>
             
             <div className="grid gap-6">
-              <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
-              <PaymentFeeReport startDate={startDate} endDate={endDate} />
+              <Suspense fallback={<div className="h-[300px] w-full animate-pulse bg-muted rounded-xl" />}>
+                <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
+              </Suspense>
+              <Suspense fallback={<div className="h-[150px] w-full animate-pulse bg-muted rounded-xl" />}>
+                <PaymentFeeReport startDate={startDate} endDate={endDate} />
+              </Suspense>
             </div>
 
-            <TimePerformanceDashboard startDate={startDate} endDate={endDate} />
+            <Suspense fallback={<div className="h-[400px] w-full animate-pulse bg-muted rounded-xl" />}>
+              <TimePerformanceDashboard startDate={startDate} endDate={endDate} />
+            </Suspense>
           </div>
         )}
 
