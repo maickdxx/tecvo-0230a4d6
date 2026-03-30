@@ -112,7 +112,8 @@ export function CurrentSituationBlock() {
 
   const forecast = forecastConfig[forecastLevel];
   const ForecastIcon = forecast.icon;
-  const isLoading = isLoadingAccounts || isLoadingPayables || isLoadingReceivables;
+  const navigate = useNavigate();
+  const isLoading = isLoadingAccounts || isLoadingPayables || isLoadingReceivables || dashboardMetrics.isLoading;
   const FlowIcon = projectedFlow >= 0 ? TrendingUp : TrendingDown;
 
   if (isLoading) return null;
