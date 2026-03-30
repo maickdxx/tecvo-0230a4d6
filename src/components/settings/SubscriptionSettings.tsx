@@ -105,7 +105,7 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
 
         if (data?.url) {
           analytics.track("payment_initiated", null, null, { plan: targetPlan, page_section: "settings", button_label: "Assinar plano", interaction_type: "click" });
-          const planPrice = PLAN_CONFIG[targetPlan]?.price ?? 0;
+          const planPrice = PLAN_CONFIG[targetPlan]?.pricePerMonth ?? 0;
           trackFBEvent("InitiateCheckout", { content_name: targetPlan, currency: "BRL", value: planPrice });
           saveCheckoutContext({ plan: targetPlan, returnTo: buildCheckoutSuccessPath(targetPlan) });
           window.open(data.url, "_blank");
