@@ -142,16 +142,7 @@ export function useAccounts(options: UseAccountsOptions = {}) {
         .single();
 
       if (error) throw error;
-
-      // Update financial account balance atomically when created as already paid
-      if (status === "paid" && data.financial_account_id) {
-        const delta = data.type === "expense" ? -data.amount : data.amount;
-        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-          _account_id: data.financial_account_id,
-          _delta: delta,
-        });
-        if (balError) throw balError;
-      }
+      // Balance is automatically synced by the DB trigger (handle_transaction_balance_sync)
 
       return account;
     },
