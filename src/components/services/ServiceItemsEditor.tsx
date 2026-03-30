@@ -221,19 +221,27 @@ export function ServiceItemsEditor({ serviceId }: ServiceItemsEditorProps) {
           </div>
         </div>
 
-        <Button
-          type="button"
-          variant={newItem.description && newItem.unit_price ? "default" : "outline"}
-          className={cn(
-            "w-full gap-2 transition-all duration-200",
-            newItem.description && newItem.unit_price ? "bg-primary text-primary-foreground shadow-md hover:scale-[1.01]" : ""
+        <div className="flex flex-col gap-2 pt-1">
+          {newItem.description && newItem.unit_price && (
+            <span className="text-[10px] text-primary animate-pulse flex items-center gap-1 font-medium">
+              <Plus className="h-3 w-3" />
+              Clique no botão abaixo ou aperte Enter para confirmar
+            </span>
           )}
-          onClick={handleAddItem}
-          disabled={isCreating || !newItem.unit_price}
-        >
-          <Plus className="h-4 w-4" />
-          Adicionar Serviço
-        </Button>
+          <Button
+            type="button"
+            variant={newItem.description && newItem.unit_price ? "default" : "outline"}
+            className={cn(
+              "w-full gap-2 transition-all duration-200",
+              newItem.description && newItem.unit_price ? "bg-primary text-primary-foreground shadow-md hover:scale-[1.01]" : ""
+            )}
+            onClick={handleAddItem}
+            disabled={isCreating || !newItem.unit_price}
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar Serviço
+          </Button>
+        </div>
       </div>
     </div>
   );
