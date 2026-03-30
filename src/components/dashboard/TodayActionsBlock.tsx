@@ -71,7 +71,7 @@ interface DashboardAction {
   insight?: string;
 }
 
-export function TodayActionsBlock() {
+export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean }) {
   const navigate = useNavigate();
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
