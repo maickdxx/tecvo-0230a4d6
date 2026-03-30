@@ -94,6 +94,7 @@ export function useGuidedOnboarding(): GuidedOnboardingData {
       if (profileError) throw profileError;
     },
     onSuccess: () => {
+      trackFBEvent("CompleteRegistration", { content_name: "onboarding_dismissed", currency: "BRL", value: 0 });
       queryClient.invalidateQueries({ queryKey: ["guided-onboarding"] });
       queryClient.invalidateQueries({ queryKey: ["profile-onboarding", session?.user?.id] });
     },
