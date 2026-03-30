@@ -7,7 +7,7 @@ import screenshotDashboard from "@/assets/screenshot-dashboard.jpg";
 import screenshotWhatsapp from "@/assets/screenshot-whatsapp.jpg";
 
 const highlights = [
-  { icon: MessageCircle, label: "WhatsApp com IA" },
+  { icon: MessageCircle, label: "WhatsApp integrado" },
   { icon: CalendarCheck, label: "Agenda de serviços" },
   { icon: Wallet, label: "Controle financeiro" },
   { icon: Zap, label: "Recorrência automática" },

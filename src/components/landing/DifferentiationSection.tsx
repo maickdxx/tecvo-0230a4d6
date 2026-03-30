@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 const comparisons = [
   { before: "Anota serviço no papel e perde", after: "Tudo registrado com histórico e fotos" },
   { before: "Não sabe se deu lucro no mês", after: "Financeiro mostra o resultado em tempo real" },
-  { before: "Cliente esperou e chamou o concorrente", after: "IA responde no WhatsApp em segundos" },
+  { before: "Cliente esperou e chamou o concorrente", after: "WhatsApp integrado — responda de qualquer lugar sem perder conversa" },
   { before: "Orçamento mandado por áudio", after: "PDF profissional com sua marca pronto em 10s" },
   { before: "Técnico em campo sem acompanhamento", after: "Sabe o que cada um fez, gastou e rendeu" },
   { before: "Manutenção preventiva esquecida", after: "Cliente recebe aviso automático e agenda sozinho" },

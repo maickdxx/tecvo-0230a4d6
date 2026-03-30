@@ -18,7 +18,7 @@ const testimonials = [
     metric: "+40% de faturamento",
   },
   {
-    quote: "O WhatsApp com IA é absurdo. Cliente manda mensagem às 22h e já recebe resposta. Já fechei serviço dormindo.",
+    quote: "O WhatsApp integrado é absurdo. Todas as conversas organizadas num lugar só. Consigo responder cliente entre um serviço e outro sem perder nada.",
     author: "Roberto Mendes",
     role: "Empresa com 4 técnicos, BH/MG",
     avatar: "RM",

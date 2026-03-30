@@ -17,12 +17,12 @@ const showcases = [
     alt: "Tela de ordens de serviço e agenda do Tecvo",
   },
   {
-    tag: "WhatsApp com IA",
+    tag: "WhatsApp integrado",
     icon: MessageCircle,
-    title: "Seu cliente manda mensagem e a IA responde na hora",
-    description: "Todas as conversas do WhatsApp organizadas em um só lugar. Crie ordens de serviço direto do chat sem sair da tela. A IA sugere respostas para você atender 10x mais rápido — mesmo em campo.",
+    title: "Todas as conversas organizadas num só lugar",
+    description: "Todas as conversas do WhatsApp organizadas em um só lugar. Crie ordens de serviço direto do chat sem sair da tela. Respostas rápidas e chatbot para atender mais clientes sem perder nenhuma mensagem — mesmo em campo.",
     image: screenshotWhatsapp,
-    alt: "WhatsApp integrado do Tecvo com IA",
+    alt: "WhatsApp integrado do Tecvo",
   },
   {
     tag: "Financeiro",
