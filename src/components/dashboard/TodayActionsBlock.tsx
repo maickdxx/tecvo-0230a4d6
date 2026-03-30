@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   CalendarDays, 
@@ -11,7 +11,9 @@ import {
   ShieldCheck,
   Zap,
   DollarSign,
-  AlertCircle
+  AlertCircle,
+  MessageCircle,
+  TrendingDown
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
@@ -20,6 +22,8 @@ import { format, subDays, subMonths, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAdaptivePrioritization } from "@/hooks/useAdaptivePrioritization";
+import { useUserRole } from "@/hooks/useUserRole";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
