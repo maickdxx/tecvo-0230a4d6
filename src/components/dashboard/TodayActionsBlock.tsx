@@ -61,18 +61,46 @@ export function TodayActionsBlock() {
   const { role, isOwner, isAdmin } = useUserRole();
   const { recordInteraction, recordResult, getScoreAdjustment, getAdaptiveInsight, history } = useAdaptivePrioritization();
 
+  const counts = useMemo(() => {
+    return {
+      overdue_services: services.filter((s) => {
+        if (!s.scheduled_date || s.status === "completed" || s.status === "cancelled" || s.document_type === "quote") return false;
+        return s.scheduled_date.substring(0, 10) < todayStr;
+      }),
+      overdue_payments: transactions.filter(
+        (t) => t.status === "pending" && t.due_date && t.due_date < todayStr && t.type === "income"
+      ),
+      pending_quotes: services.filter(
+        (s) => s.document_type === "quote" && s.status === "scheduled" && s.created_at.substring(0, 10) <= format(subDays(today, 3), "yyyy-MM-dd")
+      ),
+      inactive_clients: (() => {
+        const sixMonthsAgo = format(subMonths(today, 6), "yyyy-MM-dd");
+        const lastServiceByClient: Record<string, string> = {};
+        services.forEach((s) => {
+          if (s.status !== "completed") return;
+          const date = s.completed_date || s.scheduled_date || s.created_at;
+          if (!lastServiceByClient[s.client_id] || date > lastServiceByClient[s.client_id]) {
+            lastServiceByClient[s.client_id] = date;
+          }
+        });
+        return clients.filter((c) => {
+          const lastDate = lastServiceByClient[c.id];
+          return lastDate ? lastDate < sixMonthsAgo : false;
+        });
+      })(),
+      today_services: services.filter(
+        (s) => s.scheduled_date?.startsWith(todayStr) && s.status !== "cancelled" && s.document_type !== "quote"
+      )
+    };
+  }, [services, clients, transactions, todayStr, today]);
+
   const actions = useMemo(() => {
     const result: DashboardAction[] = [];
 
-    // 1. Overdue services (Money in Risk - High Base: 1000)
-    const overdueServices = services.filter((s) => {
-      if (!s.scheduled_date || s.status === "completed" || s.status === "cancelled" || s.document_type === "quote") return false;
-      return s.scheduled_date.substring(0, 10) < todayStr;
-    });
-
-    if (overdueServices.length > 0) {
-      const impactValue = overdueServices.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
-      const oldestDate = overdueServices.reduce((oldest, s) => s.scheduled_date < oldest ? s.scheduled_date : oldest, overdueServices[0].scheduled_date);
+    // 1. Overdue services
+    if (counts.overdue_services.length > 0) {
+      const impactValue = counts.overdue_services.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
+      const oldestDate = counts.overdue_services.reduce((oldest, s) => s.scheduled_date < oldest ? s.scheduled_date : oldest, counts.overdue_services[0].scheduled_date);
       const daysOverdue = differenceInDays(today, new Date(oldestDate));
       
       const baseScore = 1000 + (impactValue / 100) + (daysOverdue * 50);
@@ -81,9 +109,9 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "overdue_services",
-        title: `${overdueServices.length} serviço${overdueServices.length > 1 ? "s" : ""} em atraso`,
+        title: `${counts.overdue_services.length} serviço${counts.overdue_services.length > 1 ? "s" : ""} em atraso`,
         impactText: historyData?.totalValueGenerated ? `Já evitou perda de ${formatCurrency(historyData.totalValueGenerated)}` : `Evite perder ${formatCurrency(impactValue)} hoje`,
-        timeLabel: `há ${daysOverdue} dia${daysOverdue > 1 ? "s" : ""}`,
+        timeLabel: `há ${daysOverdue} d`,
         icon: AlertTriangle,
         priorityLevel: "high",
         score: adjustedScore,
@@ -97,14 +125,10 @@ export function TodayActionsBlock() {
       });
     }
 
-    // 2. Overdue payments (Money in Risk - High Base: 1100)
-    const overduePayments = transactions.filter(
-      (t) => t.status === "pending" && t.due_date && t.due_date < todayStr && t.type === "income"
-    );
-
-    if (overduePayments.length > 0) {
-      const total = overduePayments.reduce((sum, t) => sum + Number(t.amount), 0);
-      const oldestDate = overduePayments.reduce((oldest, t) => t.due_date! < oldest ? t.due_date! : oldest, overduePayments[0].due_date!);
+    // 2. Overdue payments
+    if (counts.overdue_payments.length > 0) {
+      const total = counts.overdue_payments.reduce((sum, t) => sum + Number(t.amount), 0);
+      const oldestDate = counts.overdue_payments.reduce((oldest, t) => t.due_date! < oldest ? t.due_date! : oldest, counts.overdue_payments[0].due_date!);
       const daysOverdue = differenceInDays(today, new Date(oldestDate));
 
       const baseScore = 1100 + (total / 100) + (daysOverdue * 60);
@@ -113,9 +137,9 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "overdue_payments",
-        title: `${overduePayments.length} pagamento${overduePayments.length > 1 ? "s" : ""} vencido${overduePayments.length > 1 ? "s" : ""}`,
+        title: `${counts.overdue_payments.length} pagamento${counts.overdue_payments.length > 1 ? "s" : ""} vencido${counts.overdue_payments.length > 1 ? "s" : ""}`,
         impactText: historyData?.totalValueGenerated ? `Recuperou ${formatCurrency(historyData.totalValueGenerated)} com cobrança` : `Recupere ${formatCurrency(total)} parados`,
-        timeLabel: `vencido há ${daysOverdue} d`,
+        timeLabel: `há ${daysOverdue} d`,
         icon: DollarSign,
         priorityLevel: "high",
         score: adjustedScore,
@@ -129,15 +153,10 @@ export function TodayActionsBlock() {
       });
     }
 
-    // 3. Quotes without response (Money Idle - Medium/High Base: 800)
-    const threeDaysAgo = format(subDays(today, 3), "yyyy-MM-dd");
-    const pendingQuotes = services.filter(
-      (s) => s.document_type === "quote" && s.status === "scheduled" && s.created_at.substring(0, 10) <= threeDaysAgo
-    );
-
-    if (pendingQuotes.length > 0) {
-      const totalValue = pendingQuotes.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
-      const oldestDate = pendingQuotes.reduce((oldest, s) => s.created_at < oldest ? s.created_at : oldest, pendingQuotes[0].created_at);
+    // 3. Pending quotes
+    if (counts.pending_quotes.length > 0) {
+      const totalValue = counts.pending_quotes.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
+      const oldestDate = counts.pending_quotes.reduce((oldest, s) => s.created_at < oldest ? s.created_at : oldest, counts.pending_quotes[0].created_at);
       const daysPending = differenceInDays(today, new Date(oldestDate));
 
       const baseScore = 800 + (totalValue / 200) + (daysPending * 30);
@@ -162,24 +181,9 @@ export function TodayActionsBlock() {
       });
     }
 
-    // 4. Inactive clients (Opportunity - Low Base: 300)
-    const sixMonthsAgo = format(subMonths(today, 6), "yyyy-MM-dd");
-    const lastServiceByClient: Record<string, string> = {};
-    services.forEach((s) => {
-      if (s.status !== "completed") return;
-      const date = s.completed_date || s.scheduled_date || s.created_at;
-      if (!lastServiceByClient[s.client_id] || date > lastServiceByClient[s.client_id]) {
-        lastServiceByClient[s.client_id] = date;
-      }
-    });
-    const inactiveClients = clients.filter((c) => {
-      const lastDate = lastServiceByClient[c.id];
-      if (!lastDate) return false;
-      return lastDate < sixMonthsAgo;
-    });
-
-    if (inactiveClients.length > 0) {
-      const baseScore = 300 + (inactiveClients.length * 10);
+    // 4. Inactive clients
+    if (counts.inactive_clients.length > 0) {
+      const baseScore = 300 + (counts.inactive_clients.length * 10);
       const adjustedScore = baseScore + getScoreAdjustment("inactive_clients", baseScore);
       const historyData = history["inactive_clients"];
 
@@ -187,7 +191,7 @@ export function TodayActionsBlock() {
         id: "inactive_clients",
         title: "Reativar clientes sumidos",
         impactText: historyData?.totalValueGenerated ? `Gerou ${formatCurrency(historyData.totalValueGenerated)} em novos serviços` : "Gerar novos serviços recorrentes",
-        timeLabel: "inativos +6 meses",
+        timeLabel: "inativos +6 m",
         icon: UserX,
         priorityLevel: "medium",
         score: adjustedScore,
@@ -201,13 +205,9 @@ export function TodayActionsBlock() {
       });
     }
 
-    // 5. Services for today (Operational - Medium Base: 500)
-    const todayServices = services.filter(
-      (s) => s.scheduled_date?.startsWith(todayStr) && s.status !== "cancelled" && s.document_type !== "quote"
-    );
-
-    if (todayServices.length > 0) {
-      const totalValue = todayServices.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
+    // 5. Services for today
+    if (counts.today_services.length > 0) {
+      const totalValue = counts.today_services.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
       const baseScore = 500 + (totalValue / 500);
       const adjustedScore = baseScore + getScoreAdjustment("today_services", baseScore);
       const historyData = history["today_services"];
@@ -216,7 +216,7 @@ export function TodayActionsBlock() {
         id: "today_services",
         title: "Executar serviços do dia",
         impactText: historyData?.totalValueGenerated ? `Já faturou ${formatCurrency(historyData.totalValueGenerated)} hoje` : `Garantir ${formatCurrency(totalValue)} em faturamento`,
-        timeLabel: "para hoje",
+        timeLabel: "hoje",
         icon: CalendarDays,
         priorityLevel: "medium",
         score: adjustedScore,
@@ -231,7 +231,7 @@ export function TodayActionsBlock() {
     }
 
     return result.sort((a, b) => b.score - a.score).slice(0, 5);
-  }, [services, clients, transactions, todayStr, navigate, today, getScoreAdjustment, getAdaptiveInsight, recordInteraction]);
+  }, [counts, today, getScoreAdjustment, getAdaptiveInsight, recordInteraction, history, navigate]);
 
   // Track impressions and resolutions
   const prevCounts = useMemo(() => {
