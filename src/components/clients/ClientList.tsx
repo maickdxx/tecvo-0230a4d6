@@ -22,11 +22,22 @@ interface ClientListProps {
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
   totalCount?: number;
+  search?: string;
+  onSearchChange?: (value: string) => void;
 }
 
-function getStatusFromMetrics(metrics: ClientMetrics | undefined): "active" | "inactive" | "reactivate" | null {
-  if (!metrics?.lastServiceDate) return null;
+function getStatusFromMetrics(metrics: ClientMetrics | undefined, createdAt?: string): "active" | "inactive" | "reactivate" | null {
   const today = new Date();
+  
+  if (!metrics?.lastServiceDate) {
+    if (!createdAt) return null;
+    const created = new Date(createdAt);
+    const diffMs = today.getTime() - created.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffDays <= 30) return "active";
+    return null;
+  }
+  
   const last = new Date(metrics.lastServiceDate);
   const diffMs = today.getTime() - last.getTime();
   const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.44);
@@ -47,21 +58,27 @@ export function ClientList({
   isLoadingMore,
   onLoadMore,
   totalCount,
+  search = "",
+  onSearchChange,
 }: ClientListProps) {
-  const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
 
-  const searchFiltered = clients.filter((client) =>
-    client.name.toLowerCase().includes(search.toLowerCase()) ||
-    client.phone.includes(search) ||
-    client.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const searchFiltered = useMemo(() => {
+    if (!onSearchChange) {
+      return clients.filter((client) =>
+        client.name.toLowerCase().includes(search.toLowerCase()) ||
+        client.phone.includes(search) ||
+        client.email?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    return clients;
+  }, [clients, search, onSearchChange]);
 
   const filterCounts = useMemo(() => {
     const counts = { all: searchFiltered.length, active: 0, inactive: 0, reactivate: 0, scheduled: 0, pending: 0 };
     for (const c of searchFiltered) {
       const m = clientMetrics[c.id];
-      const status = getStatusFromMetrics(m);
+      const status = getStatusFromMetrics(m, c.created_at);
       if (status === "active") counts.active++;
       if (status === "inactive") counts.inactive++;
       if (status === "reactivate") counts.reactivate++;
@@ -75,7 +92,7 @@ export function ClientList({
     if (activeFilter === "all") return searchFiltered;
     return searchFiltered.filter((c) => {
       const m = clientMetrics[c.id];
-      const status = getStatusFromMetrics(m);
+      const status = getStatusFromMetrics(m, c.created_at);
       switch (activeFilter) {
         case "active": return status === "active";
         case "inactive": return status === "inactive";
@@ -114,7 +131,7 @@ export function ClientList({
         <Input
           placeholder="Buscar cliente por nome, telefone ou email..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => onSearchChange ? onSearchChange(e.target.value) : undefined}
           className="pl-10"
         />
       </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppLayout } from "@/components/layout";
 import { PageTutorialBanner } from "@/components/onboarding";
 import { Plus } from "lucide-react";
@@ -18,6 +18,7 @@ import { useClients, type Client, type ClientFormData } from "@/hooks/useClients
 import { usePaginatedClients } from "@/hooks/usePaginatedClients";
 import { useServices } from "@/hooks/useServices";
 import { useNavigate } from "react-router-dom";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export interface ClientMetrics {
   lastServiceDate: string | null;
@@ -29,6 +30,8 @@ export interface ClientMetrics {
 
 export default function Clientes() {
   const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
 
   // Paginated data for the list
   const {
@@ -38,7 +41,7 @@ export default function Clientes() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = usePaginatedClients();
+  } = usePaginatedClients(debouncedSearch);
 
   // Mutations only (skip data query)
   const { create, update, remove, isCreating, isUpdating } = useClients();
@@ -152,6 +155,8 @@ export default function Clientes() {
         isLoadingMore={isFetchingNextPage}
         onLoadMore={() => fetchNextPage()}
         totalCount={totalCount}
+        search={search}
+        onSearchChange={setSearch}
       />
 
       <ClientDialog
