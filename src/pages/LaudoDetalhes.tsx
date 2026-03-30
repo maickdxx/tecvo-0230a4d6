@@ -391,17 +391,40 @@ export default function LaudoDetalhes() {
         )}
 
         {/* Conclusion / Final Status */}
-        <SectionCard icon={ClipboardCheck} title="Status Após Intervenção">
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-100">
-            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-bold text-green-900">Condição Final de Entrega</p>
-              <p className="text-sm text-green-800 whitespace-pre-wrap mt-1">
-                {report.conclusion || (report.equipment_working === "yes" ? "Equipamento normalizado e em operação regular." : "Equipamento em aguardo de peças/orçamento.")}
-              </p>
-            </div>
-          </div>
-        </SectionCard>
+        {(() => {
+          // Derive overall status from equipment or legacy field
+          let overallStatus = "operational";
+          if (reportEquipment.length > 0) {
+            const statuses = reportEquipment.map((eq) => eq.final_status || "operational");
+            if (statuses.includes("non_operational")) overallStatus = "non_operational";
+            else if (statuses.includes("operational_with_caveats")) overallStatus = "operational_with_caveats";
+          } else {
+            if (report.equipment_working === "no") overallStatus = "non_operational";
+            else if (report.equipment_working === "partial") overallStatus = "operational_with_caveats";
+          }
+          const statusColors = {
+            operational: { bg: "bg-green-50 border-green-100", icon: "text-green-600", title: "text-green-900", text: "text-green-800" },
+            operational_with_caveats: { bg: "bg-amber-50 border-amber-100", icon: "text-amber-600", title: "text-amber-900", text: "text-amber-800" },
+            non_operational: { bg: "bg-red-50 border-red-100", icon: "text-red-600", title: "text-red-900", text: "text-red-800" },
+          };
+          const statusLabel = overallStatus === "operational" ? "Operacional" : overallStatus === "operational_with_caveats" ? "Operacional com Ressalvas" : "Não Operacional";
+          const c = statusColors[overallStatus as keyof typeof statusColors];
+          const StatusIcon = overallStatus === "operational" ? CheckCircle2 : overallStatus === "operational_with_caveats" ? AlertTriangle : XCircle;
+
+          return (
+            <SectionCard icon={ClipboardCheck} title="Status Final do Atendimento">
+              <div className={cn("flex items-start gap-3 p-3 rounded-lg border", c.bg)}>
+                <StatusIcon className={cn("h-5 w-5 shrink-0 mt-0.5", c.icon)} />
+                <div>
+                  <p className={cn("text-sm font-bold", c.title)}>{statusLabel}</p>
+                  {report.conclusion && (
+                    <p className={cn("text-sm whitespace-pre-wrap mt-1", c.text)}>{report.conclusion}</p>
+                  )}
+                </div>
+              </div>
+            </SectionCard>
+          );
+        })()}
 
         {/* Signature Integration */}
         {signature && (
