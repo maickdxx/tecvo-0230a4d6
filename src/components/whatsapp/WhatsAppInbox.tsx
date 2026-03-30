@@ -329,18 +329,27 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
               }}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-muted/[0.04]">
-              <div className="text-center space-y-3">
-                <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
-                  <MessageSquare className="h-7 w-7 text-muted-foreground/40" />
+            <div className="flex-1 flex items-center justify-center bg-muted/[0.04] relative overflow-hidden">
+              {/* WhatsApp-like background pattern */}
+              <div className="absolute inset-0 bg-whatsapp-pattern opacity-[0.03] dark:opacity-[0.02] pointer-events-none" />
+              
+              <div className="text-center space-y-4 relative z-10 px-6 max-w-sm">
+                <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center shadow-sm">
+                  <MessageSquare className="h-9 w-9 text-primary/60" />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Selecione uma conversa
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold tracking-tight text-foreground/80">
+                    Sua central de atendimento
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Selecione uma conversa à esquerda para visualizar o histórico e responder seus clientes em tempo real.
                   </p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Escolha um contato à esquerda para iniciar o atendimento
-                  </p>
+                </div>
+                <div className="pt-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/40 text-[11px] text-muted-foreground/80 font-medium">
+                    <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                    Pronto para receber mensagens
+                  </div>
                 </div>
               </div>
             </div>
