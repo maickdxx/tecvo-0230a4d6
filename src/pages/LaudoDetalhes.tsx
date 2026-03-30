@@ -58,6 +58,7 @@ export default function LaudoDetalhes() {
   const navigate = useNavigate();
   const { report, isLoading } = useTechnicalReport(id);
   const { photos } = useReportPhotos(id);
+  const { equipment: reportEquipment, isLoading: eqLoading } = useReportEquipment(id);
   const { remove } = useTechnicalReportMutations();
   const { organization } = useOrganization();
   const tz = useOrgTimezone();
