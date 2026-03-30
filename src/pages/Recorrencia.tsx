@@ -5,6 +5,7 @@ import {
   Sparkles, AlertTriangle, Zap, ChevronRight, Lock, BotMessageSquare,
   Check, Send, Eye, Loader2
 } from "lucide-react";
+import { OrphanedRecurrenceAlert } from "@/components/recurrence/OrphanedRecurrenceAlert";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AppLayout } from "@/components/layout";
