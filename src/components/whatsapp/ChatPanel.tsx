@@ -996,15 +996,25 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       )}
 
       {/* Messages */}
-      <div ref={scrollRef} className={cn("flex-1 min-h-0 overflow-y-auto p-3 md:p-4 space-y-2 md:space-y-2.5 bg-muted/[0.08]", isMobile && "overscroll-contain")}>
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center text-sm text-muted-foreground py-8">Nenhuma mensagem ainda</div>
-        ) : (
-          messages.map((msg, idx) => {
+      <div 
+        ref={scrollRef} 
+        className={cn(
+          "flex-1 min-h-0 overflow-y-auto p-3 md:p-4 bg-muted/[0.04] relative", 
+          isMobile && "overscroll-contain"
+        )}
+      >
+        {/* WhatsApp-like background pattern */}
+        <div className="absolute inset-0 bg-whatsapp-pattern opacity-[0.05] dark:opacity-[0.02] pointer-events-none" />
+        
+        <div className="relative z-10 space-y-2 md:space-y-2.5">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-8">Nenhuma mensagem ainda</div>
+          ) : (
+            messages.map((msg, idx) => {
             const msgDate = new Date(msg.created_at || msg.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
             const prevDate = idx > 0 ? new Date(messages[idx - 1].created_at || messages[idx - 1].timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null;
             const showDateSeparator = idx === 0 || msgDate !== prevDate;
@@ -1040,6 +1050,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             );
           })
         )}
+        </div>
       </div>
 
       {/* Media Preview */}
