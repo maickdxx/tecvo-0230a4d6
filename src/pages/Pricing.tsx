@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { buildCheckoutSuccessPath, saveCheckoutContext } from "@/lib/checkoutReturn";
+import { trackFBEvent } from "@/lib/fbPixel";
 import { Check, X, Crown, Star, Zap, Gift, LogOut, Loader2 } from "lucide-react";
-import { PAID_PLANS } from "@/lib/planConfig";
+import { PAID_PLANS, PLAN_CONFIG } from "@/lib/planConfig";
 import type { PlanSlug } from "@/lib/planConfig";
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -52,6 +53,8 @@ export default function Pricing() {
       if (error) throw error;
 
       if (data?.url) {
+        const planPrice = PLAN_CONFIG[planId]?.pricePerMonth ?? 0;
+        trackFBEvent("InitiateCheckout", { content_name: planId, currency: "BRL", value: planPrice });
         saveCheckoutContext({ plan: planId, returnTo: buildCheckoutSuccessPath(planId) });
         window.open(data.url, "_blank");
         window.dispatchEvent(new CustomEvent("tecvo:checkout-started", { detail: { plan: planId } }));

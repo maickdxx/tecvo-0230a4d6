@@ -6,7 +6,7 @@ import { PartyPopper, CheckCircle2, ArrowRight, Loader2, LogIn } from "lucide-re
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPlanDisplayInfo, type PlanSlug } from "@/lib/planConfig";
+import { getPlanDisplayInfo, PLAN_CONFIG, type PlanSlug } from "@/lib/planConfig";
 import { buildCheckoutSuccessPath, clearCheckoutContext, saveCheckoutContext } from "@/lib/checkoutReturn";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,8 +62,9 @@ export default function AssinaturaSucesso() {
       setChecking(false);
       clearCheckoutContext();
       stopPolling();
-      trackFBEvent("Subscribe", { content_name: plan || "unknown", currency: "BRL", value: 0 });
-      trackFBEvent("Purchase", { content_name: plan || "unknown", currency: "BRL" });
+      const planValue = plan && plan in PLAN_CONFIG ? PLAN_CONFIG[plan as PlanSlug].pricePerMonth : 0;
+      trackFBEvent("Subscribe", { content_name: plan || "unknown", currency: "BRL", value: planValue });
+      trackFBEvent("Purchase", { content_name: plan || "unknown", currency: "BRL", value: planValue });
       analytics.track("payment_completed", user?.id || null, organizationId || null, { plan: plan || "unknown" });
       await queryClient.invalidateQueries({ queryKey: ["subscription"] });
       await queryClient.invalidateQueries({ queryKey: ["organization"] });

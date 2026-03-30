@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { analytics } from "@/lib/analytics";
+import { trackFBEvent } from "@/lib/fbPixel";
 import { Crown, Check, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +65,8 @@ export function UpgradeModal({ open, onOpenChange, servicesUsed = 15, servicesLi
 
       if (data?.url) {
         analytics.track("payment_initiated", null, null, { plan: nextPlan, page_section: "upgrade_modal", button_label: "Fazer upgrade", interaction_type: "click" });
+        const planPrice = PLAN_CONFIG[nextPlan]?.pricePerMonth ?? 0;
+        trackFBEvent("InitiateCheckout", { content_name: nextPlan, currency: "BRL", value: planPrice });
         saveCheckoutContext({ plan: nextPlan, returnTo: buildCheckoutSuccessPath(nextPlan) });
         window.open(data.url, "_blank");
         window.dispatchEvent(new CustomEvent("tecvo:checkout-started", { detail: { plan: nextPlan } }));
