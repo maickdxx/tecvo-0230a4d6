@@ -109,30 +109,16 @@ export function CatalogServiceForm({
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="category" className="flex items-center gap-2">
-            Categoria
-          </Label>
-          <Input
-            id="category"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            placeholder="Ex: Ar Condicionado"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="estimated_duration" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Tempo Estimado (HH:mm)
-          </Label>
-          <Input
-            id="estimated_duration"
-            type="time"
-            value={formData.estimated_duration}
-            onChange={(e) => setFormData({ ...formData, estimated_duration: e.target.value })}
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="category" className="flex items-center gap-2">
+          Categoria
+        </Label>
+        <Input
+          id="category"
+          value={formData.category}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          placeholder="Ex: Ar Condicionado"
+        />
       </div>
 
       <div className="space-y-2">
