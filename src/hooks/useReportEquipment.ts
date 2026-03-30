@@ -152,7 +152,7 @@ export function useReportEquipment(reportId?: string) {
           equipment_working: data.equipment_working || "yes",
           final_status: data.final_status || "operational",
           measurements: data.measurements || {},
-        })
+        }])
         .select()
         .single();
       if (error) throw error;
