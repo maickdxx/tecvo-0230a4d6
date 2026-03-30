@@ -158,8 +158,8 @@ export function WeatherForecast() {
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 max-w-full">
+      <CardContent className="space-y-3 px-3 sm:px-6">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
           {weather.days.map((day) => (
             <DayCard key={day.date} day={day} />
           ))}

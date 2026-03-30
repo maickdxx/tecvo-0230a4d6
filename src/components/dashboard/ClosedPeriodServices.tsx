@@ -147,14 +147,14 @@ export function ClosedPeriodServices() {
             {visible.map((s) => {
               const clientName = (s.client as any)?.name || "Cliente";
               return (
-                <div key={s.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div key={s.id} className="flex items-center justify-between gap-2 rounded-md border px-2 sm:px-3 py-2 text-sm overflow-hidden">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <span className="truncate font-medium">{clientName}</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-4 flex-shrink-0">
+                    <Badge variant="outline" className="text-[9px] px-1 py-0 leading-3 flex-shrink-0">
                       {SERVICE_TYPE_LABELS[s.service_type] || s.service_type}
                     </Badge>
                   </div>
-                  <span className="font-semibold text-xs whitespace-nowrap">{formatCurrency(Number(s.value) || 0)}</span>
+                  <span className="font-semibold text-[11px] sm:text-xs whitespace-nowrap shrink-0">{formatCurrency(Number(s.value) || 0)}</span>
                 </div>
               );
             })}
