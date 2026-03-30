@@ -353,7 +353,7 @@ function ClientCard({ client, onWhatsApp, typeLabels }: { client: RecurrenceClie
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-[220px]">
-                  <p className="text-xs">Entrar em contato agora pode reduzir a chance de conversão. A Tecvo libera o contato no momento ideal.</p>
+                  <p className="text-xs">Entrar em contato agora pode reduzir a chance de conversão. O sistema libera o contato no momento ideal.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
