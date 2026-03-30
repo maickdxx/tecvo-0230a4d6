@@ -195,8 +195,8 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       {/* Top bar */}
       {!isMobileChatFocused && !fullscreen && (
         <>
-          <div className="flex items-center justify-between px-4 border-b border-border/60 bg-card gap-3 shrink-0 py-2.5 shadow-sm">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center justify-between px-4 border-b border-border/40 bg-card gap-3 shrink-0 py-3 shadow-[0_1px_3px_0_hsl(0,0%,0%,0.04)]">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <h1 className="text-base font-black tracking-tight text-foreground shrink-0">WhatsApp</h1>
               <ConnectionStatusPanel
                 channelId={channel?.id || null}
