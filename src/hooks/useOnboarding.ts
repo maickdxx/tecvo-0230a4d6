@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 export function useOnboarding() {
   const { profile } = useAuth();
