@@ -41,6 +41,7 @@ export function useOnboarding() {
       // No client-side welcome dispatch needed — idempotent dispatch-welcome handles it.
     },
     onSuccess: () => {
+      trackFBEvent("CompleteRegistration", { content_name: "onboarding", currency: "BRL", value: 0 });
       queryClient.invalidateQueries({ queryKey: ["onboarding"] });
       queryClient.invalidateQueries({ queryKey: ["organization"] });
     },
