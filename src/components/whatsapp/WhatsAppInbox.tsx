@@ -330,25 +330,26 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
               }}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-muted/[0.04] relative overflow-hidden">
-              {/* WhatsApp-like background pattern */}
-              <div className="absolute inset-0 bg-whatsapp-pattern opacity-[0.03] dark:opacity-[0.02] pointer-events-none" />
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-muted/[0.02] to-muted/[0.08] relative overflow-hidden">
+              {/* Subtle decorative elements */}
+              <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-[hsl(222,69%,49%)]/[0.03] blur-3xl pointer-events-none" />
+              <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-[hsl(222,69%,49%)]/[0.02] blur-2xl pointer-events-none" />
               
-              <div className="text-center space-y-4 relative z-10 px-6 max-w-sm">
-                <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center shadow-sm">
-                  <MessageSquare className="h-9 w-9 text-primary/60" />
+              <div className="text-center space-y-5 relative z-10 px-6 max-w-md">
+                <div className="mx-auto w-24 h-24 rounded-2xl bg-gradient-to-br from-[hsl(222,69%,49%)]/10 to-[hsl(222,69%,49%)]/5 flex items-center justify-center shadow-lg shadow-primary/5 border border-[hsl(222,69%,49%)]/10">
+                  <MessageSquare className="h-10 w-10 text-[hsl(222,69%,49%)]/70" />
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold tracking-tight text-foreground/80">
+                <div className="space-y-2.5">
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">
                     Sua central de atendimento
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
                     Selecione uma conversa à esquerda para visualizar o histórico e responder seus clientes em tempo real.
                   </p>
                 </div>
-                <div className="pt-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/40 text-[11px] text-muted-foreground/80 font-medium">
-                    <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                <div className="pt-3 flex flex-col items-center gap-3">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(222,69%,49%)]/[0.06] border border-[hsl(222,69%,49%)]/10 text-[12px] text-[hsl(222,69%,49%)] font-medium">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/30" />
                     Pronto para receber mensagens
                   </div>
                 </div>
