@@ -59,9 +59,12 @@ export function useAutoSeedDemo() {
         seeded.current = true;
         await supabase.functions.invoke("seed-demo-data");
 
-        // Refresh all queries and wait for them
+        // CRITICAL: Refresh demo-mode FIRST so isDemoMode=true is available
+        // before dashboard queries refetch (they filter by is_demo_data)
+        await queryClient.refetchQueries({ queryKey: ["demo-mode"] });
+
+        // Now refresh all other queries (they'll use the updated isDemoMode=true)
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["demo-mode"] }),
           queryClient.invalidateQueries({ queryKey: ["services"] }),
           queryClient.invalidateQueries({ queryKey: ["clients"] }),
           queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
