@@ -91,41 +91,41 @@ export function ClosedPeriodServices() {
   }
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3 px-4 sm:px-6 pt-4 sm:pt-6">
+    <Card className="overflow-hidden rounded-2xl border-border/40 shadow-sm animate-fade-in transition-all duration-300 hover:shadow-md">
+      <CardHeader className="pb-5 px-6 pt-5 bg-muted/20 border-b border-border/40">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4 text-primary" />
+          <CardTitle className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 flex items-center gap-2">
+            <ShoppingBag className="h-3.5 w-3.5 text-primary/70" />
             Serviços Fechados
           </CardTitle>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(-1)}>
-              <ChevronLeft className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-background" onClick={() => navigate(-1)}>
+              <ChevronLeft className="h-4 w-4 text-muted-foreground/60" />
             </Button>
-            <span className="text-xs font-medium min-w-[70px] text-center capitalize">
+            <span className="text-[11px] font-bold uppercase tracking-wider min-w-[70px] text-center text-muted-foreground/60">
               {formatDayLabel(currentDate)}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-8 w-8 hover:bg-background"
               onClick={() => navigate(1)}
               disabled={currentDate >= toDateStr(getHojeBRT())}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-[11px] text-muted-foreground">Quantidade</p>
-            <p className="text-2xl font-bold text-foreground">{closedServices.length}</p>
+      <CardContent className="px-6 py-6">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-5 rounded-2xl bg-muted/30 border border-border/10 transition-all duration-300 hover:bg-muted/40">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Quantidade</p>
+            <p className="text-3xl font-extrabold tracking-tight text-foreground/80">{closedServices.length}</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-[11px] text-muted-foreground">Valor Total</p>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalValue)}</p>
+          <div className="text-center p-5 rounded-2xl bg-muted/30 border border-border/10 transition-all duration-300 hover:bg-muted/40">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Valor Total</p>
+            <p className="text-3xl font-extrabold tracking-tight text-foreground/80">{formatCurrency(totalValue)}</p>
           </div>
         </div>
       </CardContent>
