@@ -185,38 +185,7 @@ export function useAccounts(options: UseAccountsOptions = {}) {
         .single();
 
       if (error) throw error;
-
-      // Adjust financial account balance on status transition
-      const newStatus = data.status;
-      if (previousStatus && newStatus && previousStatus !== newStatus) {
-        const txAmount = Number((account as any).amount);
-
-        if (previousStatus === "paid" && newStatus === "pending") {
-          // Paid -> Pending: revert the balance
-          const finAccountId = (account as any).financial_account_id;
-          if (finAccountId) {
-            const txType = (account as any).type;
-            const delta = txType === "income" ? -txAmount : txAmount;
-            const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-              _account_id: finAccountId,
-              _delta: delta,
-            });
-            if (balError) throw balError;
-          }
-        } else if (previousStatus === "pending" && newStatus === "paid") {
-          // Pending -> Paid: add to balance
-          const finAccountId = data.financial_account_id || (account as any).financial_account_id;
-          if (finAccountId) {
-            const txType = (account as any).type;
-            const delta = txType === "income" ? txAmount : -txAmount;
-            const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-              _account_id: finAccountId,
-              _delta: delta,
-            });
-            if (balError) throw balError;
-          }
-        }
-      }
+      // Balance is automatically synced by the DB trigger (handle_transaction_balance_sync)
 
       return account;
     },
