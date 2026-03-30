@@ -210,68 +210,158 @@ export default function LaudoDetalhes() {
           </div>
         </SectionCard>
 
-        {/* Equipment */}
-        {(report.equipment_type || report.equipment_brand) && (
-          <SectionCard icon={Wrench} title="Identificação do Ativo">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4">
-              <InfoRow label="Tipo" value={report.equipment_type} />
-              <InfoRow label="Marca" value={report.equipment_brand} />
-              <InfoRow label="Modelo" value={report.equipment_model} />
-              <InfoRow label="Capacidade" value={report.capacity_btus ? `${report.capacity_btus} BTUs` : null} />
-              <InfoRow label="Nº Série" value={report.serial_number} />
-              <InfoRow label="Local" value={report.equipment_location} />
-            </div>
-          </SectionCard>
-        )}
+        {/* Multi-Equipment Blocks */}
+        {reportEquipment.length > 0 ? (
+          reportEquipment.map((eq, idx) => {
+            const eqChecklist = (eq.inspection_checklist as any[]) || [];
+            const eqMeasurements = (eq.measurements as Record<string, string>) || {};
+            const finalStatusColor = eq.final_status === "operational"
+              ? "bg-green-500/10 text-green-700 border-green-200"
+              : eq.final_status === "operational_with_caveats"
+              ? "bg-amber-500/10 text-amber-700 border-amber-200"
+              : "bg-red-500/10 text-red-700 border-red-200";
 
-        {/* Checklist */}
-        {checklist.length > 0 && (
-          <SectionCard icon={ClipboardCheck} title="Inspeção e Conformidade">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-              {INSPECTION_ITEMS.filter(i => checklist.includes(i.key)).map((item) => (
-                <div key={item.key} className="flex items-center gap-2 text-[13px] py-0.5 border-b border-border/50 last:border-0">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                  <span className="text-muted-foreground">{item.label}</span>
-                  <span className="ml-auto font-medium text-[11px] text-green-700 bg-green-50 px-1.5 rounded">OK</span>
+            return (
+              <Card key={eq.id} className="border-primary/20">
+                <CardContent className="p-4 md:p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
+                        <Wrench className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <h3 className="text-sm font-semibold">Equipamento {idx + 1}</h3>
+                      {eq.equipment_type && <span className="text-sm text-muted-foreground">— {eq.equipment_type}</span>}
+                    </div>
+                    {eq.final_status && (
+                      <Badge className={cn("text-[10px] border", finalStatusColor)}>
+                        {FINAL_STATUS_OPTIONS[eq.final_status] || eq.final_status}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Equipment Info */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4">
+                    <InfoRow label="Tipo" value={eq.equipment_type} />
+                    <InfoRow label="Marca" value={eq.equipment_brand} />
+                    <InfoRow label="Modelo" value={eq.equipment_model} />
+                    <InfoRow label="Capacidade" value={eq.capacity_btus ? `${eq.capacity_btus} BTUs` : null} />
+                    <InfoRow label="Nº Série" value={eq.serial_number} />
+                    <InfoRow label="Local" value={eq.equipment_location} />
+                  </div>
+
+                  {/* Checklist */}
+                  {eqChecklist.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Checklist</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                        {eqChecklist.map((item: any) => {
+                          const label = CHECKLIST_ITEMS.find((c) => c.key === item.key)?.label || item.key;
+                          const statusIcon = item.status === "ok" ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                            : item.status === "attention" ? <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                            : <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />;
+                          const statusBadge = item.status === "ok" ? "text-green-700 bg-green-50"
+                            : item.status === "attention" ? "text-amber-700 bg-amber-50"
+                            : "text-red-700 bg-red-50";
+                          return (
+                            <div key={item.key} className="flex items-center gap-2 text-[13px] py-0.5 border-b border-border/50">
+                              {statusIcon}
+                              <span className="text-muted-foreground">{label}</span>
+                              <span className={cn("ml-auto font-medium text-[11px] px-1.5 rounded", statusBadge)}>
+                                {item.status === "ok" ? "OK" : item.status === "attention" ? "Atenção" : "Crítico"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Diagnosis */}
+                  {(eq.condition_found || eq.procedure_performed) && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Diagnóstico</p>
+                      {eq.condition_found && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground">Condição encontrada</p>
+                          <p className="text-sm whitespace-pre-wrap">{eq.condition_found}</p>
+                        </div>
+                      )}
+                      {eq.procedure_performed && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground">Procedimento realizado</p>
+                          <p className="text-sm whitespace-pre-wrap">{eq.procedure_performed}</p>
+                        </div>
+                      )}
+                      {eq.technical_observations && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground">Observações técnicas</p>
+                          <p className="text-sm whitespace-pre-wrap">{eq.technical_observations}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Impact */}
+                  {eq.impact_level && (
+                    <div className={cn("p-3 rounded-lg border",
+                      eq.impact_level === "low" ? "bg-green-50 border-green-100" :
+                      eq.impact_level === "medium" ? "bg-amber-50 border-amber-100" :
+                      "bg-red-50 border-red-100"
+                    )}>
+                      <p className="text-[11px] font-bold uppercase mb-0.5">
+                        Impacto: {IMPACT_LEVELS[eq.impact_level]?.label || eq.impact_level}
+                      </p>
+                      <p className="text-xs">{IMPACT_LEVELS[eq.impact_level]?.description}</p>
+                    </div>
+                  )}
+
+                  {/* Measurements */}
+                  {Object.values(eqMeasurements).some(Boolean) && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <InfoRow label="Pressão" value={eqMeasurements.pressure ? `${eqMeasurements.pressure} PSI` : null} />
+                      <InfoRow label="Temperatura" value={eqMeasurements.temperature ? `${eqMeasurements.temperature} °C` : null} />
+                      <InfoRow label="Tensão" value={eqMeasurements.voltage_measured ? `${eqMeasurements.voltage_measured} V` : null} />
+                      <InfoRow label="Corrente" value={eqMeasurements.current_measured ? `${eqMeasurements.current_measured} A` : null} />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          /* Fallback: Legacy single equipment display */
+          <>
+            {(report.equipment_type || report.equipment_brand) && (
+              <SectionCard icon={Wrench} title="Identificação do Ativo">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4">
+                  <InfoRow label="Tipo" value={report.equipment_type} />
+                  <InfoRow label="Marca" value={report.equipment_brand} />
+                  <InfoRow label="Modelo" value={report.equipment_model} />
+                  <InfoRow label="Capacidade" value={report.capacity_btus ? `${report.capacity_btus} BTUs` : null} />
+                  <InfoRow label="Nº Série" value={report.serial_number} />
+                  <InfoRow label="Local" value={report.equipment_location} />
                 </div>
-              ))}
-            </div>
-          </SectionCard>
-        )}
-
-        {/* Diagnosis */}
-        <SectionCard icon={Stethoscope} title="Diagnóstico Técnico">
-          <p className="text-sm whitespace-pre-wrap text-foreground leading-relaxed break-words overflow-hidden">
-            {report.diagnosis || "Inspeção técnica detalhada realizada para avaliação das condições operacionais."}
-          </p>
-          <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/10">
-            <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-1.5">Impacto Identificado</p>
-            <p className="text-sm break-words">
-              {report.equipment_working === "no" 
-                ? "Impacto Crítico: Parada total do sistema, comprometendo o ambiente/processo."
-                : report.equipment_working === "partial"
-                ? "Impacto Moderado: Operação ineficiente e risco de parada definitiva."
-                : "Impacto Baixo: Requer manutenção para garantir a longevidade do ativo."}
-            </p>
-          </div>
-        </SectionCard>
-
-        {/* Measurements */}
-        {Object.keys(measurements).filter((k) => measurements[k]).length > 0 && (
-          <SectionCard icon={Gauge} title="Dados Operacionais Aferidos">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <InfoRow label="Pressão" value={measurements.pressure ? `${measurements.pressure} PSI` : null} />
-              <InfoRow label="Temperatura" value={measurements.temperature ? `${measurements.temperature} °C` : null} />
-              <InfoRow label="Tensão" value={measurements.voltage_measured ? `${measurements.voltage_measured} V` : null} />
-              <InfoRow label="Corrente" value={measurements.current_measured ? `${measurements.current_measured} A` : null} />
-            </div>
-            {measurements.notes && (
-              <div className="mt-2 pt-2 border-t border-border">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">Observações de Medição</span>
-                <p className="text-sm mt-1 text-foreground">{measurements.notes}</p>
-              </div>
+              </SectionCard>
             )}
-          </SectionCard>
+            {checklist.length > 0 && (
+              <SectionCard icon={ClipboardCheck} title="Inspeção e Conformidade">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  {INSPECTION_ITEMS.filter(i => checklist.includes(i.key)).map((item) => (
+                    <div key={item.key} className="flex items-center gap-2 text-[13px] py-0.5 border-b border-border/50 last:border-0">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                      <span className="text-muted-foreground">{item.label}</span>
+                      <span className="ml-auto font-medium text-[11px] text-green-700 bg-green-50 px-1.5 rounded">OK</span>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            )}
+            <SectionCard icon={Stethoscope} title="Diagnóstico Técnico">
+              <p className="text-sm whitespace-pre-wrap text-foreground leading-relaxed break-words overflow-hidden">
+                {report.diagnosis || "Inspeção técnica detalhada realizada."}
+              </p>
+            </SectionCard>
+          </>
         )}
 
         {/* Services Executed */}
