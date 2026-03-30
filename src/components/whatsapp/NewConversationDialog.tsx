@@ -110,6 +110,7 @@ export function NewConversationDialog({ open, onOpenChange, channels, onSelected
         .select("id, channel_id")
         .eq("organization_id", organization.id)
         .eq("normalized_phone", normalized)
+        .eq("channel_id", resolvedChannelId)
         .maybeSingle();
 
       if (existing) {
