@@ -216,15 +216,15 @@ export function TodayActionsBlock() {
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              markAlertAsCompleted("overdue_payments");
+              recordResult("overdue_payments", Number(t.amount), "recovery");
               window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
               toast.success("Ação de cobrança iniciada", {
                 description: `Você acabou de agir sobre ${formattedAmount}.`,
                 icon: <CheckCircle2 className="h-4 w-4 text-success" />
               });
             } else {
-              toast.error("Erro", {
-                description: "Cliente sem telefone cadastrado para WhatsApp."
-              });
+...
             }
           }
         },
