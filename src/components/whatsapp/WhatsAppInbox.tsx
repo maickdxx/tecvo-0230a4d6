@@ -555,8 +555,12 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       />
       <NewConversationDialog
         open={showNewConversation}
-        onOpenChange={setShowNewConversation}
+        onOpenChange={(open) => {
+          setShowNewConversation(open);
+          if (!open) setPrefillPhone(null);
+        }}
         channels={channelOptions}
+        prefillPhone={prefillPhone || undefined}
         onSelected={(contactId) => {
           refetchContacts();
           handleSelectContact(contactId);
