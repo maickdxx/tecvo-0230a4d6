@@ -319,78 +319,80 @@ export function TodayActionsBlock() {
     <div className="mb-8 page-enter">
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-sm font-bold uppercase tracking-wider text-foreground/70">
-          🎯 Ações de Hoje
+          🎯 Recomendações da Tecvo
         </h2>
         <div className="flex-1 h-px bg-border/40" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">
-        {/* Priority Action (Highlight) */}
+        {/* Priority Action (Highlight) - "Melhor ação agora" */}
         <div className="lg:col-span-5">
           <button
             onClick={priorityAction.action}
             className={cn(
               "group relative h-full w-full flex flex-col overflow-hidden rounded-3xl border-2 p-6 text-left transition-all duration-300 hover:shadow-xl active:scale-[0.99]",
-              priorityAction.score > 1500 
-                ? "border-destructive/30 bg-gradient-to-br from-destructive/10 via-card to-card" 
-                : "border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card"
+              "border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card ring-1 ring-primary/20 shadow-lg shadow-primary/5"
             )}
           >
             <div className="flex items-center justify-between mb-6">
-              <Badge className={cn(
-                "font-bold px-3 py-1 animate-pulse",
-                priorityAction.score > 1500 ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"
-              )}>
-                {priorityAction.score > 1500 ? "⚠️ URGÊNCIA CRÍTICA" : "👉 PRIORIDADE DO DIA"}
+              <Badge className="font-bold px-3 py-1 bg-primary text-primary-foreground animate-pulse flex items-center gap-1.5 shadow-sm">
+                <Rocket className="h-3.5 w-3.5" />
+                MELHOR AÇÃO AGORA
               </Badge>
-              <div className={cn("p-3 rounded-2xl", priorityAction.bg)}>
-                <priorityAction.icon className={cn("h-6 w-6", priorityAction.color)} />
+              <div className={cn("p-3 rounded-2xl bg-primary/10 transition-transform group-hover:scale-110")}>
+                <priorityAction.icon className={cn("h-6 w-6 text-primary")} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className={cn(
-                  "uppercase text-[10px] font-bold tracking-widest",
-                  priorityAction.priorityLevel === "high" || priorityAction.score > 1500 ? "border-destructive text-destructive bg-destructive/5" : "border-primary text-primary bg-primary/5"
-                )}>
-                  {priorityAction.score > 1500 ? "Escalação Automática" : (priorityAction.priorityLevel === "high" ? "Alta Prioridade" : "Média Prioridade")}
-                </Badge>
-                <span className="text-xs text-muted-foreground">• {priorityAction.timeLabel}</span>
-              </div>
+            <div className="space-y-4">
               <h3 className="text-2xl font-black text-foreground tracking-tight leading-tight group-hover:text-primary transition-colors">
-                {priorityAction.title}
+                {priorityAction.recommendation}
               </h3>
-              <p className="text-lg font-bold text-foreground/80 flex items-center gap-2">
-                {priorityAction.score > 1500 ? (
-                  <TrendingDown className="h-5 w-5 text-destructive shrink-0" />
-                ) : (
-                  <TrendingUp className="h-5 w-5 text-success shrink-0" />
-                )}
-                {priorityAction.impactText}
-              </p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1 p-3 rounded-2xl bg-muted/50 border border-border/40">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1">
+                    <Target className="h-3 w-3" /> Impacto
+                  </span>
+                  <span className="text-sm font-bold text-success">{priorityAction.impactText}</span>
+                </div>
+                <div className="flex flex-col gap-1 p-3 rounded-2xl bg-muted/50 border border-border/40">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1">
+                    <Timer className="h-3 w-3" /> Tempo
+                  </span>
+                  <span className="text-sm font-bold text-foreground">{priorityAction.estimatedTime}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Confiança:</span>
+                <Badge variant="outline" className={cn(
+                  "font-bold text-[10px] px-2",
+                  priorityAction.confidence === "high" ? "bg-success/10 text-success border-success/20" :
+                  priorityAction.confidence === "medium" ? "bg-warning/10 text-warning border-warning/20" :
+                  "bg-muted text-muted-foreground"
+                )}>
+                  {priorityAction.confidence === "high" ? "Alta Chance" : 
+                   priorityAction.confidence === "medium" ? "Média Chance" : "Baixa Chance"}
+                </Badge>
+              </div>
             </div>
 
             {priorityAction.insight && (
-              <div className={cn(
-                "mt-6 p-4 rounded-2xl border italic text-sm text-muted-foreground",
-                priorityAction.score > 1500 ? "bg-destructive/5 border-destructive/20" : "bg-muted/30 border-border/40"
-              )}>
+              <div className="mt-6 p-4 rounded-2xl border border-primary/10 bg-primary/5 italic text-sm text-muted-foreground relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                 "💡 {priorityAction.insight}"
               </div>
             )}
 
             <div className="mt-auto pt-6 flex items-center justify-between">
-              <Button className={cn(
-                "rounded-xl px-6 font-bold gap-2",
-                priorityAction.score > 1500 ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""
-              )}>
-                {priorityAction.score > 1500 ? "Resolver Urgente" : "Resolver agora"}
+              <Button className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md">
+                Executar recomendação
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
             
-            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
               <priorityAction.icon size={200} />
             </div>
           </button>
