@@ -394,7 +394,6 @@ export default function Auth() {
                   setSignupWhatsapp(formatted);
                 }}
                 className="h-12 rounded-xl text-base"
-                required
               />
               <p className="text-xs text-muted-foreground">Usado para notificações e automações</p>
             </div>
