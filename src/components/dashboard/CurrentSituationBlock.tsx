@@ -79,7 +79,7 @@ export function CurrentSituationBlock() {
   });
 
   // Actually we need the services hook to get scheduled value
-  const { data: dashboardMetrics } = useDashboardMetrics(today, in15Days, today, today);
+  const dashboardMetrics = useDashboardMetrics(today, in15Days, today, today);
 
   const { totalPayable, totalReceivable, forecastedRevenue, projectedFlow, projectedBalance, forecastLevel } = useMemo(() => {
     const pending = (txs: typeof payables) =>
