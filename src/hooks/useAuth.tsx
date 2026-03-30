@@ -19,6 +19,8 @@ interface Profile {
   employee_type?: string;
   avatar_url?: string | null;
   position?: string | null;
+  theme_mode?: string | null;
+  color_theme?: string | null;
 }
 
 interface AuthContextType {
