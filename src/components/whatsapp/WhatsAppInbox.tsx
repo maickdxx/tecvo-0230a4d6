@@ -301,6 +301,8 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
               channelId={activeChannelId}
               onBack={() => setSelectedContactId(null)}
               onToggleInfo={() => { setShowContactInfo(!showContactInfo); setActivePanel(null); }}
+              initialMessage={initialMessage}
+              onInitialMessageUsed={() => setInitialMessage(null)}
               onContactUpdate={() => {}}
               teamMembers={teamMembers}
               onAIReplyToMessage={(msg) => {
