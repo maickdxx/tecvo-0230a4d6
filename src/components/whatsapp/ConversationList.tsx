@@ -330,7 +330,7 @@ export function ConversationList({
       </div>
 
       {/* Status Filters */}
-      <div className="px-3 pb-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar">
+      <div className="px-3 pb-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {filters.map((f) => (
           <button
             key={f.key}
@@ -340,19 +340,22 @@ export function ConversationList({
                 setSelectedIds(new Set()); 
               }
             }}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap border",
               statusFilter === f.key
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted"
-            }`}
+                ? "bg-[hsl(222,69%,49%)] text-white border-[hsl(222,69%,49%)] shadow-sm shadow-primary/20"
+                : "text-muted-foreground hover:bg-muted/80 border-transparent hover:border-border/60"
+            )}
           >
             {f.label}
             {f.count > 0 && (
               <span className={cn(
-                "text-[10px] rounded-full px-1.5 min-w-[18px] text-center",
-                f.key !== "finalizado"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground"
+                "text-[10px] rounded-full px-1.5 min-w-[18px] text-center font-bold",
+                statusFilter === f.key
+                  ? "bg-white/20 text-white"
+                  : f.key !== "finalizado"
+                    ? "bg-[hsl(222,69%,49%)] text-white"
+                    : "text-muted-foreground"
               )}>
                 {f.key !== "finalizado" ? formatCount(f.count) : `(${formatCount(f.count)})`}
               </span>
