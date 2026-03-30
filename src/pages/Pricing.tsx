@@ -53,6 +53,8 @@ export default function Pricing() {
       if (error) throw error;
 
       if (data?.url) {
+        const planPrice = PLAN_CONFIG[planId]?.pricePerMonth ?? 0;
+        trackFBEvent("InitiateCheckout", { content_name: planId, currency: "BRL", value: planPrice });
         saveCheckoutContext({ plan: planId, returnTo: buildCheckoutSuccessPath(planId) });
         window.open(data.url, "_blank");
         window.dispatchEvent(new CustomEvent("tecvo:checkout-started", { detail: { plan: planId } }));

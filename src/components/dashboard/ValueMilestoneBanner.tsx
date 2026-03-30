@@ -63,6 +63,7 @@ export function ValueMilestoneBanner() {
       if (error) throw error;
     },
     onSuccess: () => {
+      trackFBEvent("CompleteRegistration", { content_name: "value_milestone", currency: "BRL", value: 0 });
       queryClient.invalidateQueries({ queryKey: ["profile-onboarding", userId] });
     },
     onError: () => {
