@@ -104,7 +104,7 @@ export function CurrentSituationBlock() {
         <CardTitle className="flex items-center justify-between text-base font-semibold flex-wrap gap-2">
           <span className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-primary" />
-            Situação Atual
+            Situação Agora
           </span>
           <Badge variant="outline" className={forecast.className}>
             <ForecastIcon className="h-3 w-3 mr-1" />
