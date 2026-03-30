@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { ROLE_PRESETS } from "@/lib/permissionsConfig";
 
 export type AppRole = "owner" | "admin" | "member" | "employee" | "super_admin";
 
@@ -24,7 +25,7 @@ export function useUserRole() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { data: permissions = [] } = useQuery({
+  const { data: permissions = [], isLoading: isLoadingPermissions } = useQuery({
     queryKey: ["member-permissions", user?.id, organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -41,7 +42,7 @@ export function useUserRole() {
   });
 
   const rolePriority: AppRole[] = ["super_admin", "owner", "admin", "member", "employee"];
-  const isActuallyLoading = isLoadingRoles || isLoadingAuth;
+  const isActuallyLoading = isLoadingRoles || isLoadingPermissions || isLoadingAuth;
   const primaryRole = roles?.length ? (rolePriority.find(r => roles.includes(r)) || "member") : (isActuallyLoading ? null : "member");
 
   const isSuperAdmin = primaryRole === "super_admin";
@@ -52,15 +53,18 @@ export function useUserRole() {
   // field_worker flag from profile - independent of role
   const isFieldWorker = !!profile?.field_worker;
 
+  const rolePresetPermissions = primaryRole ? ROLE_PRESETS[primaryRole] ?? [] : [];
+  const effectivePermissions = permissions.length > 0 ? permissions : rolePresetPermissions;
+
   // Granular permission check with role-based fallback
   const hasPermission = (module: string): boolean => {
     if (isOwner) return true;
-    if (permissions.includes("permissions.manage")) return true;
-    return permissions.includes(module);
+    if (effectivePermissions.includes("permissions.manage")) return true;
+    return effectivePermissions.includes(module);
   };
 
   // Enhanced flags using granular permissions when available
-  const hasAnyPermissions = permissions.length > 0;
+  const hasAnyPermissions = effectivePermissions.length > 0;
 
   const canEdit = hasAnyPermissions
     ? hasPermission("service.edit") || hasPermission("client.edit") || hasPermission("catalog.edit")
