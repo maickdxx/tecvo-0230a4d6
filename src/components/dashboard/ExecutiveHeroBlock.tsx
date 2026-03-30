@@ -69,43 +69,6 @@ const GRANULARITY_LABELS: Record<Granularity, string> = {
   month: "Lucro do Mês",
 };
 
-function useQuickInsight(income: number, goal: number, granularity: Granularity): string | null {
-  const { weather } = useWeatherForecast();
-
-  if (granularity !== "month") {
-    // Weather-only insights for non-month views
-    if (!weather?.days?.length) return null;
-    const avgMax = weather.days.reduce((s, d) => s + d.tempMax, 0) / weather.days.length;
-    const rainyDays = weather.days.filter((d) => d.precipProbability > 60);
-    if (avgMax > 30) return "🔥 Semana quente → boa para limpezas e instalações";
-    if (rainyDays.length >= 3) return "🌧️ Chuva prevista → priorize serviços internos";
-    if (avgMax < 18) return "❄️ Semana fria → foque em contratos e manutenções";
-    return "☀️ Clima favorável → ideal para todas as operações";
-  }
-
-  const now = new Date();
-  const dayOfMonth = now.getDate();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const remaining = goal - income;
-
-  if (goal > 0 && income >= goal) return "🏆 Meta atingida! Continue maximizando o resultado.";
-  if (goal > 0 && remaining > 0 && dayOfMonth > 5) {
-    const dailyRate = income / dayOfMonth;
-    const projectedDay = dailyRate > 0 ? Math.ceil(remaining / dailyRate) + dayOfMonth : daysInMonth;
-    if (projectedDay <= daysInMonth) {
-      return `📈 Ritmo atual indica meta atingida no dia ${Math.min(projectedDay, daysInMonth)}`;
-    }
-    return `⚡ Faltam ${formatCurrency(remaining)} para atingir a meta`;
-  }
-
-  if (!weather?.days?.length) return null;
-  const avgMax = weather.days.reduce((s, d) => s + d.tempMax, 0) / weather.days.length;
-  const rainyDays = weather.days.filter((d) => d.precipProbability > 60);
-  if (avgMax > 30) return "🔥 Semana quente → boa para limpezas e instalações";
-  if (rainyDays.length >= 3) return "🌧️ Chuva prevista → priorize serviços internos";
-  if (avgMax < 18) return "❄️ Semana fria → foque em contratos e manutenções";
-  return "☀️ Clima favorável → ideal para todas as operações";
-}
 
 export function ExecutiveHeroBlock({
   income,
