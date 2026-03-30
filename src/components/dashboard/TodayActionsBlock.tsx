@@ -16,17 +16,23 @@ import {
   TrendingDown,
   Timer,
   Target,
-  Rocket
+  Rocket,
+  CheckCircle2,
+  ExternalLink,
+  MessageSquare
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
 import { useTransactions } from "@/hooks/useTransactions";
-import { format, subDays, subMonths, differenceInDays } from "date-fns";
+import { format, subDays, subMonths, differenceInDays, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdaptivePrioritization } from "@/hooks/useAdaptivePrioritization";
 import { useUserRole } from "@/hooks/useUserRole";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -53,6 +59,12 @@ interface DashboardAction {
   confidence: ConfidenceLevel;
   score: number;
   action: () => void;
+  directAction?: {
+    label: string;
+    action: () => void;
+    icon?: any;
+    description: string;
+  };
   color: string;
   bg: string;
   insight?: string;
@@ -139,6 +151,18 @@ export function TodayActionsBlock() {
           recordInteraction("overdue_services", "click");
           navigate("/ordens-servico?status=overdue");
         },
+        directAction: {
+          label: "Resolver agora",
+          icon: ExternalLink,
+          description: "Abre a OS em atraso para atualização",
+          action: () => {
+            const firstId = counts.overdue_services[0].id;
+            navigate(`/ordens-servico/${firstId}`);
+            toast.success("Ação iniciada", {
+              description: "Você está no caminho para resolver um serviço atrasado."
+            });
+          }
+        },
         color: "text-destructive",
         bg: "bg-destructive/10",
         insight: getAdaptiveInsight("overdue_services", "Resolver isso libera o fluxo operacional."),
@@ -162,7 +186,7 @@ export function TodayActionsBlock() {
         impactValue: total,
         impactText: historyData?.totalValueGenerated ? `Recuperou ${formatCurrency(historyData.totalValueGenerated)} com cobrança` : `Recupere ${formatCurrency(total)} parados`,
         timeLabel: `há ${daysOverdue} d`,
-        estimatedTime: "5 min",
+        estimatedTime: "3 min",
         icon: DollarSign,
         priorityLevel: "high",
         confidence: getConfidence("overdue_payments"),
@@ -170,6 +194,34 @@ export function TodayActionsBlock() {
         action: () => {
           recordInteraction("overdue_payments", "click");
           navigate("/financeiro?tab=receivable&status=overdue");
+        },
+        directAction: {
+          label: "Cobrar agora",
+          icon: MessageSquare,
+          description: "Gera mensagem de cobrança no WhatsApp",
+          action: () => {
+            const t = counts.overdue_payments[0];
+            const client = clients.find(c => c.id === t.client_id);
+            const clientName = client?.name || "Cliente";
+            const phone = client?.phone || "";
+            const formattedAmount = formatCurrency(Number(t.amount));
+            const formattedDate = format(parseISO(t.due_date!), "dd/MM/yyyy");
+            
+            const message = `Olá ${clientName}, tudo bem? Consta em nosso sistema um pagamento pendente de ${formattedAmount} com vencimento em ${formattedDate}. Segue o link para regularização ou podemos conversar sobre a melhor forma?`;
+            
+            if (phone) {
+              const cleanPhone = phone.replace(/\D/g, "");
+              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              toast.success("Ação de cobrança iniciada", {
+                description: `Você acabou de agir sobre ${formattedAmount}.`,
+                icon: <CheckCircle2 className="h-4 w-4 text-success" />
+              });
+            } else {
+              toast.error("Erro", {
+                description: "Cliente sem telefone cadastrado para WhatsApp."
+              });
+            }
+          }
         },
         color: "text-destructive",
         bg: "bg-destructive/10",
@@ -194,7 +246,7 @@ export function TodayActionsBlock() {
         impactValue: totalValue,
         impactText: historyData?.totalValueGenerated ? `Já converteu ${formatCurrency(historyData.totalValueGenerated)}` : `Liberar ${formatCurrency(totalValue)} em caixa`,
         timeLabel: `há ${daysPending} dias`,
-        estimatedTime: "10 min",
+        estimatedTime: "2 min",
         icon: Zap,
         priorityLevel: "high",
         confidence: getConfidence("pending_quotes"),
@@ -202,6 +254,33 @@ export function TodayActionsBlock() {
         action: () => {
           recordInteraction("pending_quotes", "click");
           navigate("/orcamentos");
+        },
+        directAction: {
+          label: "Enviar mensagem",
+          icon: MessageCircle,
+          description: "WhatsApp com mensagem pré-preenchida",
+          action: () => {
+            const s = counts.pending_quotes[0];
+            const client = clients.find(c => c.id === s.client_id);
+            const clientName = client?.name || "Cliente";
+            const phone = client?.phone || "";
+            const serviceDesc = s.description || "seu serviço";
+            
+            const message = `Olá ${clientName}, tudo bem? Sou da equipe da Tecvo. Notamos que o orçamento para ${serviceDesc} ainda está pendente. Podemos te ajudar com alguma dúvida para fecharmos?`;
+            
+            if (phone) {
+              const cleanPhone = phone.replace(/\D/g, "");
+              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              toast.success("Ação iniciada", {
+                description: `Impacto potencial de ${formatCurrency(Number(s.value) || 0)}.`,
+                icon: <CheckCircle2 className="h-4 w-4 text-success" />
+              });
+            } else {
+              toast.error("Erro", {
+                description: "Cliente sem telefone cadastrado para WhatsApp."
+              });
+            }
+          }
         },
         color: "text-warning",
         bg: "bg-warning/10",
@@ -222,7 +301,7 @@ export function TodayActionsBlock() {
         impactValue: counts.inactive_clients.length * 250, // Impacto estimado por cliente
         impactText: historyData?.totalValueGenerated ? `Gerou ${formatCurrency(historyData.totalValueGenerated)} em novos serviços` : "Gerar novos serviços recorrentes",
         timeLabel: "inativos +6 m",
-        estimatedTime: "20 min",
+        estimatedTime: "2 min",
         icon: UserX,
         priorityLevel: "medium",
         confidence: getConfidence("inactive_clients"),
@@ -230,6 +309,31 @@ export function TodayActionsBlock() {
         action: () => {
           recordInteraction("inactive_clients", "click");
           navigate("/clientes");
+        },
+        directAction: {
+          label: "Reativar agora",
+          icon: MessageSquare,
+          description: "Mensagem sugerida de reativação",
+          action: () => {
+            const c = counts.inactive_clients[0];
+            const clientName = c.name || "Cliente";
+            const phone = c.phone || "";
+            
+            const message = `Olá ${clientName}, faz tempo que não realizamos uma manutenção preventiva em seus equipamentos. Gostaria de agendar uma visita para garantirmos a eficiência e evitar problemas futuros?`;
+            
+            if (phone) {
+              const cleanPhone = phone.replace(/\D/g, "");
+              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              toast.success("Reativação iniciada", {
+                description: "Agindo sobre a base de clientes inativos.",
+                icon: <CheckCircle2 className="h-4 w-4 text-success" />
+              });
+            } else {
+              toast.error("Erro", {
+                description: "Cliente sem telefone cadastrado para WhatsApp."
+              });
+            }
+          }
         },
         color: "text-primary",
         bg: "bg-primary/10",
@@ -385,11 +489,47 @@ export function TodayActionsBlock() {
               </div>
             )}
 
-            <div className="mt-auto pt-6 flex items-center justify-between">
-              <Button className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md">
-                Executar recomendação
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+            <div className="mt-auto pt-6 flex flex-col sm:flex-row items-center gap-3">
+              {priorityAction.directAction ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          priorityAction.directAction?.action();
+                        }}
+                        className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md bg-primary hover:bg-primary/90"
+                      >
+                        {priorityAction.directAction.icon && <priorityAction.directAction.icon className="h-4 w-4" />}
+                        {priorityAction.directAction.label}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{priorityAction.directAction.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <Button 
+                  onClick={priorityAction.action}
+                  className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md"
+                >
+                  Executar recomendação
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {priorityAction.directAction && (
+                <Button 
+                  variant="ghost" 
+                  onClick={priorityAction.action}
+                  className="text-xs font-bold text-muted-foreground hover:text-foreground gap-1.5"
+                >
+                  Ver detalhes
+                  <ArrowRight className="h-3 w-3" />
+                </Button>
+              )}
             </div>
             
             <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
@@ -433,8 +573,31 @@ export function TodayActionsBlock() {
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all">
-                Ver detalhes <ArrowRight className="h-3 w-3" />
+              <div className="mt-4 flex items-center justify-between">
+                {item.directAction ? (
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      item.directAction?.action();
+                    }}
+                    className="h-9 rounded-lg px-4 text-[12px] font-bold gap-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-primary transition-all active:scale-95"
+                  >
+                    {item.directAction.icon && <item.directAction.icon className="h-3.5 w-3.5" />}
+                    {item.directAction.label}
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all">
+                    Ver detalhes <ArrowRight className="h-3 w-3" />
+                  </div>
+                )}
+                
+                {item.directAction && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                )}
               </div>
             </button>
           ))}
