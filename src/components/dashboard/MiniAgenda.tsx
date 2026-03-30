@@ -48,6 +48,15 @@ export function MiniAgenda() {
     staleTime: 30_000,
   });
 
+  // Check if all services have the same time (meaning time wasn't individually set)
+  const allSameTime = useMemo(() => {
+    if (!services || services.length <= 1) return false;
+    const times = services.map((s: any) =>
+      s.scheduled_date ? format(parseISO(s.scheduled_date), "HH:mm") : ""
+    );
+    return times.every((t: string) => t === times[0]);
+  }, [services]);
+
   if (isLoading || !services || services.length === 0) return null;
 
   return (
