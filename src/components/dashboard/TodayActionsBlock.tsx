@@ -419,15 +419,34 @@ export function TodayActionsBlock() {
   }
 
   if (actions.length === 0) {
+    const hasNoClients = !isLoadingClients && clients.length === 0;
+    
     return (
-      <div className="mb-8 rounded-2xl border border-success/20 bg-success/5 p-6 animate-fade-in">
+      <div className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-6 animate-fade-in">
         <div className="flex items-center gap-4">
-          <div className="rounded-full bg-success/10 p-3 text-success">
+          <div className="rounded-full bg-primary/10 p-3 text-primary">
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Tudo sob controle hoje</h2>
-            <p className="text-sm text-muted-foreground">Nenhuma ação crítica necessária. Sua operação está em dia!</p>
+            <h2 className="text-lg font-bold text-foreground">
+              {hasNoClients ? "Comece cadastrando seu primeiro cliente" : "Tudo sob controle hoje"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {hasNoClients 
+                ? "Para gerar ações automáticas e recomendações, precisamos de dados reais." 
+                : "Nenhuma ação crítica necessária. Sua operação está em dia!"}
+            </p>
+            {hasNoClients && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-3 gap-2"
+                onClick={() => navigate("/clientes/novo")}
+              >
+                Cadastrar agora
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
