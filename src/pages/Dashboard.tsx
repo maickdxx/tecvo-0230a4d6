@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from "react";
-import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen, Clock, TrendingUp, Sparkles } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen, Clock, TrendingUp } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
 import { DashboardBanners } from "@/components/dashboard/DashboardBanners";
@@ -23,7 +23,7 @@ import { TimePerformanceDashboard } from "@/components/dashboard/TimePerformance
 import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBlock";
 import { ExecutiveHeroBlock } from "@/components/dashboard/ExecutiveHeroBlock";
 import { RevenueEngineBlock } from "@/components/dashboard/RevenueEngineBlock";
-import { WeatherForecast } from "@/components/dashboard/WeatherForecast";
+
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
 import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
@@ -229,13 +229,6 @@ export default function Dashboard() {
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">
               <ClosedPeriodServices />
-              <div className="rounded-xl border bg-card p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-foreground/70">Clima & Insights</h3>
-                </div>
-                <WeatherForecast />
-              </div>
             </div>
             
             {canViewFinance && (
