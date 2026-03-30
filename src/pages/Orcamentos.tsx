@@ -198,7 +198,8 @@ ${formattedValue ? `Valor: ${formattedValue}` : ""}
 _PDF do orçamento em anexo_`.trim();
 
     const phoneNumber = client.phone?.replace(/\D/g, "") || "";
-    window.open(`https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`, "_blank");
+    const fullPhone = phoneNumber.startsWith("55") ? phoneNumber : `55${phoneNumber}`;
+    navigate(`/whatsapp?phone=${fullPhone}&message=${encodeURIComponent(message)}`);
   };
 
   const handleDelete = (service: Service) => {
