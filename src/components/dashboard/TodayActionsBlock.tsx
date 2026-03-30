@@ -13,7 +13,10 @@ import {
   DollarSign,
   AlertCircle,
   MessageCircle,
-  TrendingDown
+  TrendingDown,
+  Timer,
+  Target,
+  Rocket
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
