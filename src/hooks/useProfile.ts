@@ -17,7 +17,9 @@ export function useProfile() {
       whatsappSignature,
       aiAssistantName,
       aiAssistantVoice,
-      dashboardLayout
+      dashboardLayout,
+      themeMode,
+      colorTheme
     }: { 
       fullName?: string; 
       phone?: string; 
@@ -27,6 +29,8 @@ export function useProfile() {
       aiAssistantName?: string;
       aiAssistantVoice?: string;
       dashboardLayout?: any;
+      themeMode?: string;
+      colorTheme?: string;
     }) => {
       if (!user) throw new Error("Não autenticado");
 
