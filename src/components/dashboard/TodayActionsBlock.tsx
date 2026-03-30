@@ -398,7 +398,6 @@ export function TodayActionsBlock() {
           </button>
         </div>
 
-        {/* Secondary Actions */}
         <div className="lg:col-span-7 grid gap-3 sm:grid-cols-2">
           {secondaryActions.map((item) => (
             <button
@@ -407,35 +406,49 @@ export function TodayActionsBlock() {
               className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left transition-all duration-300 hover:border-primary/30 hover:shadow-lg active:scale-[0.98]"
             >
               <div className="flex items-start justify-between">
-                <div className={cn("rounded-xl p-2.5", item.bg, "transition-transform group-hover:scale-110")}>
-                  <item.icon className={cn("h-5 w-5", item.color)} />
+                <div className={cn("rounded-xl p-2 bg-muted/50 transition-transform group-hover:scale-110")}>
+                  <item.icon className={cn("h-4 w-4", item.color)} />
                 </div>
-                <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-tighter opacity-70">
-                  {item.priorityLevel === "high" ? "Alta" : "Média"}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className={cn(
+                    "text-[8px] font-bold uppercase tracking-tighter px-1.5",
+                    item.confidence === "high" ? "border-success/30 text-success bg-success/5" : "border-muted text-muted-foreground"
+                  )}>
+                    {item.confidence === "high" ? "Alta chance" : "Recomendado"}
+                  </Badge>
+                </div>
               </div>
 
-              <div className="mt-4 space-y-1">
-                <h4 className="text-[15px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
-                  {item.title}
+              <div className="mt-3 space-y-2">
+                <h4 className="text-[14px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                  {item.recommendation}
                 </h4>
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                  <span className="text-success font-bold shrink-0">{item.impactText}</span>
-                  <span className="opacity-50">•</span>
-                  <span className="opacity-60 text-[10px] uppercase font-bold tracking-tighter shrink-0">{item.timeLabel}</span>
-                </p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-[10px] font-bold text-success flex items-center gap-1">
+                    <Target className="h-3 w-3" /> {formatCurrency(item.impactValue)}
+                  </span>
+                  <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+                    <Timer className="h-3 w-3" /> {item.estimatedTime}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all">
-                Ação direta <ArrowRight className="h-3 w-3" />
+                Ver detalhes <ArrowRight className="h-3 w-3" />
               </div>
             </button>
           ))}
           
-          {/* Empty slot placeholder if less than 5 actions */}
-          {actions.length < 5 && actions.length > 0 && (
-            <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-4">
-              <p className="text-[11px] font-medium text-muted-foreground/60 text-center uppercase tracking-widest leading-relaxed">
+          {/* Action indicator slot if less than 5 */}
+          {actions.length < 5 && (
+            <div className="hidden sm:flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/5 p-4 text-center">
+              <Rocket className="h-5 w-5 text-muted-foreground/30 mb-2" />
+              <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest leading-relaxed">
+                Mais recomendações em breve
+              </p>
+            </div>
+          )}
+        </div>
                 Continue assim!<br/>Sua lista está ficando limpa.
               </p>
             </div>
