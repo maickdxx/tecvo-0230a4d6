@@ -73,7 +73,7 @@ function AppLayoutInner({
           ${!isMobile && desktopFullHeight ? "h-screen overflow-hidden" : ""}
         `}
         style={{
-          paddingTop: isMobile ? "3.5rem" : undefined,
+          paddingTop: isMobile ? "calc(3.5rem + env(safe-area-inset-top, 0px))" : undefined,
           paddingBottom: isMobile && isMobileFullscreen ? "5rem" : undefined,
           ...(!isMobile ? { marginLeft: "var(--sidebar-width, 240px)" } : {}),
         }}
