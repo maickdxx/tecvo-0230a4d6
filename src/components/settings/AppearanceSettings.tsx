@@ -125,7 +125,7 @@ export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
             return (
               <button
                 key={ct.id}
-                onClick={() => setColorTheme(ct.id)}
+                onClick={() => handleColorChange(ct.id)}
                 className={`relative flex items-center gap-3 rounded-xl border-2 p-3.5 transition-all ${
                   isSelected
                     ? "border-primary bg-primary/5"
