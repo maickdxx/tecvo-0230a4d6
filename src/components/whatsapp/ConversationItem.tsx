@@ -200,8 +200,8 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
             </div>
             <p
               className={cn(
-                "text-xs truncate mt-0.5",
-                contact.is_unread ? "text-foreground/70 font-medium" : "text-muted-foreground/70"
+                "text-[12px] truncate mt-0.5 leading-relaxed",
+                contact.is_unread ? "text-foreground/80 font-medium" : "text-muted-foreground/60"
               )}
             >
               {lastMessage}
