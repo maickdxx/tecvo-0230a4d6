@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useFinancialAccounts } from "@/hooks/useFinancialAccounts";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { format, addDays } from "date-fns";
 
 function formatCurrency(value: number): string {
