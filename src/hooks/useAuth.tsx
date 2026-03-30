@@ -46,10 +46,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let initialSessionHandled = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted) return;
+        // Skip if this is the INITIAL_SESSION event — we handle it via getSession below
+        if (event === "INITIAL_SESSION") {
+          initialSessionHandled = true;
+          return;
+        }
         setSession(session);
         setUser(session?.user ?? null);
 
