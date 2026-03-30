@@ -98,6 +98,7 @@ export default function LaudoDetalhes() {
     try {
       await generateReportPDF({
         report,
+        equipment: reportEquipment,
         photos,
         organizationName: organization?.name || "Minha Empresa",
         organizationCnpj: organization?.cnpj_cpf || undefined,
