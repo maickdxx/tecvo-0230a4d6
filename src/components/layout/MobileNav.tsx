@@ -273,6 +273,9 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
   const pendingAdjCount = usePendingAdjustmentsCount();
   const pontoBadges = { "/ponto-admin/ajustes": pendingAdjCount };
 
+  const [logoError, setLogoError] = useState(false);
+  const [sheetLogoError, setSheetLogoError] = useState(false);
+
   // Track if sheet was recently open (to allow close animation)
   const [sheetMounted, setSheetMounted] = useState(false);
 
