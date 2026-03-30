@@ -5,7 +5,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Clock, Package, AlertTriangle, RotateCcw } from "lucide-react";
+import { MoreVertical, Clock, Package, AlertTriangle, RotateCcw, Wrench } from "lucide-react";
 import type { OperationalStatus } from "@/hooks/useServiceExecution";
 
 const menuItems: {
@@ -13,6 +13,7 @@ const menuItems: {
   label: string;
   icon: React.ElementType;
 }[] = [
+  { status: "in_attendance", label: "Retomar Atendimento", icon: Wrench },
   { status: "waiting_client", label: "Aguardando Cliente", icon: Clock },
   { status: "waiting_part", label: "Aguardando Peça", icon: Package },
   { status: "warranty_return", label: "Retorno / Garantia", icon: RotateCcw },

@@ -152,7 +152,7 @@ export default function MeuDia() {
       totalTravelTime += (travelEnd - travelStart) / 60000;
     });
 
-    const revenue = svcs.reduce((sum, s) => sum + (s.value || 0), 0);
+    const revenue = completed.reduce((sum, s) => sum + (s.value || 0), 0);
 
     return {
       totalServices: svcs.length,
