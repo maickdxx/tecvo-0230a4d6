@@ -81,6 +81,7 @@ export function TodayActionsBlock() {
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
   const { role, isOwner, isAdmin } = useUserRole();
   const { recordInteraction, recordResult, getScoreAdjustment, getAdaptiveInsight, history } = useAdaptivePrioritization();
+  const { markAlertAsCompleted, completedAlerts } = useDailyRoutine();
 
   const counts = useMemo(() => {
     return {
