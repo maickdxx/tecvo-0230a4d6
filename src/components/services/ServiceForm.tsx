@@ -334,44 +334,47 @@ export function ServiceForm({
               <div className="p-2 rounded-lg bg-primary/10 text-primary">
                 <User className="h-5 w-5" />
               </div>
-              <Label className="text-lg font-bold">Cliente</Label>
+              <Label className="text-lg font-bold text-foreground">Cliente</Label>
             </div>
+            
             <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="client_id">Cliente *</Label>
-            <div className="flex gap-2">
-              <Controller
-                name="client_id"
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                  <ClientCombobox
-                    clients={clients}
-                    value={value}
-                    onChange={(val) => {
-                      onChange(val);
-                      setNewClientName(undefined);
-                    }}
-                    disabled={isCompleted}
-                    fallbackName={newClientName}
+              <div className="space-y-2">
+                <Label htmlFor="client_id" className="text-sm font-medium">Selecione o Cliente *</Label>
+                <div className="flex gap-2">
+                  <Controller
+                    name="client_id"
+                    control={control}
+                    render={({ field: { onChange, value } }) => (
+                      <ClientCombobox
+                        clients={clients}
+                        value={value}
+                        onChange={(val) => {
+                          onChange(val);
+                          setNewClientName(undefined);
+                        }}
+                        disabled={isCompleted}
+                        fallbackName={newClientName}
+                      />
+                    )}
                   />
+                  {createClient && !isCompleted && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowClientDialog(true)}
+                      title="Novo Cliente"
+                      className="shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {errors.client_id && (
+                  <p className="text-sm text-destructive">{errors.client_id.message}</p>
                 )}
-              />
-              {createClient && !isCompleted && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowClientDialog(true)}
-                  title="Novo Cliente"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              )}
+              </div>
             </div>
-            {errors.client_id && (
-              <p className="text-sm text-destructive">{errors.client_id.message}</p>
-            )}
-          </div>
           </div>
 
           {isAdmin && fieldWorkers.length > 0 && (
@@ -380,34 +383,35 @@ export function ServiceForm({
                 <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
                   <User className="h-5 w-5" />
                 </div>
-                <Label className="text-lg font-bold">Responsável</Label>
+                <Label className="text-lg font-bold text-foreground">Responsável</Label>
               </div>
-              <div className="space-y-4">
+              
+              <div className="space-y-2">
                 <Label htmlFor="assigned_to" className="text-sm font-medium">Técnico designado</Label>
-              <Controller
-                name="assigned_to"
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                  <Select 
-                    onValueChange={(val) => onChange(val === "none" ? "" : val)} 
-                    value={value || "none"} 
-                    disabled={isLoadingMembers || isCompleted}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um responsável (opcional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sem responsável</SelectItem>
-                      {fieldWorkers.map((member) => (
-                        <SelectItem key={member.user_id} value={member.user_id}>
-                          {member.full_name || "Sem nome"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-                <p className="text-xs text-muted-foreground">
+                <Controller
+                  name="assigned_to"
+                  control={control}
+                  render={({ field: { onChange, value } }) => (
+                    <Select 
+                      onValueChange={(val) => onChange(val === "none" ? "" : val)} 
+                      value={value || "none"} 
+                      disabled={isLoadingMembers || isCompleted}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um responsável (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem responsável</SelectItem>
+                        {fieldWorkers.map((member) => (
+                          <SelectItem key={member.user_id} value={member.user_id}>
+                            {member.full_name || "Sem nome"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
                   Funcionários verão apenas os serviços atribuídos a eles
                 </p>
               </div>
@@ -415,96 +419,105 @@ export function ServiceForm({
           )}
         </div>
 
-        {/* 3. EQUIPAMENTOS E SERVIÇOS */}
+        {/* 2. EQUIPAMENTOS E SERVIÇOS */}
         <div className="space-y-6">
           <div className="p-6 border rounded-xl bg-card shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-6 border-b pb-4">
               <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
                 <WrenchIcon className="h-5 w-5" />
               </div>
-              <Label className="text-lg font-bold">Equipamentos e Dispositivos</Label>
+              <Label className="text-lg font-bold text-foreground">Equipamentos e Dispositivos</Label>
             </div>
-          <EquipmentEditor
-            equipment={equipment}
-            onAdd={addEquipment}
-            onRemove={removeEquipment}
-            onUpdate={updateEquipment}
-            disabled={isCompleted}
-          />
+            <EquipmentEditor
+              equipment={equipment}
+              onAdd={addEquipment}
+              onRemove={removeEquipment}
+              onUpdate={updateEquipment}
+              disabled={isCompleted}
+            />
           </div>
 
           <div className="p-6 border rounded-xl bg-card shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-6 border-b pb-4">
               <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
                 <ClipboardList className="h-5 w-5" />
               </div>
-              <Label className="text-lg font-bold">Itens do Serviço</Label>
+              <Label className="text-lg font-bold text-foreground">Itens do Serviço</Label>
             </div>
-          <ServiceCatalogSelector
-            items={serviceItems}
-            onItemsChange={setServiceItems}
-            disabled={isCompleted}
-            onServiceTypeDetected={handleServiceTypeDetected}
-          />
+            <ServiceCatalogSelector
+              items={serviceItems}
+              onItemsChange={setServiceItems}
+              disabled={isCompleted}
+              onServiceTypeDetected={handleServiceTypeDetected}
+            />
           </div>
         </div>
 
-        {/* 5. TIPO DE SERVIÇO E DESCRIÇÃO */}
+        {/* 3. CLASSIFICAÇÃO E DESCRIÇÃO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
                 <FileText className="h-5 w-5" />
               </div>
-              <Label className="text-lg font-bold">Classificação</Label>
+              <Label className="text-lg font-bold text-foreground">Classificação</Label>
             </div>
+            
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium">Tipo de Serviço</Label>
-                <TooltipProvider>
-...
-                </TooltipProvider>
-              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Tipo de Serviço *</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[240px]">
+                        <p>O tipo de serviço é usado para classificar a OS e alimentar a recorrência automaticamente.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
 
-          {detectedServiceType ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/50">
-                <Lock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Tipo detectado:</span>
-                <Badge variant="secondary" className="font-medium">
-                  {getServiceTypeLabel(detectedServiceType)}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Definido automaticamente pelo serviço do catálogo selecionado.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="service_type">Selecione o tipo de serviço *</Label>
-              <Controller
-                name="service_type"
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                  <Select onValueChange={onChange} value={value || "outros"} disabled={isCompleted}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SERVICE_TYPE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.slug} value={opt.slug}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {detectedServiceType ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/50">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Tipo detectado:</span>
+                      <Badge variant="secondary" className="font-medium">
+                        {getServiceTypeLabel(detectedServiceType)}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Definido automaticamente pelo serviço do catálogo selecionado.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Controller
+                      name="service_type"
+                      control={control}
+                      render={({ field: { onChange, value } }) => (
+                        <Select onValueChange={onChange} value={value || "outros"} disabled={isCompleted}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SERVICE_TYPE_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.slug} value={opt.slug}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Nenhum serviço do catálogo selecionado. Informe o tipo manualmente.
+                    </p>
+                  </div>
                 )}
-              />
-              <p className="text-xs text-muted-foreground">
-                Nenhum serviço do catálogo selecionado. Informe o tipo manualmente.
-              </p>
-            </div>
-          )}
+              </div>
             </div>
           </div>
 
@@ -513,251 +526,236 @@ export function ServiceForm({
               <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
                 <Info className="h-5 w-5" />
               </div>
-              <Label className="text-lg font-bold">Informações Adicionais</Label>
+              <Label className="text-lg font-bold text-foreground">Informações Adicionais</Label>
             </div>
+            
             <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição do Serviço <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-            <Textarea
-              id="description"
-              placeholder="Descreva o serviço a ser realizado (opcional)"
-              rows={3}
-              disabled={isCompleted}
-              {...register("description")}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="solution">Solução / Descrição Técnica <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-            <Textarea
-              id="solution"
-              placeholder="Descreva o que será/foi realizado no serviço..."
-              rows={3}
-              disabled={isCompleted}
-              {...register("solution")}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">Observações <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-            <Textarea
-              id="notes"
-              placeholder="Observações visíveis no documento do cliente"
-              rows={2}
-              disabled={isCompleted}
-              {...register("notes")}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="internal_notes" className="flex items-center gap-2">
-              Observações Internas
-              <span className="text-[10px] font-normal text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Somente equipe</span>
-            </Label>
-            <Textarea
-              id="internal_notes"
-              placeholder="Informações para o técnico (não aparece na OS do cliente)"
-              rows={2}
-              disabled={isCompleted}
-              {...register("internal_notes")}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-medium">Descrição / Defeito <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <Textarea
+                  id="description"
+                  placeholder="Relato do cliente ou defeito reclamado..."
+                  rows={2}
+                  disabled={isCompleted}
+                  {...register("description")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="solution" className="text-sm font-medium">Laudo Técnico / Solução <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <Textarea
+                  id="solution"
+                  placeholder="O que foi feito para resolver o problema..."
+                  rows={2}
+                  disabled={isCompleted}
+                  {...register("solution")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes" className="text-sm font-medium">Observações OS <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Informações que o cliente verá no documento impresso..."
+                  rows={2}
+                  disabled={isCompleted}
+                  {...register("notes")}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 6. ENDEREÇO DO SERVIÇO */}
+        {/* 4. ENDEREÇO DO SERVIÇO */}
         <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500">
               <MapPin className="h-5 w-5" />
             </div>
-            <Label className="text-lg font-bold">Endereço de Execução</Label>
+            <Label className="text-lg font-bold text-foreground">Local de Execução</Label>
           </div>
-          <p className="text-xs text-muted-foreground -mt-2">
-            Preenchido automaticamente a partir do cadastro do cliente. Edite se necessário.
-          </p>
           
-          <div className="space-y-2">
-            <Label htmlFor="service_zip_code">CEP</Label>
-            <div className="relative">
-              <Input
-                id="service_zip_code"
-                placeholder="00000-000"
-                maxLength={9}
-                disabled={isCompleted}
-                {...register("service_zip_code")}
-                onChange={handleCepChange}
-              />
-              {isSearchingCep && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="service_street">Rua</Label>
-              <Input
-                id="service_street"
-                placeholder="Nome da rua"
-                disabled={isCompleted}
-                {...register("service_street")}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="service_number">Nº</Label>
-              <Input
-                id="service_number"
-                placeholder="123"
-                disabled={isCompleted}
-                {...register("service_number")}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="service_complement">Complemento</Label>
-              <Input
-                id="service_complement"
-                placeholder="Apt, Sala, etc."
-                disabled={isCompleted}
-                {...register("service_complement")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="service_neighborhood">Bairro</Label>
-              <Input
-                id="service_neighborhood"
-                placeholder="Bairro"
-                disabled={isCompleted}
-                {...register("service_neighborhood")}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="service_city">Cidade</Label>
-              <Input
-                id="service_city"
-                placeholder="Cidade"
-                disabled={isCompleted}
-                {...register("service_city")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="service_state">Estado</Label>
-              <Controller
-                name="service_state"
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                  <Select onValueChange={onChange} value={value || undefined} disabled={isCompleted}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="UF" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BRAZILIAN_STATES.map((state) => (
-                        <SelectItem key={state} value={state}>
-                          {state}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <Label htmlFor="service_zip_code" className="text-sm font-medium">CEP</Label>
+              <div className="relative">
+                <Input
+                  id="service_zip_code"
+                  placeholder="00000-000"
+                  maxLength={9}
+                  disabled={isCompleted}
+                  {...register("service_zip_code")}
+                  onChange={handleCepChange}
+                />
+                {isSearchingCep && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
                 )}
-              />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="service_street" className="text-sm font-medium">Rua</Label>
+                <Input
+                  id="service_street"
+                  placeholder="Nome da rua"
+                  disabled={isCompleted}
+                  {...register("service_street")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service_number" className="text-sm font-medium">Nº</Label>
+                <Input
+                  id="service_number"
+                  placeholder="123"
+                  disabled={isCompleted}
+                  {...register("service_number")}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="service_complement" className="text-sm font-medium">Complemento</Label>
+                <Input
+                  id="service_complement"
+                  placeholder="Ex: Sala 2"
+                  disabled={isCompleted}
+                  {...register("service_complement")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service_neighborhood" className="text-sm font-medium">Bairro</Label>
+                <Input
+                  id="service_neighborhood"
+                  placeholder="Bairro"
+                  disabled={isCompleted}
+                  {...register("service_neighborhood")}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="service_city" className="text-sm font-medium">Cidade</Label>
+                <Input
+                  id="service_city"
+                  placeholder="Cidade"
+                  disabled={isCompleted}
+                  {...register("service_city")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service_state" className="text-sm font-medium">Estado</Label>
+                <Controller
+                  name="service_state"
+                  control={control}
+                  render={({ field: { onChange, value } }) => (
+                    <Select onValueChange={onChange} value={value || undefined} disabled={isCompleted}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="UF" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BRAZILIAN_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 7. PAGAMENTO E STATUS */}
+        {/* 5. PAGAMENTO E STATUS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
             <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
                 <CreditCard className="h-5 w-5" />
               </div>
-              <Label className="text-lg font-bold">Pagamento</Label>
+              <Label className="text-lg font-bold text-foreground">Financeiro</Label>
             </div>
+            
             <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="value">Valor Total (R$)</Label>
-              <Input
-                id="value"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                disabled={isCompleted}
-                {...register("value")}
-              />
-              {serviceItems.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Calculado a partir dos serviços adicionados
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Forma de Pagamento</Label>
-              <PaymentMethodSelect
-                value={watch("payment_method") || ""}
-                onChange={(slug) => setValue("payment_method", slug)}
-                disabled={isCompleted || isLoadingPaymentMethods}
-                paymentMethods={paymentMethods}
-                formatFee={formatFee}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Vencimento *</Label>
-              <Controller
-                name="payment_due_date"
-                control={control}
-                render={({ field }) => {
-                  const dateValue = field.value ? parse(field.value, "yyyy-MM-dd", new Date()) : undefined;
-                  return (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          disabled={isCompleted}
-                          className={cn(
-                            "w-full justify-start text-left font-normal h-10",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value && dateValue ? format(dateValue, "dd/MM/yyyy") : <span>Selecione a data</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dateValue}
-                          onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
-                          initialFocus
-                          locale={ptBR}
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  );
-                }}
-              />
-              {errors.payment_due_date && (
-                <p className="text-sm text-destructive">{errors.payment_due_date.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Observação do Pagamento</Label>
-              <Input
-                placeholder="Opcional"
-                disabled={isCompleted}
-                {...register("payment_notes")}
-              />
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="value" className="text-sm font-medium">Valor Total (R$)</Label>
+                  <Input
+                    id="value"
+                    type="number"
+                    step="0.01"
+                    placeholder="0,00"
+                    disabled={isCompleted}
+                    className="font-semibold text-lg"
+                    {...register("value")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Forma de Pagamento</Label>
+                  <PaymentMethodSelect
+                    value={watch("payment_method") || ""}
+                    onChange={(slug) => setValue("payment_method", slug)}
+                    disabled={isCompleted || isLoadingPaymentMethods}
+                    paymentMethods={paymentMethods}
+                    formatFee={formatFee}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Vencimento *</Label>
+                  <Controller
+                    name="payment_due_date"
+                    control={control}
+                    render={({ field }) => {
+                      const dateValue = field.value ? parse(field.value, "yyyy-MM-dd", new Date()) : undefined;
+                      return (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              disabled={isCompleted}
+                              className={cn(
+                                "w-full justify-start text-left font-normal h-10",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value && dateValue ? format(dateValue, "dd/MM/yyyy") : <span>Data</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dateValue}
+                              onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
+                              initialFocus
+                              locale={ptBR}
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    }}
+                  />
+                  {errors.payment_due_date && (
+                    <p className="text-sm text-destructive">{errors.payment_due_date.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Obs. Financeira</Label>
+                  <Input
+                    placeholder="Ex: Pago via PIX"
+                    disabled={isCompleted}
+                    {...register("payment_notes")}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -766,175 +764,193 @@ export function ServiceForm({
               <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
-              <Label className="text-lg font-bold">Status e Agenda</Label>
+              <Label className="text-lg font-bold text-foreground">Status e Agenda</Label>
             </div>
+            
             <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Controller
-                name="status"
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                  <Select onValueChange={onChange} value={value}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {serviceStatuses.filter(s => s !== "cancelled").map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {SERVICE_STATUS_LABELS[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="scheduled_date">Data Agendada</Label>
-              <Controller
-                name="scheduled_date"
-                control={control}
-                render={({ field }) => {
-                  const dateValue = field.value ? parse(field.value, "yyyy-MM-dd", new Date()) : undefined;
-                  return (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          disabled={isCompleted}
-                          className={cn(
-                            "w-full justify-start text-left font-normal h-10",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value && dateValue ? format(dateValue, "dd/MM/yyyy") : <span>Selecione a data</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dateValue}
-                          onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
-                          initialFocus
-                          locale={ptBR}
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  );
-                }}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="text-sm font-medium">Status Atual</Label>
+                  <Controller
+                    name="status"
+                    control={control}
+                    render={({ field: { onChange, value } }) => (
+                      <Select onValueChange={onChange} value={value}>
+                        <SelectTrigger className="font-medium">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {serviceStatuses.filter(s => s !== "cancelled").map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {SERVICE_STATUS_LABELS[status]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled_date" className="text-sm font-medium">Data Agendada</Label>
+                  <Controller
+                    name="scheduled_date"
+                    control={control}
+                    render={({ field }) => {
+                      const dateValue = field.value ? parse(field.value, "yyyy-MM-dd", new Date()) : undefined;
+                      return (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              disabled={isCompleted}
+                              className={cn(
+                                "w-full justify-start text-left font-normal h-10",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value && dateValue ? format(dateValue, "dd/MM/yyyy") : <span>Data</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dateValue}
+                              onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
+                              initialFocus
+                              locale={ptBR}
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="text-sm font-medium text-foreground">Horários de Execução</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="entry_date" className="text-xs text-muted-foreground">Entrada</Label>
+                    <Controller
+                      name="entry_date"
+                      control={control}
+                      render={({ field }) => {
+                        const [h, m] = (field.value || "").split(":");
+                        return (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                disabled={isCompleted}
+                                className={cn(
+                                  "w-full justify-start text-left font-normal h-9 px-3",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                <Clock className="mr-2 h-3 w-3" />
+                                {field.value || <span className="text-xs">HH:MM</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-3 pointer-events-auto" align="start">
+                              <div className="flex items-center gap-2">
+                                <Select value={h || ""} onValueChange={(val) => field.onChange(`${val}:${m || "00"}`)}>
+                                  <SelectTrigger className="w-16 h-8 text-xs"><SelectValue placeholder="HH" /></SelectTrigger>
+                                  <SelectContent>{Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <span className="text-sm font-bold">:</span>
+                                <Select value={m || ""} onValueChange={(val) => field.onChange(`${h || "00"}:${val}`)}>
+                                  <SelectTrigger className="w-16 h-8 text-xs"><SelectValue placeholder="MM" /></SelectTrigger>
+                                  <SelectContent>{Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0")).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                                </Select>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        );
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="exit_date" className="text-xs text-muted-foreground">Saída</Label>
+                    <Controller
+                      name="exit_date"
+                      control={control}
+                      render={({ field }) => {
+                        const [h, m] = (field.value || "").split(":");
+                        return (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                disabled={isCompleted}
+                                className={cn(
+                                  "w-full justify-start text-left font-normal h-9 px-3",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                <Clock className="mr-2 h-3 w-3" />
+                                {field.value || <span className="text-xs">HH:MM</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-3 pointer-events-auto" align="start">
+                              <div className="flex items-center gap-2">
+                                <Select value={h || ""} onValueChange={(val) => field.onChange(`${val}:${m || "00"}`)}>
+                                  <SelectTrigger className="w-16 h-8 text-xs"><SelectValue placeholder="HH" /></SelectTrigger>
+                                  <SelectContent>{Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <span className="text-sm font-bold">:</span>
+                                <Select value={m || ""} onValueChange={(val) => field.onChange(`${h || "00"}:${val}`)}>
+                                  <SelectTrigger className="w-16 h-8 text-xs"><SelectValue placeholder="MM" /></SelectTrigger>
+                                  <SelectContent>{Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0")).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                                </Select>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        );
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* Período de Execução */}
-          <p className="text-sm font-medium text-foreground pt-2">Período de Execução</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="entry_date">Horário de Entrada</Label>
-              <Controller
-                name="entry_date"
-                control={control}
-                render={({ field }) => {
-                  const [h, m] = (field.value || "").split(":");
-                  return (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          disabled={isCompleted}
-                          className={cn(
-                            "w-full justify-start text-left font-normal h-10",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <Clock className="mr-2 h-4 w-4" />
-                          {field.value || <span>Selecione</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3 pointer-events-auto" align="start">
-                        <div className="flex items-center gap-2">
-                          <Select value={h || ""} onValueChange={(val) => field.onChange(`${val}:${m || "00"}`)}>
-                            <SelectTrigger className="w-20"><SelectValue placeholder="HH" /></SelectTrigger>
-                            <SelectContent>{Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                          </Select>
-                          <span className="text-lg font-bold">:</span>
-                          <Select value={m || ""} onValueChange={(val) => field.onChange(`${h || "00"}:${val}`)}>
-                            <SelectTrigger className="w-20"><SelectValue placeholder="MM" /></SelectTrigger>
-                            <SelectContent>{Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0")).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  );
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="exit_date">Horário de Saída</Label>
-              <Controller
-                name="exit_date"
-                control={control}
-                render={({ field }) => {
-                  const [h, m] = (field.value || "").split(":");
-                  return (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          disabled={isCompleted}
-                          className={cn(
-                            "w-full justify-start text-left font-normal h-10",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <Clock className="mr-2 h-4 w-4" />
-                          {field.value || <span>Selecione</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3 pointer-events-auto" align="start">
-                        <div className="flex items-center gap-2">
-                          <Select value={h || ""} onValueChange={(val) => field.onChange(`${val}:${m || "00"}`)}>
-                            <SelectTrigger className="w-20"><SelectValue placeholder="HH" /></SelectTrigger>
-                            <SelectContent>{Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                          </Select>
-                          <span className="text-lg font-bold">:</span>
-                          <Select value={m || ""} onValueChange={(val) => field.onChange(`${h || "00"}:${val}`)}>
-                            <SelectTrigger className="w-20"><SelectValue placeholder="MM" /></SelectTrigger>
-                            <SelectContent>{Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0")).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  );
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting} className="flex-1">
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {service ? "Salvar" : "Registrar"}
-          </Button>
         </div>
       </form>
 
-      {createClient && (
-        <ClientDialog
-          open={showClientDialog}
-          onOpenChange={setShowClientDialog}
-          onSubmit={handleClientSubmit}
-          isSubmitting={isCreatingClient}
-        />
-      )}
+      <div className="flex items-center justify-end gap-3 pt-8 mt-8 border-t">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          Cancelar
+        </Button>
+        <Button 
+          type="button"
+          onClick={handleSubmit(handleFormSubmit)}
+          disabled={isSubmitting} 
+          size="lg"
+          className="px-8 font-semibold shadow-md hover:shadow-lg transition-all"
+        >
+          {isSubmitting ? (
+            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+          ) : (
+            <CheckCircle2 className="h-5 w-5 mr-2" />
+          )}
+          {service ? "Salvar Alterações" : "Gerar Ordem de Serviço"}
+        </Button>
+      </div>
+
+      <ClientDialog
+        open={showClientDialog}
+        onOpenChange={setShowClientDialog}
+        onSubmit={handleClientSubmit}
+        isSubmitting={isCreatingClient}
+      />
     </>
   );
 }
