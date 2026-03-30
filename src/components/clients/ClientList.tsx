@@ -122,7 +122,7 @@ export function ClientList({
         <Input
           placeholder="Buscar cliente por nome, telefone ou email..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => onSearchChange ? onSearchChange(e.target.value) : undefined}
           className="pl-10"
         />
       </div>
