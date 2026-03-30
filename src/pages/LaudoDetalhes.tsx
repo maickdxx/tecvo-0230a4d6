@@ -211,6 +211,13 @@ export default function LaudoDetalhes() {
           </div>
         </SectionCard>
 
+        {/* Visit Reason */}
+        {report.visit_reason && (
+          <SectionCard icon={ClipboardCheck} title="Motivo da Visita">
+            <p className="text-sm whitespace-pre-wrap">{report.visit_reason}</p>
+          </SectionCard>
+        )}
+
         {/* Multi-Equipment Blocks */}
         {reportEquipment.length > 0 ? (
           reportEquipment.map((eq, idx) => {
