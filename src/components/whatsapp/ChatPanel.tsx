@@ -158,7 +158,14 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   useEffect(() => {
     const pref = sensitiveData?.whatsapp_signature_enabled;
     if (pref !== undefined) setSignatureEnabled(pref);
-  }, [sensitiveData]);
+  // Handle initial message from URL/props
+  useEffect(() => {
+    if (initialMessage) {
+      setText(initialMessage);
+      // We clear the state in parent to avoid re-triggering this on contact switch
+      onInitialMessageUsed?.();
+    }
+  }, [initialMessage, onInitialMessageUsed]);
 
   // Fetch channel info for this contact
   useEffect(() => {
