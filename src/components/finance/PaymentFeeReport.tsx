@@ -82,7 +82,7 @@ export function PaymentFeeReport({ startDate, endDate }: PaymentFeeReportProps) 
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary cards */}
-        <div className="grid grid-cols-2 xs:grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
           <div className="rounded-lg border bg-card p-2 sm:p-3 text-center">
             <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 mx-auto text-muted-foreground mb-1" />
             <p className="text-[10px] sm:text-[11px] text-muted-foreground">Bruto</p>
@@ -95,7 +95,7 @@ export function PaymentFeeReport({ startDate, endDate }: PaymentFeeReportProps) 
               -{formatCurrency(data.total_fees)}
             </p>
           </div>
-          <div className="rounded-lg border bg-card p-2 sm:p-3 text-center col-span-2 xs:col-span-1">
+          <div className="rounded-lg border bg-card p-2 sm:p-3 text-center col-span-2 sm:col-span-1">
             <Percent className="h-3.5 w-3.5 sm:h-4 sm:w-4 mx-auto text-muted-foreground mb-1" />
             <p className="text-[10px] sm:text-[11px] text-muted-foreground">Taxa Média</p>
             <p className="font-semibold text-xs sm:text-sm">{data.avg_fee_pct.toFixed(1)}%</p>
