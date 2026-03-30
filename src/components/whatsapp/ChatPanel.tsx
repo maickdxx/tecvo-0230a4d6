@@ -94,9 +94,11 @@ interface ChatPanelProps {
   onShowScheduleMessage?: () => void;
   onShowCreateQuote?: () => void;
   onMessageSent?: (contactId: string, content: string) => void;
+  initialMessage?: string | null;
+  onInitialMessageUsed?: () => void;
 }
 
-export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent }: ChatPanelProps) {
+export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent, initialMessage, onInitialMessageUsed }: ChatPanelProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile } = useAuth();
