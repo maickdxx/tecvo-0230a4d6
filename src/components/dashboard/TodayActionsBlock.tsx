@@ -16,17 +16,23 @@ import {
   TrendingDown,
   Timer,
   Target,
-  Rocket
+  Rocket,
+  CheckCircle2,
+  ExternalLink,
+  MessageSquare
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
 import { useTransactions } from "@/hooks/useTransactions";
-import { format, subDays, subMonths, differenceInDays } from "date-fns";
+import { format, subDays, subMonths, differenceInDays, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdaptivePrioritization } from "@/hooks/useAdaptivePrioritization";
 import { useUserRole } from "@/hooks/useUserRole";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -53,6 +59,12 @@ interface DashboardAction {
   confidence: ConfidenceLevel;
   score: number;
   action: () => void;
+  directAction?: {
+    label: string;
+    action: () => void;
+    icon?: any;
+    description: string;
+  };
   color: string;
   bg: string;
   insight?: string;
