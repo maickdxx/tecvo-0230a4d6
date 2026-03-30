@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   RefreshCw, MessageCircle, DollarSign, Calendar,
   Clock, TrendingUp, CheckCircle2, XCircle, Bell, ArrowDown,
@@ -18,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
+import { useOrganization } from "@/hooks/useOrganization";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -351,7 +353,7 @@ function ClientCard({ client, onWhatsApp, typeLabels }: { client: RecurrenceClie
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-[220px]">
-                  <p className="text-xs">Entrar em contato agora pode reduzir a chance de conversão. A Tecvo libera o contato no momento ideal.</p>
+                  <p className="text-xs">Entrar em contato agora pode reduzir a chance de conversão. O sistema libera o contato no momento ideal.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -377,6 +379,8 @@ function ClientCard({ client, onWhatsApp, typeLabels }: { client: RecurrenceClie
 export default function Recorrencia() {
   const [filter, setFilter] = useState<"all" | "pronto" | "proximo" | "futuro">("all");
   const listRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { organization } = useOrganization();
 
   const { data: statsData, isLoading: statsLoading } = useRecurrenceStats();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePaginatedRecurrence(filter);
@@ -396,10 +400,11 @@ export default function Recorrencia() {
     const number = formatPhone(client.whatsapp || client.phone || "");
     if (!number) return;
     const fullNumber = number.startsWith("55") ? number : `55${number}`;
+    const companyName = organization?.name || "nossa equipe";
     const message = encodeURIComponent(
-      `Olá${client.clientName ? ` ${client.clientName.split(" ")[0]}` : ""}! Já faz algum tempo desde o último serviço 😊\nEstá na hora da nova revisão. Quer agendar?`
+      `Olá${client.clientName ? ` ${client.clientName.split(" ")[0]}` : ""}! Tudo bem? Sou da equipe da ${companyName}. Já faz algum tempo desde o último serviço 😊\nEstá na hora da nova revisão. Quer agendar?`
     );
-    window.open(`https://wa.me/${fullNumber}?text=${message}`, "_blank");
+    navigate(`/whatsapp?phone=${fullNumber}&message=${message}`);
   };
 
   const scrollToList = () => {

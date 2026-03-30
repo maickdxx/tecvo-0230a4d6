@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { useAdaptivePrioritization } from "@/hooks/useAdaptivePrioritization";
 import { useDailyRoutine } from "@/hooks/useDailyRoutine";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -77,6 +78,7 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
   const { recordInteraction, recordResult, getScoreAdjustment, getAdaptiveInsight, history } = useAdaptivePrioritization();
   const { markAlertAsCompleted, completedAlerts } = useDailyRoutine();
+  const { organization } = useOrganization();
 
   const counts = useMemo(() => {
     return {
@@ -212,9 +214,10 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              const fullPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
               markAlertAsCompleted("overdue-payments");
               recordResult("overdue-payments", Number(t.amount), "recovery");
-              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              navigate(`/whatsapp?phone=${fullPhone}&message=${encodeURIComponent(message)}`);
               toast.success("Ação de cobrança iniciada", {
                 description: `Você acabou de agir sobre ${formattedAmount}.`,
                 icon: <CheckCircle2 className="h-4 w-4 text-success" />
@@ -270,13 +273,18 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
             const phone = client?.phone || "";
             const serviceDesc = s.description || "seu serviço";
             
-            const message = `Olá ${clientName}, tudo bem? Sou da equipe da Tecvo. Notamos que o orçamento para ${serviceDesc} ainda está pendente. Podemos te ajudar com alguma dúvida para fecharmos?`;
+            const companyName = organization?.name || "nossa equipe";
+            const message = `Olá ${clientName}, tudo bem? Sou da equipe da ${companyName}. Notamos que o orçamento para ${serviceDesc} ainda está pendente. Podemos te ajudar com alguma dúvida para fecharmos?`;
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              const fullPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
               markAlertAsCompleted("pending-quotes");
               recordResult("pending-quotes", Number(s.value) || 0, "conversion");
-              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              
+              // Navigate to internal WhatsApp with message pre-filled
+              navigate(`/whatsapp?phone=${fullPhone}&message=${encodeURIComponent(message)}`);
+              
               toast.success("Ação iniciada", {
                 description: `Impacto potencial de ${formatCurrency(Number(s.value) || 0)}.`,
                 icon: <CheckCircle2 className="h-4 w-4 text-success" />
@@ -330,9 +338,10 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              const fullPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
               markAlertAsCompleted("inactive-high-value");
               recordResult("inactive-high-value", 250, "revenue");
-              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              navigate(`/whatsapp?phone=${fullPhone}&message=${encodeURIComponent(message)}`);
               toast.success("Reativação iniciada", {
                 description: "Agindo sobre a base de clientes inativos.",
                 icon: <CheckCircle2 className="h-4 w-4 text-success" />

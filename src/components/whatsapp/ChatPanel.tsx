@@ -94,9 +94,11 @@ interface ChatPanelProps {
   onShowScheduleMessage?: () => void;
   onShowCreateQuote?: () => void;
   onMessageSent?: (contactId: string, content: string) => void;
+  initialMessage?: string | null;
+  onInitialMessageUsed?: () => void;
 }
 
-export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent }: ChatPanelProps) {
+export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent, initialMessage, onInitialMessageUsed }: ChatPanelProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile } = useAuth();
@@ -157,6 +159,15 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
     const pref = sensitiveData?.whatsapp_signature_enabled;
     if (pref !== undefined) setSignatureEnabled(pref);
   }, [sensitiveData]);
+
+  // Handle initial message from URL/props
+  useEffect(() => {
+    if (initialMessage) {
+      setText(initialMessage);
+      // We clear the state in parent to avoid re-triggering this on contact switch
+      onInitialMessageUsed?.();
+    }
+  }, [initialMessage, onInitialMessageUsed]);
 
   // Fetch channel info for this contact
   useEffect(() => {
