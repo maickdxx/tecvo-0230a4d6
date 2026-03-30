@@ -288,7 +288,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
 
       if (existing) {
         toast.info("Este contato já existe no canal selecionado, abrindo conversa existente.");
-        onSelected?.(existing.id);
+        onSelectContact?.(existing.id);
         onContactUpdate?.();
         return;
       }
