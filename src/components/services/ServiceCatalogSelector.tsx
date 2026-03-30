@@ -230,7 +230,14 @@ export function ServiceCatalogSelector({
 
   return (
     <div className="space-y-4">
-      <Label className="text-base font-semibold">Serviços / Mão de Obra</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-semibold">Itens e Orçamentos</Label>
+        {items.length > 0 && (
+          <Badge variant="secondary" className="font-bold">
+            Total: {formatCurrency(total)}
+          </Badge>
+        )}
+      </div>
 
       {items.length > 0 && (
         <div className="rounded-md border overflow-x-auto">
@@ -311,8 +318,12 @@ export function ServiceCatalogSelector({
       )}
 
       {!disabled && (
-        <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
-          <div className="grid gap-3">
+        <div className="space-y-4 rounded-xl border p-5 bg-muted/20">
+          <div className="flex items-center gap-2 mb-1">
+            <Plus className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-foreground">Adicionar Item</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="catalog-select" className="text-xs">
                 Selecionar do Catálogo
@@ -378,7 +389,7 @@ export function ServiceCatalogSelector({
               />
             </div>
 
-              <div className="space-y-1">
+            <div className="space-y-1 md:col-span-2">
                 <Label htmlFor="item-desc" className="text-xs">
                   Complemento / Detalhes do item (opcional)
                 </Label>
@@ -392,7 +403,7 @@ export function ServiceCatalogSelector({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1">
               <Label htmlFor="item-qty" className="text-xs">
                 Qtd *
@@ -424,7 +435,7 @@ export function ServiceCatalogSelector({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1">
               <Label htmlFor="item-discount" className="text-xs">
                 Desconto
@@ -458,9 +469,9 @@ export function ServiceCatalogSelector({
                 />
               </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Subtotal</Label>
-              <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm font-medium">
+            <div className="space-y-1 md:col-span-1">
+              <Label className="text-xs">Subtotal Item</Label>
+              <div className="h-10 flex items-center px-3 rounded-md border bg-primary/5 text-primary text-sm font-bold">
                 {formatCurrency(calculateSubtotal())}
               </div>
             </div>
