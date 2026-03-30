@@ -26,9 +26,18 @@ interface ClientListProps {
   onSearchChange?: (value: string) => void;
 }
 
-function getStatusFromMetrics(metrics: ClientMetrics | undefined): "active" | "inactive" | "reactivate" | null {
-  if (!metrics?.lastServiceDate) return null;
+function getStatusFromMetrics(metrics: ClientMetrics | undefined, createdAt?: string): "active" | "inactive" | "reactivate" | null {
   const today = new Date();
+  
+  if (!metrics?.lastServiceDate) {
+    if (!createdAt) return null;
+    const created = new Date(createdAt);
+    const diffMs = today.getTime() - created.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffDays <= 30) return "active";
+    return null;
+  }
+  
   const last = new Date(metrics.lastServiceDate);
   const diffMs = today.getTime() - last.getTime();
   const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.44);
