@@ -49,15 +49,21 @@ export function ClientList({
   isLoadingMore,
   onLoadMore,
   totalCount,
+  search = "",
+  onSearchChange,
 }: ClientListProps) {
-  const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
 
-  const searchFiltered = clients.filter((client) =>
-    client.name.toLowerCase().includes(search.toLowerCase()) ||
-    client.phone.includes(search) ||
-    client.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const searchFiltered = useMemo(() => {
+    if (!onSearchChange) {
+      return clients.filter((client) =>
+        client.name.toLowerCase().includes(search.toLowerCase()) ||
+        client.phone.includes(search) ||
+        client.email?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    return clients;
+  }, [clients, search, onSearchChange]);
 
   const filterCounts = useMemo(() => {
     const counts = { all: searchFiltered.length, active: 0, inactive: 0, reactivate: 0, scheduled: 0, pending: 0 };
