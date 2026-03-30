@@ -13,7 +13,10 @@ import {
   DollarSign,
   AlertCircle,
   MessageCircle,
-  TrendingDown
+  TrendingDown,
+  Timer,
+  Target,
+  Rocket
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
@@ -35,14 +38,19 @@ function formatCurrency(value: number): string {
 }
 
 type PriorityLevel = "high" | "medium" | "low";
+type ConfidenceLevel = "high" | "medium" | "low";
 
 interface DashboardAction {
   id: string;
   title: string;
+  recommendation: string;
+  impactValue: number;
   impactText: string;
   timeLabel: string;
+  estimatedTime: string;
   icon: any;
   priorityLevel: PriorityLevel;
+  confidence: ConfidenceLevel;
   score: number;
   action: () => void;
   color: string;
@@ -97,6 +105,14 @@ export function TodayActionsBlock() {
   const actions = useMemo(() => {
     const result: DashboardAction[] = [];
 
+    const getConfidence = (id: string): ConfidenceLevel => {
+      const data = history[id];
+      if (!data) return "low";
+      if (data.successFrequency > 0.7 || data.resolutions > 8) return "high";
+      if (data.successFrequency > 0.4 || data.resolutions > 4) return "medium";
+      return "low";
+    };
+
     // 1. Overdue services
     if (counts.overdue_services.length > 0) {
       const impactValue = counts.overdue_services.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
@@ -110,10 +126,14 @@ export function TodayActionsBlock() {
       result.push({
         id: "overdue_services",
         title: `${counts.overdue_services.length} serviço${counts.overdue_services.length > 1 ? "s" : ""} em atraso`,
-        impactText: historyData?.totalValueGenerated ? `Já evitou perda de ${formatCurrency(historyData.totalValueGenerated)}` : `Evite perder ${formatCurrency(impactValue)} hoje`,
+        recommendation: `Regularize ${counts.overdue_services.length} serviços e recupere ${formatCurrency(impactValue)}`,
+        impactValue,
+        impactText: historyData?.totalValueGenerated ? `Já evitou perda de ${formatCurrency(historyData.totalValueGenerated)}` : `Recupere ${formatCurrency(impactValue)} agora`,
         timeLabel: `há ${daysOverdue} d`,
+        estimatedTime: "15 min",
         icon: AlertTriangle,
         priorityLevel: "high",
+        confidence: getConfidence("overdue_services"),
         score: adjustedScore,
         action: () => {
           recordInteraction("overdue_services", "click");
@@ -137,11 +157,15 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "overdue_payments",
-        title: `${counts.overdue_payments.length} pagamento${counts.overdue_payments.length > 1 ? "s" : ""} vencido${counts.overdue_payments.length > 1 ? "s" : ""}`,
+        title: "Pagamentos vencidos",
+        recommendation: `Cobrar ${counts.overdue_payments.length} clientes agora para recuperar ${formatCurrency(total)}`,
+        impactValue: total,
         impactText: historyData?.totalValueGenerated ? `Recuperou ${formatCurrency(historyData.totalValueGenerated)} com cobrança` : `Recupere ${formatCurrency(total)} parados`,
         timeLabel: `há ${daysOverdue} d`,
+        estimatedTime: "5 min",
         icon: DollarSign,
         priorityLevel: "high",
+        confidence: getConfidence("overdue_payments"),
         score: adjustedScore,
         action: () => {
           recordInteraction("overdue_payments", "click");
@@ -165,11 +189,15 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "pending_quotes",
-        title: "Acelerar orçamentos pendentes",
+        title: "Orçamentos parados",
+        recommendation: `Fale com esses ${counts.pending_quotes.length} clientes agora e pode fechar ${formatCurrency(totalValue)}`,
+        impactValue: totalValue,
         impactText: historyData?.totalValueGenerated ? `Já converteu ${formatCurrency(historyData.totalValueGenerated)}` : `Liberar ${formatCurrency(totalValue)} em caixa`,
         timeLabel: `há ${daysPending} dias`,
+        estimatedTime: "10 min",
         icon: Zap,
         priorityLevel: "high",
+        confidence: getConfidence("pending_quotes"),
         score: adjustedScore,
         action: () => {
           recordInteraction("pending_quotes", "click");
@@ -189,11 +217,15 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "inactive_clients",
-        title: "Reativar clientes sumidos",
+        title: "Reativação de clientes",
+        recommendation: `Reative ${counts.inactive_clients.length} clientes antigos para novos serviços`,
+        impactValue: counts.inactive_clients.length * 250, // Impacto estimado por cliente
         impactText: historyData?.totalValueGenerated ? `Gerou ${formatCurrency(historyData.totalValueGenerated)} em novos serviços` : "Gerar novos serviços recorrentes",
         timeLabel: "inativos +6 m",
+        estimatedTime: "20 min",
         icon: UserX,
         priorityLevel: "medium",
+        confidence: getConfidence("inactive_clients"),
         score: adjustedScore,
         action: () => {
           recordInteraction("inactive_clients", "click");
@@ -214,11 +246,15 @@ export function TodayActionsBlock() {
 
       result.push({
         id: "today_services",
-        title: "Executar serviços do dia",
+        title: "Serviços do dia",
+        recommendation: `Finalize os ${counts.today_services.length} serviços agendados para hoje`,
+        impactValue: totalValue,
         impactText: historyData?.totalValueGenerated ? `Já faturou ${formatCurrency(historyData.totalValueGenerated)} hoje` : `Garantir ${formatCurrency(totalValue)} em faturamento`,
         timeLabel: "hoje",
+        estimatedTime: "30 min",
         icon: CalendarDays,
         priorityLevel: "medium",
+        confidence: getConfidence("today_services"),
         score: adjustedScore,
         action: () => {
           recordInteraction("today_services", "click");
@@ -283,84 +319,85 @@ export function TodayActionsBlock() {
     <div className="mb-8 page-enter">
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-sm font-bold uppercase tracking-wider text-foreground/70">
-          🎯 Ações de Hoje
+          🎯 Recomendações da Tecvo
         </h2>
         <div className="flex-1 h-px bg-border/40" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">
-        {/* Priority Action (Highlight) */}
+        {/* Priority Action (Highlight) - "Melhor ação agora" */}
         <div className="lg:col-span-5">
           <button
             onClick={priorityAction.action}
             className={cn(
               "group relative h-full w-full flex flex-col overflow-hidden rounded-3xl border-2 p-6 text-left transition-all duration-300 hover:shadow-xl active:scale-[0.99]",
-              priorityAction.score > 1500 
-                ? "border-destructive/30 bg-gradient-to-br from-destructive/10 via-card to-card" 
-                : "border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card"
+              "border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card ring-1 ring-primary/20 shadow-lg shadow-primary/5"
             )}
           >
             <div className="flex items-center justify-between mb-6">
-              <Badge className={cn(
-                "font-bold px-3 py-1 animate-pulse",
-                priorityAction.score > 1500 ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"
-              )}>
-                {priorityAction.score > 1500 ? "⚠️ URGÊNCIA CRÍTICA" : "👉 PRIORIDADE DO DIA"}
+              <Badge className="font-bold px-3 py-1 bg-primary text-primary-foreground animate-pulse flex items-center gap-1.5 shadow-sm">
+                <Rocket className="h-3.5 w-3.5" />
+                MELHOR AÇÃO AGORA
               </Badge>
-              <div className={cn("p-3 rounded-2xl", priorityAction.bg)}>
-                <priorityAction.icon className={cn("h-6 w-6", priorityAction.color)} />
+              <div className={cn("p-3 rounded-2xl bg-primary/10 transition-transform group-hover:scale-110")}>
+                <priorityAction.icon className={cn("h-6 w-6 text-primary")} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className={cn(
-                  "uppercase text-[10px] font-bold tracking-widest",
-                  priorityAction.priorityLevel === "high" || priorityAction.score > 1500 ? "border-destructive text-destructive bg-destructive/5" : "border-primary text-primary bg-primary/5"
-                )}>
-                  {priorityAction.score > 1500 ? "Escalação Automática" : (priorityAction.priorityLevel === "high" ? "Alta Prioridade" : "Média Prioridade")}
-                </Badge>
-                <span className="text-xs text-muted-foreground">• {priorityAction.timeLabel}</span>
-              </div>
+            <div className="space-y-4">
               <h3 className="text-2xl font-black text-foreground tracking-tight leading-tight group-hover:text-primary transition-colors">
-                {priorityAction.title}
+                {priorityAction.recommendation}
               </h3>
-              <p className="text-lg font-bold text-foreground/80 flex items-center gap-2">
-                {priorityAction.score > 1500 ? (
-                  <TrendingDown className="h-5 w-5 text-destructive shrink-0" />
-                ) : (
-                  <TrendingUp className="h-5 w-5 text-success shrink-0" />
-                )}
-                {priorityAction.impactText}
-              </p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1 p-3 rounded-2xl bg-muted/50 border border-border/40">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1">
+                    <Target className="h-3 w-3" /> Impacto
+                  </span>
+                  <span className="text-sm font-bold text-success">{priorityAction.impactText}</span>
+                </div>
+                <div className="flex flex-col gap-1 p-3 rounded-2xl bg-muted/50 border border-border/40">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-1">
+                    <Timer className="h-3 w-3" /> Tempo
+                  </span>
+                  <span className="text-sm font-bold text-foreground">{priorityAction.estimatedTime}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Confiança:</span>
+                <Badge variant="outline" className={cn(
+                  "font-bold text-[10px] px-2",
+                  priorityAction.confidence === "high" ? "bg-success/10 text-success border-success/20" :
+                  priorityAction.confidence === "medium" ? "bg-warning/10 text-warning border-warning/20" :
+                  "bg-muted text-muted-foreground"
+                )}>
+                  {priorityAction.confidence === "high" ? "Alta Chance" : 
+                   priorityAction.confidence === "medium" ? "Média Chance" : "Baixa Chance"}
+                </Badge>
+              </div>
             </div>
 
             {priorityAction.insight && (
-              <div className={cn(
-                "mt-6 p-4 rounded-2xl border italic text-sm text-muted-foreground",
-                priorityAction.score > 1500 ? "bg-destructive/5 border-destructive/20" : "bg-muted/30 border-border/40"
-              )}>
+              <div className="mt-6 p-4 rounded-2xl border border-primary/10 bg-primary/5 italic text-sm text-muted-foreground relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                 "💡 {priorityAction.insight}"
               </div>
             )}
 
             <div className="mt-auto pt-6 flex items-center justify-between">
-              <Button className={cn(
-                "rounded-xl px-6 font-bold gap-2",
-                priorityAction.score > 1500 ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""
-              )}>
-                {priorityAction.score > 1500 ? "Resolver Urgente" : "Resolver agora"}
+              <Button className="rounded-xl px-6 font-bold gap-2 w-full sm:w-auto shadow-md">
+                Executar recomendação
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
             
-            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+            <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
               <priorityAction.icon size={200} />
             </div>
           </button>
         </div>
 
-        {/* Secondary Actions */}
         <div className="lg:col-span-7 grid gap-3 sm:grid-cols-2">
           {secondaryActions.map((item) => (
             <button
@@ -369,36 +406,45 @@ export function TodayActionsBlock() {
               className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left transition-all duration-300 hover:border-primary/30 hover:shadow-lg active:scale-[0.98]"
             >
               <div className="flex items-start justify-between">
-                <div className={cn("rounded-xl p-2.5", item.bg, "transition-transform group-hover:scale-110")}>
-                  <item.icon className={cn("h-5 w-5", item.color)} />
+                <div className={cn("rounded-xl p-2 bg-muted/50 transition-transform group-hover:scale-110")}>
+                  <item.icon className={cn("h-4 w-4", item.color)} />
                 </div>
-                <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-tighter opacity-70">
-                  {item.priorityLevel === "high" ? "Alta" : "Média"}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className={cn(
+                    "text-[8px] font-bold uppercase tracking-tighter px-1.5",
+                    item.confidence === "high" ? "border-success/30 text-success bg-success/5" : "border-muted text-muted-foreground"
+                  )}>
+                    {item.confidence === "high" ? "Alta chance" : "Recomendado"}
+                  </Badge>
+                </div>
               </div>
 
-              <div className="mt-4 space-y-1">
-                <h4 className="text-[15px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
-                  {item.title}
+              <div className="mt-3 space-y-2">
+                <h4 className="text-[14px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                  {item.recommendation}
                 </h4>
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                  <span className="text-success font-bold shrink-0">{item.impactText}</span>
-                  <span className="opacity-50">•</span>
-                  <span className="opacity-60 text-[10px] uppercase font-bold tracking-tighter shrink-0">{item.timeLabel}</span>
-                </p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-[10px] font-bold text-success flex items-center gap-1">
+                    <Target className="h-3 w-3" /> {formatCurrency(item.impactValue)}
+                  </span>
+                  <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+                    <Timer className="h-3 w-3" /> {item.estimatedTime}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all">
-                Ação direta <ArrowRight className="h-3 w-3" />
+                Ver detalhes <ArrowRight className="h-3 w-3" />
               </div>
             </button>
           ))}
           
-          {/* Empty slot placeholder if less than 5 actions */}
-          {actions.length < 5 && actions.length > 0 && (
-            <div className="flex items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-4">
-              <p className="text-[11px] font-medium text-muted-foreground/60 text-center uppercase tracking-widest leading-relaxed">
-                Continue assim!<br/>Sua lista está ficando limpa.
+          {/* Action indicator slot if less than 5 */}
+          {actions.length < 5 && (
+            <div className="hidden sm:flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/5 p-4 text-center">
+              <Rocket className="h-5 w-5 text-muted-foreground/30 mb-2" />
+              <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest leading-relaxed">
+                Mais recomendações em breve
               </p>
             </div>
           )}
