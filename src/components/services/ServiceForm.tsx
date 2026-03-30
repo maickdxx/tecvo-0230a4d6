@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, AlertCircle, CalendarIcon, Clock, Info, Lock } from "lucide-react";
+import { Loader2, Plus, AlertCircle, CalendarIcon, Clock, Info, Lock, User, MapPin, CreditCard, ClipboardList, Wrench as WrenchIcon, FileText, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -327,9 +327,16 @@ export function ServiceForm({
           </Alert>
         )}
 
-        {/* 1. CLIENTE */}
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-          <Label className="text-base font-semibold">Dados do Cliente</Label>
+        {/* 1. CLIENTE E RESPONSÁVEL */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <User className="h-5 w-5" />
+              </div>
+              <Label className="text-lg font-bold">Cliente</Label>
+            </div>
+            <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="client_id">Cliente *</Label>
             <div className="flex gap-2">
@@ -365,14 +372,18 @@ export function ServiceForm({
               <p className="text-sm text-destructive">{errors.client_id.message}</p>
             )}
           </div>
-        </div>
+          </div>
 
-        {/* 2. TÉCNICO RESPONSÁVEL */}
-        {isAdmin && fieldWorkers.length > 0 && (
-          <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-            <Label className="text-base font-semibold">Responsável</Label>
-            <div className="space-y-2">
-              <Label htmlFor="assigned_to">Técnico</Label>
+          {isAdmin && fieldWorkers.length > 0 && (
+            <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                  <User className="h-5 w-5" />
+                </div>
+                <Label className="text-lg font-bold">Responsável</Label>
+              </div>
+              <div className="space-y-4">
+                <Label htmlFor="assigned_to" className="text-sm font-medium">Técnico designado</Label>
               <Controller
                 name="assigned_to"
                 control={control}
@@ -396,15 +407,23 @@ export function ServiceForm({
                   </Select>
                 )}
               />
-              <p className="text-xs text-muted-foreground">
-                Funcionários verão apenas os serviços atribuídos a eles
-              </p>
+                <p className="text-xs text-muted-foreground">
+                  Funcionários verão apenas os serviços atribuídos a eles
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* 3. EQUIPAMENTOS */}
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+        {/* 3. EQUIPAMENTOS E SERVIÇOS */}
+        <div className="space-y-6">
+          <div className="p-6 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
+                <WrenchIcon className="h-5 w-5" />
+              </div>
+              <Label className="text-lg font-bold">Equipamentos e Dispositivos</Label>
+            </div>
           <EquipmentEditor
             equipment={equipment}
             onAdd={addEquipment}
@@ -412,33 +431,40 @@ export function ServiceForm({
             onUpdate={updateEquipment}
             disabled={isCompleted}
           />
-        </div>
+          </div>
 
-        {/* 4. SERVIÇOS DO CATÁLOGO */}
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+          <div className="p-6 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <ClipboardList className="h-5 w-5" />
+              </div>
+              <Label className="text-lg font-bold">Itens do Serviço</Label>
+            </div>
           <ServiceCatalogSelector
             items={serviceItems}
             onItemsChange={setServiceItems}
             disabled={isCompleted}
             onServiceTypeDetected={handleServiceTypeDetected}
           />
+          </div>
         </div>
 
-        {/* 5. TIPO DE SERVIÇO */}
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-          <Label className="text-base font-semibold flex items-center gap-2">
-            Tipo de Serviço
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[240px]">
-                  <p>O tipo de serviço é usado para classificar a OS e alimentar a recorrência automaticamente.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </Label>
+        {/* 5. TIPO DE SERVIÇO E DESCRIÇÃO */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
+                <FileText className="h-5 w-5" />
+              </div>
+              <Label className="text-lg font-bold">Classificação</Label>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">Tipo de Serviço</Label>
+                <TooltipProvider>
+...
+                </TooltipProvider>
+              </div>
 
           {detectedServiceType ? (
             <div className="space-y-2">
@@ -479,11 +505,17 @@ export function ServiceForm({
               </p>
             </div>
           )}
-        </div>
+            </div>
+          </div>
 
-        {/* 5. DESCRIÇÃO E OBSERVAÇÕES */}
-        <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-          <Label className="text-base font-semibold">Descrição</Label>
+          <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                <Info className="h-5 w-5" />
+              </div>
+              <Label className="text-lg font-bold">Informações Adicionais</Label>
+            </div>
+            <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="description">Descrição do Serviço <span className="text-muted-foreground font-normal">(opcional)</span></Label>
             <Textarea
@@ -527,11 +559,18 @@ export function ServiceForm({
               {...register("internal_notes")}
             />
           </div>
+            </div>
+          </div>
         </div>
 
-        {/* 6. ENDEREÇO DO SERVIÇO (sempre visível, pré-preenchido do cliente) */}
-        <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-          <Label className="text-base font-semibold">Endereço do Serviço</Label>
+        {/* 6. ENDEREÇO DO SERVIÇO */}
+        <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
+              <MapPin className="h-5 w-5" />
+            </div>
+            <Label className="text-lg font-bold">Endereço de Execução</Label>
+          </div>
           <p className="text-xs text-muted-foreground -mt-2">
             Preenchido automaticamente a partir do cadastro do cliente. Edite se necessário.
           </p>
@@ -631,9 +670,16 @@ export function ServiceForm({
           </div>
         </div>
 
-        {/* 7. PAGAMENTO */}
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-          <Label className="text-base font-semibold">Dados do Pagamento</Label>
+        {/* 7. PAGAMENTO E STATUS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
+                <CreditCard className="h-5 w-5" />
+              </div>
+              <Label className="text-lg font-bold">Pagamento</Label>
+            </div>
+            <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="value">Valor Total (R$)</Label>
@@ -712,11 +758,17 @@ export function ServiceForm({
               />
             </div>
           </div>
-        </div>
+            </div>
+          </div>
 
-        {/* 8. STATUS E AGENDAMENTO */}
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-          <Label className="text-base font-semibold">Status e Agendamento</Label>
+          <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <Label className="text-lg font-bold">Status e Agenda</Label>
+            </div>
+            <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
