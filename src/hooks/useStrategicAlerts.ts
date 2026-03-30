@@ -89,6 +89,44 @@ export function useStrategicAlerts() {
       });
     }
 
+    // NEW: Overdue services (not quote)
+    const overdueServices = (services || []).filter(
+      (s) => s.status !== "completed" && s.status !== "cancelled" && s.document_type !== "quote" && s.scheduled_date && new Date(s.scheduled_date) < now
+    );
+    if (overdueServices.length > 0) {
+      const overdueTotal = overdueServices.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
+      all.push({
+        id: "overdue-services",
+        level: "critical",
+        title: `${overdueServices.length} serviço(s) em atraso`,
+        description: `Serviços agendados que não foram concluídos na data.`,
+        financialImpact: `R$ ${overdueTotal.toFixed(0)} em impacto operacional`,
+        consequence: "Atraso na entrega e faturamento",
+        actionLabel: "Ver serviços",
+        actionRoute: "/ordens-servico?status=overdue",
+        _impactValue: overdueTotal,
+      });
+    }
+
+    // NEW: Pending quotes
+    const pendingQuotes = (services || []).filter(
+      (s) => s.document_type === "quote" && s.status === "scheduled"
+    );
+    if (pendingQuotes.length > 0) {
+      const quotesTotal = pendingQuotes.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
+      all.push({
+        id: "pending-quotes",
+        level: "opportunity",
+        title: `${pendingQuotes.length} orçamento(s) pendente(s)`,
+        description: `Orçamentos enviados que ainda não foram fechados.`,
+        financialImpact: `R$ ${quotesTotal.toFixed(0)} em potencial`,
+        consequence: "Oportunidade de fechamento imediato",
+        actionLabel: "Ver orçamentos",
+        actionRoute: "/orcamentos",
+        _impactValue: quotesTotal,
+      });
+    }
+
     // 3. Revenue projection below monthly goal
     const monthlyGoal = organization?.monthly_goal;
     if (monthlyGoal && monthlyGoal > 0) {
