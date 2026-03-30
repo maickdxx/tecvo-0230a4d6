@@ -92,7 +92,7 @@ export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
             return (
               <button
                 key={opt.id}
-                onClick={() => setTheme(opt.id)}
+                onClick={() => handleModeChange(opt.id)}
                 className={`relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all ${
                   isSelected
                     ? "border-primary bg-primary/5"
