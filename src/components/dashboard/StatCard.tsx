@@ -35,8 +35,8 @@ export function StatCard({
 }: StatCardProps) {
   const cardContent = (
     <div className={cn(
-      "rounded-xl border border-border bg-card p-5 shadow-card transition-shadow duration-200",
-      href && "cursor-pointer hover:shadow-card-hover",
+      "rounded-[2rem] border border-border/40 bg-card p-8 shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1",
+      href && "cursor-pointer",
     )}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
