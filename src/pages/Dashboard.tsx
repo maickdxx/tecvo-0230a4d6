@@ -12,7 +12,7 @@ import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBl
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
-import { MiniAgenda } from "@/components/dashboard/MiniAgenda";
+
 import { MoneyOnTable } from "@/components/dashboard/MoneyOnTable";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -77,10 +77,6 @@ export default function Dashboard() {
         {/* Money on Table Alert */}
         {canViewFinance && <MoneyOnTable />}
 
-        {/* Mini Agenda - Today's services */}
-        <div className="mb-6">
-          <MiniAgenda />
-        </div>
 
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
