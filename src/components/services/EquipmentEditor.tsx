@@ -32,9 +32,9 @@ function EquipmentCard({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <div className="border rounded-lg bg-background">
+      <div className="border rounded-xl bg-card shadow-sm transition-all hover:border-primary/20">
         <CollapsibleTrigger asChild>
-          <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 rounded-t-lg">
+          <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 rounded-t-xl">
             <span className="text-sm font-medium">
               Equipamento {index + 1}
               {item.name ? ` — ${item.name}` : ""}
@@ -59,9 +59,8 @@ function EquipmentCard({
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="p-3 pt-0 space-y-3">
-            {/* Row 1: Name, Brand, Model, Serial */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-4 pt-0 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Nome do equipamento</Label>
                 <Input
@@ -174,8 +173,15 @@ export function EquipmentEditor({
   disabled = false,
 }: EquipmentEditorProps) {
   return (
-    <div className="space-y-3">
-      <Label className="text-base font-semibold">Equipamentos</Label>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-semibold">Lista de Equipamentos</Label>
+        {equipment.length > 0 && (
+          <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
+            {equipment.length} {equipment.length === 1 ? 'dispositivo' : 'dispositivos'}
+          </span>
+        )}
+      </div>
 
       {equipment.map((item, index) => (
         <EquipmentCard
@@ -192,11 +198,11 @@ export function EquipmentEditor({
         <Button
           type="button"
           variant="outline"
-          className="w-full gap-2"
+          className="w-full gap-2 border-dashed py-6 hover:border-primary hover:text-primary transition-all"
           onClick={onAdd}
         >
-          <Plus className="h-4 w-4" />
-          Adicionar Equipamento
+          <Plus className="h-5 w-5" />
+          Novo Equipamento / Dispositivo
         </Button>
       )}
     </div>
