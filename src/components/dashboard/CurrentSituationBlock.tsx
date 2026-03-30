@@ -14,13 +14,17 @@ import {
   TrendingDown,
   AlertTriangle,
   Eye,
+  CalendarDays,
+  ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useFinancialAccounts, type AccountType } from "@/hooks/useFinancialAccounts";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { format, addDays } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -66,13 +70,26 @@ export function CurrentSituationBlock() {
     dateField: "due_date",
   });
 
-  const { totalPayable, totalReceivable, projectedFlow, projectedBalance, forecastLevel } = useMemo(() => {
+  // Fetch services for forecasted revenue
+  const { transactions: servicesData, isLoading: isLoadingServices } = useTransactions({
+    startDate: today,
+    endDate: in15Days,
+    type: "income",
+    dateField: "due_date", // We'll filter differently if needed, but for now let's see
+  });
+
+  // Actually we need the services hook to get scheduled value
+  const dashboardMetrics = useDashboardMetrics(today, in15Days, today, today);
+
+  const { totalPayable, totalReceivable, forecastedRevenue, projectedFlow, projectedBalance, forecastLevel } = useMemo(() => {
     const pending = (txs: typeof payables) =>
       txs.filter((t) => t.status === "pending" || t.status === "overdue").reduce((s, t) => s + Number(t.amount), 0);
 
     const tp = pending(payables);
     const tr = pending(receivables);
+    const fr = dashboardMetrics?.forecastedRevenue || 0;
 
+    // Projected Flow considers real money (A Receber - A Pagar)
     const pFlow = tr - tp;
     const pBalance = totalBalance + tr - tp;
 
@@ -86,15 +103,17 @@ export function CurrentSituationBlock() {
     return {
       totalPayable: tp,
       totalReceivable: tr,
+      forecastedRevenue: fr,
       projectedFlow: pFlow,
       projectedBalance: pBalance,
       forecastLevel: forecast,
     };
-  }, [payables, receivables, totalBalance]);
+  }, [payables, receivables, totalBalance, dashboardMetrics]);
 
   const forecast = forecastConfig[forecastLevel];
   const ForecastIcon = forecast.icon;
-  const isLoading = isLoadingAccounts || isLoadingPayables || isLoadingReceivables;
+  const navigate = useNavigate();
+  const isLoading = isLoadingAccounts || isLoadingPayables || isLoadingReceivables || dashboardMetrics.isLoading;
   const FlowIcon = projectedFlow >= 0 ? TrendingUp : TrendingDown;
 
   if (isLoading) return null;
@@ -116,11 +135,11 @@ export function CurrentSituationBlock() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-8 px-6 pb-8">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5 entrance-stagger">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-6 entrance-stagger">
           {/* Saldo Consolidado */}
           <div className="rounded-2xl bg-muted/20 border border-border/40 p-5 group hover:bg-muted/30 transition-all">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Saldo Disponível</p>
-            <p className={`text-3xl font-black tabular-nums mt-2 tracking-tight ${totalBalance >= 0 ? "text-foreground" : "text-destructive"}`}>
+            <p className={`text-2xl font-black tabular-nums mt-2 tracking-tight ${totalBalance >= 0 ? "text-foreground" : "text-destructive"}`}>
               {formatCurrency(totalBalance)}
             </p>
           </div>
@@ -152,24 +171,44 @@ export function CurrentSituationBlock() {
           {/* A Pagar */}
           <div className="flex flex-col justify-between rounded-2xl bg-destructive/[0.03] border border-destructive/10 p-5 group hover:bg-destructive/[0.06] transition-all">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-bold text-destructive/80 uppercase tracking-widest">A pagar (15d)</p>
+              <p className="text-[10px] font-bold text-destructive/80 uppercase tracking-widest">A Pagar (15d)</p>
               <div className="rounded-full bg-destructive/10 p-1.5 group-hover:scale-110 transition-transform">
                 <ArrowDownCircle className="h-4 w-4 text-destructive" />
               </div>
             </div>
-            <p className="text-2xl font-black tabular-nums text-foreground tracking-tight">{formatCurrency(totalPayable)}</p>
+            <p className="text-xl font-black tabular-nums text-foreground tracking-tight">{formatCurrency(totalPayable)}</p>
           </div>
 
-          {/* A Receber */}
+          {/* A Receber (REAL) */}
           <div className="flex flex-col justify-between rounded-2xl bg-success/[0.03] border border-success/10 p-5 group hover:bg-success/[0.06] transition-all">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-bold text-success/80 uppercase tracking-widest">A receber (15d)</p>
+              <p className="text-[10px] font-bold text-success/80 uppercase tracking-widest">A Receber (Real)</p>
               <div className="rounded-full bg-success/10 p-1.5 group-hover:scale-110 transition-transform">
                 <ArrowUpCircle className="h-4 w-4 text-success" />
               </div>
             </div>
-            <p className="text-2xl font-black tabular-nums text-foreground tracking-tight">{formatCurrency(totalReceivable)}</p>
+            <p className="text-xl font-black tabular-nums text-foreground tracking-tight">{formatCurrency(totalReceivable)}</p>
           </div>
+
+          {/* Receita Prevista (POTENCIAL) */}
+          <button 
+            onClick={() => navigate("/ia/receita-prevista")}
+            className="flex flex-col justify-between rounded-2xl bg-primary/[0.03] border border-primary/10 p-5 text-left group hover:bg-primary/[0.06] transition-all"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-bold text-primary/80 uppercase tracking-widest">Previsto (15d)</p>
+              <div className="rounded-full bg-primary/10 p-1.5 group-hover:scale-110 transition-transform">
+                <CalendarDays className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <div>
+              <p className="text-xl font-black tabular-nums text-foreground tracking-tight">{formatCurrency(forecastedRevenue)}</p>
+              <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-[9px] font-bold text-primary uppercase">Ver Detalhes</span>
+                <ArrowRight className="h-2.5 w-2.5 text-primary" />
+              </div>
+            </div>
+          </button>
 
           {/* Fluxo Projetado */}
           <div className={cn(
@@ -183,7 +222,7 @@ export function CurrentSituationBlock() {
                 "text-[10px] font-bold uppercase tracking-widest",
                 projectedFlow >= 0 ? "text-primary/80" : "text-destructive/80"
               )}>
-                Fluxo (15d)
+                Fluxo (Real)
               </p>
               <div className={cn(
                 "rounded-full p-1.5 group-hover:scale-110 transition-transform",
@@ -193,7 +232,7 @@ export function CurrentSituationBlock() {
               </div>
             </div>
             <p className={cn(
-              "text-2xl font-black tabular-nums tracking-tight",
+              "text-xl font-black tabular-nums tracking-tight",
               projectedFlow >= 0 ? "text-primary" : "text-destructive"
             )}>
               {formatCurrency(projectedFlow)}

@@ -10,6 +10,7 @@ export interface DashboardMetrics {
   expense: number;
   balance: number;
   margin: number;
+  pendingIncome: number;
   forecastedRevenue: number;
   averageTicket: number;
 
@@ -73,7 +74,7 @@ export function useDashboardMetrics(
   if (!data || isLoading) {
     return {
       income: 0, expense: 0, balance: 0, margin: 0,
-      forecastedRevenue: 0, averageTicket: 0,
+      pendingIncome: 0, forecastedRevenue: 0, averageTicket: 0,
       incomeChange: null, expenseChange: null, balanceChange: null, marginChange: null,
       totalServices: 0, completedServices: 0, pendingServices: 0,
       revenueByType: {}, countByType: {},
@@ -83,6 +84,7 @@ export function useDashboardMetrics(
   }
 
   const income = Number(data.income) || 0;
+  const pendingIncome = Number(data.pending_income) || 0;
   const expense = Number(data.expense) || 0;
   const balance = income - expense;
   const margin = income > 0 ? (balance / income) * 100 : 0;
@@ -100,6 +102,7 @@ export function useDashboardMetrics(
     expense,
     balance,
     margin,
+    pendingIncome,
     forecastedRevenue: Number(data.forecasted_revenue) || 0,
     averageTicket,
 

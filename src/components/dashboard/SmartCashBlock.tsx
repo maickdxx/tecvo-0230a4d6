@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useFinancialAccounts } from "@/hooks/useFinancialAccounts";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { format, addDays } from "date-fns";
 
 function formatCurrency(value: number): string {
@@ -35,12 +36,16 @@ export function SmartCashBlock() {
     dateField: "due_date",
   });
 
-  const { totalPayable, totalReceivable, riskLevel } = useMemo(() => {
+  // Fetch metrics for forecasted revenue
+  const metrics = useDashboardMetrics(today, in15Days, today, today);
+
+  const { totalPayable, totalReceivable, forecastedRevenue, riskLevel } = useMemo(() => {
     const pending = (txs: typeof payables) =>
       txs.filter((t) => t.status === "pending" || t.status === "overdue").reduce((s, t) => s + Number(t.amount), 0);
 
     const tp = pending(payables);
     const tr = pending(receivables);
+    const fr = metrics.forecastedRevenue || 0;
 
     let risk: "low" | "medium" | "high" = "low";
     if (tp > 0) {
@@ -49,8 +54,8 @@ export function SmartCashBlock() {
       else if (ratio < 1) risk = "medium";
     }
 
-    return { totalPayable: tp, totalReceivable: tr, riskLevel: risk };
-  }, [payables, receivables, totalBalance]);
+    return { totalPayable: tp, totalReceivable: tr, forecastedRevenue: fr, riskLevel: risk };
+  }, [payables, receivables, totalBalance, metrics.forecastedRevenue]);
 
   const riskConfig = {
     low: { label: "Baixo", icon: ShieldCheck, className: "bg-success/10 text-success border-success/20", borderColor: "border-l-success" },
@@ -60,7 +65,7 @@ export function SmartCashBlock() {
 
   const risk = riskConfig[riskLevel];
   const RiskIcon = risk.icon;
-  const isLoading = isLoadingAccounts || isLoadingPayables || isLoadingReceivables;
+  const isLoading = isLoadingAccounts || isLoadingPayables || isLoadingReceivables || metrics.isLoading;
 
   if (isLoading) return null;
 
@@ -73,43 +78,58 @@ export function SmartCashBlock() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4">
-          {/* Saldo */}
-          <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Saldo Atual</p>
-            <p className={`text-2xl number-display ${totalBalance >= 0 ? "text-success" : "text-destructive"}`}>
-              {formatCurrency(totalBalance)}
-            </p>
-          </div>
-
-          {/* Risco */}
-          <div className="flex flex-col items-end">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Risco de Caixa</p>
-            <Badge variant="outline" className={`mt-1 ${risk.className}`}>
-              <RiskIcon className="h-3 w-3 mr-1" />
-              {risk.label}
-            </Badge>
-          </div>
-
-          {/* A Pagar */}
-          <div className="flex items-center gap-2 rounded-xl bg-destructive/5 border border-destructive/10 p-2.5">
-            <div className="rounded-lg bg-destructive/10 p-1.5">
-              <ArrowDownCircle className="h-4 w-4 text-destructive" />
-            </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Saldo */}
             <div>
-              <p className="text-[11px] text-muted-foreground">A pagar (15d)</p>
-              <p className="text-sm number-display text-card-foreground">{formatCurrency(totalPayable)}</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Saldo Atual</p>
+              <p className={`text-2xl number-display ${totalBalance >= 0 ? "text-success" : "text-destructive"}`}>
+                {formatCurrency(totalBalance)}
+              </p>
+            </div>
+
+            {/* Risco */}
+            <div className="flex flex-col items-end">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Risco de Caixa</p>
+              <Badge variant="outline" className={`mt-1 ${risk.className}`}>
+                <RiskIcon className="h-3 w-3 mr-1" />
+                {risk.label}
+              </Badge>
             </div>
           </div>
 
-          {/* A Receber */}
-          <div className="flex items-center gap-2 rounded-xl bg-success/5 border border-success/10 p-2.5">
-            <div className="rounded-lg bg-success/10 p-1.5">
-              <ArrowUpCircle className="h-4 w-4 text-success" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* A Pagar */}
+            <div className="flex items-center gap-2 rounded-xl bg-destructive/5 border border-destructive/10 p-2.5">
+              <div className="rounded-lg bg-destructive/10 p-1.5">
+                <ArrowDownCircle className="h-4 w-4 text-destructive" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold">A Pagar (15d)</p>
+                <p className="text-sm number-display text-card-foreground font-bold">{formatCurrency(totalPayable)}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground">A receber (15d)</p>
-              <p className="text-sm number-display text-card-foreground">{formatCurrency(totalReceivable)}</p>
+
+            {/* A Receber */}
+            <div className="flex items-center gap-2 rounded-xl bg-success/5 border border-success/10 p-2.5">
+              <div className="rounded-lg bg-success/10 p-1.5">
+                <ArrowUpCircle className="h-4 w-4 text-success" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold">A Receber (Real)</p>
+                <p className="text-sm number-display text-card-foreground font-bold">{formatCurrency(totalReceivable)}</p>
+              </div>
+            </div>
+
+            {/* Previsto */}
+            <div className="flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/10 p-2.5">
+              <div className="rounded-lg bg-primary/10 p-1.5">
+                <ArrowUpCircle className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold">Previsto (15d)</p>
+                <p className="text-sm number-display text-card-foreground font-bold">{formatCurrency(forecastedRevenue)}</p>
+              </div>
             </div>
           </div>
         </div>
