@@ -48,6 +48,16 @@ export default function Auth() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const hasTrackedSignupStarted = useRef(false);
+  const hasTrackedCadastroPage = useRef(false);
+
+  useEffect(() => {
+    if (!hasTrackedCadastroPage.current) {
+      hasTrackedCadastroPage.current = true;
+      import("@/lib/fbPixel").then(({ trackFBCustomEvent }) => {
+        trackFBCustomEvent("Cadastro", { page: location.pathname });
+      });
+    }
+  }, []);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
