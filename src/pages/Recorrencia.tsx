@@ -400,10 +400,11 @@ export default function Recorrencia() {
     const number = formatPhone(client.whatsapp || client.phone || "");
     if (!number) return;
     const fullNumber = number.startsWith("55") ? number : `55${number}`;
+    const companyName = organization?.name || "nossa equipe";
     const message = encodeURIComponent(
-      `Olá${client.clientName ? ` ${client.clientName.split(" ")[0]}` : ""}! Já faz algum tempo desde o último serviço 😊\nEstá na hora da nova revisão. Quer agendar?`
+      `Olá${client.clientName ? ` ${client.clientName.split(" ")[0]}` : ""}! Tudo bem? Sou da equipe da ${companyName}. Já faz algum tempo desde o último serviço 😊\nEstá na hora da nova revisão. Quer agendar?`
     );
-    window.open(`https://wa.me/${fullNumber}?text=${message}`, "_blank");
+    navigate(`/whatsapp?phone=${fullNumber}&message=${message}`);
   };
 
   const scrollToList = () => {
