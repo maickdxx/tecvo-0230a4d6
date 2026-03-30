@@ -99,43 +99,41 @@ export function AlertasInteligentes() {
   // Don't render if no alerts
   if (alerts.length === 0) {
     return (
-      <div className="mb-10 rounded-[2rem] border border-border/40 bg-card p-8 shadow-[0_8px_30px_rgb(0,0,0,0.03)] animate-fade-in transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group">
-        <div className="flex items-center gap-5 text-sm text-muted-foreground/60">
-          <div className="rounded-xl bg-success/5 p-3 shadow-sm ring-4 ring-success/[0.01]">
-            <CheckCircle2 className="h-5 w-5 text-success/60" />
+      <div className="mb-5 rounded-xl border border-border/60 bg-card shadow-card p-4 animate-fade-in">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="rounded-full bg-success/10 p-1.5">
+            <CheckCircle2 className="h-4 w-4 text-success" />
           </div>
-          <span className="font-bold tracking-tight">Tudo em ordem — nenhum alerta crítico detectado.</span>
+          <span className="font-medium">Tudo sob controle — nenhum alerta.</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mb-10 rounded-[2rem] border border-border/40 bg-card shadow-[0_8px_30px_rgb(0,0,0,0.03)] overflow-hidden animate-fade-in transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group">
-      <div className="px-8 pt-8 pb-5 bg-muted/[0.05] border-b border-border/10">
-        <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground/50 flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-warning/10">
-            <AlertTriangle className="h-4 w-4 text-warning/70" />
-          </div>
-          Inteligência Operacional
+    <div className="mb-5 rounded-xl border border-border/60 bg-card shadow-card overflow-hidden animate-fade-in">
+      <div className="px-5 pt-4 pb-2">
+        <h3 className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          Atenção
         </h3>
       </div>
-      <div className="divide-y divide-border/5">
+      <div className="divide-y divide-border/50">
         {alerts.map((alert) => {
-          const bgClass = alert.severity === "destructive" ? "hover:bg-destructive/[0.01]" : "hover:bg-warning/[0.01]";
+          const bgClass = alert.severity === "destructive" ? "hover:bg-destructive/5" : "hover:bg-warning/5";
           const iconBg = alert.severity === "destructive" ? "bg-destructive/10" : "bg-warning/10";
-          const iconColor = alert.severity === "destructive" ? "text-destructive/80" : "text-warning/80";
+          const iconColor = alert.severity === "destructive" ? "text-destructive" : "text-warning";
           return (
             <button
               key={alert.id}
               onClick={alert.action}
-              className={`flex items-center gap-5 px-8 py-6 w-full text-left transition-all duration-300 group/item ${bgClass}`}
+              className={`flex items-center gap-3 px-5 py-3 w-full text-left transition-colors ${bgClass}`}
             >
-              <div className={`rounded-2xl p-3.5 shrink-0 transition-all duration-500 group-hover/item:scale-110 group-hover/item:rotate-3 shadow-sm ${iconBg}`}>
-                <alert.icon className={`h-5 w-5 ${iconColor}`} />
+              <div className={`rounded-full p-1.5 shrink-0 ${iconBg}`}>
+                <alert.icon className={`h-4 w-4 ${iconColor}`} />
               </div>
-              <span className="text-sm font-bold text-card-foreground/70 flex-1 tracking-tight">{alert.message}</span>
-              <ChevronRight className="h-5 w-5 text-muted-foreground/20 shrink-0 transition-all duration-500 group-hover/item:translate-x-1.5" />
+              <span className="text-sm font-medium text-card-foreground flex-1">{alert.message}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </button>
           );
         })}

@@ -69,77 +69,59 @@ export default function Dashboard() {
     <AppLayout>
       <div className="page-enter">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-8">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-extrabold tracking-tight text-foreground/90 sm:text-5xl lg:text-6xl bg-gradient-to-br from-foreground to-foreground/50 bg-clip-text text-transparent">
-              Painel de Controle
-            </h1>
-            <p className="text-base font-medium text-muted-foreground/60 tracking-tight max-w-xl">
-              Visão estratégica e saúde financeira do seu negócio com inteligência e precisão.
-            </p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">Painel de Controle</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Resumo estratégico do seu negócio</p>
           </div>
-          <div className="flex items-center gap-4">
-            <Button 
-              onClick={() => navigate("/ordens-servico/nova")} 
-              className="gap-2 shadow-[0_8px_20px_-4px_rgba(var(--primary),0.3)] rounded-2xl px-6 h-12 font-bold transition-all duration-300 hover:shadow-[0_12px_24px_-4px_rgba(var(--primary),0.4)] hover:-translate-y-1 active:scale-95 bg-primary text-primary-foreground border-none"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Nova Ordem de Serviço</span>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Nova OS</span>
             </Button>
           </div>
         </div>
 
         {/* 1. Situação Atual */}
         {canViewFinance && (
-          <div data-tour="dashboard-hero" className="mb-16">
+          <div data-tour="dashboard-hero">
             <CurrentSituationBlock />
           </div>
         )}
 
-        {/* Period Selector Section */}
+        {/* Period Selector */}
         {canViewFinance && (
-          <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between mb-12 pb-8 border-b border-border/40">
-            <div className="flex flex-col gap-2.5">
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.25em] text-muted-foreground/40">
-                Visualização por período
-              </h3>
-              <Tabs
-                value={granularity}
-                onValueChange={(v) => {
-                  setGranularity(v as Granularity);
-                  setReferenceDate(getHojeBRT());
-                }}
-                className="w-fit"
-              >
-                <TabsList className="h-11 bg-muted/30 p-1.5 border border-border/20 rounded-2xl">
-                  <TabsTrigger value="day" className="text-xs font-bold px-6 h-8 rounded-xl data-[state=active]:shadow-md transition-all duration-300">Dia</TabsTrigger>
-                  <TabsTrigger value="week" className="text-xs font-bold px-6 h-8 rounded-xl data-[state=active]:shadow-md transition-all duration-300">Semana</TabsTrigger>
-                  <TabsTrigger value="month" className="text-xs font-bold px-6 h-8 rounded-xl data-[state=active]:shadow-md transition-all duration-300">Mês</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+            <Tabs
+              value={granularity}
+              onValueChange={(v) => {
+                setGranularity(v as Granularity);
+                setReferenceDate(getHojeBRT());
+              }}
+            >
+              <TabsList className="h-8">
+                <TabsTrigger value="day" className="text-xs px-3 h-7">Dia</TabsTrigger>
+                <TabsTrigger value="week" className="text-xs px-3 h-7">Semana</TabsTrigger>
+                <TabsTrigger value="month" className="text-xs px-3 h-7">Mês</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-            <div className="flex flex-col items-start sm:items-end gap-2.5">
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.25em] text-muted-foreground/40">
-                Navegação temporal
-              </h3>
-              <div className="flex items-center gap-3 bg-muted/20 p-1.5 border border-border/20 rounded-2xl">
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-background shadow-sm transition-all duration-200" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
-                  <ChevronLeft className="h-4 w-4 text-muted-foreground/60" />
-                </Button>
-                <span className="text-sm font-bold text-foreground/80 capitalize min-w-[160px] text-center period-transition tracking-tight" key={periodLabel}>
-                  {periodLabel}
-                </span>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-background shadow-sm transition-all duration-200" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
-                </Button>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-sm font-medium text-foreground capitalize min-w-[140px] text-center period-transition" key={periodLabel}>
+                {periodLabel}
+              </span>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-          <div className="lg:col-span-8 space-y-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-8 space-y-6">
             {/* 2. Lucro / Receita / Gastos */}
             {canViewFinance && (
               <ExecutiveHeroBlock
@@ -158,7 +140,7 @@ export default function Dashboard() {
             )}
           </div>
           
-          <div className="lg:col-span-4 space-y-10">
+          <div className="lg:col-span-4 space-y-6">
             {/* 3. Alertas */}
             <AlertasInteligentes />
 
