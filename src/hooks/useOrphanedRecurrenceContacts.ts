@@ -24,6 +24,14 @@ export interface OrphanedGroup {
   contacts: OrphanedRecurrenceContact[];
 }
 
+const normalizePhone = (raw?: string | null) => {
+  const digits = (raw ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("55")) return digits;
+  if (digits.length <= 11) return `55${digits}`;
+  return digits;
+};
+
 export function useOrphanedRecurrenceContacts() {
   const { organization } = useOrganization();
   const queryClient = useQueryClient();
@@ -33,7 +41,6 @@ export function useOrphanedRecurrenceContacts() {
     queryFn: async (): Promise<{ groups: OrphanedGroup[]; total: number }> => {
       if (!organization?.id) return { groups: [], total: 0 };
 
-      // 1. Get all active recurrence entries with client info
       const { data: entries, error: entriesErr } = await (supabase as any)
         .from("recurrence_entries")
         .select(`
@@ -46,19 +53,47 @@ export function useOrphanedRecurrenceContacts() {
       if (entriesErr) throw entriesErr;
       if (!entries || entries.length === 0) return { groups: [], total: 0 };
 
-      // 2. Get all whatsapp_contacts for this org (linked to clients)
       const clientIds = Array.from(new Set<string>(entries.map((e: any) => String(e.client_id))));
-      const { data: waContacts, error: waErr } = await supabase
-        .from("whatsapp_contacts")
-        .select("id, linked_client_id, channel_id, normalized_phone")
-        .eq("organization_id", organization.id)
-        .in("linked_client_id", clientIds);
+      const normalizedClientPhones = Array.from(
+        new Set(
+          entries
+            .map((entry: any) => normalizePhone(entry.client?.whatsapp || entry.client?.phone))
+            .filter(Boolean) as string[]
+        )
+      );
 
-      if (waErr) throw waErr;
+      const [linkedContactsResult, phoneMatchedContactsResult, channelsResult] = await Promise.all([
+        supabase
+          .from("whatsapp_contacts")
+          .select("id, linked_client_id, channel_id, normalized_phone")
+          .eq("organization_id", organization.id)
+          .in("linked_client_id", clientIds),
+        normalizedClientPhones.length > 0
+          ? supabase
+              .from("whatsapp_contacts")
+              .select("id, linked_client_id, channel_id, normalized_phone")
+              .eq("organization_id", organization.id)
+              .in("normalized_phone", normalizedClientPhones)
+          : Promise.resolve({ data: [], error: null }),
+        supabase
+          .from("whatsapp_channels")
+          .select("id, name, channel_status, is_connected, phone_number")
+          .eq("organization_id", organization.id),
+      ]);
 
-      // 2b. Get transition history to recover old channel names for contacts with null channel_id
-      const waContactIds = (waContacts || []).map(wc => wc.id);
-      let transitionMap = new Map<string, string>(); // contact_id -> previous_channel_id
+      if (linkedContactsResult.error) throw linkedContactsResult.error;
+      if (phoneMatchedContactsResult.error) throw phoneMatchedContactsResult.error;
+      if (channelsResult.error) throw channelsResult.error;
+
+      const waContacts = [
+        ...(linkedContactsResult.data || []),
+        ...(phoneMatchedContactsResult.data || []),
+      ].filter(
+        (contact, index, arr) => arr.findIndex((item) => item.id === contact.id) === index
+      );
+
+      const waContactIds = waContacts.map((wc) => wc.id);
+      const transitionMap = new Map<string, string>();
       if (waContactIds.length > 0) {
         const { data: transitions } = await (supabase as any)
           .from("whatsapp_channel_transitions")
@@ -68,47 +103,48 @@ export function useOrphanedRecurrenceContacts() {
           .order("created_at", { ascending: false });
 
         if (transitions) {
-          for (const t of transitions) {
-            // Keep only the most recent transition per contact (already sorted desc)
-            if (t.previous_channel_id && !transitionMap.has(t.contact_id)) {
-              transitionMap.set(t.contact_id, t.previous_channel_id);
+          for (const transition of transitions) {
+            if (transition.previous_channel_id && !transitionMap.has(transition.contact_id)) {
+              transitionMap.set(transition.contact_id, transition.previous_channel_id);
             }
           }
         }
       }
 
-      // 3. Get all channels for this org (including deleted ones for name reference)
-      const { data: allChannels, error: chErr } = await supabase
-        .from("whatsapp_channels")
-        .select("id, name, channel_status, is_connected, phone_number")
-        .eq("organization_id", organization.id);
-
-      if (chErr) throw chErr;
-
       const channelMap = new Map<string, any>();
-      for (const ch of allChannels || []) {
-        channelMap.set(ch.id, ch);
+      for (const channel of channelsResult.data || []) {
+        channelMap.set(channel.id, channel);
       }
 
-      // 4. Build a map: clientId -> best whatsapp_contact
       const clientContactMap = new Map<string, any>();
-      for (const wc of waContacts || []) {
-        if (!wc.linked_client_id) continue;
-        const existing = clientContactMap.get(wc.linked_client_id);
-        // Prefer the one with a channel_id
-        if (!existing || (wc.channel_id && !existing.channel_id)) {
-          clientContactMap.set(wc.linked_client_id, wc);
+      const phoneContactMap = new Map<string, any>();
+
+      for (const wc of waContacts) {
+        if (wc.linked_client_id) {
+          const existing = clientContactMap.get(wc.linked_client_id);
+          if (!existing || (wc.channel_id && !existing.channel_id)) {
+            clientContactMap.set(wc.linked_client_id, wc);
+          }
+        }
+
+        if (wc.normalized_phone) {
+          const existing = phoneContactMap.get(wc.normalized_phone);
+          if (!existing || (wc.channel_id && !existing.channel_id)) {
+            phoneContactMap.set(wc.normalized_phone, wc);
+          }
         }
       }
 
-      // 5. Identify orphaned contacts
       const orphaned: OrphanedRecurrenceContact[] = [];
 
       for (const entry of entries) {
         const client = entry.client;
         if (!client) continue;
 
-        const waContact = clientContactMap.get(client.id);
+        const normalizedClientPhone = normalizePhone(client.whatsapp || client.phone);
+        const waContact =
+          clientContactMap.get(client.id) ||
+          (normalizedClientPhone ? phoneContactMap.get(normalizedClientPhone) : null);
 
         let isOrphaned = false;
         let blockReason = "";
@@ -117,18 +153,16 @@ export function useOrphanedRecurrenceContacts() {
         let channelStatus: string | null = null;
 
         if (!waContact || !waContact.channel_id) {
-          // No whatsapp contact or no channel linked
           isOrphaned = true;
           blockReason = "Sem canal vinculado";
 
-          // Try to recover old channel name from transition history
           if (waContact?.id) {
             const prevChannelId = transitionMap.get(waContact.id);
             if (prevChannelId) {
               channelId = prevChannelId;
               const prevChannel = channelMap.get(prevChannelId);
               if (prevChannel) {
-                channelName = prevChannel.name + " (removido)";
+                channelName = `${prevChannel.name} (removido)`;
                 channelStatus = "deleted";
               } else {
                 channelName = "Canal removido (histórico)";
@@ -181,7 +215,6 @@ export function useOrphanedRecurrenceContacts() {
         }
       }
 
-      // 6. Group by old channel
       const groupMap = new Map<string, OrphanedGroup>();
 
       for (const contact of orphaned) {
@@ -216,13 +249,11 @@ export function useOrphanedRecurrenceContacts() {
     }) => {
       if (!organization?.id) throw new Error("Sem organização");
 
-      // Get old channel info for audit
       const { data: contacts } = await supabase
         .from("whatsapp_contacts")
         .select("id, channel_id")
         .in("id", contactIds);
 
-      // Update channel_id on whatsapp_contacts
       const { error } = await supabase
         .from("whatsapp_contacts")
         .update({ channel_id: newChannelId, updated_at: new Date().toISOString() })
@@ -230,8 +261,7 @@ export function useOrphanedRecurrenceContacts() {
 
       if (error) throw error;
 
-      // Log audit (best-effort, don't block on failure)
-      const oldChannelIds = [...new Set((contacts || []).map(c => c.channel_id).filter(Boolean))];
+      const oldChannelIds = [...new Set((contacts || []).map((c) => c.channel_id).filter(Boolean))];
       try {
         await (supabase as any).from("data_audit_log").insert({
           organization_id: organization.id,
