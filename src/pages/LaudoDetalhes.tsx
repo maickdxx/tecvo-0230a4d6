@@ -399,6 +399,13 @@ export default function LaudoDetalhes() {
           </SectionCard>
         )}
 
+        {/* Observations */}
+        {report.observations && (
+          <SectionCard icon={MessageSquare} title="Observações Finais">
+            <p className="text-sm whitespace-pre-wrap">{report.observations}</p>
+          </SectionCard>
+        )}
+
         {/* Conclusion / Final Status */}
         {(() => {
           // Derive overall status from equipment or legacy field
