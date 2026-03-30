@@ -90,9 +90,11 @@ export default function Financeiro() {
 
       {/* Summary cards */}
       <FinanceSummary
-        income={totals.income}
-        expense={totals.expense}
-        balance={totals.balance}
+        income={metrics.income}
+        expense={metrics.expense}
+        balance={metrics.balance}
+        pendingIncome={metrics.pendingIncome}
+        forecastedRevenue={metrics.forecastedRevenue}
       />
 
       {/* Tabs */}
