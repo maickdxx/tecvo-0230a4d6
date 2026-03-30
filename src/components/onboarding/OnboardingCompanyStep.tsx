@@ -56,8 +56,8 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
         if (user) {
           const updateData: any = {};
 
-          // If user has no phone, save the one they just entered
-          if (!hasWhatsappPersonal) {
+          // Save personal WhatsApp only if provided
+          if (!hasWhatsappPersonal && formData.personalWhatsapp.replace(/\D/g, "").length >= 10) {
             let personalDigits = formData.personalWhatsapp.replace(/\D/g, "");
             if (!personalDigits.startsWith("55") && personalDigits.length <= 11) {
               personalDigits = "55" + personalDigits;
