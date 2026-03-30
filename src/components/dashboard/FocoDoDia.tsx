@@ -80,7 +80,7 @@ export function FocoDoDia() {
                 <div 
                   className={cn(
                     "h-full rounded-full transition-all duration-1000",
-                    isComplete ? "bg-emerald-500" : "bg-primary"
+                    isComplete ? "bg-success" : "bg-primary"
                   )}
                   style={{ width: `${metrics.percentage}%` }}
                 />
