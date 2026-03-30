@@ -123,11 +123,12 @@ export function useWhatsAppMessages(contactId: string | null) {
     return () => { supabase.removeChannel(channel); };
   }, [contactId, organization?.id]);
 
-  // Polling fallback every 8s to catch missed realtime events
+  // Polling fallback every 8s to catch missed realtime events (pauses when tab hidden)
   useEffect(() => {
     if (!contactId || !organization?.id) return;
 
     const poll = async () => {
+      if (document.hidden) return; // Skip poll when tab is not visible
       if (!lastFetchRef.current) return;
       const { data } = await supabase
         .from("whatsapp_messages")
@@ -163,8 +164,18 @@ export function useWhatsAppMessages(contactId: string | null) {
     };
 
     pollIntervalRef.current = setInterval(poll, 8000);
+
+    // Refetch when tab becomes visible again after being hidden
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        poll();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [contactId, organization?.id]);
 
