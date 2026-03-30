@@ -66,13 +66,26 @@ export function CurrentSituationBlock() {
     dateField: "due_date",
   });
 
-  const { totalPayable, totalReceivable, projectedFlow, projectedBalance, forecastLevel } = useMemo(() => {
+  // Fetch services for forecasted revenue
+  const { transactions: servicesData, isLoading: isLoadingServices } = useTransactions({
+    startDate: today,
+    endDate: in15Days,
+    type: "income",
+    dateField: "due_date", // We'll filter differently if needed, but for now let's see
+  });
+
+  // Actually we need the services hook to get scheduled value
+  const { data: dashboardMetrics } = useDashboardMetrics(today, in15Days, today, today);
+
+  const { totalPayable, totalReceivable, forecastedRevenue, projectedFlow, projectedBalance, forecastLevel } = useMemo(() => {
     const pending = (txs: typeof payables) =>
       txs.filter((t) => t.status === "pending" || t.status === "overdue").reduce((s, t) => s + Number(t.amount), 0);
 
     const tp = pending(payables);
     const tr = pending(receivables);
+    const fr = dashboardMetrics?.forecastedRevenue || 0;
 
+    // Projected Flow considers real money (A Receber - A Pagar)
     const pFlow = tr - tp;
     const pBalance = totalBalance + tr - tp;
 
@@ -86,11 +99,12 @@ export function CurrentSituationBlock() {
     return {
       totalPayable: tp,
       totalReceivable: tr,
+      forecastedRevenue: fr,
       projectedFlow: pFlow,
       projectedBalance: pBalance,
       forecastLevel: forecast,
     };
-  }, [payables, receivables, totalBalance]);
+  }, [payables, receivables, totalBalance, dashboardMetrics]);
 
   const forecast = forecastConfig[forecastLevel];
   const ForecastIcon = forecast.icon;
