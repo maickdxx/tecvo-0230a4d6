@@ -154,7 +154,7 @@ export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        As preferências são salvas automaticamente no seu navegador.
+        As preferências são salvas automaticamente na sua conta e sincronizadas entre dispositivos.
       </p>
     </div>
   );
