@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { toast } from "sonner";
-import { trackFBEvent } from "@/lib/fbPixel";
 
 const SERVICE_THRESHOLD = 3;
 
@@ -63,7 +62,6 @@ export function ValueMilestoneBanner() {
       if (error) throw error;
     },
     onSuccess: () => {
-      trackFBEvent("CompleteRegistration", { content_name: "value_milestone", currency: "BRL", value: 0 });
       queryClient.invalidateQueries({ queryKey: ["profile-onboarding", userId] });
     },
     onError: () => {

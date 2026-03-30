@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useSubscription } from "./useSubscription";
-import { trackFBEvent } from "@/lib/fbPixel";
 
 interface GuidedStep {
   completed: boolean;
@@ -94,7 +93,6 @@ export function useGuidedOnboarding(): GuidedOnboardingData {
       if (profileError) throw profileError;
     },
     onSuccess: () => {
-      trackFBEvent("CompleteRegistration", { content_name: "onboarding_dismissed", currency: "BRL", value: 0 });
       queryClient.invalidateQueries({ queryKey: ["guided-onboarding"] });
       queryClient.invalidateQueries({ queryKey: ["profile-onboarding", session?.user?.id] });
     },
