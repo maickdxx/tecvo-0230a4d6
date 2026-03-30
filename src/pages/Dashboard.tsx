@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from "react";
-import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen, Clock, TrendingUp, Sparkles } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen, Clock, TrendingUp } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
 import { DashboardBanners } from "@/components/dashboard/DashboardBanners";
@@ -23,7 +23,7 @@ import { TimePerformanceDashboard } from "@/components/dashboard/TimePerformance
 import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBlock";
 import { ExecutiveHeroBlock } from "@/components/dashboard/ExecutiveHeroBlock";
 import { RevenueEngineBlock } from "@/components/dashboard/RevenueEngineBlock";
-import { WeatherForecast } from "@/components/dashboard/WeatherForecast";
+
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
 import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
