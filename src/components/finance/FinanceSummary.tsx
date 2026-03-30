@@ -1,4 +1,4 @@
-import { ArrowDownCircle, ArrowUpCircle, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Wallet, CalendarDays, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +6,8 @@ interface FinanceSummaryProps {
   income: number;
   expense: number;
   balance: number;
+  pendingIncome?: number;
+  forecastedRevenue?: number;
 }
 
 export function FinanceSummary({ income, expense, balance }: FinanceSummaryProps) {
