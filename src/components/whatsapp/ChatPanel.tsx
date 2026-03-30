@@ -97,7 +97,7 @@ interface ChatPanelProps {
   onSelectContact?: (id: string) => void;
 }
 
-export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent }: ChatPanelProps) {
+export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent, onSelectContact }: ChatPanelProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile } = useAuth();
