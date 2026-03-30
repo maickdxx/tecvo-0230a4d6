@@ -110,7 +110,7 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
                 placeholder="(11) 99999-9999"
                 className="text-base h-12"
                 autoFocus
-                required
+                required={false}
               />
               <p className="text-[11px] text-muted-foreground">
                 Usado para notificações, alertas e automações da Tecvo diretamente para você.
