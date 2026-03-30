@@ -330,7 +330,7 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
   return (
     <>
       {/* Top Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border safe-top h-14">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border safe-top">
         <div className="flex h-14 items-center justify-between px-4 gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             {organization?.logo_url ? (
