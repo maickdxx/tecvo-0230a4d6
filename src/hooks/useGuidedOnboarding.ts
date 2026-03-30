@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useSubscription } from "./useSubscription";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 interface GuidedStep {
   completed: boolean;
