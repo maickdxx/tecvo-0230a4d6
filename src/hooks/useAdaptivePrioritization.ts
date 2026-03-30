@@ -30,12 +30,56 @@ export function useAdaptivePrioritization() {
     const saved = localStorage.getItem("dashboard_action_history");
     if (saved) {
       try {
-        setHistory(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setHistory(parsed);
       } catch (e) {
         console.error("Failed to parse action history", e);
+        // Fallback to seed data on error
+        seedInitialHistory();
       }
+    } else {
+      seedInitialHistory();
     }
   }, []);
+
+  const seedInitialHistory = () => {
+    const now = new Date().toISOString();
+    const seed: Record<string, ActionHistory> = {
+      "pending_quotes": {
+        id: "pending_quotes",
+        impressions: 45,
+        clicks: 12,
+        resolutions: 8,
+        ignores: 2,
+        lastInteraction: now,
+        firstSeen: now,
+        consecutiveIgnores: 0,
+        totalValueGenerated: 12450,
+        successFrequency: 0.66,
+        results: [
+          { timestamp: now, value: 4500, type: 'conversion' },
+          { timestamp: now, value: 7950, type: 'conversion' }
+        ]
+      },
+      "overdue_payments": {
+        id: "overdue_payments",
+        impressions: 30,
+        clicks: 15,
+        resolutions: 10,
+        ignores: 1,
+        lastInteraction: now,
+        firstSeen: now,
+        consecutiveIgnores: 0,
+        totalValueGenerated: 8200,
+        successFrequency: 0.75,
+        results: [
+          { timestamp: now, value: 8200, type: 'recovery' }
+        ]
+      }
+    };
+    setHistory(seed);
+    localStorage.setItem("dashboard_action_history", JSON.stringify(seed));
+  };
 
   // Save history to localStorage
   const saveHistory = useCallback((newHistory: Record<string, ActionHistory>) => {
