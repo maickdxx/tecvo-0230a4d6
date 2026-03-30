@@ -120,6 +120,23 @@ export function useOrphanedRecurrenceContacts() {
           // No whatsapp contact or no channel linked
           isOrphaned = true;
           blockReason = "Sem canal vinculado";
+
+          // Try to recover old channel name from transition history
+          if (waContact?.id) {
+            const prevChannelId = transitionMap.get(waContact.id);
+            if (prevChannelId) {
+              channelId = prevChannelId;
+              const prevChannel = channelMap.get(prevChannelId);
+              if (prevChannel) {
+                channelName = prevChannel.name + " (removido)";
+                channelStatus = "deleted";
+              } else {
+                channelName = "Canal removido (histórico)";
+                channelStatus = "deleted";
+              }
+              blockReason = "Canal excluído";
+            }
+          }
         } else {
           channelId = waContact.channel_id;
           const channel = channelMap.get(waContact.channel_id);
