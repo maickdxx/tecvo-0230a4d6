@@ -52,7 +52,7 @@ interface ConversationListProps {
   onLoadMore?: () => void;
 }
 
-type StatusFilter = "all" | "novas" | "atendendo" | "aguardando" | "finalizado";
+type StatusFilter = "novas" | "atendendo" | "aguardando" | "finalizado";
 type ConversionFilter = string | null;
 
 function formatCount(count: number): string {
@@ -81,7 +81,26 @@ export function ConversationList({
   onLoadMore,
 }: ConversationListProps) {
   const { organization } = useOrganization();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("atendendo");
+  
+  // Persist status filter
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
+    const saved = localStorage.getItem("tecvo_whatsapp_status_filter");
+    if (saved === "novas" || saved === "atendendo" || saved === "aguardando" || saved === "finalizado") {
+      return saved as StatusFilter;
+    }
+    return "atendendo";
+  });
+
+  // Effect to ensure status is always valid and persisted
+  useEffect(() => {
+    if (!statusFilter || !["novas", "atendendo", "aguardando", "finalizado"].includes(statusFilter)) {
+      setStatusFilter("atendendo");
+      localStorage.setItem("tecvo_whatsapp_status_filter", "atendendo");
+    } else {
+      localStorage.setItem("tecvo_whatsapp_status_filter", statusFilter);
+    }
+  }, [statusFilter]);
+
   const [conversionFilter, setConversionFilter] = useState<ConversionFilter>(null);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(loadFiltersFromStorage);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -315,7 +334,12 @@ export function ConversationList({
         {filters.map((f) => (
           <button
             key={f.key}
-            onClick={() => { setStatusFilter(prev => prev === f.key ? "all" : f.key); setSelectedIds(new Set()); }}
+            onClick={() => { 
+              if (statusFilter !== f.key) {
+                setStatusFilter(f.key); 
+                setSelectedIds(new Set()); 
+              }
+            }}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
               statusFilter === f.key
                 ? "bg-primary/10 text-primary"
