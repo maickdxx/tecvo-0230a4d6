@@ -71,7 +71,7 @@ interface DashboardAction {
   insight?: string;
 }
 
-export function TodayActionsBlock() {
+export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean }) {
   const navigate = useNavigate();
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
@@ -457,17 +457,19 @@ export function TodayActionsBlock() {
   const secondaryActions = actions.slice(1);
 
   return (
-    <div className="mb-8 page-enter">
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-foreground/70">
-          🎯 Recomendações da Tecvo
-        </h2>
-        <div className="flex-1 h-px bg-border/40" />
-      </div>
+    <div className={cn(isLeanView ? "" : "mb-8", "page-enter")}>
+      {!isLeanView && (
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-foreground/70">
+            🎯 Recomendações da Tecvo
+          </h2>
+          <div className="flex-1 h-px bg-border/40" />
+        </div>
+      )}
 
-      <div className="grid gap-4 lg:grid-cols-12">
+      <div className={cn("grid gap-4", isLeanView ? "grid-cols-1" : "lg:grid-cols-12")}>
         {/* Priority Action (Highlight) - "Melhor ação agora" */}
-        <div className="lg:col-span-5">
+        <div className={cn(isLeanView ? "" : "lg:col-span-5")}>
           <button
             onClick={priorityAction.action}
             className={cn(
@@ -575,7 +577,7 @@ export function TodayActionsBlock() {
           </button>
         </div>
 
-        <div className="lg:col-span-7 grid gap-3 sm:grid-cols-2">
+        <div className={cn(isLeanView ? "grid gap-3" : "lg:col-span-7 grid gap-3 sm:grid-cols-2")}>
           {secondaryActions.map((item) => (
             <button
               key={item.id}
