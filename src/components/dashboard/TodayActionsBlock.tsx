@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdaptivePrioritization } from "@/hooks/useAdaptivePrioritization";
+import { useDailyRoutine } from "@/hooks/useDailyRoutine";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
