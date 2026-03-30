@@ -24,20 +24,21 @@ interface NewConversationDialogProps {
   onOpenChange: (open: boolean) => void;
   channels: ChannelOption[];
   onSelected: (contactId: string) => void;
+  prefillPhone?: string;
 }
 
 function normalizePhone(raw: string): string {
   return (raw || "").replace(/\D/g, "");
 }
 
-export function NewConversationDialog({ open, onOpenChange, channels, onSelected }: NewConversationDialogProps) {
+export function NewConversationDialog({ open, onOpenChange, channels, onSelected, prefillPhone }: NewConversationDialogProps) {
   const { organization } = useOrganization();
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState("");
-  const [createPhone, setCreatePhone] = useState("");
+  const [createPhone, setCreatePhone] = useState(prefillPhone || "");
   const [creating, setCreating] = useState(false);
 
   // Channel selection — only relevant when 2+ connected channels
