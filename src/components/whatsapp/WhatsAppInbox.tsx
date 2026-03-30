@@ -73,12 +73,30 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
     }
   }, [location.state?.resetChat]);
 
-  // Auto-select contact from URL query param
+  // Auto-select contact from URL query params (contact id OR phone number)
   useEffect(() => {
     const contactFromUrl = searchParams.get("contact");
+    const phoneFromUrl = searchParams.get("phone");
+    const messageFromUrl = searchParams.get("message");
+
+    if (messageFromUrl) {
+      setInitialMessage(messageFromUrl);
+    }
+
     if (contactFromUrl && !selectedContactId) {
       setSelectedContactId(contactFromUrl);
       markAsRead(contactFromUrl);
+    } else if (phoneFromUrl && !selectedContactId && contacts.length > 0) {
+      const cleanPhone = phoneFromUrl.replace(/\D/g, "");
+      const matchingContact = contacts.find(c => {
+        const cPhone = (c.phone || "").replace(/\D/g, "");
+        if (!cPhone || !cleanPhone) return false;
+        return cPhone.includes(cleanPhone) || cleanPhone.includes(cPhone);
+      });
+      if (matchingContact) {
+        setSelectedContactId(matchingContact.id);
+        markAsRead(matchingContact.id);
+      }
     }
   }, [searchParams, contacts]);
   const [showContactInfo, setShowContactInfo] = useState(false);
