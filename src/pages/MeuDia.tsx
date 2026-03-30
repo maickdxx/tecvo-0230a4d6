@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import { AppLayout } from "@/components/layout";
 import { DemoContextTip } from "@/components/demo/DemoContextTip";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,8 +61,16 @@ export default function MeuDia() {
   const timeClockEnabled = (organization as any)?.time_clock_enabled === true;
 
   const todayStr = getTodayInTz(tz);
-  const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
-  const weekEndStr = format(addDays(new Date(), 6), "yyyy-MM-dd");
+  const tomorrowDate = (() => {
+    const [y, m, d] = todayStr.split("-").map(Number);
+    return new Date(y, m - 1, d + 1);
+  })();
+  const tomorrowStr = format(tomorrowDate, "yyyy-MM-dd");
+  const weekEndDate = (() => {
+    const [y, m, d] = todayStr.split("-").map(Number);
+    return new Date(y, m - 1, d + 6);
+  })();
+  const weekEndStr = format(weekEndDate, "yyyy-MM-dd");
 
   const baseFiltered = useMemo(() => {
     if (!services) return [];
@@ -144,7 +152,7 @@ export default function MeuDia() {
       totalTravelTime += (travelEnd - travelStart) / 60000;
     });
 
-    const revenue = svcs.reduce((sum, s) => sum + (s.value || 0), 0);
+    const revenue = completed.reduce((sum, s) => sum + (s.value || 0), 0);
 
     return {
       totalServices: svcs.length,
@@ -168,12 +176,8 @@ export default function MeuDia() {
   };
 
   const handleComplete = (service: Service) => {
-    if (!service.value && !requireClientSignature) {
-      handleStatusChange(service.id, "completed", undefined, []);
-    } else {
-      setCompletingService(service);
-      setCompleteDialogOpen(true);
-    }
+    setCompletingService(service);
+    setCompleteDialogOpen(true);
   };
 
   const handleOperationalStatusChange = async (serviceId: string, status: OperationalStatus) => {
