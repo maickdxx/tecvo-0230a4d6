@@ -99,7 +99,7 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
             <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
               <div className="flex items-center gap-2">
                 <MessageCircle className="h-4 w-4 text-primary" />
-                <Label htmlFor="personal-whatsapp" className="font-semibold text-foreground">Seu WhatsApp pessoal</Label>
+                <Label htmlFor="personal-whatsapp" className="font-semibold text-foreground">Seu WhatsApp pessoal <span className="text-muted-foreground font-normal">(opcional)</span></Label>
               </div>
               <Input 
                 id="personal-whatsapp" 
