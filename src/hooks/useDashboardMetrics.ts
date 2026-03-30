@@ -102,6 +102,7 @@ export function useDashboardMetrics(
     expense,
     balance,
     margin,
+    pendingIncome,
     forecastedRevenue: Number(data.forecasted_revenue) || 0,
     averageTicket,
 
