@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUserRole } from "./useUserRole";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface ActionResult {
   timestamp: string;
@@ -22,25 +24,53 @@ export interface ActionHistory {
 }
 
 export function useAdaptivePrioritization() {
+  const { session } = useAuth();
   const { role, isOwner, isAdmin, isEmployee } = useUserRole();
   const [history, setHistory] = useState<Record<string, ActionHistory>>({});
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load history from localStorage
+  // Load history from Supabase or localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("dashboard_action_history");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setHistory(parsed);
-      } catch (e) {
-        console.error("Failed to parse action history", e);
-        // Fallback to seed data on error
+    const loadHistory = async () => {
+      // 1. Check local storage
+      const saved = localStorage.getItem("dashboard_action_history");
+      let localData = null;
+      if (saved) {
+        try {
+          localData = JSON.parse(saved);
+        } catch (e) {
+          console.error("Failed to parse action history", e);
+        }
+      }
+
+      // 2. Fetch from Supabase if session exists
+      if (session?.user?.id) {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("dashboard_action_history")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
+        if (!error && profile?.dashboard_action_history) {
+          const dbData = profile.dashboard_action_history as Record<string, ActionHistory>;
+          // Merge if necessary, prioritizing database
+          setHistory(dbData);
+          setIsLoaded(true);
+          return;
+        }
+      }
+
+      // 3. Fallback to local data or seed initial history
+      if (localData) {
+        setHistory(localData);
+      } else {
         seedInitialHistory();
       }
-    } else {
-      seedInitialHistory();
-    }
-  }, []);
+      setIsLoaded(true);
+    };
+
+    loadHistory();
+  }, [session?.user?.id]);
 
   const seedInitialHistory = () => {
     const now = new Date().toISOString();
@@ -81,13 +111,24 @@ export function useAdaptivePrioritization() {
     localStorage.setItem("dashboard_action_history", JSON.stringify(seed));
   };
 
-  // Save history to localStorage
-  const saveHistory = useCallback((newHistory: Record<string, ActionHistory>) => {
+  // Save history to both localStorage and Supabase
+  const saveHistory = useCallback(async (newHistory: Record<string, ActionHistory>) => {
     setHistory(newHistory);
     localStorage.setItem("dashboard_action_history", JSON.stringify(newHistory));
-  }, []);
+    
+    if (session?.user?.id) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ dashboard_action_history: newHistory as any })
+        .eq("user_id", session.user.id);
+      
+      if (error) console.error("Error saving action history to Supabase:", error);
+    }
+  }, [session?.user?.id]);
 
   const recordInteraction = useCallback((actionId: string, type: 'impression' | 'click' | 'resolution' | 'ignore') => {
+    if (!isLoaded) return;
+    
     const now = new Date().toISOString();
     const current = history[actionId] || {
       id: actionId,
@@ -121,9 +162,11 @@ export function useAdaptivePrioritization() {
 
     const newHistory = { ...history, [actionId]: updated };
     saveHistory(newHistory);
-  }, [history, saveHistory]);
+  }, [history, isLoaded, saveHistory]);
 
   const recordResult = useCallback((actionId: string, value: number, type: 'conversion' | 'recovery' | 'revenue') => {
+    if (!isLoaded) return;
+
     const now = new Date().toISOString();
     const current = history[actionId] || {
       id: actionId,
@@ -145,13 +188,12 @@ export function useAdaptivePrioritization() {
       lastInteraction: now,
       results: [...current.results, newResult],
       totalValueGenerated: current.totalValueGenerated + value,
-      // Success frequency = results / clicks (if clicks > 0)
       successFrequency: current.clicks > 0 ? (current.results.length + 1) / current.clicks : 1
     };
 
     const newHistory = { ...history, [actionId]: updated };
     saveHistory(newHistory);
-  }, [history, saveHistory]);
+  }, [history, isLoaded, saveHistory]);
 
   const getScoreAdjustment = useCallback((actionId: string, baseScore: number) => {
     const data = history[actionId];
@@ -159,23 +201,14 @@ export function useAdaptivePrioritization() {
 
     let adjustment = 0;
 
-    // 1. Fator de Resultado Real (NOVO)
-    // Se essa ação gera muito valor financeiro real, aumenta muito a prioridade
     if (data.totalValueGenerated > 0) {
-      // Ajuste baseado no ROI histórico da ação
-      // Cada R$ 1000 gerados adicionam 100 ao score
       adjustment += (data.totalValueGenerated / 1000) * 100;
-      
-      // Ajuste baseado na frequência de sucesso
-      // Se 50% das vezes que clico, gera resultado, adiciona 200 ao score
       adjustment += (data.successFrequency * 200);
     }
 
-    // 2. Learning from clicks/resolutions
     const clickRate = data.impressions > 0 ? data.clicks / data.impressions : 0;
-    adjustment += clickRate * 50; // Reduzi de 100 para 50 para dar mais peso ao resultado real
+    adjustment += clickRate * 50; 
 
-    // 3. Learning from ignores
     if (data.consecutiveIgnores > 3) {
       if (baseScore > 800) {
         adjustment += data.consecutiveIgnores * 50;
@@ -184,7 +217,6 @@ export function useAdaptivePrioritization() {
       }
     }
 
-    // 4. Profile based weighting
     if (isOwner || isAdmin) {
       if (actionId.includes('payment') || actionId.includes('quote') || actionId.includes('inactive')) {
         adjustment += 150;
@@ -202,7 +234,6 @@ export function useAdaptivePrioritization() {
     const data = history[actionId];
     if (!data) return defaultInsight;
 
-    // Insight baseado em Resultado Real
     if (data.totalValueGenerated > 0) {
       const formattedValue = new Intl.NumberFormat("pt-BR", {
         style: "currency",
@@ -232,6 +263,7 @@ export function useAdaptivePrioritization() {
     recordResult,
     getScoreAdjustment,
     getAdaptiveInsight,
-    history
+    history,
+    isLoaded
   };
 }
