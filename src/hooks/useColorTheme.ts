@@ -17,14 +17,14 @@ export function useColorTheme() {
     }
   });
 
-  // Sync with profile on load
+  // Sync with profile on load but only if we don't have a value yet or it changes from another session
   useEffect(() => {
-    if (profile?.color_theme) {
+    if (profile?.color_theme && profile.color_theme !== colorTheme) {
       const theme = profile.color_theme as ColorTheme;
       setColorThemeState(theme);
       localStorage.setItem(STORAGE_KEY, theme);
     }
-  }, [profile?.color_theme]);
+  }, [profile?.color_theme, colorTheme]);
 
   const setColorTheme = useCallback(async (theme: ColorTheme) => {
     setColorThemeState(theme);
