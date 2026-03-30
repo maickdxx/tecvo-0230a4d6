@@ -96,6 +96,10 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       if (matchingContact) {
         setSelectedContactId(matchingContact.id);
         markAsRead(matchingContact.id);
+      } else {
+        // Fallback: No contact found — pre-fill new conversation dialog
+        setPrefillPhone(phoneFromUrl);
+        setShowNewConversation(true);
       }
     }
   }, [searchParams, contacts]);
