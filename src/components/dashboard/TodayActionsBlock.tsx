@@ -372,8 +372,11 @@ export function TodayActionsBlock() {
       });
     }
 
-    return result.sort((a, b) => b.score - a.score).slice(0, 5);
-  }, [counts, today, getScoreAdjustment, getAdaptiveInsight, recordInteraction, history, navigate]);
+    return result
+      .filter(a => !completedAlerts.includes(a.id))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  }, [counts, today, getScoreAdjustment, getAdaptiveInsight, recordInteraction, history, navigate, completedAlerts]);
 
   // Track impressions and resolutions
   const prevCounts = useMemo(() => {
