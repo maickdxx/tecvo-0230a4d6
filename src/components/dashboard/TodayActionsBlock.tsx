@@ -457,13 +457,15 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
   const secondaryActions = actions.slice(1);
 
   return (
-    <div className="mb-8 page-enter">
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-foreground/70">
-          🎯 Recomendações da Tecvo
-        </h2>
-        <div className="flex-1 h-px bg-border/40" />
-      </div>
+    <div className={cn(isLeanView ? "" : "mb-8", "page-enter")}>
+      {!isLeanView && (
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-foreground/70">
+            🎯 Recomendações da Tecvo
+          </h2>
+          <div className="flex-1 h-px bg-border/40" />
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-12">
         {/* Priority Action (Highlight) - "Melhor ação agora" */}
