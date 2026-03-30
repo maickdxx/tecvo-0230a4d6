@@ -119,82 +119,97 @@ export function ExecutiveHeroBlock({
   const goalLabel = granularity === "week" ? "Meta de receita da semana" : `Meta de receita${isManualGoal ? "" : " (sugerida)"}`;
 
   return (
-    <div className="space-y-8 mb-8 animate-fade-in">
+    <div className="space-y-12 mb-12 animate-fade-in">
       {/* SEÇÃO: REALIZADO (FINANCEIRO) */}
-      <div className="rounded-2xl border border-border/50 bg-card p-8 sm:p-10 shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-md">
-        {/* Subtle accent line for distinction */}
-        <div className="absolute top-0 left-0 w-1.5 h-full bg-success/30" />
+      <div className="rounded-[2.5rem] border border-border/40 bg-card p-10 sm:p-14 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:-translate-y-1 group">
+        {/* Decorative background elements for premium feel */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-success/5 rounded-full blur-3xl -mr-32 -mt-32 opacity-50 group-hover:opacity-100 transition-opacity duration-700" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -ml-24 -mb-24 opacity-30 group-hover:opacity-60 transition-opacity duration-700" />
         
-        <div className="mb-10">
-          <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground/70 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-success/80 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-            Realizado (Financeiro)
+        {/* Subtle accent line for distinction */}
+        <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-success/40 to-success/10" />
+        
+        <div className="mb-14 relative">
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-muted-foreground/50 flex items-center gap-2.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-success/60 shadow-[0_0_12px_rgba(34,197,94,0.5)] animate-pulse" />
+            Performance Financeira
           </h2>
-          <p className="text-sm text-muted-foreground/60 mt-1.5 font-medium">Fluxo de caixa consolidado no período</p>
+          <p className="text-base text-muted-foreground/60 mt-2 font-medium tracking-tight">Fluxo de caixa consolidado no período ativo</p>
         </div>
 
-        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-14 lg:flex-row lg:items-start lg:justify-between relative">
           <div className="flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/50 mb-2">
+            <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-muted-foreground/40 mb-3">
               {GRANULARITY_LABELS[granularity]} · {periodLabel}
             </p>
-            <p className={`text-5xl sm:text-6xl font-extrabold tracking-tighter number-display animate-count-up ${balance >= 0 ? "text-success" : "text-destructive"}`}>
-              {formatCurrency(animatedBalance)}
-            </p>
-            <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-baseline gap-4">
+              <p className={`text-6xl sm:text-7xl font-black tracking-tighter number-display animate-count-up drop-shadow-sm ${balance >= 0 ? "text-success bg-gradient-to-br from-success to-success/70 bg-clip-text text-transparent" : "text-destructive"}`}>
+                {formatCurrency(animatedBalance)}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-5 mt-6">
               {margin > 0 && (
-                <div className="px-2.5 py-1 rounded-full bg-muted/50 border border-border/30">
-                  <p className="text-xs font-semibold text-muted-foreground">Margem {margin.toFixed(1)}%</p>
+                <div className="px-4 py-1.5 rounded-full bg-muted/30 border border-border/20 shadow-sm">
+                  <p className="text-[11px] font-bold text-muted-foreground/80 tracking-wide uppercase">Margem {margin.toFixed(1)}%</p>
                 </div>
               )}
-              <ChangeBadge change={balanceChange} />
+              <div className="scale-110">
+                <ChangeBadge change={balanceChange} />
+              </div>
             </div>
 
             {showGoal && (
-              <div className="mt-10 space-y-3 max-w-md">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground/70 flex items-center gap-1.5 font-semibold">
-                    <Target className="h-3.5 w-3.5 opacity-70" /> {goalLabel}: {formatCurrency(effectiveGoal)}
+              <div className="mt-14 space-y-4 max-w-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground/60 flex items-center gap-2 font-bold uppercase tracking-wider">
+                    <Target className="h-4 w-4 opacity-50 text-primary" /> {goalLabel}: <span className="text-foreground/80">{formatCurrency(effectiveGoal)}</span>
                   </span>
-                  <Badge variant="outline" className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 h-6 border-none shadow-none ${goalStatus.className}`}>
+                  <Badge variant="outline" className={`text-[10px] uppercase font-black tracking-[0.15em] px-4 py-1.5 h-7 border-none shadow-none rounded-full ${goalStatus.className}`}>
                     {goalStatus.label}
                   </Badge>
                 </div>
-                <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary/40">
+                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted/40 p-0.5 border border-border/10">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ease-in-out ${progressColor} shadow-[0_0_10px_rgba(var(--primary),0.2)]`}
+                    className={`h-full rounded-full transition-all duration-1000 cubic-bezier(0.4, 0, 0.2, 1) ${progressColor} shadow-[0_0_15px_rgba(var(--primary),0.3)]`}
                     style={{ width: `${goalPct}%` }}
                   />
                 </div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
-                  {goalPct}% atingido
-                </p>
+                <div className="flex justify-between items-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30">
+                    {goalPct}% atingido
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
           {/* Realized Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-5 sm:min-w-[280px]">
-            <div className="flex items-center gap-4 rounded-2xl bg-success/[0.02] border border-success/10 p-5 transition-all duration-300 hover:bg-success/[0.04] hover:shadow-sm group">
-              <div className="rounded-xl bg-success/10 p-3 group-hover:scale-110 transition-transform duration-300 shadow-sm shadow-success/10">
-                <TrendingUp className="h-5 w-5 text-success" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-6 sm:min-w-[320px]">
+            <div className="flex items-center gap-5 rounded-[1.5rem] bg-success/[0.01] border border-success/10 p-7 transition-all duration-500 hover:bg-success/[0.03] hover:shadow-[0_8px_20px_rgba(34,197,94,0.06)] hover:-translate-x-1 group/item">
+              <div className="rounded-2xl bg-success/10 p-4 group-hover/item:scale-110 transition-all duration-500 shadow-sm shadow-success/10 ring-4 ring-success/5">
+                <TrendingUp className="h-6 w-6 text-success" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-0.5">Receita</p>
-                <p className="text-2xl font-bold tracking-tight number-display text-foreground">{formatCurrency(animatedIncome)}</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-1">Receita</p>
+                <p className="text-3xl font-bold tracking-tight number-display text-foreground/90">{formatCurrency(animatedIncome)}</p>
               </div>
-              <ChangeBadge change={incomeChange} />
+              <div className="scale-110">
+                <ChangeBadge change={incomeChange} />
+              </div>
             </div>
             
-            <div className="flex items-center gap-4 rounded-2xl bg-destructive/[0.02] border border-destructive/10 p-5 transition-all duration-300 hover:bg-destructive/[0.04] hover:shadow-sm group">
-              <div className="rounded-xl bg-destructive/10 p-3 group-hover:scale-110 transition-transform duration-300 shadow-sm shadow-destructive/10">
-                <TrendingDown className="h-5 w-5 text-destructive" />
+            <div className="flex items-center gap-5 rounded-[1.5rem] bg-destructive/[0.01] border border-destructive/10 p-7 transition-all duration-500 hover:bg-destructive/[0.03] hover:shadow-[0_8px_20px_rgba(239,68,68,0.06)] hover:-translate-x-1 group/item">
+              <div className="rounded-2xl bg-destructive/10 p-4 group-hover/item:scale-110 transition-all duration-500 shadow-sm shadow-destructive/10 ring-4 ring-destructive/5">
+                <TrendingDown className="h-6 w-6 text-destructive" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-0.5">Gastos</p>
-                <p className="text-2xl font-bold tracking-tight number-display text-foreground">{formatCurrency(animatedExpense)}</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-1">Gastos</p>
+                <p className="text-3xl font-bold tracking-tight number-display text-foreground/90">{formatCurrency(animatedExpense)}</p>
               </div>
-              <ChangeBadge change={expenseChange} />
+              <div className="scale-110">
+                <ChangeBadge change={expenseChange} />
+              </div>
             </div>
           </div>
         </div>
@@ -202,28 +217,31 @@ export function ExecutiveHeroBlock({
 
       {/* SEÇÃO: PREVISÃO */}
       {forecastedRevenue > 0 && (
-        <div className="rounded-2xl border border-border/40 bg-muted/30 p-8 shadow-sm transition-all duration-300 hover:bg-muted/40">
-          <div className="mb-6">
-            <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground/70 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary/40" />
-              Previsão
+        <div className="rounded-[2.5rem] border border-primary/10 bg-gradient-to-br from-primary/[0.03] via-primary/[0.01] to-transparent p-10 sm:p-14 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all duration-500 hover:shadow-[0_20px_40px_rgba(var(--primary),0.05)] hover:-translate-y-1 group overflow-hidden relative">
+          {/* Bluish accent for forecast */}
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-[100px] opacity-40 group-hover:opacity-70 transition-opacity duration-700" />
+          
+          <div className="mb-10 relative">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary/60 flex items-center gap-2.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-primary/40 shadow-[0_0_12px_rgba(var(--primary),0.4)]" />
+              Previsão Estratégica
             </h2>
-            <p className="text-sm text-muted-foreground/60 mt-1.5 font-medium">Estimativa de faturamento para serviços agendados</p>
+            <p className="text-base text-muted-foreground/50 mt-2 font-medium tracking-tight">Potencial de faturamento futuro baseado em agendamentos</p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-5 bg-background border border-border/50 rounded-2xl p-5 min-w-[280px] shadow-sm">
-              <div className="rounded-xl bg-primary/5 p-3">
-                <DollarSign className="h-6 w-6 text-primary/70" />
+          <div className="flex flex-wrap items-center gap-10 relative">
+            <div className="flex items-center gap-6 bg-background border border-border/40 rounded-[2rem] p-7 min-w-[340px] shadow-sm transition-all duration-500 group-hover:shadow-md group-hover:border-primary/20">
+              <div className="rounded-2xl bg-primary/5 p-4 ring-4 ring-primary/[0.02]">
+                <DollarSign className="h-8 w-8 text-primary/60" />
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-0.5">Faturamento previsto</p>
-                <p className="text-3xl font-bold tracking-tight number-display text-foreground/90">{formatCurrency(forecastedRevenue)}</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-1">Faturamento previsto</p>
+                <p className="text-4xl font-extrabold tracking-tight number-display text-foreground/80">{formatCurrency(forecastedRevenue)}</p>
               </div>
             </div>
             
-            <div className="hidden sm:block text-xs text-muted-foreground/50 max-w-[280px] leading-relaxed italic">
-              Este valor representa o faturamento bruto estimado de todas as ordens de serviço agendadas que ainda não foram concluídas.
+            <div className="hidden lg:block text-sm text-muted-foreground/40 max-w-[320px] leading-relaxed font-medium italic">
+              "Este valor representa o faturamento bruto estimado de todas as ordens de serviço agendadas que ainda não foram concluídas no sistema."
             </div>
           </div>
         </div>
