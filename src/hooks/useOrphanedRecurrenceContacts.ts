@@ -1,12 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 
 export interface OrphanedRecurrenceContact {
   recurrenceEntryId: string;
+  selectionId: string;
   clientId: string;
   clientName: string;
   clientPhone: string | null;
+  normalizedClientPhone: string | null;
   whatsappContactId: string | null;
   channelId: string | null;
   channelName: string | null;
@@ -15,6 +17,7 @@ export interface OrphanedRecurrenceContact {
   lastServiceType: string;
   lastServiceDate: string;
   lastServiceValue: number | null;
+  canReassign: boolean;
 }
 
 export interface OrphanedGroup {
@@ -53,7 +56,7 @@ export function useOrphanedRecurrenceContacts() {
       if (entriesErr) throw entriesErr;
       if (!entries || entries.length === 0) return { groups: [], total: 0 };
 
-      const clientIds = Array.from(new Set<string>(entries.map((e: any) => String(e.client_id))));
+      const clientIds = Array.from(new Set<string>(entries.map((entry: any) => String(entry.client_id))));
       const normalizedClientPhones = Array.from(
         new Set(
           entries
@@ -88,11 +91,9 @@ export function useOrphanedRecurrenceContacts() {
       const waContacts = [
         ...(linkedContactsResult.data || []),
         ...(phoneMatchedContactsResult.data || []),
-      ].filter(
-        (contact, index, arr) => arr.findIndex((item) => item.id === contact.id) === index
-      );
+      ].filter((contact, index, array) => array.findIndex((item) => item.id === contact.id) === index);
 
-      const waContactIds = waContacts.map((wc) => wc.id);
+      const waContactIds = waContacts.map((contact) => contact.id);
       const transitionMap = new Map<string, string>();
       if (waContactIds.length > 0) {
         const { data: transitions } = await (supabase as any)
@@ -119,18 +120,18 @@ export function useOrphanedRecurrenceContacts() {
       const clientContactMap = new Map<string, any>();
       const phoneContactMap = new Map<string, any>();
 
-      for (const wc of waContacts) {
-        if (wc.linked_client_id) {
-          const existing = clientContactMap.get(wc.linked_client_id);
-          if (!existing || (wc.channel_id && !existing.channel_id)) {
-            clientContactMap.set(wc.linked_client_id, wc);
+      for (const waContact of waContacts) {
+        if (waContact.linked_client_id) {
+          const existing = clientContactMap.get(waContact.linked_client_id);
+          if (!existing || (waContact.channel_id && !existing.channel_id)) {
+            clientContactMap.set(waContact.linked_client_id, waContact);
           }
         }
 
-        if (wc.normalized_phone) {
-          const existing = phoneContactMap.get(wc.normalized_phone);
-          if (!existing || (wc.channel_id && !existing.channel_id)) {
-            phoneContactMap.set(wc.normalized_phone, wc);
+        if (waContact.normalized_phone) {
+          const existing = phoneContactMap.get(waContact.normalized_phone);
+          if (!existing || (waContact.channel_id && !existing.channel_id)) {
+            phoneContactMap.set(waContact.normalized_phone, waContact);
           }
         }
       }
@@ -142,9 +143,7 @@ export function useOrphanedRecurrenceContacts() {
         if (!client) continue;
 
         const normalizedClientPhone = normalizePhone(client.whatsapp || client.phone);
-        const waContact =
-          clientContactMap.get(client.id) ||
-          (normalizedClientPhone ? phoneContactMap.get(normalizedClientPhone) : null);
+        const waContact = clientContactMap.get(client.id) || (normalizedClientPhone ? phoneContactMap.get(normalizedClientPhone) : null);
 
         let isOrphaned = false;
         let blockReason = "";
@@ -154,15 +153,15 @@ export function useOrphanedRecurrenceContacts() {
 
         if (!waContact || !waContact.channel_id) {
           isOrphaned = true;
-          blockReason = "Sem canal vinculado";
+          blockReason = waContact ? "Sem canal vinculado" : "Sem contato WA vinculado";
 
           if (waContact?.id) {
-            const prevChannelId = transitionMap.get(waContact.id);
-            if (prevChannelId) {
-              channelId = prevChannelId;
-              const prevChannel = channelMap.get(prevChannelId);
-              if (prevChannel) {
-                channelName = `${prevChannel.name} (removido)`;
+            const previousChannelId = transitionMap.get(waContact.id);
+            if (previousChannelId) {
+              channelId = previousChannelId;
+              const previousChannel = channelMap.get(previousChannelId);
+              if (previousChannel) {
+                channelName = `${previousChannel.name} (removido)`;
                 channelStatus = "deleted";
               } else {
                 channelName = "Canal removido (histórico)";
@@ -200,9 +199,11 @@ export function useOrphanedRecurrenceContacts() {
         if (isOrphaned) {
           orphaned.push({
             recurrenceEntryId: entry.id,
+            selectionId: `recurrence:${entry.id}`,
             clientId: client.id,
             clientName: client.name,
             clientPhone: client.phone || client.whatsapp,
+            normalizedClientPhone,
             whatsappContactId: waContact?.id || null,
             channelId,
             channelName,
@@ -211,6 +212,7 @@ export function useOrphanedRecurrenceContacts() {
             lastServiceType: entry.source_service_type,
             lastServiceDate: entry.source_completed_date,
             lastServiceValue: entry.source_value,
+            canReassign: Boolean(normalizedClientPhone),
           });
         }
       }
@@ -218,11 +220,11 @@ export function useOrphanedRecurrenceContacts() {
       const groupMap = new Map<string, OrphanedGroup>();
 
       for (const contact of orphaned) {
-        const key = contact.channelId || "no-channel";
+        const key = contact.channelId || "unknown-channel";
         if (!groupMap.has(key)) {
           groupMap.set(key, {
             channelId: contact.channelId,
-            channelName: contact.channelName || "Sem canal",
+            channelName: contact.channelName || "Canal antigo indisponível",
             channelStatus: contact.channelStatus || "unknown",
             contacts: [],
           });
@@ -241,44 +243,119 @@ export function useOrphanedRecurrenceContacts() {
 
   const reassignMutation = useMutation({
     mutationFn: async ({
-      contactIds,
+      contacts,
       newChannelId,
     }: {
-      contactIds: string[];
+      contacts: OrphanedRecurrenceContact[];
       newChannelId: string;
     }) => {
       if (!organization?.id) throw new Error("Sem organização");
 
-      const { data: contacts } = await supabase
-        .from("whatsapp_contacts")
-        .select("id, channel_id")
-        .in("id", contactIds);
+      const now = new Date().toISOString();
+      const contactIdsToUpdate = new Set<string>();
+      const oldChannelIds = new Set<string>();
 
-      const { error } = await supabase
-        .from("whatsapp_contacts")
-        .update({ channel_id: newChannelId, updated_at: new Date().toISOString() })
-        .in("id", contactIds);
+      const existingContactIds = contacts
+        .map((contact) => contact.whatsappContactId)
+        .filter(Boolean) as string[];
 
-      if (error) throw error;
+      if (existingContactIds.length > 0) {
+        const { data: existingContacts, error: existingError } = await supabase
+          .from("whatsapp_contacts")
+          .select("id, channel_id")
+          .in("id", existingContactIds);
 
-      const oldChannelIds = [...new Set((contacts || []).map((c) => c.channel_id).filter(Boolean))];
+        if (existingError) throw existingError;
+
+        for (const contact of existingContacts || []) {
+          contactIdsToUpdate.add(contact.id);
+          if (contact.channel_id) oldChannelIds.add(contact.channel_id);
+        }
+      }
+
+      for (const contact of contacts.filter((item) => !item.whatsappContactId && item.normalizedClientPhone)) {
+        const { data: existingMatch, error: matchError } = await supabase
+          .from("whatsapp_contacts")
+          .select("id, channel_id")
+          .eq("organization_id", organization.id)
+          .or(`linked_client_id.eq.${contact.clientId},normalized_phone.eq.${contact.normalizedClientPhone}`)
+          .limit(1)
+          .maybeSingle();
+
+        if (matchError) throw matchError;
+
+        if (existingMatch) {
+          contactIdsToUpdate.add(existingMatch.id);
+          if (existingMatch.channel_id) oldChannelIds.add(existingMatch.channel_id);
+
+          const { error: linkError } = await supabase
+            .from("whatsapp_contacts")
+            .update({
+              linked_client_id: contact.clientId,
+              linked_at: now,
+              name: contact.clientName,
+              phone: contact.clientPhone || `+${contact.normalizedClientPhone}`,
+              normalized_phone: contact.normalizedClientPhone,
+              updated_at: now,
+            })
+            .eq("id", existingMatch.id);
+
+          if (linkError) throw linkError;
+          continue;
+        }
+
+        const { data: createdContact, error: createError } = await supabase
+          .from("whatsapp_contacts")
+          .insert({
+            organization_id: organization.id,
+            linked_client_id: contact.clientId,
+            linked_at: now,
+            name: contact.clientName,
+            phone: contact.clientPhone || `+${contact.normalizedClientPhone}`,
+            normalized_phone: contact.normalizedClientPhone,
+            whatsapp_id: `${contact.normalizedClientPhone}@s.whatsapp.net`,
+            channel_id: newChannelId,
+            is_group: false,
+            conversation_status: "novo",
+            conversion_status: "novo_contato",
+            source: "whatsapp",
+            has_conversation: false,
+          })
+          .select("id")
+          .single();
+
+        if (createError) throw createError;
+        if (createdContact?.id) contactIdsToUpdate.add(createdContact.id);
+      }
+
+      const updateIds = Array.from(contactIdsToUpdate);
+      if (updateIds.length > 0) {
+        const { error: updateError } = await supabase
+          .from("whatsapp_contacts")
+          .update({ channel_id: newChannelId, updated_at: now })
+          .in("id", updateIds);
+
+        if (updateError) throw updateError;
+      }
+
       try {
         await (supabase as any).from("data_audit_log").insert({
           organization_id: organization.id,
           table_name: "whatsapp_contacts",
           operation: "recurrence_channel_reassign",
           metadata: {
-            old_channel_ids: oldChannelIds,
+            old_channel_ids: Array.from(oldChannelIds),
             new_channel_id: newChannelId,
-            contact_ids: contactIds,
-            count: contactIds.length,
+            contact_ids: updateIds,
+            recurrence_entry_ids: contacts.map((contact) => contact.recurrenceEntryId),
+            count: contacts.length,
           },
         });
       } catch (auditErr) {
         console.warn("[RECURRENCE] Audit log failed (non-blocking):", auditErr);
       }
 
-      return { count: contactIds.length };
+      return { count: contacts.length };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orphaned-recurrence"] });

@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  AlertTriangle, Unplug, ChevronDown, ChevronRight,
-  CheckSquare, Square, ArrowRight, Loader2, Users, Wifi, WifiOff
+  AlertTriangle,
+  ArrowRight,
+  CheckSquare,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Unplug,
+  Users,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -9,32 +17,46 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  useOrphanedRecurrenceContacts,
   OrphanedGroup,
   OrphanedRecurrenceContact,
+  useOrphanedRecurrenceContacts,
 } from "@/hooks/useOrphanedRecurrenceContacts";
 import { useWhatsAppChannels } from "@/hooks/useWhatsAppChannels";
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string; icon: React.ElementType }> = {
-    deleted: { label: "Excluído", className: "bg-destructive/10 text-destructive border-destructive/20", icon: Unplug },
-    disconnected: { label: "Desconectado", className: "bg-warning/10 text-warning border-warning/20", icon: WifiOff },
-    error: { label: "Erro", className: "bg-destructive/10 text-destructive border-destructive/20", icon: AlertTriangle },
-    unknown: { label: "Não encontrado", className: "bg-muted text-muted-foreground", icon: Unplug },
+    deleted: {
+      label: "Excluído",
+      className: "bg-destructive/10 text-destructive border-destructive/20",
+      icon: Unplug,
+    },
+    disconnected: {
+      label: "Desconectado",
+      className: "bg-warning/10 text-warning border-warning/20",
+      icon: WifiOff,
+    },
+    error: {
+      label: "Erro",
+      className: "bg-destructive/10 text-destructive border-destructive/20",
+      icon: AlertTriangle,
+    },
+    unknown: {
+      label: "Indisponível",
+      className: "bg-muted text-muted-foreground",
+      icon: Unplug,
+    },
   };
-  const c = config[status] || config.unknown;
-  const Icon = c.icon;
+  const current = config[status] || config.unknown;
+  const Icon = current.icon;
 
   return (
-    <Badge variant="outline" className={cn("text-[10px] gap-1", c.className)}>
+    <Badge variant="outline" className={cn("text-[10px] gap-1", current.className)}>
       <Icon className="h-2.5 w-2.5" />
-      {c.label}
+      {current.label}
     </Badge>
   );
 }
@@ -51,9 +73,9 @@ function GroupSection({
   onToggleAll: (ids: string[], checked: boolean) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const contactWaIds = group.contacts.map(c => c.whatsappContactId).filter(Boolean) as string[];
-  const allSelected = contactWaIds.length > 0 && contactWaIds.every(id => selected.has(id));
-  const someSelected = contactWaIds.some(id => selected.has(id));
+  const selectableIds = group.contacts.filter((contact) => contact.canReassign).map((contact) => contact.selectionId);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+  const someSelected = selectableIds.some((id) => selected.has(id));
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
@@ -61,12 +83,14 @@ function GroupSection({
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 p-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
       >
-        {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+        {expanded ? (
+          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        )}
         <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
           <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Canal antigo:</span>
-          <span className="text-sm font-medium text-foreground truncate">
-            {group.channelName}
-          </span>
+          <span className="text-sm font-medium text-foreground truncate">{group.channelName}</span>
           <StatusBadge status={group.channelStatus} />
           <Badge variant="secondary" className="text-[10px] gap-1">
             <Users className="h-2.5 w-2.5" />
@@ -77,25 +101,27 @@ function GroupSection({
 
       {expanded && (
         <div className="divide-y divide-border">
-          {/* Select all row */}
           <div className="flex items-center gap-3 px-3 py-2 bg-muted/10">
             <Checkbox
               checked={allSelected}
-              onCheckedChange={(checked) => onToggleAll(contactWaIds, !!checked)}
+              onCheckedChange={(checked) => onToggleAll(selectableIds, !!checked)}
+              disabled={selectableIds.length === 0}
               className={cn(someSelected && !allSelected && "opacity-60")}
             />
             <span className="text-xs text-muted-foreground font-medium">
-              {allSelected ? "Desmarcar todos" : "Selecionar todos"} deste grupo
+              {selectableIds.length === 0
+                ? "Nenhum contato deste grupo pode ser reatribuído"
+                : `${allSelected ? "Desmarcar todos" : "Selecionar todos"} deste grupo`}
             </span>
           </div>
 
           {group.contacts.map((contact) => (
             <ContactRow
-              key={contact.recurrenceEntryId}
+              key={contact.selectionId}
               contact={contact}
-              isSelected={!!contact.whatsappContactId && selected.has(contact.whatsappContactId)}
-              onToggle={() => contact.whatsappContactId && onToggle(contact.whatsappContactId)}
-              disabled={!contact.whatsappContactId}
+              isSelected={selected.has(contact.selectionId)}
+              onToggle={() => onToggle(contact.selectionId)}
+              disabled={!contact.canReassign}
             />
           ))}
         </div>
@@ -116,37 +142,31 @@ function ContactRow({
   disabled: boolean;
 }) {
   return (
-    <div className={cn(
-      "flex items-center gap-3 px-3 py-2.5 hover:bg-muted/20 transition-colors",
-      isSelected && "bg-primary/5"
-    )}>
-      <Checkbox
-        checked={isSelected}
-        onCheckedChange={onToggle}
-        disabled={disabled}
-      />
+    <div className={cn("flex items-center gap-3 px-3 py-2.5 hover:bg-muted/20 transition-colors", isSelected && "bg-primary/5")}>
+      <Checkbox checked={isSelected} onCheckedChange={onToggle} disabled={disabled} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-foreground truncate">{contact.clientName}</span>
-          {contact.clientPhone && (
-            <span className="text-xs text-muted-foreground">{contact.clientPhone}</span>
-          )}
+          {contact.clientPhone && <span className="text-xs text-muted-foreground">{contact.clientPhone}</span>}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
           <span>{contact.lastServiceType}</span>
           <span>{format(new Date(contact.lastServiceDate), "dd/MM/yyyy", { locale: ptBR })}</span>
-          {contact.channelName && (
-            <span className="flex items-center gap-1">
-              <Unplug className="h-2.5 w-2.5" />
-              Canal: <strong>{contact.channelName}</strong>
-            </span>
-          )}
+          <span className="flex items-center gap-1">
+            <Unplug className="h-2.5 w-2.5" />
+            Canal: <strong>{contact.channelName || "Canal antigo indisponível"}</strong>
+          </span>
           <span className="text-destructive font-medium">{contact.blockReason}</span>
         </div>
       </div>
+      {!contact.whatsappContactId && contact.canReassign && (
+        <Badge variant="outline" className="text-[10px] text-muted-foreground">
+          Criará contato WA
+        </Badge>
+      )}
       {disabled && (
         <Badge variant="outline" className="text-[10px] text-muted-foreground">
-          Sem contato WA
+          Sem telefone
         </Badge>
       )}
     </div>
@@ -160,13 +180,14 @@ export function OrphanedRecurrenceAlert() {
   const [targetChannelId, setTargetChannelId] = useState<string>("");
   const [showDetails, setShowDetails] = useState(false);
 
-  const connectedChannels = channels.filter(c => c.is_connected && c.channel_status === "connected");
+  const connectedChannels = channels.filter((channel) => channel.is_connected && channel.channel_status === "connected");
+  const allContacts = useMemo(() => groups.flatMap((group) => group.contacts), [groups]);
 
   if (isLoading || total === 0) return null;
 
   const handleToggle = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
+    setSelected((previous) => {
+      const next = new Set(previous);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
@@ -174,8 +195,8 @@ export function OrphanedRecurrenceAlert() {
   };
 
   const handleToggleAll = (ids: string[], checked: boolean) => {
-    setSelected(prev => {
-      const next = new Set(prev);
+    setSelected((previous) => {
+      const next = new Set(previous);
       for (const id of ids) {
         if (checked) next.add(id);
         else next.delete(id);
@@ -187,15 +208,21 @@ export function OrphanedRecurrenceAlert() {
   const handleReassign = async () => {
     if (selected.size === 0 || !targetChannelId) return;
 
+    const selectedContacts = allContacts.filter((contact) => selected.has(contact.selectionId) && contact.canReassign);
+    if (selectedContacts.length === 0) {
+      toast.error("Nenhum contato válido selecionado");
+      return;
+    }
+
     try {
       const result = await reassign({
-        contactIds: Array.from(selected),
+        contacts: selectedContacts,
         newChannelId: targetChannelId,
       });
       toast.success(`${result.count} contato(s) reatribuído(s) com sucesso`);
       setSelected(new Set());
       setTargetChannelId("");
-    } catch (err) {
+    } catch {
       toast.error("Erro ao reatribuir contatos");
     }
   };
@@ -203,7 +230,6 @@ export function OrphanedRecurrenceAlert() {
   return (
     <Card className="border-warning/40 bg-warning/5">
       <CardContent className="p-4 space-y-3">
-        {/* Summary banner */}
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10">
             <Unplug className="h-5 w-5 text-warning" />
@@ -229,10 +255,9 @@ export function OrphanedRecurrenceAlert() {
 
         {showDetails && (
           <div className="space-y-3 pt-1">
-            {/* Groups */}
             {groups.map((group) => (
               <GroupSection
-                key={group.channelId || "no-channel"}
+                key={group.channelId || group.channelName}
                 group={group}
                 selected={selected}
                 onToggle={handleToggle}
@@ -240,7 +265,6 @@ export function OrphanedRecurrenceAlert() {
               />
             ))}
 
-            {/* Reassignment action bar */}
             {selected.size > 0 && (
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 bg-card border border-border rounded-lg">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -255,17 +279,15 @@ export function OrphanedRecurrenceAlert() {
                     </SelectTrigger>
                     <SelectContent>
                       {connectedChannels.length === 0 ? (
-                        <div className="px-3 py-2 text-xs text-muted-foreground">
-                          Nenhum canal conectado disponível
-                        </div>
+                        <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum canal conectado disponível</div>
                       ) : (
-                        connectedChannels.map((ch) => (
-                          <SelectItem key={ch.id} value={ch.id}>
+                        connectedChannels.map((channel) => (
+                          <SelectItem key={channel.id} value={channel.id}>
                             <div className="flex items-center gap-2">
                               <Wifi className="h-3 w-3 text-success" />
-                              <span>{ch.name}</span>
-                              {ch.phone_number && (
-                                <span className="text-muted-foreground text-xs">({ch.phone_number})</span>
+                              <span>{channel.name}</span>
+                              {channel.phone_number && (
+                                <span className="text-muted-foreground text-xs">({channel.phone_number})</span>
                               )}
                             </div>
                           </SelectItem>
@@ -274,13 +296,11 @@ export function OrphanedRecurrenceAlert() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  onClick={handleReassign}
-                  disabled={!targetChannelId || isReassigning}
-                  className="gap-2 shrink-0"
-                >
+                <Button onClick={handleReassign} disabled={!targetChannelId || isReassigning} className="gap-2 shrink-0">
                   {isReassigning ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Reatribuindo...</>
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Reatribuindo...
+                    </>
                   ) : (
                     <>Reatribuir canal</>
                   )}
