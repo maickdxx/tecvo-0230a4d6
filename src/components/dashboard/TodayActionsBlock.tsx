@@ -78,6 +78,7 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
   const { recordInteraction, recordResult, getScoreAdjustment, getAdaptiveInsight, history } = useAdaptivePrioritization();
   const { markAlertAsCompleted, completedAlerts } = useDailyRoutine();
+  const { organization } = useOrganization();
 
   const counts = useMemo(() => {
     return {
