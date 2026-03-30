@@ -128,9 +128,9 @@ export function DashboardGreeting() {
         </div>
 
         {(streak ?? 0) > 1 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 shrink-0 self-start sm:self-auto">
-            <Flame className="h-4 w-4 text-orange-500" />
-            <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-warning/10 border border-warning/20 shrink-0 self-start sm:self-auto">
+            <Flame className="h-4 w-4 text-warning" />
+            <span className="text-xs font-bold text-warning">
               {streak} dias consecutivos
             </span>
           </div>
