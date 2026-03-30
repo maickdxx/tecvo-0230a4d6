@@ -169,18 +169,25 @@ function toTimestamp(
 
 /**
  * Ensures a scheduled_date value is a proper timestamptz-safe string.
- * Date-only strings ("2026-03-16") are converted to noon in the org's
- * timezone so Postgres doesn't shift them to the previous day.
+ * Date-only strings ("2026-03-16") are combined with the entry_date time
+ * (if provided) or default to noon in the org's timezone so Postgres
+ * doesn't shift them to the previous day.
  * Full ISO timestamps pass through unchanged.
  */
 function ensureDateTimestamp(
   dateStr: string | undefined | null,
-  tz: string = DEFAULT_TIMEZONE
+  tz: string = DEFAULT_TIMEZONE,
+  entryTime?: string | null
 ): string | null {
   if (!dateStr) return null;
   // Already a full timestamp (contains "T") — pass through
   if (dateStr.includes("T")) return dateStr;
-  // Date-only: attach noon + org offset to avoid UTC midnight shift
+  // If entry_date time is available (e.g. "14:30"), use it instead of noon
+  if (entryTime && /^\d{2}:\d{2}/.test(entryTime)) {
+    const timePart = entryTime.length === 5 ? `${entryTime}:00` : entryTime;
+    return buildTimestamp(dateStr, timePart, tz);
+  }
+  // Date-only without time: attach noon + org offset to avoid UTC midnight shift
   return buildTimestamp(dateStr, "12:00:00", tz);
 }
 /**
