@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -161,6 +162,7 @@ export function ServiceItemsEditor({ serviceId }: ServiceItemsEditorProps) {
               placeholder="Ex: Instalação de Split"
               value={newItem.description}
               onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
             />
           </div>
         </div>
@@ -177,6 +179,7 @@ export function ServiceItemsEditor({ serviceId }: ServiceItemsEditorProps) {
               step="0.01"
               value={newItem.quantity}
               onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
             />
           </div>
           <div className="space-y-1">
@@ -191,6 +194,7 @@ export function ServiceItemsEditor({ serviceId }: ServiceItemsEditorProps) {
               placeholder="0,00"
               value={newItem.unit_price}
               onChange={(e) => setNewItem({ ...newItem, unit_price: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
             />
           </div>
           <div className="space-y-1">
@@ -206,6 +210,7 @@ export function ServiceItemsEditor({ serviceId }: ServiceItemsEditorProps) {
               placeholder="0"
               value={newItem.discount}
               onChange={(e) => setNewItem({ ...newItem, discount: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
             />
           </div>
           <div className="space-y-1">
@@ -216,16 +221,27 @@ export function ServiceItemsEditor({ serviceId }: ServiceItemsEditorProps) {
           </div>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full gap-2"
-          onClick={handleAddItem}
-          disabled={isCreating || !newItem.unit_price}
-        >
-          <Plus className="h-4 w-4" />
-          Adicionar Serviço
-        </Button>
+        <div className="flex flex-col gap-2 pt-1">
+          {newItem.description && newItem.unit_price && (
+            <span className="text-[10px] text-primary animate-pulse flex items-center gap-1 font-medium">
+              <Plus className="h-3 w-3" />
+              Clique no botão abaixo ou aperte Enter para confirmar
+            </span>
+          )}
+          <Button
+            type="button"
+            variant={newItem.description && newItem.unit_price ? "default" : "outline"}
+            className={cn(
+              "w-full gap-2 transition-all duration-200",
+              newItem.description && newItem.unit_price ? "bg-primary text-primary-foreground shadow-md hover:scale-[1.01]" : ""
+            )}
+            onClick={handleAddItem}
+            disabled={isCreating || !newItem.unit_price}
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar Serviço
+          </Button>
+        </div>
       </div>
     </div>
   );

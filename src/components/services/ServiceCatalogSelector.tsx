@@ -374,6 +374,7 @@ export function ServiceCatalogSelector({
                 placeholder="Ex: Instalação de Split"
                 value={newItem.name}
                 onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
               />
             </div>
 
@@ -386,6 +387,7 @@ export function ServiceCatalogSelector({
                 placeholder="Detalhes adicionais do serviço..."
                 value={newItem.description}
                 onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
               />
             </div>
           </div>
@@ -402,6 +404,7 @@ export function ServiceCatalogSelector({
                 step="0.01"
                 value={newItem.quantity}
                 onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
               />
             </div>
             <div className="space-y-1">
@@ -416,6 +419,7 @@ export function ServiceCatalogSelector({
                 placeholder="0,00"
                 value={newItem.unit_price}
                 onChange={(e) => setNewItem({ ...newItem, unit_price: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
               />
             </div>
           </div>
@@ -449,6 +453,7 @@ export function ServiceCatalogSelector({
                   placeholder="0"
                   value={newItem.discount}
                   onChange={(e) => setNewItem({ ...newItem, discount: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
                   className="flex-1 min-w-0"
                 />
               </div>
@@ -461,16 +466,27 @@ export function ServiceCatalogSelector({
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full gap-2"
-            onClick={handleAddItem}
-            disabled={!newItem.name || !newItem.unit_price}
-          >
-            <Plus className="h-4 w-4" />
-            Adicionar Serviço
-          </Button>
+          <div className="flex flex-col gap-2 pt-1">
+            {newItem.name && newItem.unit_price && (
+              <span className="text-[10px] text-primary animate-pulse flex items-center gap-1 font-medium">
+                <Plus className="h-3 w-3" />
+                Clique no botão abaixo ou aperte Enter para confirmar
+              </span>
+            )}
+            <Button
+              type="button"
+              variant={newItem.name && newItem.unit_price ? "default" : "outline"}
+              className={cn(
+                "w-full gap-2 transition-all duration-200",
+                newItem.name && newItem.unit_price ? "bg-primary text-primary-foreground shadow-md hover:scale-[1.01]" : ""
+              )}
+              onClick={handleAddItem}
+              disabled={!newItem.name || !newItem.unit_price}
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Serviço
+            </Button>
+          </div>
         </div>
       )}
     </div>
