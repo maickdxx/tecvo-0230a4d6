@@ -119,6 +119,8 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
 
+  const [alternativeChannels, setAlternativeChannels] = useState<any[]>([]);
+  const [isMigrating, setIsMigrating] = useState(false);
   const { tags: orgTags, getTagByName } = useWhatsAppTags();
   
   const [linkedClientData, setLinkedClientData] = useState<any>(null);
@@ -253,6 +255,43 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
     return channelData.is_connected === true && channelData.channel_status === "connected";
   }, [channelData]);
   const isChannelDeleted = channelData?.channel_status === "deleted";
+  
+  // Fetch alternative connected channels when current is deleted
+  useEffect(() => {
+    if (isChannelDeleted && organization?.id) {
+      supabase
+        .from("whatsapp_channels")
+        .select("id, name, phone_number, instance_name")
+        .eq("organization_id", organization.id)
+        .eq("channel_status", "connected")
+        .then(({ data }) => {
+          setAlternativeChannels(data || []);
+        });
+    } else {
+      setAlternativeChannels([]);
+    }
+  }, [isChannelDeleted, organization?.id]);
+
+  const handleSwitchChannel = async (newChannelId: string) => {
+    if (!contact?.id) return;
+    setIsMigrating(true);
+    try {
+      const { error } = await supabase
+        .from("whatsapp_contacts")
+        .update({ channel_id: newChannelId })
+        .eq("id", contact.id);
+      
+      if (error) throw error;
+      toast.success("Canal atualizado com sucesso");
+      onContactUpdate?.();
+    } catch (error) {
+      console.error("Error switching channel:", error);
+      toast.error("Erro ao trocar canal");
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   const canSend = !!channelId && isChannelConnected;
   // Only show offline banner when we have definitive channel data showing disconnection
   const isChannelOffline = !!channelId && !!channelData && !isChannelConnected;
@@ -981,17 +1020,48 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
               }
             </p>
           </div>
-          {!isChannelDeleted && (
+          <div className="flex items-center gap-2">
+            {isChannelDeleted && alternativeChannels.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1 shrink-0"
+                    disabled={isMigrating}
+                  >
+                    <ArrowRightLeft className="h-3 w-3" />
+                    Escolher outro canal
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {alternativeChannels.map((ch) => (
+                    <DropdownMenuItem 
+                      key={ch.id}
+                      onClick={() => handleSwitchChannel(ch.id)}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{ch.name || ch.instance_name}</span>
+                        <span className="text-[10px] text-muted-foreground">{ch.phone_number}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs gap-1 shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10"
+              className={cn(
+                "h-7 text-xs gap-1 shrink-0",
+                !isChannelDeleted && "border-destructive/30 text-destructive hover:bg-destructive/10"
+              )}
               onClick={() => navigate("/whatsapp/configuracoes")}
             >
               <Link2 className="h-3 w-3" />
-              Reconectar
+              {isChannelDeleted ? "Reconectar / Novo" : "Reconectar"}
             </Button>
-          )}
+          </div>
         </div>
       )}
 
@@ -1325,7 +1395,36 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                   : "Reconecte este canal para voltar a enviar mensagens nesta conversa."
                 }
               </p>
-              {!isChannelDeleted && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                {isChannelDeleted && alternativeChannels.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1.5"
+                        disabled={isMigrating}
+                      >
+                        <ArrowRightLeft className="h-3 w-3" />
+                        Escolher canal conectado
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="w-56">
+                      {alternativeChannels.map((ch) => (
+                        <DropdownMenuItem 
+                          key={ch.id}
+                          onClick={() => handleSwitchChannel(ch.id)}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{ch.name || ch.instance_name}</span>
+                            <span className="text-[10px] text-muted-foreground">{ch.phone_number}</span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
                 <Button
                   variant="outline"
                   size="sm"
@@ -1333,9 +1432,9 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                   onClick={() => navigate("/whatsapp/configuracoes")}
                 >
                   <Link2 className="h-3 w-3" />
-                  Reconectar canal
+                  {isChannelDeleted ? "Reconectar número" : "Reconectar canal"}
                 </Button>
-              )}
+              </div>
             </div>
           ) : (
             <p className="text-xs text-muted-foreground text-center py-1">
