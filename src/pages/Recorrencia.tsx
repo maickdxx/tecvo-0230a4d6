@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   RefreshCw, MessageCircle, DollarSign, Calendar,
   Clock, TrendingUp, CheckCircle2, XCircle, Bell, ArrowDown,
