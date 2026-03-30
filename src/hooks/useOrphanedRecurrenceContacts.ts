@@ -47,7 +47,7 @@ export function useOrphanedRecurrenceContacts() {
       if (!entries || entries.length === 0) return { groups: [], total: 0 };
 
       // 2. Get all whatsapp_contacts for this org (linked to clients)
-      const clientIds = [...new Set(entries.map((e: any) => e.client_id))];
+      const clientIds = [...new Set(entries.map((e: any) => e.client_id as string))];
       const { data: waContacts, error: waErr } = await supabase
         .from("whatsapp_contacts")
         .select("id, linked_client_id, channel_id, normalized_phone")
