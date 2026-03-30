@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { analytics } from "@/lib/analytics";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
-import { trackFBEvent } from "@/lib/fbPixel";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useInviteByToken } from "@/hooks/useInvites";

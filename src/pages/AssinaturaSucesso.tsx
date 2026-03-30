@@ -62,9 +62,9 @@ export default function AssinaturaSucesso() {
       setChecking(false);
       clearCheckoutContext();
       stopPolling();
-      const planValue = plan && plan in getPlanDisplayInfo ? 0 : 0;
-      trackFBEvent("Subscribe", { content_name: plan || "unknown", currency: "BRL", value: 0 });
-      trackFBEvent("Purchase", { content_name: plan || "unknown", currency: "BRL", value: 0 });
+      const planValue = plan && plan in PLAN_CONFIG ? PLAN_CONFIG[plan as PlanSlug].pricePerMonth : 0;
+      trackFBEvent("Subscribe", { content_name: plan || "unknown", currency: "BRL", value: planValue });
+      trackFBEvent("Purchase", { content_name: plan || "unknown", currency: "BRL", value: planValue });
       analytics.track("payment_completed", user?.id || null, organizationId || null, { plan: plan || "unknown" });
       await queryClient.invalidateQueries({ queryKey: ["subscription"] });
       await queryClient.invalidateQueries({ queryKey: ["organization"] });
