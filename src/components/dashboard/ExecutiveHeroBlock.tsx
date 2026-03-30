@@ -1,7 +1,6 @@
-import { TrendingUp, TrendingDown, DollarSign, Target, Sparkles, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Target, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useWeatherForecast } from "@/hooks/useWeatherForecast";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import type { Granularity } from "@/lib/periodoGlobal";
 
 interface ExecutiveHeroBlockProps {
@@ -69,7 +68,6 @@ const GRANULARITY_LABELS: Record<Granularity, string> = {
   month: "Lucro do Mês",
 };
 
-
 export function ExecutiveHeroBlock({
   income,
   expense,
@@ -101,7 +99,6 @@ export function ExecutiveHeroBlock({
     return { effectiveGoal: 0, showGoal: false };
   }, [monthlyGoal, suggestedGoal, income, granularity]);
 
-  const insight = useQuickInsight(income, effectiveGoal, granularity);
   const animatedBalance = useCountUp(balance);
   const animatedIncome = useCountUp(income);
   const animatedExpense = useCountUp(expense);
@@ -196,14 +193,6 @@ export function ExecutiveHeroBlock({
           )}
         </div>
       </div>
-
-      {/* AI Insight */}
-      {insight && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/5 px-4 py-2.5">
-          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-          <p className="text-xs text-muted-foreground">{insight}</p>
-        </div>
-      )}
     </div>
   );
 }
