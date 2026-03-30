@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdaptivePrioritization } from "@/hooks/useAdaptivePrioritization";
+import { useDailyRoutine } from "@/hooks/useDailyRoutine";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -80,6 +81,7 @@ export function TodayActionsBlock() {
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
   const { role, isOwner, isAdmin } = useUserRole();
   const { recordInteraction, recordResult, getScoreAdjustment, getAdaptiveInsight, history } = useAdaptivePrioritization();
+  const { markAlertAsCompleted, completedAlerts } = useDailyRoutine();
 
   const counts = useMemo(() => {
     return {
@@ -132,11 +134,11 @@ export function TodayActionsBlock() {
       const daysOverdue = differenceInDays(today, new Date(oldestDate));
       
       const baseScore = 1000 + (impactValue / 100) + (daysOverdue * 50);
-      const adjustedScore = baseScore + getScoreAdjustment("overdue_services", baseScore);
-      const historyData = history["overdue_services"];
+      const adjustedScore = baseScore + getScoreAdjustment("overdue-services", baseScore);
+      const historyData = history["overdue-services"];
 
       result.push({
-        id: "overdue_services",
+        id: "overdue-services",
         title: `${counts.overdue_services.length} serviço${counts.overdue_services.length > 1 ? "s" : ""} em atraso`,
         recommendation: `Regularize ${counts.overdue_services.length} serviços e recupere ${formatCurrency(impactValue)}`,
         impactValue,
@@ -145,10 +147,11 @@ export function TodayActionsBlock() {
         estimatedTime: "15 min",
         icon: AlertTriangle,
         priorityLevel: "high",
-        confidence: getConfidence("overdue_services"),
+        confidence: getConfidence("overdue-services"),
         score: adjustedScore,
         action: () => {
-          recordInteraction("overdue_services", "click");
+          recordInteraction("overdue-services", "click");
+          markAlertAsCompleted("overdue-services");
           navigate("/ordens-servico?status=overdue");
         },
         directAction: {
@@ -157,6 +160,8 @@ export function TodayActionsBlock() {
           description: "Abre a OS em atraso para atualização",
           action: () => {
             const firstId = counts.overdue_services[0].id;
+            markAlertAsCompleted("overdue-services");
+            recordResult("overdue-services", Number(counts.overdue_services[0].value) || 0, "recovery");
             navigate(`/ordens-servico/${firstId}`);
             toast.success("Ação iniciada", {
               description: "Você está no caminho para resolver um serviço atrasado."
@@ -165,7 +170,7 @@ export function TodayActionsBlock() {
         },
         color: "text-destructive",
         bg: "bg-destructive/10",
-        insight: getAdaptiveInsight("overdue_services", "Resolver isso libera o fluxo operacional."),
+        insight: getAdaptiveInsight("overdue-services", "Resolver isso libera o fluxo operacional."),
       });
     }
 
@@ -176,11 +181,11 @@ export function TodayActionsBlock() {
       const daysOverdue = differenceInDays(today, new Date(oldestDate));
 
       const baseScore = 1100 + (total / 100) + (daysOverdue * 60);
-      const adjustedScore = baseScore + getScoreAdjustment("overdue_payments", baseScore);
-      const historyData = history["overdue_payments"];
+      const adjustedScore = baseScore + getScoreAdjustment("overdue-payments", baseScore);
+      const historyData = history["overdue-payments"];
 
       result.push({
-        id: "overdue_payments",
+        id: "overdue-payments",
         title: "Pagamentos vencidos",
         recommendation: `Cobrar ${counts.overdue_payments.length} clientes agora para recuperar ${formatCurrency(total)}`,
         impactValue: total,
@@ -189,10 +194,11 @@ export function TodayActionsBlock() {
         estimatedTime: "3 min",
         icon: DollarSign,
         priorityLevel: "high",
-        confidence: getConfidence("overdue_payments"),
+        confidence: getConfidence("overdue-payments"),
         score: adjustedScore,
         action: () => {
-          recordInteraction("overdue_payments", "click");
+          recordInteraction("overdue-payments", "click");
+          markAlertAsCompleted("overdue-payments");
           navigate("/financeiro?tab=receivable&status=overdue");
         },
         directAction: {
@@ -211,6 +217,8 @@ export function TodayActionsBlock() {
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              markAlertAsCompleted("overdue-payments");
+              recordResult("overdue-payments", Number(t.amount), "recovery");
               window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
               toast.success("Ação de cobrança iniciada", {
                 description: `Você acabou de agir sobre ${formattedAmount}.`,
@@ -225,7 +233,7 @@ export function TodayActionsBlock() {
         },
         color: "text-destructive",
         bg: "bg-destructive/10",
-        insight: getAdaptiveInsight("overdue_payments", "Cobrança imediata melhora o caixa hoje."),
+        insight: getAdaptiveInsight("overdue-payments", "Cobrança imediata melhora o caixa hoje."),
       });
     }
 
@@ -236,11 +244,11 @@ export function TodayActionsBlock() {
       const daysPending = differenceInDays(today, new Date(oldestDate));
 
       const baseScore = 800 + (totalValue / 200) + (daysPending * 30);
-      const adjustedScore = baseScore + getScoreAdjustment("pending_quotes", baseScore);
-      const historyData = history["pending_quotes"];
+      const adjustedScore = baseScore + getScoreAdjustment("pending-quotes", baseScore);
+      const historyData = history["pending-quotes"];
 
       result.push({
-        id: "pending_quotes",
+        id: "pending-quotes",
         title: "Orçamentos parados",
         recommendation: `Fale com esses ${counts.pending_quotes.length} clientes agora e pode fechar ${formatCurrency(totalValue)}`,
         impactValue: totalValue,
@@ -249,10 +257,11 @@ export function TodayActionsBlock() {
         estimatedTime: "2 min",
         icon: Zap,
         priorityLevel: "high",
-        confidence: getConfidence("pending_quotes"),
+        confidence: getConfidence("pending-quotes"),
         score: adjustedScore,
         action: () => {
-          recordInteraction("pending_quotes", "click");
+          recordInteraction("pending-quotes", "click");
+          markAlertAsCompleted("pending-quotes");
           navigate("/orcamentos");
         },
         directAction: {
@@ -270,6 +279,8 @@ export function TodayActionsBlock() {
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              markAlertAsCompleted("pending-quotes");
+              recordResult("pending-quotes", Number(s.value) || 0, "conversion");
               window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
               toast.success("Ação iniciada", {
                 description: `Impacto potencial de ${formatCurrency(Number(s.value) || 0)}.`,
@@ -284,18 +295,18 @@ export function TodayActionsBlock() {
         },
         color: "text-warning",
         bg: "bg-warning/10",
-        insight: getAdaptiveInsight("pending_quotes", "Esse tipo de orçamento costuma fechar rápido se abordado agora."),
+        insight: getAdaptiveInsight("pending-quotes", "Esse tipo de orçamento costuma fechar rápido se abordado agora."),
       });
     }
 
     // 4. Inactive clients
     if (counts.inactive_clients.length > 0) {
       const baseScore = 300 + (counts.inactive_clients.length * 10);
-      const adjustedScore = baseScore + getScoreAdjustment("inactive_clients", baseScore);
-      const historyData = history["inactive_clients"];
+      const adjustedScore = baseScore + getScoreAdjustment("inactive-high-value", baseScore);
+      const historyData = history["inactive-high-value"];
 
       result.push({
-        id: "inactive_clients",
+        id: "inactive-high-value",
         title: "Reativação de clientes",
         recommendation: `Reative ${counts.inactive_clients.length} clientes antigos para novos serviços`,
         impactValue: counts.inactive_clients.length * 250, // Impacto estimado por cliente
@@ -304,10 +315,11 @@ export function TodayActionsBlock() {
         estimatedTime: "2 min",
         icon: UserX,
         priorityLevel: "medium",
-        confidence: getConfidence("inactive_clients"),
+        confidence: getConfidence("inactive-high-value"),
         score: adjustedScore,
         action: () => {
-          recordInteraction("inactive_clients", "click");
+          recordInteraction("inactive-high-value", "click");
+          markAlertAsCompleted("inactive-high-value");
           navigate("/clientes");
         },
         directAction: {
@@ -323,6 +335,8 @@ export function TodayActionsBlock() {
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              markAlertAsCompleted("inactive-high-value");
+              recordResult("inactive-high-value", 250, "revenue"); // Estimated revenue
               window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
               toast.success("Reativação iniciada", {
                 description: "Agindo sobre a base de clientes inativos.",
@@ -337,7 +351,7 @@ export function TodayActionsBlock() {
         },
         color: "text-primary",
         bg: "bg-primary/10",
-        insight: getAdaptiveInsight("inactive_clients", "Manutenção preventiva é o melhor lucro."),
+        insight: getAdaptiveInsight("inactive-high-value", "Manutenção preventiva é o melhor lucro."),
       });
     }
 
@@ -345,11 +359,11 @@ export function TodayActionsBlock() {
     if (counts.today_services.length > 0) {
       const totalValue = counts.today_services.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
       const baseScore = 500 + (totalValue / 500);
-      const adjustedScore = baseScore + getScoreAdjustment("today_services", baseScore);
-      const historyData = history["today_services"];
+      const adjustedScore = baseScore + getScoreAdjustment("today-services", baseScore);
+      const historyData = history["today-services"];
 
       result.push({
-        id: "today_services",
+        id: "today-services",
         title: "Serviços do dia",
         recommendation: `Finalize os ${counts.today_services.length} serviços agendados para hoje`,
         impactValue: totalValue,
@@ -358,20 +372,24 @@ export function TodayActionsBlock() {
         estimatedTime: "30 min",
         icon: CalendarDays,
         priorityLevel: "medium",
-        confidence: getConfidence("today_services"),
+        confidence: getConfidence("today-services"),
         score: adjustedScore,
         action: () => {
-          recordInteraction("today_services", "click");
+          recordInteraction("today-services", "click");
+          markAlertAsCompleted("today-services");
           navigate("/agenda");
         },
         color: "text-info",
         bg: "bg-info/10",
-        insight: getAdaptiveInsight("today_services", "Check-in antecipado evita atrasos."),
+        insight: getAdaptiveInsight("today-services", "Check-in antecipado evita atrasos."),
       });
     }
 
-    return result.sort((a, b) => b.score - a.score).slice(0, 5);
-  }, [counts, today, getScoreAdjustment, getAdaptiveInsight, recordInteraction, history, navigate]);
+    return result
+      .filter(a => !completedAlerts.includes(a.id))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  }, [counts, today, getScoreAdjustment, getAdaptiveInsight, recordInteraction, history, navigate, completedAlerts]);
 
   // Track impressions and resolutions
   const prevCounts = useMemo(() => {
@@ -401,15 +419,34 @@ export function TodayActionsBlock() {
   }
 
   if (actions.length === 0) {
+    const hasNoClients = !isLoadingClients && clients.length === 0;
+    
     return (
-      <div className="mb-8 rounded-2xl border border-success/20 bg-success/5 p-6 animate-fade-in">
+      <div className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-6 animate-fade-in">
         <div className="flex items-center gap-4">
-          <div className="rounded-full bg-success/10 p-3 text-success">
+          <div className="rounded-full bg-primary/10 p-3 text-primary">
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Tudo sob controle hoje</h2>
-            <p className="text-sm text-muted-foreground">Nenhuma ação crítica necessária. Sua operação está em dia!</p>
+            <h2 className="text-lg font-bold text-foreground">
+              {hasNoClients ? "Comece cadastrando seu primeiro cliente" : "Tudo sob controle hoje"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {hasNoClients 
+                ? "Para gerar ações automáticas e recomendações, precisamos de dados reais." 
+                : "Nenhuma ação crítica necessária. Sua operação está em dia!"}
+            </p>
+            {hasNoClients && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-3 gap-2"
+                onClick={() => navigate("/clientes/novo")}
+              >
+                Cadastrar agora
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

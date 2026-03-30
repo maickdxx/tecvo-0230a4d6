@@ -2563,6 +2563,8 @@ export type Database = {
           color_theme: string | null
           cpf: string | null
           created_at: string
+          daily_routine: Json | null
+          dashboard_action_history: Json | null
           dashboard_layout: Json | null
           demo_tour_completed: boolean
           employee_type: string
@@ -2606,6 +2608,8 @@ export type Database = {
           color_theme?: string | null
           cpf?: string | null
           created_at?: string
+          daily_routine?: Json | null
+          dashboard_action_history?: Json | null
           dashboard_layout?: Json | null
           demo_tour_completed?: boolean
           employee_type?: string
@@ -2649,6 +2653,8 @@ export type Database = {
           color_theme?: string | null
           cpf?: string | null
           created_at?: string
+          daily_routine?: Json | null
+          dashboard_action_history?: Json | null
           dashboard_layout?: Json | null
           demo_tour_completed?: boolean
           employee_type?: string

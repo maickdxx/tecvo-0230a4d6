@@ -1,4 +1,4 @@
-import { useState, useMemo, type ReactNode } from "react";
+import { useState, useMemo, type ReactNode, lazy, Suspense } from "react";
 import { BarChart3, ChevronLeft, ChevronRight, Loader2, Plus, BookOpen, Clock, TrendingUp } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
@@ -8,28 +8,32 @@ import { useGuidedOnboarding } from "@/hooks/useGuidedOnboarding";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+// Lazy-load heavier charts and reports
+const RevenueEvolutionChart = lazy(() => import("@/components/dashboard/RevenueEvolutionChart").then(m => ({ default: m.RevenueEvolutionChart })));
+const PaymentMethodChart = lazy(() => import("@/components/dashboard/PaymentMethodChart").then(m => ({ default: m.PaymentMethodChart })));
+const CashFlowChart = lazy(() => import("@/components/dashboard/CashFlowChart").then(m => ({ default: m.CashFlowChart })));
+const PaymentFeeReport = lazy(() => import("@/components/finance/PaymentFeeReport").then(m => ({ default: m.PaymentFeeReport })));
+const TimePerformanceDashboard = lazy(() => import("@/components/dashboard/TimePerformanceDashboard").then(m => ({ default: m.TimePerformanceDashboard })));
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
-  CashFlowChart,
-  PaymentMethodChart,
-  RevenueEvolutionChart,
   CompanyHealthCard,
   DashboardSection,
   TodayActionsBlock,
   RevenueOpportunitiesBlock,
 } from "@/components/dashboard";
-import { TimePerformanceDashboard } from "@/components/dashboard/TimePerformanceDashboard";
 import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBlock";
 import { ExecutiveHeroBlock } from "@/components/dashboard/ExecutiveHeroBlock";
 import { RevenueEngineBlock } from "@/components/dashboard/RevenueEngineBlock";
 
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
-import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { DashboardCustomizeDialog } from "@/components/dashboard/DashboardCustomizeDialog";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useUserRole } from "@/hooks/useUserRole";
+import { DailyRoutineSummary } from "@/components/secretaria/DailyRoutineSummary";
 import {
   type Granularity,
   getPeriodoAtivo,
@@ -147,13 +151,16 @@ export default function Dashboard() {
         </div>
 
         {/* 1. AGORA — Ações e Situação em Tempo Real */}
-        <div className="space-y-2 mb-10">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="space-y-6 mb-10">
+          <div className="flex items-center gap-2 mb-2">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <h2 className="text-xs font-bold uppercase tracking-widest text-primary">AGORA · Operação & Caixa</h2>
           </div>
           
-          <TodayActionsBlock />
+          <div className="grid gap-6">
+            <DailyRoutineSummary />
+            <TodayActionsBlock />
+          </div>
           
           <AlertasInteligentes />
 
@@ -254,16 +261,26 @@ export default function Dashboard() {
             </div>
             
             <div className="grid gap-6 lg:grid-cols-2">
-              <RevenueEvolutionChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
-              <PaymentMethodChart startDate={startDate} endDate={endDate} />
+              <Suspense fallback={<div className="h-[300px] w-full animate-pulse bg-muted rounded-xl" />}>
+                <RevenueEvolutionChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
+              </Suspense>
+              <Suspense fallback={<div className="h-[300px] w-full animate-pulse bg-muted rounded-xl" />}>
+                <PaymentMethodChart startDate={startDate} endDate={endDate} />
+              </Suspense>
             </div>
             
             <div className="grid gap-6">
-              <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
-              <PaymentFeeReport startDate={startDate} endDate={endDate} />
+              <Suspense fallback={<div className="h-[300px] w-full animate-pulse bg-muted rounded-xl" />}>
+                <CashFlowChart granularity={granularity} chartStartDate={chartStart} chartEndDate={chartEnd} />
+              </Suspense>
+              <Suspense fallback={<div className="h-[150px] w-full animate-pulse bg-muted rounded-xl" />}>
+                <PaymentFeeReport startDate={startDate} endDate={endDate} />
+              </Suspense>
             </div>
 
-            <TimePerformanceDashboard startDate={startDate} endDate={endDate} />
+            <Suspense fallback={<div className="h-[400px] w-full animate-pulse bg-muted rounded-xl" />}>
+              <TimePerformanceDashboard startDate={startDate} endDate={endDate} />
+            </Suspense>
           </div>
         )}
 
