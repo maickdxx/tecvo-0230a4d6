@@ -214,9 +214,10 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
             
             if (phone) {
               const cleanPhone = phone.replace(/\D/g, "");
+              const fullPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
               markAlertAsCompleted("overdue-payments");
               recordResult("overdue-payments", Number(t.amount), "recovery");
-              window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
+              navigate(`/whatsapp?phone=${fullPhone}&message=${encodeURIComponent(message)}`);
               toast.success("Ação de cobrança iniciada", {
                 description: `Você acabou de agir sobre ${formattedAmount}.`,
                 icon: <CheckCircle2 className="h-4 w-4 text-success" />
