@@ -228,19 +228,7 @@ export function useAccounts(options: UseAccountsOptions = {}) {
         .single();
 
       if (error) throw error;
-
-      // Only update financial account balance if both are provided
-      if (financial_account_id && compensation_date) {
-        const txType = (account as any).type;
-        const txAmount = Number((account as any).amount);
-        const delta = txType === "expense" ? -txAmount : txAmount;
-
-        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
-          _account_id: financial_account_id,
-          _delta: delta,
-        });
-        if (balError) throw balError;
-      }
+      // Balance is automatically synced by the DB trigger (handle_transaction_balance_sync)
 
       return account;
     },
