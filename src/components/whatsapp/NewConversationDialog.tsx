@@ -60,9 +60,13 @@ export function NewConversationDialog({ open, onOpenChange, channels, onSelected
       setSearchQuery("");
       setShowCreate(false);
       setCreateName("");
-      setCreatePhone("");
+      setCreatePhone(prefillPhone || "");
       if (connectedChannels.length > 1) setSelectedChannelId(null);
       return;
+    }
+    if (prefillPhone) {
+      setShowCreate(true);
+      setCreatePhone(prefillPhone);
     }
     if (!organization?.id) return;
 
