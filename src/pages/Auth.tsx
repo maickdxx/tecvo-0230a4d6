@@ -161,7 +161,7 @@ export default function Auth() {
       return;
     }
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName, cleanPhone);
+    const { error } = await signUp(signupEmail, signupPassword, signupName, hasPhone ? cleanPhone : undefined);
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
     } else {
