@@ -65,6 +65,10 @@ export function useAutoSeedDemo() {
           queryClient.invalidateQueries({ queryKey: ["services"] }),
           queryClient.invalidateQueries({ queryKey: ["clients"] }),
           queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+          queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] }),
+          queryClient.invalidateQueries({ queryKey: ["current-situation"] }),
+          queryClient.invalidateQueries({ queryKey: ["closed-period-services"] }),
+          queryClient.invalidateQueries({ queryKey: ["alertas-inteligentes"] }),
           queryClient.invalidateQueries({ queryKey: ["guided-onboarding"] }),
           queryClient.invalidateQueries({ queryKey: ["organization"] }),
         ]);
