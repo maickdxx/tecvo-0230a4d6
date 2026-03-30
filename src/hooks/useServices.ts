@@ -522,7 +522,7 @@ export function useServices(options?: UseServicesOptions | string) {
         notes: data.notes === "" ? null : data.notes,
         solution: data.solution === "" ? null : data.solution,
         internal_notes: data.internal_notes === "" ? null : data.internal_notes,
-        scheduled_date: data.scheduled_date === "" ? null : ensureDateTimestamp(data.scheduled_date, orgTz),
+        scheduled_date: data.scheduled_date === "" ? null : ensureDateTimestamp(data.scheduled_date, orgTz, data.entry_date),
         payment_due_date: data.payment_due_date === "" ? null : ensureDateTimestamp(data.payment_due_date, orgTz),
         entry_date: data.entry_date === "" ? null : toTimestamp(data.entry_date, data.scheduled_date || currentService.scheduled_date, orgTz),
         exit_date: data.exit_date === "" ? null : toTimestamp(data.exit_date, data.scheduled_date || currentService.scheduled_date, orgTz),
