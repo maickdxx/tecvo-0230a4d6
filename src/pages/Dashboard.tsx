@@ -19,7 +19,6 @@ const TimePerformanceDashboard = lazy(() => import("@/components/dashboard/TimeP
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
-  CashFlowChart,
   PaymentMethodChart,
   RevenueEvolutionChart,
   CompanyHealthCard,
