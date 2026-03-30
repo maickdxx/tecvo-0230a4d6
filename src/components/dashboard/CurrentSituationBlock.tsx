@@ -14,13 +14,17 @@ import {
   TrendingDown,
   AlertTriangle,
   Eye,
+  CalendarDays,
+  ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useFinancialAccounts, type AccountType } from "@/hooks/useFinancialAccounts";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { format, addDays } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
