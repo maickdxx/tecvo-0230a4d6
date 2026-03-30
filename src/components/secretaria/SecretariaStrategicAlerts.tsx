@@ -4,6 +4,7 @@ import { AlertTriangle, TrendingUp, TrendingDown, CheckCircle, ChevronRight, Che
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDailyRoutine } from "@/hooks/useDailyRoutine";
+import { useToast } from "@/hooks/use-toast";
 
 const levelConfig: Record<
   StrategicAlert["level"],
@@ -36,6 +37,7 @@ export function SecretariaStrategicAlerts() {
   const { alerts, isLoading } = useStrategicAlerts();
   const { markAlertAsCompleted, completedAlerts } = useDailyRoutine();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   if (isLoading) return null;
 
@@ -57,6 +59,10 @@ export function SecretariaStrategicAlerts() {
 
   const handleAction = (alert: StrategicAlert) => {
     markAlertAsCompleted(alert.id);
+    toast({
+      title: "Ação iniciada!",
+      description: `Você está atuando sobre ${alert.financialImpact}.`,
+    });
     navigate(alert.actionRoute);
   };
 
