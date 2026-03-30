@@ -577,7 +577,7 @@ export function TodayActionsBlock({ isLeanView = false }: { isLeanView?: boolean
           </button>
         </div>
 
-        <div className="lg:col-span-7 grid gap-3 sm:grid-cols-2">
+        <div className={cn(isLeanView ? "grid gap-3" : "lg:col-span-7 grid gap-3 sm:grid-cols-2")}>
           {secondaryActions.map((item) => (
             <button
               key={item.id}
