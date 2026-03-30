@@ -132,9 +132,15 @@ function ContactRow({
             <span className="text-xs text-muted-foreground">{contact.clientPhone}</span>
           )}
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
           <span>{contact.lastServiceType}</span>
           <span>{format(new Date(contact.lastServiceDate), "dd/MM/yyyy", { locale: ptBR })}</span>
+          {contact.channelName && (
+            <span className="flex items-center gap-1">
+              <Unplug className="h-2.5 w-2.5" />
+              Canal: <strong>{contact.channelName}</strong>
+            </span>
+          )}
           <span className="text-destructive font-medium">{contact.blockReason}</span>
         </div>
       </div>
