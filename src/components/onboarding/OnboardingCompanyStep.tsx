@@ -49,14 +49,7 @@ export function OnboardingCompanyStep({ onNext }: OnboardingCompanyStepProps) {
       return;
     }
 
-    // If personal WhatsApp is missing, require it
-    if (!hasWhatsappPersonal) {
-      const personalDigits = formData.personalWhatsapp.replace(/\D/g, "");
-      if (personalDigits.length < 10) {
-        toast({ variant: "destructive", title: "WhatsApp pessoal obrigatório", description: "Informe seu WhatsApp pessoal com DDD" });
-        return;
-      }
-    }
+    // Personal WhatsApp is optional — if filled, will be saved
 
     update({ name: formData.name, phone: formData.phone }, {
       onSuccess: async () => {
