@@ -119,80 +119,113 @@ export function ExecutiveHeroBlock({
   const goalLabel = granularity === "week" ? "Meta de receita da semana" : `Meta de receita${isManualGoal ? "" : " (sugerida)"}`;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 sm:p-8 shadow-card mb-6 animate-fade-in">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-            {GRANULARITY_LABELS[granularity]} · {periodLabel}
-          </p>
-          <p className={`text-4xl sm:text-5xl number-display animate-count-up ${balance >= 0 ? "text-success" : "text-destructive"}`}>
-            {formatCurrency(animatedBalance)}
-          </p>
-          <div className="flex items-center gap-3 mt-1">
-            {margin > 0 && (
-              <p className="text-sm text-muted-foreground">Margem {margin.toFixed(1)}%</p>
-            )}
-            <ChangeBadge change={balanceChange} />
-          </div>
-
-          {showGoal && (
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Target className="h-3 w-3" /> {goalLabel}: {formatCurrency(effectiveGoal)}
-                </span>
-                <Badge variant="outline" className={goalStatus.className}>
-                  {goalStatus.label}
-                </Badge>
-              </div>
-              <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary/80">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ease-out ${progressColor}`}
-                  style={{ width: `${goalPct}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {goalPct}% atingido
-              </p>
-            </div>
-          )}
+    <div className="space-y-6 mb-6 animate-fade-in">
+      {/* SEÇÃO: REALIZADO (FINANCEIRO) */}
+      <div className="rounded-xl border border-border bg-card p-6 sm:p-8 shadow-card relative overflow-hidden">
+        {/* Subtle accent line for distinction */}
+        <div className="absolute top-0 left-0 w-1.5 h-full bg-success/40" />
+        
+        <div className="mb-6">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-success" />
+            Realizado (Financeiro)
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1 font-medium">Valores já realizados (caixa)</p>
         </div>
 
-        {/* Side metrics */}
-        <div className="flex flex-col gap-3 sm:min-w-[220px]">
-          <div className="flex items-center gap-3 rounded-xl bg-success/5 border border-success/10 p-3 transition-all duration-200 hover:bg-success/10 hover:shadow-sm">
-            <div className="rounded-lg bg-success/10 p-2">
-              <TrendingUp className="h-4 w-4 text-success" />
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+              {GRANULARITY_LABELS[granularity]} · {periodLabel}
+            </p>
+            <p className={`text-4xl sm:text-5xl font-bold tracking-tight number-display animate-count-up ${balance >= 0 ? "text-success" : "text-destructive"}`}>
+              {formatCurrency(animatedBalance)}
+            </p>
+            <div className="flex items-center gap-3 mt-2">
+              {margin > 0 && (
+                <p className="text-sm font-medium text-muted-foreground">Margem {margin.toFixed(1)}%</p>
+              )}
+              <ChangeBadge change={balanceChange} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground">Receita</p>
-              <p className="text-lg number-display text-card-foreground">{formatCurrency(animatedIncome)}</p>
-            </div>
-            <ChangeBadge change={incomeChange} />
-          </div>
-          <div className="flex items-center gap-3 rounded-xl bg-destructive/5 border border-destructive/10 p-3 transition-all duration-200 hover:bg-destructive/10 hover:shadow-sm">
-            <div className="rounded-lg bg-destructive/10 p-2">
-              <TrendingDown className="h-4 w-4 text-destructive" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground">Gastos</p>
-              <p className="text-lg number-display text-card-foreground">{formatCurrency(animatedExpense)}</p>
-            </div>
-            <ChangeBadge change={expenseChange} />
-          </div>
-          {forecastedRevenue > 0 && (
-            <div className="flex items-center gap-3 rounded-xl bg-primary/5 border border-primary/10 p-3 transition-all duration-200 hover:bg-primary/10 hover:shadow-sm">
-              <div className="rounded-lg bg-primary/10 p-2">
-                <DollarSign className="h-4 w-4 text-primary" />
+
+            {showGoal && (
+              <div className="mt-6 space-y-2 max-w-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1 font-medium">
+                    <Target className="h-3.5 w-3.5" /> {goalLabel}: {formatCurrency(effectiveGoal)}
+                  </span>
+                  <Badge variant="outline" className={`text-[10px] uppercase font-bold px-2 py-0 h-5 ${goalStatus.className}`}>
+                    {goalStatus.label}
+                  </Badge>
+                </div>
+                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-secondary/80">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ease-out ${progressColor}`}
+                    style={{ width: `${goalPct}%` }}
+                  />
+                </div>
+                <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                  {goalPct}% atingido
+                </p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Previsto</p>
-                <p className="text-lg number-display text-card-foreground">{formatCurrency(forecastedRevenue)}</p>
+            )}
+          </div>
+
+          {/* Realized Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-4 sm:min-w-[260px]">
+            <div className="flex items-center gap-3 rounded-xl bg-success/5 border border-success/10 p-4 transition-all duration-200 hover:bg-success/10 group">
+              <div className="rounded-lg bg-success/10 p-2.5 group-hover:scale-110 transition-transform">
+                <TrendingUp className="h-5 w-5 text-success" />
               </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-muted-foreground">Receita</p>
+                <p className="text-xl font-bold number-display text-foreground">{formatCurrency(animatedIncome)}</p>
+              </div>
+              <ChangeBadge change={incomeChange} />
             </div>
-          )}
+            
+            <div className="flex items-center gap-3 rounded-xl bg-destructive/5 border border-destructive/10 p-4 transition-all duration-200 hover:bg-destructive/10 group">
+              <div className="rounded-lg bg-destructive/10 p-2.5 group-hover:scale-110 transition-transform">
+                <TrendingDown className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-muted-foreground">Gastos</p>
+                <p className="text-xl font-bold number-display text-foreground">{formatCurrency(animatedExpense)}</p>
+              </div>
+              <ChangeBadge change={expenseChange} />
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* SEÇÃO: PREVISÃO */}
+      {forecastedRevenue > 0 && (
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Previsão
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Baseado em serviços agendados (ainda não recebidos)</p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-4 bg-primary/5 border border-primary/10 rounded-xl p-4 min-w-[240px]">
+              <div className="rounded-lg bg-primary/10 p-2.5">
+                <DollarSign className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Faturamento previsto</p>
+                <p className="text-2xl font-bold number-display text-foreground">{formatCurrency(forecastedRevenue)}</p>
+              </div>
+            </div>
+            
+            <div className="hidden sm:block text-xs text-muted-foreground max-w-[240px] italic">
+              Este valor representa o montante total de ordens de serviço e orçamentos agendados para este período.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
