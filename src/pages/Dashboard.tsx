@@ -229,13 +229,6 @@ export default function Dashboard() {
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">
               <ClosedPeriodServices />
-              <div className="rounded-xl border bg-card p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-foreground/70">Clima & Insights</h3>
-                </div>
-                <WeatherForecast />
-              </div>
             </div>
             
             {canViewFinance && (
