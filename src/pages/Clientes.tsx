@@ -13,7 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTitle as AlertDialogTitleComponent,
 } from "@/components/ui/alert-dialog";
 import { useClients, type Client, type ClientFormData } from "@/hooks/useClients";
 import { usePaginatedClients } from "@/hooks/usePaginatedClients";
