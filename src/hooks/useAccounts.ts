@@ -271,31 +271,15 @@ export function useAccounts(options: UseAccountsOptions = {}) {
 
       // Only update financial account balance if both are provided
       if (financial_account_id && compensation_date) {
-        // Get the transaction type and amount
         const txType = (account as any).type;
         const txAmount = Number((account as any).amount);
+        const delta = txType === "expense" ? -txAmount : txAmount;
 
-        // Get current balance
-        const { data: finAccount, error: finError } = await supabase
-          .from("financial_accounts")
-          .select("balance")
-          .eq("id", financial_account_id)
-          .single();
-
-        if (finError) throw finError;
-
-        const currentBalance = Number(finAccount.balance);
-        // expense = debit (subtract), income = credit (add)
-        const newBalance = txType === "expense" 
-          ? currentBalance - txAmount 
-          : currentBalance + txAmount;
-
-        const { error: updateError } = await supabase
-          .from("financial_accounts")
-          .update({ balance: newBalance })
-          .eq("id", financial_account_id);
-
-        if (updateError) throw updateError;
+        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
+          _account_id: financial_account_id,
+          _delta: delta,
+        });
+        if (balError) throw balError;
       }
 
       return account;
