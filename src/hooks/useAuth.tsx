@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 export interface DashboardLayoutItem {
   id: string;
@@ -183,6 +184,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       analytics.track("signup_completed", data.user?.id || null, null, {}, true);
+      trackFBEvent("Lead", { content_name: "signup", currency: "BRL", value: 0 });
+      trackFBEvent("StartTrial", { content_name: "7_day_trial", currency: "BRL", value: 0 });
       setSignUpSuccess(true);
       return { error: null };
     } catch (error) {

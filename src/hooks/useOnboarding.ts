@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 export function useOnboarding() {
   const { profile } = useAuth();
@@ -40,6 +41,7 @@ export function useOnboarding() {
       // No client-side welcome dispatch needed — idempotent dispatch-welcome handles it.
     },
     onSuccess: () => {
+      trackFBEvent("CompleteRegistration", { content_name: "onboarding", currency: "BRL", value: 0 });
       queryClient.invalidateQueries({ queryKey: ["onboarding"] });
       queryClient.invalidateQueries({ queryKey: ["organization"] });
     },

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { analytics } from "@/lib/analytics";
+import { trackFBEvent } from "@/lib/fbPixel";
 import { ArrowLeft, Crown, Check, Loader2, ExternalLink, Settings2, Star, Zap, Gift, AlertTriangle, CreditCard, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,6 +105,8 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
 
         if (data?.url) {
           analytics.track("payment_initiated", null, null, { plan: targetPlan, page_section: "settings", button_label: "Assinar plano", interaction_type: "click" });
+          const planPrice = PLAN_CONFIG[targetPlan]?.pricePerMonth ?? 0;
+          trackFBEvent("InitiateCheckout", { content_name: targetPlan, currency: "BRL", value: planPrice });
           saveCheckoutContext({ plan: targetPlan, returnTo: buildCheckoutSuccessPath(targetPlan) });
           window.open(data.url, "_blank");
           window.dispatchEvent(new CustomEvent("tecvo:checkout-started", { detail: { plan: targetPlan } }));

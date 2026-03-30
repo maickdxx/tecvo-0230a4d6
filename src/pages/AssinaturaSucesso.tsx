@@ -62,6 +62,7 @@ export default function AssinaturaSucesso() {
       setChecking(false);
       clearCheckoutContext();
       stopPolling();
+      trackFBEvent("Subscribe", { content_name: plan || "unknown", currency: "BRL", value: 0 });
       trackFBEvent("Purchase", { content_name: plan || "unknown", currency: "BRL" });
       analytics.track("payment_completed", user?.id || null, organizationId || null, { plan: plan || "unknown" });
       await queryClient.invalidateQueries({ queryKey: ["subscription"] });
