@@ -414,7 +414,7 @@ export default function Auth() {
             </div>
             <Button
               type="submit"
-              className="w-full h-13 text-base font-semibold rounded-xl bg-[#2547D0] hover:bg-[#1e3cb8] text-white shadow-lg shadow-[#2547D0]/25 transition-all active:scale-[0.98]"
+              className="w-full h-13 text-base font-semibold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all active:scale-[0.98]"
               disabled={isLoading || !acceptedTerms}
               style={{ opacity: (!acceptedTerms || isLoading) ? 0.6 : 1 }}
             >
