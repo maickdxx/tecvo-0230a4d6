@@ -79,7 +79,7 @@ export default function Dashboard() {
 
 
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 mt-8">
           <div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">Painel Financeiro</h2>
             <p className="text-sm text-muted-foreground mt-0.5">Resumo estratégico do seu negócio</p>
