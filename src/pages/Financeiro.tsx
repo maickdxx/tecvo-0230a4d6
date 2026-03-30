@@ -32,7 +32,9 @@ export default function Financeiro() {
   const startDate = format(startOfMonth(currentMonth), "yyyy-MM-dd");
   const endDate = format(endOfMonth(currentMonth), "yyyy-MM-dd");
 
-  const { transactions, totals, isLoading } = useTransactions({ startDate, endDate });
+  const { transactions, totals, isLoading: isLoadingTransactions } = useTransactions({ startDate, endDate });
+  const metrics = useDashboardMetrics(startDate, endDate, startDate, endDate);
+  const isLoading = isLoadingTransactions || metrics.isLoading;
   const { organizationId } = useAuth();
   const { activeAccounts } = useFinancialAccounts();
 
