@@ -449,7 +449,7 @@ export function useServices(options?: UseServicesOptions | string) {
         solution: data.solution || null,
         internal_notes: data.internal_notes || null,
         // Convert date-only strings to proper timestamptz with org offset
-        scheduled_date: ensureDateTimestamp(data.scheduled_date, orgTz),
+        scheduled_date: ensureDateTimestamp(data.scheduled_date, orgTz, data.entry_date),
         payment_due_date: ensureDateTimestamp(data.payment_due_date, orgTz),
         entry_date: toTimestamp(data.entry_date, data.scheduled_date, orgTz) || null,
         exit_date: toTimestamp(data.exit_date, data.scheduled_date, orgTz) || null,
