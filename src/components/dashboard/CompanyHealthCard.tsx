@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCompanyHealth } from "@/hooks/useCompanyHealth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 const LEVEL_CONFIG = {
   inicio: { label: "Início", className: "bg-destructive/10 text-destructive border-destructive/20" },
