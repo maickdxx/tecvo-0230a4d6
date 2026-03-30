@@ -10,6 +10,7 @@ export interface DashboardMetrics {
   expense: number;
   balance: number;
   margin: number;
+  pendingIncome: number;
   forecastedRevenue: number;
   averageTicket: number;
 
