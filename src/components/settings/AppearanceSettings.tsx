@@ -2,6 +2,9 @@ import { ArrowLeft, Sun, Moon, Monitor, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useColorTheme, type ColorTheme } from "@/hooks/useColorTheme";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 interface AppearanceSettingsProps {
   onBack: () => void;
