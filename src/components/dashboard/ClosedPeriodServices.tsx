@@ -91,24 +91,26 @@ export function ClosedPeriodServices() {
   }
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-border/40 shadow-sm animate-fade-in transition-all duration-300 hover:shadow-md">
-      <CardHeader className="pb-5 px-6 pt-5 bg-muted/20 border-b border-border/40">
+    <Card className="overflow-hidden rounded-[2rem] border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.03)] animate-fade-in transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group">
+      <CardHeader className="pb-8 px-8 pt-8 bg-muted/[0.05] border-b border-border/10">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 flex items-center gap-2">
-            <ShoppingBag className="h-3.5 w-3.5 text-primary/70" />
-            Serviços Fechados
+          <CardTitle className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground/50 flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <ShoppingBag className="h-4 w-4 text-primary/60" />
+            </div>
+            Fluxo de Saída
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-background" onClick={() => navigate(-1)}>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-background shadow-sm transition-all duration-300" onClick={() => navigate(-1)}>
               <ChevronLeft className="h-4 w-4 text-muted-foreground/60" />
             </Button>
-            <span className="text-[11px] font-bold uppercase tracking-wider min-w-[70px] text-center text-muted-foreground/60">
+            <span className="text-[11px] font-black uppercase tracking-[0.15em] min-w-[80px] text-center text-muted-foreground/40 font-mono">
               {formatDayLabel(currentDate)}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 hover:bg-background"
+              className="h-8 w-8 rounded-xl hover:bg-background shadow-sm transition-all duration-300"
               onClick={() => navigate(1)}
               disabled={currentDate >= toDateStr(getHojeBRT())}
             >
@@ -117,15 +119,15 @@ export function ClosedPeriodServices() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-6 py-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-5 rounded-2xl bg-muted/30 border border-border/10 transition-all duration-300 hover:bg-muted/40">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Quantidade</p>
-            <p className="text-3xl font-extrabold tracking-tight text-foreground/80">{closedServices.length}</p>
+      <CardContent className="px-8 py-10 bg-gradient-to-b from-transparent to-muted/[0.02]">
+        <div className="grid grid-cols-2 gap-6">
+          <div className="text-center p-7 rounded-[1.5rem] bg-muted/[0.05] border border-border/10 transition-all duration-500 hover:bg-muted/[0.1] hover:shadow-inner group/item">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30 mb-2 group-hover/item:text-primary/40 transition-colors">Volume</p>
+            <p className="text-4xl font-black tracking-tighter text-foreground/80 drop-shadow-sm">{closedServices.length}</p>
           </div>
-          <div className="text-center p-5 rounded-2xl bg-muted/30 border border-border/10 transition-all duration-300 hover:bg-muted/40">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Valor Total</p>
-            <p className="text-3xl font-extrabold tracking-tight text-foreground/80">{formatCurrency(totalValue)}</p>
+          <div className="text-center p-7 rounded-[1.5rem] bg-muted/[0.05] border border-border/10 transition-all duration-500 hover:bg-muted/[0.1] hover:shadow-inner group/item">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30 mb-2 group-hover/item:text-primary/40 transition-colors">Montante</p>
+            <p className="text-4xl font-black tracking-tighter text-foreground/80 drop-shadow-sm">{formatCurrency(totalValue)}</p>
           </div>
         </div>
       </CardContent>
