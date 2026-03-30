@@ -131,7 +131,7 @@ export function TechnicalReportForm({
         : new Date().toISOString().slice(0, 10),
       status: report?.status ?? "draft",
       visit_reason: report?.visit_reason ?? "",
-      recommendation: report?.recommendation ?? "Realizar reaperto e alinhamento da turbina e manter plano de manutenção preventiva periódica (PMOC).",
+      recommendation: report?.recommendation ?? "",
       risks: report?.risks ?? "",
       conclusion: report?.conclusion ?? "",
       observations: report?.observations ?? "",
