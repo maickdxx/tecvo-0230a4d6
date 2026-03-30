@@ -273,6 +273,9 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
   const pendingAdjCount = usePendingAdjustmentsCount();
   const pontoBadges = { "/ponto-admin/ajustes": pendingAdjCount };
 
+  const [logoError, setLogoError] = useState(false);
+  const [sheetLogoError, setSheetLogoError] = useState(false);
+
   // Track if sheet was recently open (to allow close animation)
   const [sheetMounted, setSheetMounted] = useState(false);
 
@@ -330,21 +333,22 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
   return (
     <>
       {/* Top Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border safe-top h-14">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border safe-top">
         <div className="flex h-14 items-center justify-between px-4 gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            {organization?.logo_url ? (
+            {organization?.logo_url && !logoError ? (
               <img 
                 src={organization.logo_url} 
                 alt="Logo da empresa" 
                 className="h-8 w-8 rounded-lg object-contain shrink-0"
+                onError={() => setLogoError(true)}
               />
             ) : (
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shrink-0">
                 <Snowflake className="h-4 w-4 text-primary-foreground" />
               </div>
             )}
-            <span className="font-bold text-foreground truncate max-w-[100px] text-sm tracking-tight">
+            <span className="font-bold text-foreground truncate max-w-[140px] text-sm tracking-tight">
               {organization?.name || "Tecvo"}
             </span>
           </div>
@@ -358,11 +362,12 @@ export function MobileNav({ sidebarOpen, setSidebarOpen }: MobileNavProps) {
             <SheetContent side="right" className="w-[280px] p-0 flex flex-col bg-card" onAnimationEnd={handleSheetAnimationEnd}>
               {/* Sheet Header */}
               <div className="flex h-16 items-center gap-3 px-5 border-b border-border">
-                {organization?.logo_url ? (
+                {organization?.logo_url && !sheetLogoError ? (
                   <img 
                     src={organization.logo_url} 
                     alt="Logo" 
                     className="h-9 w-9 rounded-xl object-contain"
+                    onError={() => setSheetLogoError(true)}
                   />
                 ) : (
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
