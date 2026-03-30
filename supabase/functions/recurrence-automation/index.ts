@@ -6,6 +6,7 @@
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { fetchOrgTimezone } from "../_shared/timezone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,6 +43,18 @@ async function sendWhatsApp(phone: string, text: string, instanceName: string): 
 }
 
 /**
+ * Get the current hour in a given IANA timezone.
+ */
+function getCurrentHourInTz(tz: string): number {
+  const timeStr = new Date().toLocaleTimeString("en-US", {
+    timeZone: tz,
+    hour12: false,
+    hour: "2-digit",
+  });
+  return parseInt(timeStr, 10);
+}
+
+/**
  * Resolve which WhatsApp instance to use for sending.
  * Priority:
  *   1. Instance the client last interacted with (MUST belong to this org)
@@ -54,11 +67,12 @@ async function resolveOrgInstance(
 ): Promise<{ instanceName: string | null; channelId: string | null }> {
   try {
     // 1. Try client's last contact channel — scoped to this org
+    // FIX: Use linked_client_id (correct column) instead of client_id
     const { data: contact } = await supabase
       .from("whatsapp_contacts")
       .select("channel_id")
       .eq("organization_id", orgId)
-      .eq("client_id", clientId)
+      .eq("linked_client_id", clientId)
       .eq("is_group", false)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(1)
@@ -156,7 +170,6 @@ Deno.serve(async (req) => {
     );
 
     const now = new Date();
-    const currentHour = now.getUTCHours() - 3; // BRT approximation
 
     // Get all orgs with automation enabled
     const { data: configs, error: cfgErr } = await supabase
@@ -171,15 +184,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const results: { org_id: string; sent: number; blocked: number; errors: number; no_whatsapp: boolean }[] = [];
+    const results: { org_id: string; sent: number; blocked: number; errors: number; no_whatsapp: boolean; skipped_reason?: string }[] = [];
 
     for (const config of configs) {
       const orgId = config.organization_id;
+
+      // FIX: Use org timezone instead of hardcoded UTC-3
+      const orgTz = await fetchOrgTimezone(supabase, orgId);
+      const currentHour = getCurrentHourInTz(orgTz);
+
       const startHour = parseInt(config.business_hours_start?.split(":")[0] || "8");
       const endHour = parseInt(config.business_hours_end?.split(":")[0] || "18");
 
       if (currentHour < startHour || currentHour >= endHour) {
-        console.log(`[RECURRENCE] ${orgId}: Outside business hours (${currentHour}h, allowed ${startHour}-${endHour})`);
+        console.log(`[RECURRENCE] ${orgId}: Outside business hours (${currentHour}h in ${orgTz}, allowed ${startHour}-${endHour})`);
+        results.push({ org_id: orgId, sent: 0, blocked: 0, errors: 0, no_whatsapp: false, skipped_reason: "outside_business_hours" });
         continue;
       }
 
@@ -210,17 +229,18 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Get active entries due for action
+      // Get active entries due for action — FIX: exclude demo clients
       const { data: entries, error: entErr } = await supabase
         .from("recurrence_entries")
         .select(`
           id, client_id, source_completed_date, source_value, stage,
           msg_2m_sent_at, msg_4m_sent_at, msg_6m_sent_at,
           msg_8m_sent_at, msg_10m_sent_at, msg_12m_sent_at,
-          client:clients(id, name, phone, whatsapp)
+          client:clients!inner(id, name, phone, whatsapp, is_demo_data)
         `)
         .eq("organization_id", orgId)
         .eq("is_active", true)
+        .eq("clients.is_demo_data", false)
         .lte("next_action_date", now.toISOString().split("T")[0]);
 
       if (entErr) {
@@ -230,15 +250,14 @@ Deno.serve(async (req) => {
 
       if (!entries || entries.length === 0) continue;
 
-      // Check daily limit
-      const todayStart = new Date(now);
-      todayStart.setHours(0, 0, 0, 0);
+      // Check daily limit — use org timezone for "today"
+      const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: orgTz });
       const { count: sentToday } = await supabase
         .from("recurrence_message_log")
         .select("id", { count: "exact", head: true })
         .eq("organization_id", orgId)
         .eq("status", "sent")
-        .gte("sent_at", todayStart.toISOString());
+        .gte("sent_at", `${todayStr}T00:00:00`);
 
       const remainingToday = config.daily_limit - (sentToday || 0);
       if (remainingToday <= 0) {
@@ -253,6 +272,9 @@ Deno.serve(async (req) => {
       for (const entry of entries.slice(0, remainingToday)) {
         const client = entry.client as any;
         if (!client) continue;
+
+        // Skip demo data clients (double-check)
+        if (client.is_demo_data) continue;
 
         const phone = client.whatsapp || client.phone;
         if (!phone) { orgBlocked++; continue; }

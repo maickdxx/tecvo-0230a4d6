@@ -3,9 +3,11 @@
  * Sends scheduled messages within existing customer conversations.
  * STRICT channel isolation: uses ONLY the channel stored on the scheduled message.
  * NO fallback to any other channel or instance. Disconnected channel → BLOCK.
+ * Business hours enforcement: messages outside org business hours are skipped (wait for next cycle).
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { fetchOrgTimezone } from "../_shared/timezone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +19,22 @@ function normalizePhone(input: string): string {
   const beforeAt = input.split("@")[0];
   return beforeAt.replace(/\D/g, "");
 }
+
+/**
+ * Get the current hour in a given IANA timezone.
+ */
+function getCurrentHourInTz(tz: string): number {
+  const timeStr = new Date().toLocaleTimeString("en-US", {
+    timeZone: tz,
+    hour12: false,
+    hour: "2-digit",
+  });
+  return parseInt(timeStr, 10);
+}
+
+/** Default business hours */
+const DEFAULT_START_HOUR = 8;
+const DEFAULT_END_HOUR = 18;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -57,6 +75,10 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
     let sent = 0;
     let errors = 0;
+    let skippedHours = 0;
+
+    // Cache org timezones to avoid repeated queries
+    const orgTzCache: Record<string, string> = {};
 
     for (const msg of dueMessages) {
       try {
@@ -70,6 +92,21 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           }).eq("id", msg.id);
           errors++;
+          continue;
+        }
+
+        // Business hours check using org timezone
+        const orgId = contact.organization_id;
+        if (!orgTzCache[orgId]) {
+          orgTzCache[orgId] = await fetchOrgTimezone(supabase, orgId);
+        }
+        const orgTz = orgTzCache[orgId];
+        const currentHour = getCurrentHourInTz(orgTz);
+
+        if (currentHour < DEFAULT_START_HOUR || currentHour >= DEFAULT_END_HOUR) {
+          // Outside business hours — skip, don't mark as error. Will retry next cycle.
+          console.log(`[SCHEDULED-SEND] Message ${msg.id} skipped: outside business hours (${currentHour}h in ${orgTz})`);
+          skippedHours++;
           continue;
         }
 
@@ -207,8 +244,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`[SCHEDULED-SEND] Done: ${sent} sent, ${errors} errors`);
-    return new Response(JSON.stringify({ processed: dueMessages.length, sent, errors }), {
+    console.log(`[SCHEDULED-SEND] Done: ${sent} sent, ${errors} errors, ${skippedHours} skipped (business hours)`);
+    return new Response(JSON.stringify({ processed: dueMessages.length, sent, errors, skipped_business_hours: skippedHours }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
