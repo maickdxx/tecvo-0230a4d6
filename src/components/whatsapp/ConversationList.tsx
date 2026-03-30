@@ -252,8 +252,8 @@ export function ConversationList({
   return (
     <>
       {/* Header */}
-      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Conversas</h2>
+      <div className="px-4 pt-4 pb-2.5 flex items-center justify-between">
+        <h2 className="text-sm font-bold text-foreground tracking-tight">Conversas</h2>
         <div className="flex items-center gap-1">
           {!selectionMode ? (
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectionMode(true)} title="Selecionar">
