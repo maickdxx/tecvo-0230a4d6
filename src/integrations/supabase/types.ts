@@ -6862,6 +6862,10 @@ export type Database = {
         }
         Returns: number
       }
+      adjust_financial_account_balance: {
+        Args: { _account_id: string; _delta: number }
+        Returns: number
+      }
       calculate_service_total_duration: {
         Args: { s_id: string }
         Returns: string

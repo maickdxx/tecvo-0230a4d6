@@ -143,27 +143,14 @@ export function useAccounts(options: UseAccountsOptions = {}) {
 
       if (error) throw error;
 
-      // Update financial account balance when created as already paid
+      // Update financial account balance atomically when created as already paid
       if (status === "paid" && data.financial_account_id) {
-        const { data: finAccount, error: finError } = await supabase
-          .from("financial_accounts")
-          .select("balance")
-          .eq("id", data.financial_account_id)
-          .single();
-
-        if (finError) throw finError;
-
-        const currentBalance = Number(finAccount.balance);
-        const newBalance = data.type === "expense"
-          ? currentBalance - data.amount
-          : currentBalance + data.amount;
-
-        const { error: updateError } = await supabase
-          .from("financial_accounts")
-          .update({ balance: newBalance })
-          .eq("id", data.financial_account_id);
-
-        if (updateError) throw updateError;
+        const delta = data.type === "expense" ? -data.amount : data.amount;
+        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
+          _account_id: data.financial_account_id,
+          _delta: delta,
+        });
+        if (balError) throw balError;
       }
 
       return account;
@@ -214,50 +201,28 @@ export function useAccounts(options: UseAccountsOptions = {}) {
         const txAmount = Number((account as any).amount);
 
         if (previousStatus === "paid" && newStatus === "pending") {
-          // Paid -> Pending: revert the balance (subtract for income, add for expense)
+          // Paid -> Pending: revert the balance
           const finAccountId = (account as any).financial_account_id;
           if (finAccountId) {
-            const { data: finAccount, error: finError } = await supabase
-              .from("financial_accounts")
-              .select("balance")
-              .eq("id", finAccountId)
-              .single();
-            if (finError) throw finError;
-
-            const currentBalance = Number(finAccount.balance);
             const txType = (account as any).type;
-            const newBalance = txType === "income"
-              ? currentBalance - txAmount
-              : currentBalance + txAmount;
-
-            const { error: updateError } = await supabase
-              .from("financial_accounts")
-              .update({ balance: newBalance })
-              .eq("id", finAccountId);
-            if (updateError) throw updateError;
+            const delta = txType === "income" ? -txAmount : txAmount;
+            const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
+              _account_id: finAccountId,
+              _delta: delta,
+            });
+            if (balError) throw balError;
           }
         } else if (previousStatus === "pending" && newStatus === "paid") {
           // Pending -> Paid: add to balance
           const finAccountId = data.financial_account_id || (account as any).financial_account_id;
           if (finAccountId) {
-            const { data: finAccount, error: finError } = await supabase
-              .from("financial_accounts")
-              .select("balance")
-              .eq("id", finAccountId)
-              .single();
-            if (finError) throw finError;
-
-            const currentBalance = Number(finAccount.balance);
             const txType = (account as any).type;
-            const newBalance = txType === "income"
-              ? currentBalance + txAmount
-              : currentBalance - txAmount;
-
-            const { error: updateError } = await supabase
-              .from("financial_accounts")
-              .update({ balance: newBalance })
-              .eq("id", finAccountId);
-            if (updateError) throw updateError;
+            const delta = txType === "income" ? txAmount : -txAmount;
+            const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
+              _account_id: finAccountId,
+              _delta: delta,
+            });
+            if (balError) throw balError;
           }
         }
       }
@@ -306,31 +271,15 @@ export function useAccounts(options: UseAccountsOptions = {}) {
 
       // Only update financial account balance if both are provided
       if (financial_account_id && compensation_date) {
-        // Get the transaction type and amount
         const txType = (account as any).type;
         const txAmount = Number((account as any).amount);
+        const delta = txType === "expense" ? -txAmount : txAmount;
 
-        // Get current balance
-        const { data: finAccount, error: finError } = await supabase
-          .from("financial_accounts")
-          .select("balance")
-          .eq("id", financial_account_id)
-          .single();
-
-        if (finError) throw finError;
-
-        const currentBalance = Number(finAccount.balance);
-        // expense = debit (subtract), income = credit (add)
-        const newBalance = txType === "expense" 
-          ? currentBalance - txAmount 
-          : currentBalance + txAmount;
-
-        const { error: updateError } = await supabase
-          .from("financial_accounts")
-          .update({ balance: newBalance })
-          .eq("id", financial_account_id);
-
-        if (updateError) throw updateError;
+        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
+          _account_id: financial_account_id,
+          _delta: delta,
+        });
+        if (balError) throw balError;
       }
 
       return account;
@@ -355,6 +304,28 @@ export function useAccounts(options: UseAccountsOptions = {}) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // First get the transaction to check if we need to revert balance
+      const { data: tx, error: fetchError } = await supabase
+        .from("transactions")
+        .select("type, amount, status, financial_account_id")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Revert financial account balance if the transaction was paid
+      if (tx && tx.status === "paid" && tx.financial_account_id) {
+        const delta = tx.type === "income"
+          ? -Number(tx.amount)
+          : Number(tx.amount);
+
+        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
+          _account_id: tx.financial_account_id,
+          _delta: delta,
+        });
+        if (balError) throw balError;
+      }
+
       const { error } = await supabase.from("transactions").delete().eq("id", id);
       if (error) throw error;
     },
