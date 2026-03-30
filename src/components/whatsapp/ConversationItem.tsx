@@ -167,7 +167,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               )}
             </div>
             {contact.is_unread && (
-              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-card animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[hsl(222,69%,49%)] border-2 border-card shadow-sm" />
             )}
           </div>
 
