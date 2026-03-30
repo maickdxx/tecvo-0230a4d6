@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 function getEffectiveStatus(account: Account, tz: string) {
   if (account.status === "paid" || account.status === "cancelled") return account.status;
   if (account.status === "pending" && account.due_date) {
-    const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+    const todayStr = getTodayInTz(tz);
     if (account.due_date.substring(0, 10) < todayStr) return "overdue";
   }
   return account.status;

@@ -143,27 +143,14 @@ export function useAccounts(options: UseAccountsOptions = {}) {
 
       if (error) throw error;
 
-      // Update financial account balance when created as already paid
+      // Update financial account balance atomically when created as already paid
       if (status === "paid" && data.financial_account_id) {
-        const { data: finAccount, error: finError } = await supabase
-          .from("financial_accounts")
-          .select("balance")
-          .eq("id", data.financial_account_id)
-          .single();
-
-        if (finError) throw finError;
-
-        const currentBalance = Number(finAccount.balance);
-        const newBalance = data.type === "expense"
-          ? currentBalance - data.amount
-          : currentBalance + data.amount;
-
-        const { error: updateError } = await supabase
-          .from("financial_accounts")
-          .update({ balance: newBalance })
-          .eq("id", data.financial_account_id);
-
-        if (updateError) throw updateError;
+        const delta = data.type === "expense" ? -data.amount : data.amount;
+        const { error: balError } = await supabase.rpc("adjust_financial_account_balance", {
+          _account_id: data.financial_account_id,
+          _delta: delta,
+        });
+        if (balError) throw balError;
       }
 
       return account;
