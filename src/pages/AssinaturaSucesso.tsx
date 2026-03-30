@@ -6,7 +6,7 @@ import { PartyPopper, CheckCircle2, ArrowRight, Loader2, LogIn } from "lucide-re
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPlanDisplayInfo, type PlanSlug } from "@/lib/planConfig";
+import { getPlanDisplayInfo, PLAN_CONFIG, type PlanSlug } from "@/lib/planConfig";
 import { buildCheckoutSuccessPath, clearCheckoutContext, saveCheckoutContext } from "@/lib/checkoutReturn";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
