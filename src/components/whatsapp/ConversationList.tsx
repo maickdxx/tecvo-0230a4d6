@@ -317,14 +317,14 @@ export function ConversationList({
       )}
 
       {/* Search */}
-      <div className="px-3 pb-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="px-3 pb-2.5">
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder="Buscar nome, telefone ou mensagem..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 h-9 text-sm"
+            className="pl-9 h-10 text-sm bg-muted/30 border-transparent focus:bg-background focus:border-primary/20 transition-all rounded-lg"
           />
         </div>
       </div>
