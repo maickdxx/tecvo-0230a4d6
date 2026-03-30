@@ -14,10 +14,7 @@ export const ScrollToTop = () => {
 
     if (!hasMounted.current) {
       hasMounted.current = true;
-      return;
     }
-
-    trackFBEvent("PageView");
   }, [pathname, navType]);
 
   return null;

@@ -31,6 +31,16 @@ import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
   const navigate = useNavigate();
   const { isPreparing } = useAutoSeedDemo();
+  const hasTrackedDashboard = useRef(false);
+
+  useEffect(() => {
+    if (!hasTrackedDashboard.current) {
+      hasTrackedDashboard.current = true;
+      import("@/lib/fbPixel").then(({ trackFBCustomEvent }) => {
+        trackFBCustomEvent("Dashboard");
+      });
+    }
+  }, []);
   const [granularity, setGranularity] = useState<Granularity>("month");
   const [referenceDate, setReferenceDate] = useState(() => getHojeBRT());
 

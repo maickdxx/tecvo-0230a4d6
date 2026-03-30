@@ -19,6 +19,12 @@ import {
 export default function Home() {
   const { user, isLoading } = useAuth();
 
+  useEffect(() => {
+    if (!isLoading && !user) {
+      trackFBEvent("ViewContent", { content_name: "Landing Page", content_category: "landing" });
+    }
+  }, [isLoading, user]);
+
   if (isLoading) return null;
   if (user) return <Navigate to="/dashboard" replace />;
 
