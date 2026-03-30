@@ -197,7 +197,6 @@ export default function Auth() {
           handleBackToLogin();
         } else {
           toast({ title: "🎉 Conta criada!", description: "Bem-vindo à Tecvo!" });
-          trackFBEvent("CompleteRegistration");
           setSignUpSuccess(false);
           navigate(getRedirectPath());
         }
