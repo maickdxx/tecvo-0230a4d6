@@ -47,13 +47,8 @@ export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRou
     return <Navigate to="/login" replace />;
   }
 
-  // WhatsApp gate: redirect users without WhatsApp to onboarding to collect it
-  // Exempt: employees (invited), onboarding page itself, settings page
-  const hasWhatsappPersonal = !!profile?.phone;
-  const whatsappExemptRoutes = ["/onboarding", "/configuracoes", "/planos", "/assinatura/parabens"];
-  if (!isEmployee && !hasWhatsappPersonal && !matchAnyRoute(location.pathname, whatsappExemptRoutes)) {
-    return <Navigate to="/onboarding" replace />;
-  }
+  // WhatsApp pessoal é opcional — não bloqueia acesso ao sistema.
+  // Coleta posterior via WhatsAppPromptCard no dashboard.
 
   // Welcome page: show once after plan activation
   if (!isEmployee && !welcomeShown && !isFreePlan && location.pathname !== "/assinatura/parabens") {
