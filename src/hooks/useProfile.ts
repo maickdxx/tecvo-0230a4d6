@@ -17,7 +17,9 @@ export function useProfile() {
       whatsappSignature,
       aiAssistantName,
       aiAssistantVoice,
-      dashboardLayout
+      dashboardLayout,
+      themeMode,
+      colorTheme
     }: { 
       fullName?: string; 
       phone?: string; 
@@ -27,6 +29,8 @@ export function useProfile() {
       aiAssistantName?: string;
       aiAssistantVoice?: string;
       dashboardLayout?: any;
+      themeMode?: string;
+      colorTheme?: string;
     }) => {
       if (!user) throw new Error("Não autenticado");
 
@@ -34,6 +38,9 @@ export function useProfile() {
       if (fullName !== undefined) updateData.full_name = fullName;
       if (phone !== undefined) updateData.phone = phone;
       if (position !== undefined) updateData.position = position || null;
+      
+      if (themeMode !== undefined) updateData.theme_mode = themeMode;
+      if (colorTheme !== undefined) updateData.color_theme = colorTheme;
       
       // Restricted fields: only owner can update
       if (isOwner) {
