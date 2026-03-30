@@ -21,7 +21,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      trackFBEvent("ViewContent", { content_name: "Landing Page", content_category: "landing" });
+      trackFBCustomEvent("PaginaDeVendas");
     }
   }, [isLoading, user]);
 
