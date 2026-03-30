@@ -124,8 +124,24 @@ export default function LaudosTecnicos() {
         signatureData = data;
       }
 
+      // Fetch equipment for this report
+      let equipmentData: any[] = [];
+      const { data: eqData } = await supabase
+        .from("report_equipment")
+        .select("*")
+        .eq("report_id", report.id)
+        .order("equipment_number", { ascending: true });
+      if (eqData) {
+        equipmentData = eqData.map((row: any) => ({
+          ...row,
+          inspection_checklist: row.inspection_checklist || [],
+          measurements: row.measurements || {},
+        }));
+      }
+
       await generateReportPDF({
         report,
+        equipment: equipmentData,
         organizationName: organization?.name || "Minha Empresa",
         organizationCnpj: organization?.cnpj_cpf || undefined,
         organizationPhone: organization?.phone || undefined,

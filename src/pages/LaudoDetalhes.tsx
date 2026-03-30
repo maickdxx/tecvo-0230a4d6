@@ -98,6 +98,7 @@ export default function LaudoDetalhes() {
     try {
       await generateReportPDF({
         report,
+        equipment: reportEquipment,
         photos,
         organizationName: organization?.name || "Minha Empresa",
         organizationCnpj: organization?.cnpj_cpf || undefined,
@@ -209,6 +210,13 @@ export default function LaudoDetalhes() {
             <InfoRow label="Técnico" value={report.technician_profile?.full_name || report.responsible_technician_name} />
           </div>
         </SectionCard>
+
+        {/* Visit Reason */}
+        {report.visit_reason && (
+          <SectionCard icon={ClipboardCheck} title="Motivo da Visita">
+            <p className="text-sm whitespace-pre-wrap">{report.visit_reason}</p>
+          </SectionCard>
+        )}
 
         {/* Multi-Equipment Blocks */}
         {reportEquipment.length > 0 ? (
@@ -365,29 +373,20 @@ export default function LaudoDetalhes() {
         )}
 
         {/* Services Executed */}
-        <SectionCard icon={Wrench} title="Serviços Executados">
-          <p className="text-sm whitespace-pre-wrap leading-relaxed">
-            {report.interventions_performed || (report.status === "finalized" ? "Limpeza técnica, higienização, reaperto de conexões e testes funcionais realizados." : "Aguardando detalhamento das intervenções.")}
-          </p>
-        </SectionCard>
+        {report.interventions_performed && (
+          <SectionCard icon={Wrench} title={reportEquipment.length > 0 ? "Serviços Gerais da OS" : "Serviços Executados"}>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+              {report.interventions_performed}
+            </p>
+          </SectionCard>
+        )}
 
         {/* Recommendation & Strategy */}
-        <SectionCard icon={MessageSquare} title="Parecer e Recomendação">
-          <div className="space-y-4">
-            {report.recommendation && (
-              <div>
-                <p className="text-[11px] font-bold text-blue-600 uppercase mb-1">Diretriz Técnica</p>
-                <p className="text-sm whitespace-pre-wrap">{report.recommendation}</p>
-              </div>
-            )}
-            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-              <p className="text-[11px] font-bold text-blue-700 uppercase mb-1">Sugestão Estratégica</p>
-              <p className="text-sm text-blue-900">
-                Implementar Plano de Manutenção Preventiva (PMOC) para garantir eficiência energética e conformidade legal.
-              </p>
-            </div>
-          </div>
-        </SectionCard>
+        {report.recommendation && (
+          <SectionCard icon={MessageSquare} title="Parecer e Recomendação">
+            <p className="text-sm whitespace-pre-wrap">{report.recommendation}</p>
+          </SectionCard>
+        )}
 
         {/* Risks */}
         {report.risks && (
@@ -400,18 +399,48 @@ export default function LaudoDetalhes() {
           </SectionCard>
         )}
 
+        {/* Observations */}
+        {report.observations && (
+          <SectionCard icon={MessageSquare} title="Observações Finais">
+            <p className="text-sm whitespace-pre-wrap">{report.observations}</p>
+          </SectionCard>
+        )}
+
         {/* Conclusion / Final Status */}
-        <SectionCard icon={ClipboardCheck} title="Status Após Intervenção">
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-100">
-            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-bold text-green-900">Condição Final de Entrega</p>
-              <p className="text-sm text-green-800 whitespace-pre-wrap mt-1">
-                {report.conclusion || (report.equipment_working === "yes" ? "Equipamento normalizado e em operação regular." : "Equipamento em aguardo de peças/orçamento.")}
-              </p>
-            </div>
-          </div>
-        </SectionCard>
+        {(() => {
+          // Derive overall status from equipment or legacy field
+          let overallStatus = "operational";
+          if (reportEquipment.length > 0) {
+            const statuses = reportEquipment.map((eq) => eq.final_status || "operational");
+            if (statuses.includes("non_operational")) overallStatus = "non_operational";
+            else if (statuses.includes("operational_with_caveats")) overallStatus = "operational_with_caveats";
+          } else {
+            if (report.equipment_working === "no") overallStatus = "non_operational";
+            else if (report.equipment_working === "partial") overallStatus = "operational_with_caveats";
+          }
+          const statusColors = {
+            operational: { bg: "bg-green-50 border-green-100", icon: "text-green-600", title: "text-green-900", text: "text-green-800" },
+            operational_with_caveats: { bg: "bg-amber-50 border-amber-100", icon: "text-amber-600", title: "text-amber-900", text: "text-amber-800" },
+            non_operational: { bg: "bg-red-50 border-red-100", icon: "text-red-600", title: "text-red-900", text: "text-red-800" },
+          };
+          const statusLabel = overallStatus === "operational" ? "Operacional" : overallStatus === "operational_with_caveats" ? "Operacional com Ressalvas" : "Não Operacional";
+          const c = statusColors[overallStatus as keyof typeof statusColors];
+          const StatusIcon = overallStatus === "operational" ? CheckCircle2 : overallStatus === "operational_with_caveats" ? AlertTriangle : XCircle;
+
+          return (
+            <SectionCard icon={ClipboardCheck} title="Status Final do Atendimento">
+              <div className={cn("flex items-start gap-3 p-3 rounded-lg border", c.bg)}>
+                <StatusIcon className={cn("h-5 w-5 shrink-0 mt-0.5", c.icon)} />
+                <div>
+                  <p className={cn("text-sm font-bold", c.title)}>{statusLabel}</p>
+                  {report.conclusion && (
+                    <p className={cn("text-sm whitespace-pre-wrap mt-1", c.text)}>{report.conclusion}</p>
+                  )}
+                </div>
+              </div>
+            </SectionCard>
+          );
+        })()}
 
         {/* Signature Integration */}
         {signature && (
