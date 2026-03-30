@@ -12,7 +12,7 @@ import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBl
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
-import { MiniAgenda } from "@/components/dashboard/MiniAgenda";
+
 import { MoneyOnTable } from "@/components/dashboard/MoneyOnTable";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useUserRole } from "@/hooks/useUserRole";
