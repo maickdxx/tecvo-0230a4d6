@@ -38,14 +38,19 @@ function formatCurrency(value: number): string {
 }
 
 type PriorityLevel = "high" | "medium" | "low";
+type ConfidenceLevel = "high" | "medium" | "low";
 
 interface DashboardAction {
   id: string;
   title: string;
+  recommendation: string;
+  impactValue: number;
   impactText: string;
   timeLabel: string;
+  estimatedTime: string;
   icon: any;
   priorityLevel: PriorityLevel;
+  confidence: ConfidenceLevel;
   score: number;
   action: () => void;
   color: string;
