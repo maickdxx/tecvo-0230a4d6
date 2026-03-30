@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { analytics } from "@/lib/analytics";
+import { trackFBEvent } from "@/lib/fbPixel";
 import { ArrowLeft, Crown, Check, Loader2, ExternalLink, Settings2, Star, Zap, Gift, AlertTriangle, CreditCard, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
