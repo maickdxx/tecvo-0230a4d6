@@ -29,7 +29,7 @@ interface AuthContextType {
   organizationId: string | null;
   isLoading: boolean;
   signUpSuccess: boolean;
-  signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -47,29 +47,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    let initialSessionHandled = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!mounted) return;
-        // Skip if this is the INITIAL_SESSION event — we handle it via getSession below
-        if (event === "INITIAL_SESSION") {
-          initialSessionHandled = true;
-          return;
-        }
-        setSession(session);
-        setUser(session?.user ?? null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (event === "INITIAL_SESSION") return;
 
-        if (session?.user) {
-          setTimeout(() => {
-            if (mounted) fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-          setIsLoading(false);
-        }
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        setTimeout(() => {
+          if (mounted) fetchProfile(session.user.id);
+        }, 0);
+      } else {
+        setProfile(null);
+        setIsLoading(false);
       }
-    );
+    });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
@@ -103,14 +99,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data ? { ...data, dashboard_layout: (Array.isArray(data.dashboard_layout) ? data.dashboard_layout as unknown as DashboardLayoutItem[] : null) } : null);
 
-      // Update last_access silently (once per session load)
+      setProfile(
+        data
+          ? {
+              ...data,
+              dashboard_layout: Array.isArray(data.dashboard_layout)
+                ? (data.dashboard_layout as unknown as DashboardLayoutItem[])
+                : null,
+            }
+          : null,
+      );
+
       if (data) {
         const utms = analytics.getStoredUTMs();
-        const updateData: any = { last_access: new Date().toISOString() };
-        
-        // Populate first UTMs if they don't exist yet
+        const updateData: Record<string, unknown> = { last_access: new Date().toISOString() };
+
         if (!data.first_utm_source && Object.keys(utms).length > 0) {
           updateData.first_utm_source = utms.utm_source;
           updateData.first_utm_medium = utms.utm_medium;
@@ -119,20 +123,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           updateData.first_landing_page = utms.landing_page;
         }
 
-        supabase
-          .from("profiles")
-          .update(updateData)
-          .eq("user_id", userId)
-          .then(() => {});
+        supabase.from("profiles").update(updateData).eq("user_id", userId).then(() => {});
 
-        // Track Login Event (if not already tracked in this session)
         if (!sessionStorage.getItem("tecvo_login_tracked")) {
           analytics.track("login", userId, data.organization_id);
           sessionStorage.setItem("tecvo_login_tracked", "true");
         }
-
-        // Welcome WhatsApp is handled exclusively by useOnboarding hook
-        // to avoid duplicate sends from multiple trigger points
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -141,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, phone: string) => {
+  const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     try {
       const utms = analytics.getStoredUTMs();
       analytics.track("signup_started", null, null, { email, ...utms }, true);
@@ -150,31 +146,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          data: { 
-            full_name: fullName, 
+          data: {
+            full_name: fullName,
             phone,
-            ...utms // This will be handled by a trigger if available, or we do it on first fetch
+            ...utms,
           },
           emailRedirectTo: window.location.origin,
         },
       });
 
       if (error) {
-        // Handle "User already registered" error from Supabase
-        if (error.message?.toLowerCase().includes("already registered") || 
-            error.message?.toLowerCase().includes("already been registered") ||
-            (error as any).code === "user_already_exists") {
+        if (
+          error.message?.toLowerCase().includes("already registered") ||
+          error.message?.toLowerCase().includes("already been registered") ||
+          (error as { code?: string }).code === "user_already_exists"
+        ) {
           return { error: new Error("Este email já está cadastrado. Faça login ou use 'Esqueci minha senha'.") };
         }
+
         return { error };
       }
 
-      // Check for fake signup (user already exists but unconfirmed — Supabase returns empty identities)
       if (data.user && data.user.identities && data.user.identities.length === 0) {
         return { error: new Error("Este email já está cadastrado. Faça login ou use 'Esqueci minha senha'.") };
       }
 
-      // Send OTP verification email via edge function
       try {
         await supabase.functions.invoke("send-verification-email", {
           body: { email, fullName },
@@ -184,9 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       analytics.track("signup_completed", data.user?.id || null, null, {}, true);
-      trackFBEvent("Lead", { content_name: "signup", currency: "BRL", value: 0 });
       trackFBEvent("StartTrial", { content_name: "7_day_trial", currency: "BRL", value: 0 });
       setSignUpSuccess(true);
+
       return { error: null };
     } catch (error) {
       return { error: error as Error };
