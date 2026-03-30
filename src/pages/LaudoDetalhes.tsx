@@ -373,11 +373,13 @@ export default function LaudoDetalhes() {
         )}
 
         {/* Services Executed */}
-        <SectionCard icon={Wrench} title="Serviços Executados">
-          <p className="text-sm whitespace-pre-wrap leading-relaxed">
-            {report.interventions_performed || (report.status === "finalized" ? "Limpeza técnica, higienização, reaperto de conexões e testes funcionais realizados." : "Aguardando detalhamento das intervenções.")}
-          </p>
-        </SectionCard>
+        {report.interventions_performed && (
+          <SectionCard icon={Wrench} title={reportEquipment.length > 0 ? "Serviços Gerais da OS" : "Serviços Executados"}>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+              {report.interventions_performed}
+            </p>
+          </SectionCard>
+        )}
 
         {/* Recommendation & Strategy */}
         {report.recommendation && (
