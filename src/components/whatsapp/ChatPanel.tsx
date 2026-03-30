@@ -94,6 +94,7 @@ interface ChatPanelProps {
   onShowScheduleMessage?: () => void;
   onShowCreateQuote?: () => void;
   onMessageSent?: (contactId: string, content: string) => void;
+  onSelectContact?: (id: string) => void;
 }
 
 export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactUpdate, teamMembers = [], onAIReplyToMessage, onToggleAI, showAICopilot, onShowCreateOS, onShowScheduleVisit, onShowAnalyze, onShowScheduleMessage, onShowCreateQuote, onMessageSent }: ChatPanelProps) {
