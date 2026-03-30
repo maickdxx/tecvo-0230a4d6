@@ -99,41 +99,41 @@ export function AlertasInteligentes() {
   // Don't render if no alerts
   if (alerts.length === 0) {
     return (
-      <div className="mb-5 rounded-xl border border-border/60 bg-card shadow-card p-4 animate-fade-in">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <div className="rounded-full bg-success/10 p-1.5">
-            <CheckCircle2 className="h-4 w-4 text-success" />
+      <div className="mb-6 rounded-2xl border border-border/40 bg-card p-5 shadow-sm animate-fade-in transition-all duration-300 hover:shadow-md">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground/60">
+          <div className="rounded-full bg-success/5 p-2">
+            <CheckCircle2 className="h-4 w-4 text-success/60" />
           </div>
-          <span className="font-medium">Tudo sob controle — nenhum alerta.</span>
+          <span className="font-semibold tracking-tight">Tudo em dia — sem alertas pendentes.</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mb-5 rounded-xl border border-border/60 bg-card shadow-card overflow-hidden animate-fade-in">
-      <div className="px-5 pt-4 pb-2">
-        <h3 className="text-sm font-semibold text-card-foreground flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-warning" />
-          Atenção
+    <div className="mb-6 rounded-2xl border border-border/40 bg-card shadow-sm overflow-hidden animate-fade-in transition-all duration-300 hover:shadow-md">
+      <div className="px-6 pt-5 pb-3 bg-muted/20 border-b border-border/40">
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-warning/70" />
+          Atenção Necessária
         </h3>
       </div>
-      <div className="divide-y divide-border/50">
+      <div className="divide-y divide-border/30">
         {alerts.map((alert) => {
-          const bgClass = alert.severity === "destructive" ? "hover:bg-destructive/5" : "hover:bg-warning/5";
+          const bgClass = alert.severity === "destructive" ? "hover:bg-destructive/[0.02]" : "hover:bg-warning/[0.02]";
           const iconBg = alert.severity === "destructive" ? "bg-destructive/10" : "bg-warning/10";
-          const iconColor = alert.severity === "destructive" ? "text-destructive" : "text-warning";
+          const iconColor = alert.severity === "destructive" ? "text-destructive/80" : "text-warning/80";
           return (
             <button
               key={alert.id}
               onClick={alert.action}
-              className={`flex items-center gap-3 px-5 py-3 w-full text-left transition-colors ${bgClass}`}
+              className={`flex items-center gap-4 px-6 py-4 w-full text-left transition-all duration-200 group ${bgClass}`}
             >
-              <div className={`rounded-full p-1.5 shrink-0 ${iconBg}`}>
+              <div className={`rounded-xl p-2 shrink-0 transition-transform group-hover:scale-110 ${iconBg}`}>
                 <alert.icon className={`h-4 w-4 ${iconColor}`} />
               </div>
-              <span className="text-sm font-medium text-card-foreground flex-1">{alert.message}</span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm font-semibold text-card-foreground/80 flex-1 tracking-tight">{alert.message}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0 transition-transform group-hover:translate-x-1" />
             </button>
           );
         })}
