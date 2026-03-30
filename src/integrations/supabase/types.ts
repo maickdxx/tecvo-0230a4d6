@@ -2902,6 +2902,99 @@ export type Database = {
           },
         ]
       }
+      report_equipment: {
+        Row: {
+          capacity_btus: string | null
+          cleanliness_status: string | null
+          condition_found: string | null
+          created_at: string
+          equipment_brand: string | null
+          equipment_condition: string | null
+          equipment_location: string | null
+          equipment_model: string | null
+          equipment_number: number
+          equipment_type: string | null
+          equipment_working: string | null
+          final_status: string | null
+          id: string
+          impact_level: string | null
+          inspection_checklist: Json | null
+          measurements: Json | null
+          organization_id: string
+          procedure_performed: string | null
+          report_id: string
+          serial_number: string | null
+          services_performed: string | null
+          technical_observations: string | null
+          updated_at: string
+        }
+        Insert: {
+          capacity_btus?: string | null
+          cleanliness_status?: string | null
+          condition_found?: string | null
+          created_at?: string
+          equipment_brand?: string | null
+          equipment_condition?: string | null
+          equipment_location?: string | null
+          equipment_model?: string | null
+          equipment_number?: number
+          equipment_type?: string | null
+          equipment_working?: string | null
+          final_status?: string | null
+          id?: string
+          impact_level?: string | null
+          inspection_checklist?: Json | null
+          measurements?: Json | null
+          organization_id: string
+          procedure_performed?: string | null
+          report_id: string
+          serial_number?: string | null
+          services_performed?: string | null
+          technical_observations?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capacity_btus?: string | null
+          cleanliness_status?: string | null
+          condition_found?: string | null
+          created_at?: string
+          equipment_brand?: string | null
+          equipment_condition?: string | null
+          equipment_location?: string | null
+          equipment_model?: string | null
+          equipment_number?: number
+          equipment_type?: string | null
+          equipment_working?: string | null
+          final_status?: string | null
+          id?: string
+          impact_level?: string | null
+          inspection_checklist?: Json | null
+          measurements?: Json | null
+          organization_id?: string
+          procedure_performed?: string | null
+          report_id?: string
+          serial_number?: string | null
+          services_performed?: string | null
+          technical_observations?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_equipment_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_equipment_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "technical_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_equipment: {
         Row: {
           brand: string | null
