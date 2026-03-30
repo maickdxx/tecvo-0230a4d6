@@ -57,11 +57,11 @@ export function useStrategicAlerts() {
           level: "critical",
           title: `${zeroValueCompleted.length} serviço(s) sem valor definido`,
           description: `Serviços concluídos sem valor representam receita perdida.`,
-          financialImpact: `R$ ${potentialLoss.toFixed(0)} em receita potencial`,
-          consequence: "Receita não contabilizada no faturamento",
+          financialImpact: `R$ ${potentialLoss.toFixed(0)} potencial de recuperação`,
+          consequence: "Receita realizada mas sem valor registrado",
           actionLabel: "Revisar serviços",
           actionRoute: "/servicos",
-          _impactValue: potentialLoss,
+          _impactValue: 0, // Set to 0 to avoid inflating real impact numbers with estimations
         });
       }
     }
