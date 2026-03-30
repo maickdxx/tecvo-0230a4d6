@@ -33,6 +33,8 @@ export default function ParaVoce() {
 
   useEffect(() => {
     document.title = "Tecvo — Essa plataforma é para você?";
+    trackFBEvent("ViewContent", { content_name: "Para Você", content_category: "sales" });
+    trackFBCustomEvent("ParaVocePagina");
   }, []);
 
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS));
