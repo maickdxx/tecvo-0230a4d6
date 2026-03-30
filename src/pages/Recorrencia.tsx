@@ -440,6 +440,7 @@ export default function Recorrencia() {
           <>
             <RevenueHero stats={stats} onAction={scrollToList} />
             <SmartAlert totalPronto={stats.totalPronto} revenuePronto={revenuePronto} />
+            <OrphanedRecurrenceAlert />
             <AutomationToggle />
             <StatsBar stats={stats} />
 
