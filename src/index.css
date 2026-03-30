@@ -334,4 +334,16 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
   }
+  /* WhatsApp Specifics */
+  .bg-whatsapp-pattern {
+    background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+    background-repeat: repeat;
+    background-size: 400px;
+  }
+  .dark .bg-whatsapp-pattern {
+    filter: invert(1) opacity(0.03);
+  }
+  .bg-whatsapp-pattern-light {
+    opacity: 0.05;
+  }
 }
