@@ -50,24 +50,8 @@ export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
   };
 
   const handleColorChange = async (newColorTheme: ColorTheme) => {
-    setColorTheme(newColorTheme);
-    if (!user) return;
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ color_theme: newColorTheme })
-        .eq("user_id", user.id);
-      
-      if (error) throw error;
-      refreshProfile();
-    } catch (err) {
-      console.error("Error saving color theme:", err);
-      toast({
-        title: "Erro ao salvar preferência",
-        description: "Suas alterações podem não ser sincronizadas entre dispositivos.",
-        variant: "destructive",
-      });
-    }
+    await setColorTheme(newColorTheme);
+    if (user) refreshProfile();
   };
 
   return (
