@@ -89,13 +89,13 @@ export function FocoDoDia() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Atuado</p>
+                <p className="text-[10px] font-bold text-success uppercase tracking-widest">Atuado</p>
                 <p className="text-lg font-black text-foreground">
                   R$ {metrics.impactActed.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Pendente</p>
+                <p className="text-[10px] font-bold text-warning uppercase tracking-widest">Pendente</p>
                 <p className="text-lg font-black text-foreground">
                   R$ {metrics.impactPending.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
                 </p>
@@ -103,7 +103,7 @@ export function FocoDoDia() {
             </div>
 
             {isComplete && (
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 p-3 rounded-xl">
+              <div className="flex items-center gap-2 text-success bg-success/10 p-3 rounded-xl">
                 <CheckCircle2 className="h-5 w-5 shrink-0" />
                 <p className="text-xs font-bold uppercase tracking-tight">Tudo sob controle. Nenhuma pendência crítica!</p>
               </div>
