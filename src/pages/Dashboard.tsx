@@ -30,13 +30,10 @@ import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { DashboardCustomizeDialog } from "@/components/dashboard/DashboardCustomizeDialog";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useUserRole } from "@/hooks/useUserRole";
+import { DailyRoutineSummary } from "@/components/secretaria/DailyRoutineSummary";
 import {
   type Granularity,
-  getPeriodoAtivo,
-  getPeriodoAnterior,
-  getPeriodoGrafico,
-  navegarPeriodo,
-  getLabelPeriodo,
+...
   getHojeBRT,
 } from "@/lib/periodoGlobal";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
