@@ -407,15 +407,25 @@ export function useWhatsAppConversations() {
   const moveContactToTop = useCallback((contactId: string, lastMessageContent?: string) => {
     setContacts(prev => {
       const idx = prev.findIndex(c => c.id === contactId);
-      if (idx <= 0) return prev;
+      if (idx < 0) return prev;
+      
       const newList = [...prev];
-      const [contact] = newList.splice(idx, 1);
+      const contact = newList[idx];
       const updated = {
         ...contact,
         last_message_at: new Date().toISOString(),
         last_message_is_from_me: true,
         ...(lastMessageContent ? { last_message_content: lastMessageContent.substring(0, 200) } : {}),
       };
+      
+      // If it's already at the top and content didn't change, return the same array to prevent re-render
+      if (idx === 0 && 
+          prev[0].last_message_content === updated.last_message_content && 
+          prev[0].last_message_is_from_me === updated.last_message_is_from_me) {
+        return prev;
+      }
+
+      newList.splice(idx, 1);
       newList.unshift(updated);
       return newList;
     });

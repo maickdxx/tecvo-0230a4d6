@@ -438,7 +438,7 @@ export function ConversationList({
 
       {/* List */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        {loading ? (
+        {loading && filtered.length === 0 ? (
           <div className="p-3 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
