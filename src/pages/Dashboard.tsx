@@ -69,53 +69,68 @@ export default function Dashboard() {
     <AppLayout>
       <div className="page-enter">
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground tracking-tight">Painel de Controle</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Resumo estratégico do seu negócio</p>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-6">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground/90 sm:text-4xl">
+              Painel de Controle
+            </h1>
+            <p className="text-sm font-medium text-muted-foreground/60 tracking-tight">
+              Visão estratégica e saúde financeira do seu negócio
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Nova OS</span>
+          <div className="flex items-center gap-3">
+            <Button onClick={() => navigate("/ordens-servico/nova")} className="gap-2 shadow-sm rounded-xl px-5 h-11 font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
+              <Plus className="h-4 w-4" />
+              <span>Nova Ordem de Serviço</span>
             </Button>
           </div>
         </div>
 
         {/* 1. Situação Atual */}
         {canViewFinance && (
-          <div data-tour="dashboard-hero">
+          <div data-tour="dashboard-hero" className="mb-12">
             <CurrentSituationBlock />
           </div>
         )}
 
-        {/* Period Selector */}
+        {/* Period Selector Section */}
         {canViewFinance && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
-            <Tabs
-              value={granularity}
-              onValueChange={(v) => {
-                setGranularity(v as Granularity);
-                setReferenceDate(getHojeBRT());
-              }}
-            >
-              <TabsList className="h-8">
-                <TabsTrigger value="day" className="text-xs px-3 h-7">Dia</TabsTrigger>
-                <TabsTrigger value="week" className="text-xs px-3 h-7">Semana</TabsTrigger>
-                <TabsTrigger value="month" className="text-xs px-3 h-7">Mês</TabsTrigger>
-              </TabsList>
-            </Tabs>
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between mb-8 pb-6 border-b border-border/40">
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">
+                Visualização por período
+              </h3>
+              <Tabs
+                value={granularity}
+                onValueChange={(v) => {
+                  setGranularity(v as Granularity);
+                  setReferenceDate(getHojeBRT());
+                }}
+                className="w-fit"
+              >
+                <TabsList className="h-10 bg-muted/40 p-1 border border-border/20 rounded-xl">
+                  <TabsTrigger value="day" className="text-xs font-bold px-5 h-8 rounded-lg data-[state=active]:shadow-sm">Dia</TabsTrigger>
+                  <TabsTrigger value="week" className="text-xs font-bold px-5 h-8 rounded-lg data-[state=active]:shadow-sm">Semana</TabsTrigger>
+                  <TabsTrigger value="month" className="text-xs font-bold px-5 h-8 rounded-lg data-[state=active]:shadow-sm">Mês</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
 
-            <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </Button>
-              <span className="text-sm font-medium text-foreground capitalize min-w-[140px] text-center period-transition" key={periodLabel}>
-                {periodLabel}
-              </span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+            <div className="flex flex-col items-start sm:items-end gap-1.5">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">
+                Navegação
+              </h3>
+              <div className="flex items-center gap-2 bg-muted/30 p-1 border border-border/20 rounded-xl">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
+                  <ChevronLeft className="h-4 w-4 text-muted-foreground/60" />
+                </Button>
+                <span className="text-sm font-bold text-foreground/70 capitalize min-w-[150px] text-center period-transition tracking-tight" key={periodLabel}>
+                  {periodLabel}
+                </span>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+                </Button>
+              </div>
             </div>
           </div>
         )}
