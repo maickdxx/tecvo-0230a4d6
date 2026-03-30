@@ -77,10 +77,6 @@ export default function Dashboard() {
         {/* Money on Table Alert */}
         {canViewFinance && <MoneyOnTable />}
 
-        {/* Mini Agenda - Today's services */}
-        <div className="mb-6">
-          <MiniAgenda />
-        </div>
 
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
