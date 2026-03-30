@@ -255,7 +255,6 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
     return channelData.is_connected === true && channelData.channel_status === "connected";
   }, [channelData]);
   const isChannelDeleted = channelData?.channel_status === "deleted";
-  const isChannelDeleted = channelData?.channel_status === "deleted";
   
   // Fetch alternative connected channels when current is deleted
   useEffect(() => {
