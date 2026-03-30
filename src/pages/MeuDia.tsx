@@ -176,12 +176,8 @@ export default function MeuDia() {
   };
 
   const handleComplete = (service: Service) => {
-    if (!service.value && !requireClientSignature) {
-      handleStatusChange(service.id, "completed", undefined, []);
-    } else {
-      setCompletingService(service);
-      setCompleteDialogOpen(true);
-    }
+    setCompletingService(service);
+    setCompleteDialogOpen(true);
   };
 
   const handleOperationalStatusChange = async (serviceId: string, status: OperationalStatus) => {
