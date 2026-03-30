@@ -309,8 +309,13 @@ export function Sidebar() {
           </div>
         ) : (
           <>
-            {organization?.logo_url ? (
-              <img src={organization.logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-contain shrink-0" />
+            {organization?.logo_url && !logoError ? (
+              <img 
+                src={organization.logo_url} 
+                alt="Logo" 
+                className="h-8 w-8 rounded-lg object-contain shrink-0" 
+                onError={() => setLogoError(true)}
+              />
             ) : (
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary/90 shrink-0">
                 <Snowflake className="h-4 w-4 text-sidebar-primary-foreground" />
