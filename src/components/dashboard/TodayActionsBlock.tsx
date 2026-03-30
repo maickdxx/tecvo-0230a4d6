@@ -151,6 +151,7 @@ export function TodayActionsBlock() {
         score: adjustedScore,
         action: () => {
           recordInteraction("overdue_services", "click");
+          markAlertAsCompleted("overdue_services");
           navigate("/ordens-servico?status=overdue");
         },
         directAction: {
