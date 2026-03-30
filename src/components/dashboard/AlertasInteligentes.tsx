@@ -74,33 +74,6 @@ export function AlertasInteligentes() {
       });
     }
 
-    // 4. Inactive clients (6+ months)
-    const sixMonthsAgo = new Date(today);
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const lastServiceByClient: Record<string, string> = {};
-    services.forEach((s) => {
-      if (s.status !== "completed") return;
-      const date = s.completed_date || s.scheduled_date || s.created_at;
-      if (!lastServiceByClient[s.client_id] || date > lastServiceByClient[s.client_id]) {
-        lastServiceByClient[s.client_id] = date;
-      }
-    });
-    const inactiveClients = clients.filter((c) => {
-      const lastDate = lastServiceByClient[c.id];
-      if (!lastDate) return false;
-      return new Date(lastDate) < sixMonthsAgo;
-    });
-
-    if (inactiveClients.length > 0) {
-      result.push({
-        id: "inactive_clients",
-        icon: UserX,
-
-        message: `${inactiveClients.length} cliente${inactiveClients.length > 1 ? "s" : ""} para reativar`,
-        severity: "warning",
-        action: () => navigate("/clientes"),
-      });
-    }
 
     // 5. Started but not finished services (Today or older)
     const unfinishedServices = services.filter((s) => {

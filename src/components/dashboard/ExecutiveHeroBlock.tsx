@@ -1,7 +1,6 @@
-import { TrendingUp, TrendingDown, DollarSign, Target, Sparkles, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Target, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useWeatherForecast } from "@/hooks/useWeatherForecast";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import type { Granularity } from "@/lib/periodoGlobal";
 
 interface ExecutiveHeroBlockProps {
@@ -69,44 +68,6 @@ const GRANULARITY_LABELS: Record<Granularity, string> = {
   month: "Lucro do Mês",
 };
 
-function useQuickInsight(income: number, goal: number, granularity: Granularity): string | null {
-  const { weather } = useWeatherForecast();
-
-  if (granularity !== "month") {
-    // Weather-only insights for non-month views
-    if (!weather?.days?.length) return null;
-    const avgMax = weather.days.reduce((s, d) => s + d.tempMax, 0) / weather.days.length;
-    const rainyDays = weather.days.filter((d) => d.precipProbability > 60);
-    if (avgMax > 30) return "🔥 Semana quente → boa para limpezas e instalações";
-    if (rainyDays.length >= 3) return "🌧️ Chuva prevista → priorize serviços internos";
-    if (avgMax < 18) return "❄️ Semana fria → foque em contratos e manutenções";
-    return "☀️ Clima favorável → ideal para todas as operações";
-  }
-
-  const now = new Date();
-  const dayOfMonth = now.getDate();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const remaining = goal - income;
-
-  if (goal > 0 && income >= goal) return "🏆 Meta atingida! Continue maximizando o resultado.";
-  if (goal > 0 && remaining > 0 && dayOfMonth > 5) {
-    const dailyRate = income / dayOfMonth;
-    const projectedDay = dailyRate > 0 ? Math.ceil(remaining / dailyRate) + dayOfMonth : daysInMonth;
-    if (projectedDay <= daysInMonth) {
-      return `📈 Ritmo atual indica meta atingida no dia ${Math.min(projectedDay, daysInMonth)}`;
-    }
-    return `⚡ Faltam ${formatCurrency(remaining)} para atingir a meta`;
-  }
-
-  if (!weather?.days?.length) return null;
-  const avgMax = weather.days.reduce((s, d) => s + d.tempMax, 0) / weather.days.length;
-  const rainyDays = weather.days.filter((d) => d.precipProbability > 60);
-  if (avgMax > 30) return "🔥 Semana quente → boa para limpezas e instalações";
-  if (rainyDays.length >= 3) return "🌧️ Chuva prevista → priorize serviços internos";
-  if (avgMax < 18) return "❄️ Semana fria → foque em contratos e manutenções";
-  return "☀️ Clima favorável → ideal para todas as operações";
-}
-
 export function ExecutiveHeroBlock({
   income,
   expense,
@@ -138,7 +99,6 @@ export function ExecutiveHeroBlock({
     return { effectiveGoal: 0, showGoal: false };
   }, [monthlyGoal, suggestedGoal, income, granularity]);
 
-  const insight = useQuickInsight(income, effectiveGoal, granularity);
   const animatedBalance = useCountUp(balance);
   const animatedIncome = useCountUp(income);
   const animatedExpense = useCountUp(expense);
@@ -233,14 +193,6 @@ export function ExecutiveHeroBlock({
           )}
         </div>
       </div>
-
-      {/* AI Insight */}
-      {insight && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/5 px-4 py-2.5">
-          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-          <p className="text-xs text-muted-foreground">{insight}</p>
-        </div>
-      )}
     </div>
   );
 }
