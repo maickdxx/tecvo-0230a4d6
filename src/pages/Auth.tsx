@@ -165,7 +165,6 @@ export default function Auth() {
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
     } else {
-      trackFBEvent("Lead", { content_name: "Signup" });
       setConfirmationEmail(signupEmail);
       setResendCooldown(60);
     }
