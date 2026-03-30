@@ -79,7 +79,7 @@ export function MiniAgenda() {
       </div>
 
       <div className="divide-y divide-border">
-        {services.map((svc: any) => {
+        {services.map((svc: any, index: number) => {
           const status = STATUS_CONFIG[svc.status] || STATUS_CONFIG.scheduled;
           const client = svc.client as any;
           const time = svc.scheduled_date
@@ -92,10 +92,18 @@ export function MiniAgenda() {
               onClick={() => navigate(`/ordens-servico/${svc.id}`)}
               className="w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-muted/50 active:bg-muted group"
             >
-              {/* Time */}
+              {/* Time or order number */}
               <div className="flex flex-col items-center shrink-0 w-12">
-                <Clock className="h-3 w-3 text-muted-foreground mb-0.5" />
-                <span className="text-sm font-bold text-foreground">{time}</span>
+                {allSameTime ? (
+                  <>
+                    <span className="text-lg font-bold text-primary">#{index + 1}</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-3 w-3 text-muted-foreground mb-0.5" />
+                    <span className="text-sm font-bold text-foreground">{time}</span>
+                  </>
+                )}
               </div>
 
               {/* Info */}
