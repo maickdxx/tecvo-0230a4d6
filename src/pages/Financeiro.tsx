@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 
 export default function Financeiro() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
