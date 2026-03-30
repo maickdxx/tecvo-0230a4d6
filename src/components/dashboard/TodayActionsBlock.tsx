@@ -278,11 +278,19 @@ export function TodayActionsBlock() {
         <div className="lg:col-span-5">
           <button
             onClick={priorityAction.action}
-            className="group relative h-full w-full flex flex-col overflow-hidden rounded-3xl border-2 border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-6 text-left transition-all duration-300 hover:border-primary/40 hover:shadow-xl active:scale-[0.99]"
+            className={cn(
+              "group relative h-full w-full flex flex-col overflow-hidden rounded-3xl border-2 p-6 text-left transition-all duration-300 hover:shadow-xl active:scale-[0.99]",
+              priorityAction.score > 1500 
+                ? "border-destructive/30 bg-gradient-to-br from-destructive/10 via-card to-card" 
+                : "border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card"
+            )}
           >
             <div className="flex items-center justify-between mb-6">
-              <Badge className="bg-primary text-primary-foreground font-bold px-3 py-1 animate-pulse">
-                👉 PRIORIDADE DO DIA
+              <Badge className={cn(
+                "font-bold px-3 py-1 animate-pulse",
+                priorityAction.score > 1500 ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"
+              )}>
+                {priorityAction.score > 1500 ? "⚠️ URGÊNCIA CRÍTICA" : "👉 PRIORIDADE DO DIA"}
               </Badge>
               <div className={cn("p-3 rounded-2xl", priorityAction.bg)}>
                 <priorityAction.icon className={cn("h-6 w-6", priorityAction.color)} />
@@ -293,9 +301,9 @@ export function TodayActionsBlock() {
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className={cn(
                   "uppercase text-[10px] font-bold tracking-widest",
-                  priorityAction.priorityLevel === "high" ? "border-destructive text-destructive bg-destructive/5" : "border-primary text-primary bg-primary/5"
+                  priorityAction.priorityLevel === "high" || priorityAction.score > 1500 ? "border-destructive text-destructive bg-destructive/5" : "border-primary text-primary bg-primary/5"
                 )}>
-                  {priorityAction.priorityLevel === "high" ? "Alta Prioridade" : "Média Prioridade"}
+                  {priorityAction.score > 1500 ? "Escalação Automática" : (priorityAction.priorityLevel === "high" ? "Alta Prioridade" : "Média Prioridade")}
                 </Badge>
                 <span className="text-xs text-muted-foreground">• {priorityAction.timeLabel}</span>
               </div>
@@ -303,20 +311,30 @@ export function TodayActionsBlock() {
                 {priorityAction.title}
               </h3>
               <p className="text-lg font-bold text-foreground/80 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-success shrink-0" />
+                {priorityAction.score > 1500 ? (
+                  <TrendingDown className="h-5 w-5 text-destructive shrink-0" />
+                ) : (
+                  <TrendingUp className="h-5 w-5 text-success shrink-0" />
+                )}
                 {priorityAction.impactText}
               </p>
             </div>
 
             {priorityAction.insight && (
-              <div className="mt-6 p-4 rounded-2xl bg-muted/30 border border-border/40 italic text-sm text-muted-foreground">
+              <div className={cn(
+                "mt-6 p-4 rounded-2xl border italic text-sm text-muted-foreground",
+                priorityAction.score > 1500 ? "bg-destructive/5 border-destructive/20" : "bg-muted/30 border-border/40"
+              )}>
                 "💡 {priorityAction.insight}"
               </div>
             )}
 
             <div className="mt-auto pt-6 flex items-center justify-between">
-              <Button className="rounded-xl px-6 font-bold gap-2">
-                Resolver agora
+              <Button className={cn(
+                "rounded-xl px-6 font-bold gap-2",
+                priorityAction.score > 1500 ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""
+              )}>
+                {priorityAction.score > 1500 ? "Resolver Urgente" : "Resolver agora"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
