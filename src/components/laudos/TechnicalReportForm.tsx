@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,28 +13,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, FileText, User, Wrench, ClipboardCheck, Stethoscope, Gauge, ShieldAlert, MessageSquare } from "lucide-react";
+import { Loader2, FileText, User, Wrench, MessageSquare, ShieldAlert, ClipboardCheck } from "lucide-react";
 import { ClientCombobox } from "@/components/services/ClientCombobox";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useToast } from "@/hooks/use-toast";
 import {
-  INSPECTION_ITEMS,
-  EQUIPMENT_CONDITIONS,
-  CLEANLINESS_STATUS,
   type TechnicalReportFormData,
   type TechnicalReport,
 } from "@/hooks/useTechnicalReports";
 import type { Client } from "@/hooks/useClients";
+import { ReportEquipmentEditor, createBlankEquipment, type LocalReportEquipment } from "./ReportEquipmentEditor";
+import type { ReportEquipment } from "@/hooks/useReportEquipment";
 
 interface TechnicalReportFormProps {
   report?: TechnicalReport | null;
   clients: Client[];
-  onSubmit: (data: TechnicalReportFormData) => Promise<void>;
+  onSubmit: (data: TechnicalReportFormData, equipment: LocalReportEquipment[]) => Promise<void>;
   onCancel: () => void;
   isSubmitting?: boolean;
   defaultServiceId?: string | null;
   defaultQuoteServiceId?: string | null;
   defaultClientId?: string;
+  existingEquipment?: ReportEquipment[];
 }
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
@@ -59,15 +59,66 @@ export function TechnicalReportForm({
   defaultServiceId,
   defaultQuoteServiceId,
   defaultClientId,
+  existingEquipment = [],
 }: TechnicalReportFormProps) {
   const { toast } = useToast();
   const { fieldWorkers } = useTeamMembers();
-  const [checklist, setChecklist] = useState<string[]>(
-    (report?.inspection_checklist as string[]) || []
-  );
-  const [measurements, setMeasurements] = useState<Record<string, string>>(
-    (report?.measurements as Record<string, string>) || {}
-  );
+
+  // Initialize equipment list from existing data or create blank
+  const [equipmentList, setEquipmentList] = useState<LocalReportEquipment[]>(() => {
+    if (existingEquipment.length > 0) {
+      return existingEquipment.map((eq) => ({
+        _localId: `db-${eq.id}`,
+        _dbId: eq.id,
+        equipment_number: eq.equipment_number,
+        equipment_type: eq.equipment_type || "",
+        equipment_brand: eq.equipment_brand || "",
+        equipment_model: eq.equipment_model || "",
+        capacity_btus: eq.capacity_btus || "",
+        serial_number: eq.serial_number || "",
+        equipment_location: eq.equipment_location || "",
+        inspection_checklist: eq.inspection_checklist || [],
+        condition_found: eq.condition_found || "",
+        procedure_performed: eq.procedure_performed || "",
+        technical_observations: eq.technical_observations || "",
+        impact_level: eq.impact_level || "low",
+        services_performed: eq.services_performed || "",
+        equipment_condition: eq.equipment_condition || "",
+        cleanliness_status: eq.cleanliness_status || "clean",
+        equipment_working: eq.equipment_working || "yes",
+        final_status: eq.final_status || "operational",
+        measurements: eq.measurements || {},
+      }));
+    }
+    // For legacy reports that have equipment data on the report itself
+    if (report?.equipment_type || report?.equipment_brand) {
+      return [{
+        _localId: "legacy-1",
+        equipment_number: 1,
+        equipment_type: report.equipment_type || "",
+        equipment_brand: report.equipment_brand || "",
+        equipment_model: report.equipment_model || "",
+        capacity_btus: report.capacity_btus || "",
+        serial_number: report.serial_number || "",
+        equipment_location: report.equipment_location || "",
+        inspection_checklist: ((report.inspection_checklist as string[]) || []).map((key) => ({
+          key,
+          status: "ok" as const,
+        })),
+        condition_found: report.diagnosis || "",
+        procedure_performed: report.interventions_performed || "",
+        technical_observations: "",
+        impact_level: report.equipment_working === "no" ? "high" : report.equipment_working === "partial" ? "medium" : "low",
+        services_performed: "",
+        equipment_condition: report.equipment_condition || "",
+        cleanliness_status: report.cleanliness_status || "clean",
+        equipment_working: report.equipment_working || "yes",
+        final_status: report.equipment_working === "no" ? "non_operational" : report.equipment_working === "partial" ? "operational_with_caveats" : "operational",
+        measurements: (report.measurements as Record<string, string>) || {},
+      }];
+    }
+    return [createBlankEquipment(1)];
+  });
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TechnicalReportFormData>({
     defaultValues: {
@@ -79,24 +130,12 @@ export function TechnicalReportForm({
         ? new Date(report.report_date).toISOString().slice(0, 10)
         : new Date().toISOString().slice(0, 10),
       status: report?.status ?? "draft",
-      equipment_type: report?.equipment_type ?? "",
-      equipment_brand: report?.equipment_brand ?? "",
-      equipment_model: report?.equipment_model ?? "",
-      capacity_btus: report?.capacity_btus ?? "",
-      serial_number: report?.serial_number ?? "",
-      equipment_quantity: report?.equipment_quantity ?? 1,
-      equipment_location: report?.equipment_location ?? "",
       visit_reason: report?.visit_reason ?? "",
-      diagnosis: report?.diagnosis ?? "",
-      equipment_condition: report?.equipment_condition ?? "",
-      cleanliness_status: report?.cleanliness_status ?? "clean",
       recommendation: report?.recommendation ?? "Realizar reaperto e alinhamento da turbina e manter plano de manutenção preventiva periódica (PMOC).",
       risks: report?.risks ?? "",
-      interventions_performed: report?.interventions_performed ?? "• Limpeza técnica e higienização das serpentinas e filtros.\n• Reaperto de conexões elétricas e verificação de isolamento.\n• Testes de estanqueidade e monitoramento de pressões operacionais.",
-      conclusion: report?.conclusion ?? "O equipamento encontra-se em condições normais de operação após os procedimentos realizados.\n\nSTATUS ATUAL: Equipamento 100% operacional.",
+      conclusion: report?.conclusion ?? "",
       observations: report?.observations ?? "",
       needs_quote: report?.needs_quote ?? false,
-      equipment_working: report?.equipment_working ?? "yes",
       responsible_technician_name:
         report?.responsible_technician_name ?? report?.technician_profile?.full_name ?? "",
     },
@@ -104,59 +143,65 @@ export function TechnicalReportForm({
 
   const selectedClientId = watch("client_id");
 
-  const toggleChecklistItem = (key: string) => {
-    setChecklist((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
-  };
-
-  const updateMeasurement = (key: string, value: string) => {
-    setMeasurements((prev) => ({ ...prev, [key]: value }));
-  };
-
   const handleFormSubmit = async (data: TechnicalReportFormData) => {
-    // Validação de consistência
-    if (data.equipment_condition === "good" && data.cleanliness_status === "dirty" && !data.observations) {
-      toast({
-        variant: "destructive",
-        title: "Inconsistência técnica",
-        description: "Equipamento em 'Perfeito estado' mas marcado como 'Sujo'. Por favor, adicione contexto nas observações.",
-      });
+    // Validate at least 1 equipment
+    if (equipmentList.length === 0) {
+      toast({ variant: "destructive", title: "Adicione ao menos 1 equipamento" });
       return;
     }
 
-    if (!data.diagnosis || data.diagnosis.length < 5) {
-      toast({
-        variant: "destructive",
-        title: "Diagnóstico técnico",
-        description: "Por favor, detalhe o diagnóstico.",
-      });
-      return;
+    // Validate each equipment has required fields
+    for (let i = 0; i < equipmentList.length; i++) {
+      const eq = equipmentList[i];
+      if (!eq.condition_found || eq.condition_found.trim().length < 3) {
+        toast({
+          variant: "destructive",
+          title: `Equipamento ${i + 1}: Preencha a condição encontrada`,
+        });
+        return;
+      }
+      if (!eq.procedure_performed || eq.procedure_performed.trim().length < 3) {
+        toast({
+          variant: "destructive",
+          title: `Equipamento ${i + 1}: Preencha o procedimento realizado`,
+        });
+        return;
+      }
     }
 
-    if (!data.interventions_performed || data.interventions_performed.length < 5) {
-      toast({
-        variant: "destructive",
-        title: "Serviços executados",
-        description: "Descreva o que foi feito nesta visita.",
-      });
-      return;
-    }
+    // Derive overall status from worst equipment status
+    const statuses = equipmentList.map((eq) => eq.final_status || "operational");
+    let overallWorking = "yes";
+    if (statuses.includes("non_operational")) overallWorking = "no";
+    else if (statuses.includes("operational_with_caveats")) overallWorking = "partial";
 
-    if (!data.conclusion || data.conclusion.length < 5) {
-      toast({
-        variant: "destructive",
-        title: "Status Pós-Intervenção",
-        description: "Informe a condição final de entrega.",
-      });
-      return;
-    }
+    // Build conclusion if not provided
+    const conclusion = data.conclusion || equipmentList.map((eq, i) => {
+      const statusLabel = eq.final_status === "operational" ? "Operacional"
+        : eq.final_status === "operational_with_caveats" ? "Operacional com ressalvas"
+        : "Não operacional";
+      return `Equipamento ${i + 1} (${eq.equipment_type || "—"}): ${statusLabel}`;
+    }).join("\n");
 
-    await onSubmit({
-      ...data,
-      inspection_checklist: checklist,
-      measurements,
-    });
+    await onSubmit(
+      {
+        ...data,
+        equipment_working: overallWorking,
+        conclusion,
+        // Keep legacy fields for backward compatibility
+        equipment_type: equipmentList[0]?.equipment_type || null,
+        equipment_brand: equipmentList[0]?.equipment_brand || null,
+        equipment_model: equipmentList[0]?.equipment_model || null,
+        equipment_quantity: equipmentList.length,
+        diagnosis: equipmentList.map((eq, i) =>
+          `[Equip. ${i + 1}] ${eq.condition_found || "—"}`
+        ).join("\n\n"),
+        interventions_performed: equipmentList.map((eq, i) =>
+          `[Equip. ${i + 1}] ${eq.procedure_performed || "—"}`
+        ).join("\n\n"),
+      },
+      equipmentList
+    );
   };
 
   return (
@@ -222,46 +267,9 @@ export function TechnicalReportForm({
         </CardContent>
       </Card>
 
-      {/* 3. Equipment */}
+      {/* 3. Visit Reason */}
       <Card>
-        <SectionHeader icon={Wrench} title="Identificação do Equipamento" />
-        <CardContent className="px-4 pb-4 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label>Tipo de Equipamento</Label>
-              <Input placeholder="Ex: Split, Cassete, Piso Teto" {...register("equipment_type")} />
-            </div>
-            <div>
-              <Label>Marca</Label>
-              <Input {...register("equipment_brand")} />
-            </div>
-            <div>
-              <Label>Modelo</Label>
-              <Input {...register("equipment_model")} />
-            </div>
-            <div>
-              <Label>Capacidade (BTUs)</Label>
-              <Input placeholder="Ex: 12000" {...register("capacity_btus")} />
-            </div>
-            <div>
-              <Label>Nº de Série</Label>
-              <Input {...register("serial_number")} />
-            </div>
-            <div>
-              <Label>Quantidade</Label>
-              <Input type="number" min={1} {...register("equipment_quantity", { valueAsNumber: true })} />
-            </div>
-          </div>
-          <div>
-            <Label>Localização do Equipamento</Label>
-            <Input placeholder="Ex: Sala principal, 2º andar" {...register("equipment_location")} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 4. Visit Reason */}
-      <Card>
-        <SectionHeader icon={Stethoscope} title="Motivo da Visita / Solicitação" />
+        <SectionHeader icon={ClipboardCheck} title="Motivo da Visita / Solicitação" />
         <CardContent className="px-4 pb-4">
           <Textarea
             rows={3}
@@ -271,176 +279,57 @@ export function TechnicalReportForm({
         </CardContent>
       </Card>
 
-      {/* 5. Inspection Checklist */}
+      {/* 4. MULTI-EQUIPMENT SECTION */}
+      <ReportEquipmentEditor
+        equipmentList={equipmentList}
+        onChange={setEquipmentList}
+      />
+
+      {/* 5. Global Services */}
       <Card>
-        <SectionHeader icon={ClipboardCheck} title="Inspeção Realizada" />
+        <SectionHeader icon={Wrench} title="Serviços Gerais da OS" />
         <CardContent className="px-4 pb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {INSPECTION_ITEMS.map((item) => (
-              <label key={item.key} className="flex items-center gap-2 cursor-pointer py-1">
-                <Checkbox
-                  checked={checklist.includes(item.key)}
-                  onCheckedChange={() => toggleChecklistItem(item.key)}
-                />
-                <span className="text-sm">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 6. Diagnosis */}
-      <Card>
-        <SectionHeader icon={Stethoscope} title="Diagnóstico Técnico" />
-        <CardContent className="px-4 pb-4">
-          <Textarea rows={4} placeholder="Descreva o diagnóstico detalhado..." {...register("diagnosis")} />
-        </CardContent>
-      </Card>
-
-      {/* 7. Measurements */}
-      <Card>
-        <SectionHeader icon={Gauge} title="Evidências / Medições Técnicas" />
-        <CardContent className="px-4 pb-4 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { key: "pressure", label: "Pressão", unit: "psi" },
-              { key: "temperature", label: "Temperatura", unit: "°C" },
-              { key: "voltage_measured", label: "Tensão", unit: "V" },
-              { key: "current_measured", label: "Corrente", unit: "A" },
-            ].map((m) => (
-              <div key={m.key}>
-                <Label>{m.label} ({m.unit})</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    className="flex-1"
-                    value={measurements[m.key] || ""}
-                    onChange={(e) => updateMeasurement(m.key, e.target.value)}
-                    placeholder={`Ex: ${m.key === "pressure" ? "65" : m.key === "temperature" ? "12" : m.key === "voltage" ? "220" : "4.5"}`}
-                  />
-                  <span className="text-xs font-semibold text-muted-foreground w-8">{m.unit}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div>
-            <Label>Observações adicionais das medições</Label>
-            <Textarea
-              rows={2}
-              value={measurements.notes || ""}
-              onChange={(e) => updateMeasurement("notes", e.target.value)}
-              placeholder="Contextualize os valores aferidos se necessário..."
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 8. Equipment Condition */}
-      <Card>
-        <SectionHeader icon={ShieldAlert} title="Status Estrutural e Limpeza" />
-        <CardContent className="px-4 pb-4 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label>Condição Estrutural</Label>
-              <Select
-                value={watch("equipment_condition") || ""}
-                onValueChange={(v) => setValue("equipment_condition", v)}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(EQUIPMENT_CONDITIONS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Condição de Limpeza</Label>
-              <Select
-                value={watch("cleanliness_status") || "clean"}
-                onValueChange={(v) => setValue("cleanliness_status", v)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CLEANLINESS_STATUS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Equipamento funcionando?</Label>
-              <Select
-                value={watch("equipment_working") || "yes"}
-                onValueChange={(v) => setValue("equipment_working", v)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="yes">Sim</SelectItem>
-                  <SelectItem value="no">Não</SelectItem>
-                  <SelectItem value="partial">Parcial</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end pb-1.5">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="needs_quote"
-                  checked={watch("needs_quote")}
-                  onCheckedChange={(v) => setValue("needs_quote", !!v)}
-                />
-                <Label htmlFor="needs_quote" className="cursor-pointer">Necessita orçamento?</Label>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 9. Services Executed */}
-      <Card>
-        <SectionHeader icon={Wrench} title="Serviços Executados (Obrigatório)" />
-        <CardContent className="px-4 pb-4">
-          <p className="text-[10px] text-muted-foreground mb-2">Liste os serviços técnicos realizados nesta visita para validade técnica.</p>
-          <Textarea 
-            rows={3} 
-            placeholder="Ex: Limpeza de filtros, higienização, reaperto de conexões..." 
-            {...register("interventions_performed", { required: true })} 
+          <p className="text-[10px] text-muted-foreground mb-2">Serviços que não são específicos de um equipamento (ex: deslocamento, inspeção geral)</p>
+          <Textarea
+            rows={2}
+            placeholder="Ex: Deslocamento técnico, inspeção geral do ambiente..."
+            {...register("interventions_performed")}
           />
-          {errors.interventions_performed && <p className="text-xs text-destructive mt-1">Os serviços executados são obrigatórios.</p>}
         </CardContent>
       </Card>
 
-      {/* 10. Recommendation */}
+      {/* 6. Recommendation */}
       <Card>
-        <SectionHeader icon={MessageSquare} title="Parecer e Recomendação Estratégica" />
+        <SectionHeader icon={MessageSquare} title="Parecer e Recomendação" />
         <CardContent className="px-4 pb-4">
-          <p className="text-[10px] text-muted-foreground mb-2">Diretrizes para o cliente e sugestão de manutenção preventiva.</p>
           <Textarea rows={3} placeholder="Recomendações técnicas para o cliente..." {...register("recommendation")} />
         </CardContent>
       </Card>
 
-      {/* 11. Risks */}
+      {/* 7. Risks */}
       <Card>
-        <SectionHeader icon={ShieldAlert} title="Análise de Risco / Consequências" />
+        <SectionHeader icon={ShieldAlert} title="Análise de Risco" />
         <CardContent className="px-4 pb-4">
-          <p className="text-[10px] text-muted-foreground mb-2">Descreva o que acontece caso o problema não seja resolvido agora.</p>
-          <Textarea rows={3} placeholder="Descreva os riscos caso não seja corrigido..." {...register("risks")} />
+          <p className="text-[10px] text-muted-foreground mb-2">O que acontece se o problema não for resolvido agora.</p>
+          <Textarea rows={3} placeholder="Descreva os riscos..." {...register("risks")} />
         </CardContent>
       </Card>
 
-      {/* 12. Conclusion */}
+      {/* 8. Needs Quote */}
       <Card>
-        <SectionHeader icon={ClipboardCheck} title="Status Após Intervenção (Obrigatório)" />
-        <CardContent className="px-4 pb-4">
-          <p className="text-[10px] text-muted-foreground mb-2">Informe a condição final de entrega técnica (Melhora, normalização, etc).</p>
-          <Textarea 
-            rows={4} 
-            {...register("conclusion")} 
-            placeholder="Descreva o status final do equipamento após as intervenções." 
-          />
+        <CardContent className="px-4 py-4">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="needs_quote"
+              checked={watch("needs_quote")}
+              onCheckedChange={(v) => setValue("needs_quote", !!v)}
+            />
+            <Label htmlFor="needs_quote" className="cursor-pointer">Necessita orçamento adicional?</Label>
+          </div>
         </CardContent>
       </Card>
 
-      {/* 12. Observations */}
+      {/* 9. Observations */}
       <Card>
         <SectionHeader icon={MessageSquare} title="Observações Finais" />
         <CardContent className="px-4 pb-4">
