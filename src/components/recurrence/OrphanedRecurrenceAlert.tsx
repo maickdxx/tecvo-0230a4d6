@@ -63,6 +63,7 @@ function GroupSection({
       >
         {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
         <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Canal antigo:</span>
           <span className="text-sm font-medium text-foreground truncate">
             {group.channelName}
           </span>
@@ -131,9 +132,15 @@ function ContactRow({
             <span className="text-xs text-muted-foreground">{contact.clientPhone}</span>
           )}
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
           <span>{contact.lastServiceType}</span>
           <span>{format(new Date(contact.lastServiceDate), "dd/MM/yyyy", { locale: ptBR })}</span>
+          {contact.channelName && (
+            <span className="flex items-center gap-1">
+              <Unplug className="h-2.5 w-2.5" />
+              Canal: <strong>{contact.channelName}</strong>
+            </span>
+          )}
           <span className="text-destructive font-medium">{contact.blockReason}</span>
         </div>
       </div>
