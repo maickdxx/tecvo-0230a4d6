@@ -38,10 +38,11 @@ export function RevenueEvolutionChart({ granularity, chartStartDate, chartEndDat
   const hasData = data.some((d) => d.receitas > 0);
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-5 shadow-card">
-      <h3 className="text-base font-semibold text-card-foreground mb-1">Evolução da Receita</h3>
-      <p className="text-xs text-muted-foreground mb-3">Tendência no período selecionado</p>
-      <div className="h-52">
+    <div className="rounded-[2.5rem] border border-border/40 bg-card p-10 shadow-xl relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+      <h3 className="text-lg font-black text-foreground tracking-tight mb-1 opacity-90">Evolução da Receita</h3>
+      <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest mb-8">Tendência de Faturamento</p>
+      <div className="h-64 relative z-10">
         {!hasData ? (
           <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
             Nenhuma receita registrada no período.
