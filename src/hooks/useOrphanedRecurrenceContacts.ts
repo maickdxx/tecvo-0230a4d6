@@ -56,6 +56,27 @@ export function useOrphanedRecurrenceContacts() {
 
       if (waErr) throw waErr;
 
+      // 2b. Get transition history to recover old channel names for contacts with null channel_id
+      const waContactIds = (waContacts || []).map(wc => wc.id);
+      let transitionMap = new Map<string, string>(); // contact_id -> previous_channel_id
+      if (waContactIds.length > 0) {
+        const { data: transitions } = await (supabase as any)
+          .from("whatsapp_channel_transitions")
+          .select("contact_id, previous_channel_id, created_at")
+          .eq("organization_id", organization.id)
+          .in("contact_id", waContactIds)
+          .order("created_at", { ascending: false });
+
+        if (transitions) {
+          for (const t of transitions) {
+            // Keep only the most recent transition per contact (already sorted desc)
+            if (t.previous_channel_id && !transitionMap.has(t.contact_id)) {
+              transitionMap.set(t.contact_id, t.previous_channel_id);
+            }
+          }
+        }
+      }
+
       // 3. Get all channels for this org (including deleted ones for name reference)
       const { data: allChannels, error: chErr } = await supabase
         .from("whatsapp_channels")
