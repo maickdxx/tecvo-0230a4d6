@@ -176,6 +176,7 @@ export default function Auth() {
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
     } else {
+      trackLeadAfterConfirmedSignup(signupEmail);
       setConfirmationEmail(signupEmail);
       setResendCooldown(60);
     }
@@ -221,8 +222,6 @@ export default function Auth() {
       if (error || data?.error) {
         toast({ variant: "destructive", title: "Código inválido", description: data?.error || "Código inválido ou expirado" });
       } else {
-        trackLeadAfterConfirmedSignup(confirmationEmail);
-
         if (data?.autoLogin && data?.token_hash) {
           const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: data.token_hash, type: "magiclink" });
 
