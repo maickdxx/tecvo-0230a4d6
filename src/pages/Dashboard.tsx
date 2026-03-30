@@ -148,13 +148,16 @@ export default function Dashboard() {
         </div>
 
         {/* 1. AGORA — Ações e Situação em Tempo Real */}
-        <div className="space-y-2 mb-10">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="space-y-6 mb-10">
+          <div className="flex items-center gap-2 mb-2">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <h2 className="text-xs font-bold uppercase tracking-widest text-primary">AGORA · Operação & Caixa</h2>
           </div>
           
-          <TodayActionsBlock />
+          <div className="grid gap-6">
+            <DailyRoutineSummary />
+            <TodayActionsBlock />
+          </div>
           
           <AlertasInteligentes />
 
