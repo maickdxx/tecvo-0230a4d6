@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
