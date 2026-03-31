@@ -35,4 +35,4 @@ await renderMedia({
 });
 
 await browser.close({ silent: false });
-console.log("✅ Rendered to /mnt/documents/tecvo-video.mp4");
+console.log("✅ Rendered to /mnt/documents/tecvo-tecnico-depoimento.mp4");
