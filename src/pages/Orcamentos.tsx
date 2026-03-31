@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileText, Loader2, Search, Download, Plus, Edit, MessageCircle, Trash2, ClipboardList, MapPin, StickyNote, MoreVertical } from "lucide-react";
+import { FileText, Loader2, Search, Download, Plus, Edit, MessageCircle, Trash2, ClipboardList, MapPin, StickyNote, MoreVertical, CalendarDays } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { PageTutorialBanner } from "@/components/onboarding";
 import { Button } from "@/components/ui/button";
