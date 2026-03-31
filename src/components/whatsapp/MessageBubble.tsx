@@ -425,8 +425,13 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                 </p>
               )}
 
-              {/* Text content (skip for documents since we show filename above) */}
-              {message.content && mediaType !== "document" && !editing && (
+              {/* Shared contact card */}
+              {mediaType === "contact" && message.content && (
+                <SharedContactCard content={message.content} isMe={isMe} />
+              )}
+
+              {/* Text content (skip for documents and contacts since we show custom UI above) */}
+              {message.content && mediaType !== "document" && mediaType !== "contact" && !editing && (
                 <p
                   className="whitespace-pre-wrap break-words text-sm leading-relaxed [&_strong]:font-bold [&_em]:italic [&_s]:line-through"
                   dangerouslySetInnerHTML={{
