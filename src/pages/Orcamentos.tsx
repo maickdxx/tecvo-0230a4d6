@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileText, Loader2, Search, Download, Plus, Edit, MessageCircle, Trash2, ClipboardList, MapPin, StickyNote, MoreVertical } from "lucide-react";
+import { FileText, Loader2, Search, Download, Plus, Edit, MessageCircle, Trash2, ClipboardList, MapPin, StickyNote, MoreVertical, CalendarDays } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { PageTutorialBanner } from "@/components/onboarding";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,7 @@ export default function Orcamentos() {
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [serviceToConvert, setServiceToConvert] = useState<Service | null>(null);
+  const [convertScheduledDate, setConvertScheduledDate] = useState("");
 
   const servicesWithQuotes = services.filter(service => {
     const client = clients.find(c => c.id === service.client_id);
@@ -220,21 +221,28 @@ _PDF do orçamento em anexo_`.trim();
 
   const handleConvertToServiceOrder = (service: Service) => {
     setServiceToConvert(service);
+    setConvertScheduledDate(service.scheduled_date ? service.scheduled_date.substring(0, 10) : "");
     setConvertDialogOpen(true);
   };
 
   const confirmConvert = async () => {
     if (serviceToConvert) {
+      const updateData: Record<string, unknown> = { document_type: "service_order" };
+      if (convertScheduledDate) {
+        updateData.scheduled_date = convertScheduledDate;
+      }
       await update({ 
         id: serviceToConvert.id, 
-        data: { document_type: "service_order" } 
+        data: updateData as any,
       });
       setConvertDialogOpen(false);
-      setServiceToConvert(null);
       toast({
         title: "Ordem de Serviço gerada",
         description: "O orçamento foi convertido em OS com sucesso.",
       });
+      navigate(`/ordens-servico/${serviceToConvert.id}`);
+      setServiceToConvert(null);
+      setConvertScheduledDate("");
     }
   };
 
@@ -454,13 +462,35 @@ _PDF do orçamento em anexo_`.trim();
       </AlertDialog>
 
       {/* Convert to Service Order Confirmation Dialog */}
-      <AlertDialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+      <AlertDialog open={convertDialogOpen} onOpenChange={(open) => {
+        setConvertDialogOpen(open);
+        if (!open) { setServiceToConvert(null); setConvertScheduledDate(""); }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Gerar Ordem de Serviço?</AlertDialogTitle>
-            <AlertDialogDescription>
-              O orçamento #{serviceToConvert?.quote_number} será convertido em uma Ordem de Serviço. 
-              Isso manterá todos os dados e itens do orçamento.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  O orçamento #{serviceToConvert?.quote_number} será convertido em uma Ordem de Serviço. 
+                  Isso manterá todos os dados e itens do orçamento.
+                </p>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    Data de agendamento (opcional)
+                  </label>
+                  <input
+                    type="date"
+                    value={convertScheduledDate}
+                    onChange={(e) => setConvertScheduledDate(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Defina quando o serviço será executado. Você pode alterar depois.
+                  </p>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
