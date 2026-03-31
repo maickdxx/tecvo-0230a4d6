@@ -7031,17 +7031,15 @@ export type Database = {
           welcome_message: string
         }[]
       }
-      get_whatsapp_report_stats:
-        | { Args: { _channel_id?: string; _org_id: string }; Returns: Json }
-        | {
-            Args: {
-              _channel_id?: string
-              _date_from?: string
-              _date_to?: string
-              _org_id: string
-            }
-            Returns: Json
-          }
+      get_whatsapp_report_stats: {
+        Args: {
+          _channel_id?: string
+          _date_from?: string
+          _date_to?: string
+          _org_id: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
