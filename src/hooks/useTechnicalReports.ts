@@ -50,10 +50,12 @@ export interface TechnicalReport {
   service?: {
     quote_number: number;
     document_type: string | null;
+    service_type: string | null;
   } | null;
   quote_service?: {
     quote_number: number;
     document_type: string | null;
+    service_type: string | null;
   } | null;
   technician_profile?: {
     full_name: string | null;
