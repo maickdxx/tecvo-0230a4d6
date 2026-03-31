@@ -462,6 +462,14 @@ const App = () => (
               }
             />
             <Route
+              path="/marketing/reels"
+              element={
+                <ProtectedRoute>
+                  <MarketingReels />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin"
               element={
                 <AdminProtectedRoute>
