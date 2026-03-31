@@ -652,11 +652,38 @@ export function useServices(options?: UseServicesOptions | string) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Fetch the service to get client_id before deleting
+      const { data: svc } = await supabase
+        .from("services")
+        .select("client_id")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("services")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+
+      // Revert WhatsApp contact conversion_status from "agendado" to "em_atendimento"
+      // if there are no other active (non-deleted, non-completed) services for this client
+      if (svc?.client_id) {
+        const { count } = await supabase
+          .from("services")
+          .select("id", { count: "exact", head: true })
+          .eq("client_id", svc.client_id)
+          .is("deleted_at", null)
+          .neq("id", id)
+          .in("status", ["scheduled", "pending", "in_progress"]);
+
+        if (count === 0) {
+          await supabase
+            .from("whatsapp_contacts")
+            .update({ conversion_status: "em_atendimento" })
+            .eq("linked_client_id", svc.client_id)
+            .eq("conversion_status", "agendado");
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["services"] });
