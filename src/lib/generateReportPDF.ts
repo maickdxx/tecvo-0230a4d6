@@ -238,16 +238,19 @@ export async function generateReportPDF({
   doc.setFillColor(colors.bgCard.r, colors.bgCard.g, colors.bgCard.b);
   doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
   doc.setLineWidth(0.15);
-  doc.roundedRect(margin, yPos, contentWidth, 24, 1.5, 1.5, "FD");
+  const clientZip = report.client?.zip_code;
+  const clientAddrParts = [report.client?.address, report.client?.city, report.client?.state].filter(Boolean).join(", ");
+  const clientFullAddr = clientZip ? `${clientAddrParts} - CEP: ${clientZip}` : clientAddrParts;
+  const clientCardH = clientFullAddr ? 24 : 14;
+  doc.roundedRect(margin, yPos, contentWidth, clientCardH, 1.5, 1.5, "FD");
 
   drawInfoPair("Contratante", report.client?.name, margin + 5, yPos + 6, contentWidth / 2 - 10);
   drawInfoPair("Contato", [report.client?.phone, report.client?.email].filter(Boolean).join(" · "), margin + contentWidth / 2 + 5, yPos + 6, contentWidth / 2 - 10);
-  const clientAddr = [report.client?.address, report.client?.city, report.client?.state].filter(Boolean).join(", ");
-  if (clientAddr) drawInfoPair("Local da Prestação", clientAddr, margin + 5, yPos + 16, contentWidth / 2 - 10);
+  if (clientFullAddr) drawInfoPair("Local da Prestação", clientFullAddr, margin + 5, yPos + 16, contentWidth / 2 - 10);
 
   const technicianName = report.technician_profile?.full_name || report.responsible_technician_name;
   if (technicianName) drawInfoPair("Técnico Responsável", technicianName, margin + contentWidth / 2 + 5, yPos + 16, contentWidth / 2 - 10);
-  yPos += 30;
+  yPos += clientCardH + 6;
 
   // ── Visit reason ──
   if (report.visit_reason) {
