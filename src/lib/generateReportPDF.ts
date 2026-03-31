@@ -223,14 +223,16 @@ export async function generateReportPDF({
   doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
   doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
   doc.setLineWidth(0.15);
-  doc.roundedRect(margin, yPos, contentWidth, 24, 1.5, 1.5, "FD");
+  const companyCardH = organizationEmail ? 34 : 24;
+  doc.roundedRect(margin, yPos, contentWidth, companyCardH, 1.5, 1.5, "FD");
 
   drawInfoPair("Empresa Responsável", organizationName, margin + 5, yPos + 6, contentWidth / 2 - 10);
   drawInfoPair("CNPJ", organizationCnpj, margin + contentWidth / 2 + 5, yPos + 6, contentWidth / 2 - 10);
   const fullAddress = [organizationAddress, organizationCity, organizationState].filter(Boolean).join(", ");
   if (fullAddress) drawInfoPair("Endereço", fullAddress, margin + 5, yPos + 16, contentWidth / 2 - 10);
   if (organizationPhone) drawInfoPair("Telefone", organizationPhone, margin + contentWidth / 2 + 5, yPos + 16, contentWidth / 2 - 10);
-  yPos += 28;
+  if (organizationEmail) drawInfoPair("E-mail", organizationEmail, margin + 5, yPos + 26, contentWidth - 10);
+  yPos += companyCardH + 4;
 
   // ── Client card ──
   doc.setFillColor(colors.bgCard.r, colors.bgCard.g, colors.bgCard.b);
