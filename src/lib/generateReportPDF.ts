@@ -270,7 +270,7 @@ export async function generateReportPDF({
     doc.roundedRect(margin, yPos, contentWidth, 18, 1.5, 1.5, "FD");
 
     const eqCount = equipment.length > 0 ? equipment.length : 1;
-    const serviceType = report.service_type || "Inspeção técnica";
+    const serviceType = (report as any).service_type || "Inspeção técnica";
 
     // Determine overall status label for cover
     let coverStatusLabel = "Operacional";
