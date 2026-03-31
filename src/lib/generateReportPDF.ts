@@ -893,7 +893,7 @@ export async function generateReportPDF({
     doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
     const signedDate = signature.signed_at ? format(new Date(signature.signed_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "";
     const ipInfo = signature.ip_address ? `IP: ${signature.ip_address}` : "";
-    const osRef = report.service?.quote_number ? `Ref. OS: #${report.service.quote_number.toString().padStart(4, "0")}` : "";
+    const osRef = linkedService?.quote_number ? `Ref. OS: #${linkedService.quote_number.toString().padStart(4, "0")}` : "";
 
     doc.text(`Assinado digitalmente em ${signedDate}`, cX, sTop + 9);
     if (ipInfo || osRef) doc.text([ipInfo, osRef].filter(Boolean).join("  ·  "), cX, sTop + 13);
