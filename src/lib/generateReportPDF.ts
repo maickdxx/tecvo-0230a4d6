@@ -166,7 +166,7 @@ export async function generateReportPDF({
   };
 
   // ════════════════════════════════════════
-  //  HEADER
+  //  PAGE 1 — FULL COVER
   // ════════════════════════════════════════
   let logoData: string | null = null;
   if (organizationLogo) {
@@ -213,24 +213,26 @@ export async function generateReportPDF({
     yPos += 34;
   }
 
-  // ════════════════════════════════════════
-  //  COMPANY + CLIENT INFO CARDS
-  // ════════════════════════════════════════
-  // Company card
-  ensureSpace(30);
+  // ── Separator ──
+  doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+  doc.setLineWidth(0.3);
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 6;
+
+  // ── Company card ──
   doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
   doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
   doc.setLineWidth(0.15);
-  doc.roundedRect(margin, yPos, contentWidth, 20, 1.5, 1.5, "FD");
+  doc.roundedRect(margin, yPos, contentWidth, 24, 1.5, 1.5, "FD");
 
   drawInfoPair("Empresa Responsável", organizationName, margin + 5, yPos + 6, contentWidth / 2 - 10);
   drawInfoPair("CNPJ", organizationCnpj, margin + contentWidth / 2 + 5, yPos + 6, contentWidth / 2 - 10);
   const fullAddress = [organizationAddress, organizationCity, organizationState].filter(Boolean).join(", ");
-  if (fullAddress) drawInfoPair("Endereço", fullAddress, margin + 5, yPos + 14, contentWidth - 10);
-  yPos += 24;
+  if (fullAddress) drawInfoPair("Endereço", fullAddress, margin + 5, yPos + 16, contentWidth / 2 - 10);
+  if (organizationPhone) drawInfoPair("Telefone", organizationPhone, margin + contentWidth / 2 + 5, yPos + 16, contentWidth / 2 - 10);
+  yPos += 28;
 
-  // Client card
-  ensureSpace(30);
+  // ── Client card ──
   doc.setFillColor(colors.bgCard.r, colors.bgCard.g, colors.bgCard.b);
   doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
   doc.setLineWidth(0.15);
@@ -245,12 +247,122 @@ export async function generateReportPDF({
   if (technicianName) drawInfoPair("Técnico Responsável", technicianName, margin + contentWidth / 2 + 5, yPos + 16, contentWidth / 2 - 10);
   yPos += 30;
 
-  // ════════════════════════════════════════
-  //  VISIT REASON
-  // ════════════════════════════════════════
+  // ── Visit reason ──
   if (report.visit_reason) {
-    drawSectionTitle("Motivo da Visita");
-    drawLabeledText("Solicitação", report.visit_reason);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(colors.accent.r, colors.accent.g, colors.accent.b);
+    doc.text("MOTIVO DA VISITA", margin + 3, yPos);
+    yPos += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    const vrLines = doc.splitTextToSize(report.visit_reason, contentWidth - 6);
+    doc.text(vrLines, margin + 3, yPos);
+    yPos += vrLines.length * 4.5 + 6;
+  }
+
+  // ── Summary stats box ──
+  {
+    doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
+    doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
+    doc.setLineWidth(0.15);
+    doc.roundedRect(margin, yPos, contentWidth, 18, 1.5, 1.5, "FD");
+
+    const eqCount = equipment.length > 0 ? equipment.length : 1;
+    const serviceType = report.service_type || "Inspeção técnica";
+
+    // Determine overall status label for cover
+    let coverStatusLabel = "Operacional";
+    if (equipment.length > 0) {
+      const statuses = equipment.map((eq) => eq.final_status || "operational");
+      if (statuses.includes("non_operational")) coverStatusLabel = "Não Operacional";
+      else if (statuses.includes("operational_with_caveats")) coverStatusLabel = "Com Ressalvas";
+    }
+
+    const summaryFields = [
+      { label: "Equipamentos", value: String(eqCount) },
+      { label: "Tipo de Serviço", value: serviceType },
+      { label: "Status Geral", value: coverStatusLabel },
+    ];
+    const sColW = contentWidth / summaryFields.length;
+    summaryFields.forEach((sf, i) => {
+      const sx = margin + i * sColW + 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6);
+      doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+      doc.text(sf.label.toUpperCase(), sx, yPos + 6);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+      doc.text(sf.value, sx, yPos + 12);
+    });
+    yPos += 24;
+  }
+
+  // ── Institutional declaration ──
+  {
+    doc.setDrawColor(colors.accent.r, colors.accent.g, colors.accent.b);
+    doc.setLineWidth(0.3);
+    doc.setFillColor(245, 248, 255);
+    const declText = "A empresa responsável declara que todos os serviços descritos neste laudo foram executados conforme os padrões técnicos aplicáveis, e que as informações aqui apresentadas refletem fielmente as condições encontradas no momento da inspeção.";
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    const declLines = doc.splitTextToSize(declText, contentWidth - 16);
+    const declBoxH = declLines.length * 4 + 12;
+    doc.roundedRect(margin, yPos, contentWidth, declBoxH, 1.5, 1.5, "FD");
+    // Accent bar on left
+    doc.setFillColor(colors.accent.r, colors.accent.g, colors.accent.b);
+    doc.rect(margin, yPos, 3, declBoxH, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(colors.accent.r, colors.accent.g, colors.accent.b);
+    doc.text("DECLARAÇÃO TÉCNICA", margin + 8, yPos + 6);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
+    doc.text(declLines, margin + 8, yPos + 12);
+    yPos += declBoxH + 8;
+  }
+
+  // ── Cover signatures (if space allows) ──
+  {
+    const sigSpaceNeeded = 45;
+    if (yPos + sigSpaceNeeded < usableHeight) {
+      // Push signatures toward bottom of page
+      const targetY = Math.max(yPos + 10, usableHeight - 50);
+      yPos = targetY;
+
+      const sW2 = 78;
+
+      // Technician
+      doc.setDrawColor(colors.primary.r, colors.primary.g, colors.primary.b);
+      doc.setLineWidth(0.3);
+      doc.line(margin, yPos, margin + sW2, yPos);
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+      doc.text(technicianName || "Técnico Responsável", margin, yPos + 5);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+      doc.text("Responsável Técnico", margin, yPos + 9);
+
+      // Client
+      const cX2 = pageWidth - margin - sW2;
+      doc.setDrawColor(colors.primary.r, colors.primary.g, colors.primary.b);
+      doc.line(cX2, yPos, cX2 + sW2, yPos);
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(colors.primary.r, colors.primary.g, colors.primary.b);
+      doc.text(report.client?.name || "Representante do Cliente", cX2, yPos + 5);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
+      doc.text("Contratante", cX2, yPos + 9);
+    }
   }
 
   // ════════════════════════════════════════
