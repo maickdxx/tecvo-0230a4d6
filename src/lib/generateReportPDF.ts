@@ -461,8 +461,8 @@ export async function generateReportPDF({
       // ── Checklist table ──
       if (eqChecklist.length > 0) {
         const rowH = 6.5;
-        const tableH = eqChecklist.length * rowH + 10;
-        ensureSpace(tableH + 10);
+
+        ensureSpace(20); // at least title + header + 1 row
 
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8.5);
@@ -471,39 +471,37 @@ export async function generateReportPDF({
         yPos += 6;
 
         // Table header
-        doc.setFillColor(colors.primary.r, colors.primary.g, colors.primary.b);
-        doc.rect(margin, yPos, contentWidth, 7, "F");
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(255, 255, 255);
-        doc.text("ITEM DE INSPEÇÃO", margin + 4, yPos + 5);
-        doc.text("STATUS", pageWidth - margin - 25, yPos + 5);
-        yPos += 7;
+        const drawTableHeader = () => {
+          doc.setFillColor(colors.primary.r, colors.primary.g, colors.primary.b);
+          doc.rect(margin, yPos, contentWidth, 7, "F");
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(255, 255, 255);
+          doc.text("ITEM DE INSPEÇÃO", margin + 4, yPos + 5);
+          doc.text("STATUS", pageWidth - margin - 25, yPos + 5);
+          yPos += 7;
+        };
+        drawTableHeader();
 
         eqChecklist.forEach((item: any, i: number) => {
-          const rowY = yPos + i * rowH;
-          
-          // Check page break mid-table
-          if (rowY + rowH > usableHeight) {
-            addFooter();
+          // Check if row fits on current page
+          if (yPos + rowH > usableHeight) {
             doc.addPage();
             yPos = margin + 8;
-            // re-calculate
+            drawTableHeader(); // redraw header on new page
           }
-          
-          const actualY = yPos + i * rowH;
 
           // Alternating row bg
           if (i % 2 === 0) {
             doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
-            doc.rect(margin, actualY, contentWidth, rowH, "F");
+            doc.rect(margin, yPos, contentWidth, rowH, "F");
           }
 
           const label = CHECKLIST_ITEMS.find((c) => c.key === item.key)?.label || item.key;
           doc.setFont("helvetica", "normal");
           doc.setFontSize(8);
           doc.setTextColor(colors.textMain.r, colors.textMain.g, colors.textMain.b);
-          doc.text(label, margin + 4, actualY + 4.5);
+          doc.text(label, margin + 4, yPos + 4.5);
 
           // Status badge
           const statusText = item.status === "ok" ? "OK" : item.status === "attention" ? "ATENÇÃO" : "CRÍTICO";
@@ -512,19 +510,20 @@ export async function generateReportPDF({
           doc.setFillColor(statusColor.r, statusColor.g, statusColor.b);
           const badgeW = doc.getTextWidth(statusText) + 6;
           const badgeX = pageWidth - margin - badgeW - 4;
-          doc.roundedRect(badgeX, actualY + 0.8, badgeW, 5, 0.8, 0.8, "F");
+          doc.roundedRect(badgeX, yPos + 0.8, badgeW, 5, 0.8, 0.8, "F");
           doc.setFontSize(6.5);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(255, 255, 255);
-          doc.text(statusText, badgeX + 3, actualY + 4.3);
+          doc.text(statusText, badgeX + 3, yPos + 4.3);
+
+          yPos += rowH;
         });
 
         // Table bottom border
-        const tableEnd = yPos + eqChecklist.length * rowH;
         doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
         doc.setLineWidth(0.15);
-        doc.line(margin, tableEnd, pageWidth - margin, tableEnd);
-        yPos = tableEnd + 6;
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 6;
       }
 
       // ── Measurements ──
