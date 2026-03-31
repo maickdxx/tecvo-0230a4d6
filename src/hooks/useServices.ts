@@ -674,7 +674,7 @@ export function useServices(options?: UseServicesOptions | string) {
           .eq("client_id", svc.client_id)
           .is("deleted_at", null)
           .neq("id", id)
-          .in("status", ["scheduled", "pending", "in_progress"]);
+          .in("status", ["scheduled", "in_progress"] as any);
 
         if (count === 0) {
           await supabase
