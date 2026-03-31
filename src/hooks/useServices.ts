@@ -544,6 +544,12 @@ export function useServices(options?: UseServicesOptions | string) {
 
       if (error) throw error;
 
+      // GUARD: Orçamentos (quotes) NEVER generate financial transactions
+      const effectiveDocType = data.document_type || currentService.document_type;
+      if (effectiveDocType === "quote") {
+        return service;
+      }
+
       // Sync transaction with OS changes
       const serviceValue = data.value !== undefined ? data.value : currentService.value;
       const newDueDate = data.payment_due_date !== undefined ? data.payment_due_date : currentService.payment_due_date;
