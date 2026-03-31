@@ -851,11 +851,25 @@ Deno.serve(async (req) => {
         mediaType = "sticker";
         mediaUrl = msg.stickerMessage.url || null;
       } else if (msg.contactMessage) {
-        content = msg.contactMessage.displayName || "Contato compartilhado";
+        const cName = msg.contactMessage.displayName || "Contato compartilhado";
+        // Extract phone from vCard string
+        let cPhone = "";
+        const vcard = msg.contactMessage.vcard || "";
+        const telMatch = vcard.match(/TEL[^:]*:([^\r\n]+)/i);
+        if (telMatch) cPhone = telMatch[1].replace(/[\s\-()]/g, "");
+        content = cPhone ? `${cName}||${cPhone}` : cName;
         mediaType = "contact";
       } else if (msg.contactsArrayMessage) {
-        const names = (msg.contactsArrayMessage.contacts || []).map((c: any) => c.displayName).filter(Boolean);
-        content = names.length > 0 ? names.join(", ") : "Contatos compartilhados";
+        const contacts = msg.contactsArrayMessage.contacts || [];
+        const parts = contacts.map((c: any) => {
+          const n = c.displayName || "Contato";
+          let p = "";
+          const vc = c.vcard || "";
+          const m = vc.match(/TEL[^:]*:([^\r\n]+)/i);
+          if (m) p = m[1].replace(/[\s\-()]/g, "");
+          return p ? `${n}||${p}` : n;
+        });
+        content = parts.join(";;");
         mediaType = "contact";
       } else if (msg.locationMessage) {
         const lat = msg.locationMessage.degreesLatitude;

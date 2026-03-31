@@ -25,6 +25,9 @@ import {
   RotateCcw,
   Sparkles,
   Reply,
+  User,
+  MessageSquare,
+  Phone,
 } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
 import {
@@ -110,6 +113,72 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
         className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       />
+    </div>
+  );
+}
+
+/* ─── Shared Contact Card ─── */
+function SharedContactCard({ content, isMe }: { content: string; isMe: boolean }) {
+  // Parse contact(s) from content: "Name||Phone" or multiple separated by ";;"
+  const entries = content.split(";;").map((entry) => {
+    const parts = entry.split("||");
+    return { name: parts[0] || "Contato", phone: parts[1] || "" };
+  });
+
+  const handleChat = (phone: string) => {
+    const digits = phone.replace(/\D/g, "");
+    if (digits) {
+      window.open(`/whatsapp?phone=${digits}`, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {entries.map((entry, i) => (
+        <div
+          key={i}
+          className={cn(
+            "rounded-lg border p-3 space-y-2",
+            isMe
+              ? "border-primary-foreground/20 bg-primary-foreground/10"
+              : "border-border bg-muted/50"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "h-8 w-8 rounded-full flex items-center justify-center",
+              isMe ? "bg-primary-foreground/20" : "bg-primary/10"
+            )}>
+              <User className={cn("h-4 w-4", isMe ? "text-primary-foreground" : "text-primary")} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className={cn("text-sm font-medium truncate", isMe ? "text-primary-foreground" : "text-foreground")}>
+                {entry.name}
+              </p>
+              {entry.phone && (
+                <p className={cn("text-xs truncate", isMe ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                  <Phone className="h-3 w-3 inline mr-1" />
+                  {entry.phone}
+                </p>
+              )}
+            </div>
+          </div>
+          {entry.phone && (
+            <button
+              onClick={() => handleChat(entry.phone)}
+              className={cn(
+                "w-full flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md transition-colors",
+                isMe
+                  ? "bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground"
+                  : "bg-primary/10 hover:bg-primary/20 text-primary"
+              )}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              Conversar
+            </button>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -422,8 +491,13 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                 </p>
               )}
 
-              {/* Text content (skip for documents since we show filename above) */}
-              {message.content && mediaType !== "document" && !editing && (
+              {/* Shared contact card */}
+              {mediaType === "contact" && message.content && (
+                <SharedContactCard content={message.content} isMe={isMe} />
+              )}
+
+              {/* Text content (skip for documents and contacts since we show custom UI above) */}
+              {message.content && mediaType !== "document" && mediaType !== "contact" && !editing && (
                 <p
                   className="whitespace-pre-wrap break-words text-sm leading-relaxed [&_strong]:font-bold [&_em]:italic [&_s]:line-through"
                   dangerouslySetInnerHTML={{
