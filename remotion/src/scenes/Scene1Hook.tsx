@@ -1,72 +1,129 @@
-import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig, Img, staticFile } from "remotion";
 
 export const Scene1Hook = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const barScale = spring({ frame, fps, config: { damping: 15, stiffness: 120 } });
-  const barWidth = interpolate(barScale, [0, 1], [0, 120]);
+  // Technician slides in from bottom
+  const techY = interpolate(
+    spring({ frame, fps, config: { damping: 18, stiffness: 80 } }),
+    [0, 1], [400, 0]
+  );
+  const techOpacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
 
-  const title1 = spring({ frame: frame - 10, fps, config: { damping: 18 } });
-  const title2 = spring({ frame: frame - 20, fps, config: { damping: 18 } });
-  const title3 = spring({ frame: frame - 30, fps, config: { damping: 18 } });
+  // Speech bubble appears
+  const bubbleSpring = spring({ frame: frame - 25, fps, config: { damping: 12, stiffness: 100 } });
+  const bubbleScale = interpolate(bubbleSpring, [0, 1], [0, 1]);
+  const bubbleOpacity = interpolate(bubbleSpring, [0, 0.3], [0, 1]);
 
-  const subOpacity = interpolate(frame, [45, 60], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const subY = interpolate(frame, [45, 60], [15, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  // Name tag
+  const nameSpring = spring({ frame: frame - 40, fps, config: { damping: 20 } });
 
-  const lineWidth = interpolate(frame, [55, 75], [0, 300], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  // Subtle breathing animation on technician
+  const breathe = Math.sin(frame * 0.06) * 3;
 
-  const badgeSpring = spring({ frame: frame - 65, fps, config: { damping: 12 } });
+  // Text lines stagger
+  const line1 = spring({ frame: frame - 30, fps, config: { damping: 18 } });
+  const line2 = spring({ frame: frame - 45, fps, config: { damping: 18 } });
+
+  // Warm gradient bg overlay
+  const gradientShift = Math.sin(frame * 0.015) * 10;
 
   return (
-    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", padding: 60 }}>
-      <div style={{ position: "absolute", top: 80, left: 60, width: barWidth, height: 4, background: "#2547D0", borderRadius: 2 }} />
+    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center" }}>
+      {/* Warm office light overlay */}
+      <div style={{
+        position: "absolute",
+        top: 0, right: 0,
+        width: 600, height: 600,
+        borderRadius: "50%",
+        background: `radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%)`,
+        transform: `translate(${gradientShift}px, ${-gradientShift}px)`,
+      }} />
 
-      <div style={{ textAlign: "center" }}>
-        {[
-          { text: "Sua empresa de", spring: title1, color: "#E8EAF0" },
-          { text: "climatização", spring: title2, color: "#2547D0" },
-          { text: "no controle total.", spring: title3, color: "#E8EAF0" },
-        ].map((item, i) => (
-          <div
-            key={i}
-            style={{
-              fontFamily: "sans-serif",
-              fontSize: 78,
-              fontWeight: 800,
-              color: item.color,
-              opacity: interpolate(item.spring, [0, 1], [0, 1]),
-              transform: `translateY(${interpolate(item.spring, [0, 1], [30, 0])}px)`,
-              letterSpacing: -2,
-              lineHeight: 1.15,
-            }}
-          >
-            {item.text}
+      {/* Speech bubble */}
+      <div style={{
+        position: "absolute",
+        top: 180,
+        left: 80,
+        right: 80,
+        opacity: bubbleOpacity,
+        transform: `scale(${bubbleScale})`,
+        transformOrigin: "bottom center",
+      }}>
+        <div style={{
+          background: "rgba(37,71,208,0.12)",
+          border: "1px solid rgba(37,71,208,0.25)",
+          borderRadius: 32,
+          padding: "50px 55px",
+          position: "relative",
+        }}>
+          <div style={{
+            fontFamily: "sans-serif",
+            fontSize: 52,
+            fontWeight: 700,
+            color: "#E8EAF0",
+            lineHeight: 1.35,
+            opacity: interpolate(line1, [0, 1], [0, 1]),
+            transform: `translateY(${interpolate(line1, [0, 1], [20, 0])}px)`,
+          }}>
+            "Eu era daqueles que{"\n"}anotava tudo no papel..."
           </div>
-        ))}
-
-        <div style={{ width: lineWidth, height: 4, background: "linear-gradient(90deg, #2547D0, rgba(37,71,208,0.2))", margin: "40px auto", borderRadius: 2 }} />
-
-        <p style={{ fontFamily: "sans-serif", fontSize: 34, color: "rgba(232,234,240,0.6)", fontWeight: 400, opacity: subOpacity, transform: `translateY(${subY}px)`, letterSpacing: 0.5, lineHeight: 1.4 }}>
-          Gestão completa para técnicos e{"\n"}empresas de ar-condicionado
-        </p>
+          <div style={{
+            fontFamily: "sans-serif",
+            fontSize: 36,
+            fontWeight: 400,
+            color: "rgba(232,234,240,0.6)",
+            marginTop: 20,
+            opacity: interpolate(line2, [0, 1], [0, 1]),
+            transform: `translateY(${interpolate(line2, [0, 1], [15, 0])}px)`,
+          }}>
+            Até conhecer a Tecvo.
+          </div>
+          {/* Bubble tail */}
+          <div style={{
+            position: "absolute",
+            bottom: -20,
+            left: "50%",
+            marginLeft: -20,
+            width: 0, height: 0,
+            borderLeft: "20px solid transparent",
+            borderRight: "20px solid transparent",
+            borderTop: "20px solid rgba(37,71,208,0.12)",
+          }} />
+        </div>
       </div>
 
-      <div
-        style={{
+      {/* Technician image */}
+      <div style={{
+        position: "relative",
+        transform: `translateY(${techY + breathe}px)`,
+        opacity: techOpacity,
+        marginBottom: -20,
+      }}>
+        <Img src={staticFile("images/technician.png")} style={{ width: 550, height: 550, objectFit: "contain" }} />
+        
+        {/* Name tag */}
+        <div style={{
           position: "absolute",
-          bottom: 100,
+          bottom: 120,
+          left: "50%",
+          transform: `translateX(-50%) scale(${interpolate(nameSpring, [0, 1], [0.8, 1])})`,
+          opacity: interpolate(nameSpring, [0, 1], [0, 1]),
+          background: "#2547D0",
+          borderRadius: 16,
+          padding: "12px 30px",
           display: "flex",
           alignItems: "center",
-          gap: 14,
-          opacity: interpolate(badgeSpring, [0, 1], [0, 1]),
-          transform: `scale(${interpolate(badgeSpring, [0, 1], [0.8, 1])})`,
-        }}
-      >
-        <div style={{ width: 52, height: 52, borderRadius: 13, background: "#2547D0", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ color: "white", fontWeight: 900, fontSize: 26, fontFamily: "sans-serif" }}>T</span>
+          gap: 10,
+        }}>
+          <span style={{ fontFamily: "sans-serif", fontSize: 28, fontWeight: 700, color: "white" }}>
+            Carlos Silva
+          </span>
+          <span style={{ fontFamily: "sans-serif", fontSize: 22, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>
+            • Técnico HVAC
+          </span>
         </div>
-        <span style={{ color: "#E8EAF0", fontFamily: "sans-serif", fontWeight: 700, fontSize: 30 }}>tecvo</span>
       </div>
     </AbsoluteFill>
   );
