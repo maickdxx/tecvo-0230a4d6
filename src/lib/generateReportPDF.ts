@@ -278,8 +278,17 @@ export async function generateReportPDF({
     doc.setLineWidth(0.15);
     doc.roundedRect(margin, yPos, contentWidth, 18, 1.5, 1.5, "FD");
 
-    const eqCount = equipment.length > 0 ? equipment.length : 1;
-    const serviceType = (report as any).service_type || "Inspeção técnica";
+    const SERVICE_TYPE_LABELS: Record<string, string> = {
+      installation: "Instalação",
+      maintenance: "Manutenção",
+      cleaning: "Limpeza",
+      repair: "Reparo",
+      inspection: "Inspeção",
+      preventive: "Preventiva",
+      corrective: "Corretiva",
+    };
+    const rawServiceType = linkedService?.service_type || null;
+    const serviceType = rawServiceType ? (SERVICE_TYPE_LABELS[rawServiceType] || rawServiceType) : "Inspeção técnica";
 
     // Determine overall status label for cover
     let coverStatusLabel = "Operacional";
