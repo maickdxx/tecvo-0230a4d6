@@ -1,6 +1,6 @@
 import { formatDateInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
-import { Calendar, ClipboardList, DollarSign, FileText, MapPin, MoreVertical, Pencil, Trash2, User } from "lucide-react";
+import { Calendar, ClipboardList, DollarSign, FileText, MapPin, MoreVertical, Pencil, Trash2, User, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
