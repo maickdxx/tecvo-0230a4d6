@@ -221,21 +221,28 @@ _PDF do orçamento em anexo_`.trim();
 
   const handleConvertToServiceOrder = (service: Service) => {
     setServiceToConvert(service);
+    setConvertScheduledDate(service.scheduled_date ? service.scheduled_date.substring(0, 10) : "");
     setConvertDialogOpen(true);
   };
 
   const confirmConvert = async () => {
     if (serviceToConvert) {
+      const updateData: Record<string, unknown> = { document_type: "service_order" };
+      if (convertScheduledDate) {
+        updateData.scheduled_date = convertScheduledDate;
+      }
       await update({ 
         id: serviceToConvert.id, 
-        data: { document_type: "service_order" } 
+        data: updateData as any,
       });
       setConvertDialogOpen(false);
-      setServiceToConvert(null);
       toast({
         title: "Ordem de Serviço gerada",
         description: "O orçamento foi convertido em OS com sucesso.",
       });
+      navigate(`/ordens-servico/${serviceToConvert.id}`);
+      setServiceToConvert(null);
+      setConvertScheduledDate("");
     }
   };
 
