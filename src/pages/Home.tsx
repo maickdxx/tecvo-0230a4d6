@@ -14,6 +14,7 @@ import {
   PricingSection,
   CTASection,
   LandingFooter,
+  SocialProofNotification,
 } from "@/components/landing";
 
 export default function Home() {
@@ -43,6 +44,7 @@ export default function Home() {
         <CTASection />
       </main>
       <LandingFooter />
+      <SocialProofNotification />
     </div>
   );
 }
