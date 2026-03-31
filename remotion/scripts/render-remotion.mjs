@@ -28,11 +28,11 @@ await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  outputLocation: "/mnt/documents/tecvo-tecnico-depoimento.mp4",
+  outputLocation: "/tmp/tecvo-video-only.mp4",
   puppeteerInstance: browser,
   muted: true,
   concurrency: 1,
 });
 
 await browser.close({ silent: false });
-console.log("✅ Rendered to /mnt/documents/tecvo-tecnico-depoimento.mp4");
+console.log("✅ Video rendered (muted). Now muxing audio...");
