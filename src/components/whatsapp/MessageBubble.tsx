@@ -28,6 +28,9 @@ import {
   User,
   MessageSquare,
   Phone,
+  MapPin,
+  Sticker,
+  ExternalLink,
 } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
 import {
