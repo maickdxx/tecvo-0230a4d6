@@ -206,8 +206,12 @@ export async function generateReportPDF({
   const cityState = [organizationCity, organizationState].filter(Boolean).join(" – ");
   doc.text(`Nº ${report.report_number.toString().padStart(4, "0")}  ·  ${cityState ? cityState + "  ·  " : ""}${reportDate}`, hx, yPos + 22);
 
-  if (report.service?.quote_number) {
-    doc.text(`Referência OS: #${report.service.quote_number.toString().padStart(4, "0")}`, hx, yPos + 27);
+  const linkedService = report.service || report.quote_service;
+  if (linkedService?.quote_number) {
+    const refLabel = report.quote_service_id && !report.service_id
+      ? `Referência Orçamento: #${linkedService.quote_number.toString().padStart(4, "0")}`
+      : `Referência OS: #${linkedService.quote_number.toString().padStart(4, "0")}`;
+    doc.text(refLabel, hx, yPos + 27);
     yPos += 38;
   } else {
     yPos += 34;
@@ -223,29 +227,34 @@ export async function generateReportPDF({
   doc.setFillColor(colors.bgLight.r, colors.bgLight.g, colors.bgLight.b);
   doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
   doc.setLineWidth(0.15);
-  doc.roundedRect(margin, yPos, contentWidth, 24, 1.5, 1.5, "FD");
+  const companyCardH = organizationEmail ? 34 : 24;
+  doc.roundedRect(margin, yPos, contentWidth, companyCardH, 1.5, 1.5, "FD");
 
   drawInfoPair("Empresa Responsável", organizationName, margin + 5, yPos + 6, contentWidth / 2 - 10);
   drawInfoPair("CNPJ", organizationCnpj, margin + contentWidth / 2 + 5, yPos + 6, contentWidth / 2 - 10);
   const fullAddress = [organizationAddress, organizationCity, organizationState].filter(Boolean).join(", ");
   if (fullAddress) drawInfoPair("Endereço", fullAddress, margin + 5, yPos + 16, contentWidth / 2 - 10);
   if (organizationPhone) drawInfoPair("Telefone", organizationPhone, margin + contentWidth / 2 + 5, yPos + 16, contentWidth / 2 - 10);
-  yPos += 28;
+  if (organizationEmail) drawInfoPair("E-mail", organizationEmail, margin + 5, yPos + 26, contentWidth - 10);
+  yPos += companyCardH + 4;
 
   // ── Client card ──
   doc.setFillColor(colors.bgCard.r, colors.bgCard.g, colors.bgCard.b);
   doc.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
   doc.setLineWidth(0.15);
-  doc.roundedRect(margin, yPos, contentWidth, 24, 1.5, 1.5, "FD");
+  const clientZip = report.client?.zip_code;
+  const clientAddrParts = [report.client?.address, report.client?.city, report.client?.state].filter(Boolean).join(", ");
+  const clientFullAddr = clientZip ? `${clientAddrParts} - CEP: ${clientZip}` : clientAddrParts;
+  const clientCardH = clientFullAddr ? 24 : 14;
+  doc.roundedRect(margin, yPos, contentWidth, clientCardH, 1.5, 1.5, "FD");
 
   drawInfoPair("Contratante", report.client?.name, margin + 5, yPos + 6, contentWidth / 2 - 10);
   drawInfoPair("Contato", [report.client?.phone, report.client?.email].filter(Boolean).join(" · "), margin + contentWidth / 2 + 5, yPos + 6, contentWidth / 2 - 10);
-  const clientAddr = [report.client?.address, report.client?.city, report.client?.state].filter(Boolean).join(", ");
-  if (clientAddr) drawInfoPair("Local da Prestação", clientAddr, margin + 5, yPos + 16, contentWidth / 2 - 10);
+  if (clientFullAddr) drawInfoPair("Local da Prestação", clientFullAddr, margin + 5, yPos + 16, contentWidth / 2 - 10);
 
   const technicianName = report.technician_profile?.full_name || report.responsible_technician_name;
   if (technicianName) drawInfoPair("Técnico Responsável", technicianName, margin + contentWidth / 2 + 5, yPos + 16, contentWidth / 2 - 10);
-  yPos += 30;
+  yPos += clientCardH + 6;
 
   // ── Visit reason ──
   if (report.visit_reason) {
@@ -269,8 +278,18 @@ export async function generateReportPDF({
     doc.setLineWidth(0.15);
     doc.roundedRect(margin, yPos, contentWidth, 18, 1.5, 1.5, "FD");
 
+    const SERVICE_TYPE_LABELS: Record<string, string> = {
+      installation: "Instalação",
+      maintenance: "Manutenção",
+      cleaning: "Limpeza",
+      repair: "Reparo",
+      inspection: "Inspeção",
+      preventive: "Preventiva",
+      corrective: "Corretiva",
+    };
+    const rawServiceType = linkedService?.service_type || null;
+    const serviceType = rawServiceType ? (SERVICE_TYPE_LABELS[rawServiceType] || rawServiceType) : "Inspeção técnica";
     const eqCount = equipment.length > 0 ? equipment.length : 1;
-    const serviceType = (report as any).service_type || "Inspeção técnica";
 
     // Determine overall status label for cover
     let coverStatusLabel = "Operacional";
@@ -419,6 +438,7 @@ export async function generateReportPDF({
       yPos += 14;
 
       // ── Equipment identification grid ──
+      const WORKING_LABELS: Record<string, string> = { yes: "Sim", no: "Não", partial: "Parcial" };
       const idFields: Array<{ label: string; value: string | null | undefined }> = [
         { label: "Tipo", value: eq.equipment_type },
         { label: "Marca", value: eq.equipment_brand },
@@ -426,6 +446,7 @@ export async function generateReportPDF({
         { label: "Capacidade", value: eq.capacity_btus ? `${eq.capacity_btus} BTUs` : null },
         { label: "Local", value: eq.equipment_location },
         { label: "Nº de Série", value: eq.serial_number },
+        { label: "Funcionando", value: eq.equipment_working ? (WORKING_LABELS[eq.equipment_working] || eq.equipment_working) : null },
       ].filter(f => f.value);
 
       if (idFields.length > 0) {
@@ -872,7 +893,7 @@ export async function generateReportPDF({
     doc.setTextColor(colors.textMuted.r, colors.textMuted.g, colors.textMuted.b);
     const signedDate = signature.signed_at ? format(new Date(signature.signed_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "";
     const ipInfo = signature.ip_address ? `IP: ${signature.ip_address}` : "";
-    const osRef = report.service?.quote_number ? `Ref. OS: #${report.service.quote_number.toString().padStart(4, "0")}` : "";
+    const osRef = linkedService?.quote_number ? `Ref. OS: #${linkedService.quote_number.toString().padStart(4, "0")}` : "";
 
     doc.text(`Assinado digitalmente em ${signedDate}`, cX, sTop + 9);
     if (ipInfo || osRef) doc.text([ipInfo, osRef].filter(Boolean).join("  ·  "), cX, sTop + 13);
