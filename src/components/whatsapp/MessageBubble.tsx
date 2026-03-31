@@ -502,44 +502,51 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
               )}
 
               {/* Document */}
-              {mediaType === "document" && message.media_url && (
-                <a
-                  href={message.media_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(
-                    "flex items-center gap-2.5 p-2 rounded-lg transition-colors mb-1",
-                    isMe
-                      ? "bg-primary-foreground/10 hover:bg-primary-foreground/15"
-                      : "bg-muted/50 hover:bg-muted/80"
-                  )}
-                >
-                  <div className={cn(
-                    "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-                    isMe ? "bg-primary-foreground/20" : "bg-primary/10"
-                  )}>
-                    <FileText className={cn("h-5 w-5", isMe ? "text-primary-foreground" : "text-primary")} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "text-xs font-medium truncate",
-                      isMe ? "text-primary-foreground" : "text-foreground"
+              {mediaType === "document" && message.media_url && (() => {
+                // If content is long (body text with document), show text separately
+                const isBodyText = (message.content?.length || 0) > 60;
+                const fileName = isBodyText
+                  ? (message.media_url.split("/").pop()?.split("?")[0] || "Documento")
+                  : (message.content || "Documento");
+                return (
+                  <a
+                    href={message.media_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center gap-2.5 p-2 rounded-lg transition-colors mb-1",
+                      isMe
+                        ? "bg-primary-foreground/10 hover:bg-primary-foreground/15"
+                        : "bg-muted/50 hover:bg-muted/80"
+                    )}
+                  >
+                    <div className={cn(
+                      "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                      isMe ? "bg-primary-foreground/20" : "bg-primary/10"
                     )}>
-                      {message.content || "Documento"}
-                    </p>
-                    <p className={cn(
-                      "text-[10px]",
+                      <FileText className={cn("h-5 w-5", isMe ? "text-primary-foreground" : "text-primary")} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        "text-xs font-medium truncate",
+                        isMe ? "text-primary-foreground" : "text-foreground"
+                      )}>
+                        {fileName}
+                      </p>
+                      <p className={cn(
+                        "text-[10px]",
+                        isMe ? "text-primary-foreground/50" : "text-muted-foreground"
+                      )}>
+                        Toque para abrir
+                      </p>
+                    </div>
+                    <Download className={cn(
+                      "h-4 w-4 shrink-0",
                       isMe ? "text-primary-foreground/50" : "text-muted-foreground"
-                    )}>
-                      Toque para abrir
-                    </p>
-                  </div>
-                  <Download className={cn(
-                    "h-4 w-4 shrink-0",
-                    isMe ? "text-primary-foreground/50" : "text-muted-foreground"
-                  )} />
-                </a>
-              )}
+                    )} />
+                  </a>
+                );
+              })()}
 
               {/* Media placeholder for unsupported/missing URL */}
               {mediaType && !message.media_url && !message.content && (
