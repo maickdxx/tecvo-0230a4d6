@@ -286,24 +286,24 @@ export default function LaudoDetalhes() {
 
                   {/* Diagnosis */}
                   {(eq.condition_found || eq.procedure_performed) && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Diagnóstico</p>
+                    <div className="space-y-3">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Diagnóstico</p>
                       {eq.condition_found && (
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground">Condição encontrada</p>
-                          <p className="text-sm whitespace-pre-wrap">{eq.condition_found}</p>
+                          <p className="text-xs font-semibold text-muted-foreground mb-0.5">Condição encontrada</p>
+                          <p className="text-base leading-6 whitespace-pre-wrap">{eq.condition_found}</p>
                         </div>
                       )}
                       {eq.procedure_performed && (
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground">Procedimento realizado</p>
-                          <p className="text-sm whitespace-pre-wrap">{eq.procedure_performed}</p>
+                          <p className="text-xs font-semibold text-muted-foreground mb-0.5">Procedimento realizado</p>
+                          <p className="text-base leading-6 whitespace-pre-wrap">{eq.procedure_performed}</p>
                         </div>
                       )}
                       {eq.technical_observations && (
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground">Observações técnicas</p>
-                          <p className="text-sm whitespace-pre-wrap">{eq.technical_observations}</p>
+                          <p className="text-xs font-semibold text-muted-foreground mb-0.5">Observações técnicas</p>
+                          <p className="text-base leading-6 whitespace-pre-wrap">{eq.technical_observations}</p>
                         </div>
                       )}
                     </div>
