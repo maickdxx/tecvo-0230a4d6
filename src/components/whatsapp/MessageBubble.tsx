@@ -25,6 +25,9 @@ import {
   RotateCcw,
   Sparkles,
   Reply,
+  User,
+  MessageSquare,
+  Phone,
 } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
 import {
