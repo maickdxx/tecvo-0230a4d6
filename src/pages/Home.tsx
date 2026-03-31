@@ -44,6 +44,7 @@ export default function Home() {
         <CTASection />
       </main>
       <LandingFooter />
+      <SocialProofNotification />
     </div>
   );
 }

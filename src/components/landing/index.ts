@@ -9,3 +9,4 @@ export { SocialProof } from "./SocialProof";
 export { PricingSection } from "./PricingSection";
 export { CTASection } from "./CTASection";
 export { LandingFooter } from "./LandingFooter";
+export { SocialProofNotification } from "./SocialProofNotification";
