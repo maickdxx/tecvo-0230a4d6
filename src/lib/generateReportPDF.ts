@@ -289,6 +289,7 @@ export async function generateReportPDF({
     };
     const rawServiceType = linkedService?.service_type || null;
     const serviceType = rawServiceType ? (SERVICE_TYPE_LABELS[rawServiceType] || rawServiceType) : "Inspeção técnica";
+    const eqCount = equipment.length > 0 ? equipment.length : 1;
 
     // Determine overall status label for cover
     let coverStatusLabel = "Operacional";
