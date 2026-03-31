@@ -71,6 +71,7 @@ export default function Orcamentos() {
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [serviceToConvert, setServiceToConvert] = useState<Service | null>(null);
+  const [convertScheduledDate, setConvertScheduledDate] = useState("");
 
   const servicesWithQuotes = services.filter(service => {
     const client = clients.find(c => c.id === service.client_id);
