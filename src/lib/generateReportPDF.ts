@@ -206,8 +206,12 @@ export async function generateReportPDF({
   const cityState = [organizationCity, organizationState].filter(Boolean).join(" – ");
   doc.text(`Nº ${report.report_number.toString().padStart(4, "0")}  ·  ${cityState ? cityState + "  ·  " : ""}${reportDate}`, hx, yPos + 22);
 
-  if (report.service?.quote_number) {
-    doc.text(`Referência OS: #${report.service.quote_number.toString().padStart(4, "0")}`, hx, yPos + 27);
+  const linkedService = report.service || report.quote_service;
+  if (linkedService?.quote_number) {
+    const refLabel = report.quote_service_id && !report.service_id
+      ? `Referência Orçamento: #${linkedService.quote_number.toString().padStart(4, "0")}`
+      : `Referência OS: #${linkedService.quote_number.toString().padStart(4, "0")}`;
+    doc.text(refLabel, hx, yPos + 27);
     yPos += 38;
   } else {
     yPos += 34;
