@@ -548,6 +548,8 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                   {mediaType === "audio" && <><Mic className="h-3 w-3" /> Áudio</>}
                   {mediaType === "video" && <><Video className="h-3 w-3" /> Vídeo</>}
                   {mediaType === "document" && <><FileText className="h-3 w-3" /> Arquivo</>}
+                  {mediaType === "sticker" && <><Sticker className="h-3 w-3" /> Figurinha</>}
+                  {mediaType === "location" && <><MapPin className="h-3 w-3" /> Localização</>}
                 </p>
               )}
 
