@@ -437,6 +437,63 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
               </div>
             )}
 
+            {/* Sticker */}
+            {mediaType === "sticker" && message.media_url && (
+              <div className="p-2">
+                <img
+                  src={message.media_url}
+                  alt="Sticker"
+                  className="max-w-[160px] max-h-[160px] object-contain"
+                  loading="lazy"
+                />
+              </div>
+            )}
+
+            {/* Location */}
+            {mediaType === "location" && (
+              <a
+                href={(() => {
+                  // Try to extract coordinates from content
+                  const coordMatch = message.content?.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+                  if (coordMatch) return `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}`;
+                  // Fallback: search by content text
+                  return `https://maps.google.com/maps?q=${encodeURIComponent(message.content || "Localização")}`;
+                })()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <div className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg transition-colors",
+                  isMe
+                    ? "bg-primary-foreground/10 hover:bg-primary-foreground/15"
+                    : "bg-muted/50 hover:bg-muted/80"
+                )}>
+                  <div className={cn(
+                    "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                    isMe ? "bg-primary-foreground/20" : "bg-red-100 dark:bg-red-900/30"
+                  )}>
+                    <MapPin className={cn("h-5 w-5", isMe ? "text-primary-foreground" : "text-red-600 dark:text-red-400")} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "text-xs font-medium truncate",
+                      isMe ? "text-primary-foreground" : "text-foreground"
+                    )}>
+                      {message.content || "Localização compartilhada"}
+                    </p>
+                    <p className={cn(
+                      "text-[10px] flex items-center gap-1",
+                      isMe ? "text-primary-foreground/50" : "text-muted-foreground"
+                    )}>
+                      <ExternalLink className="h-3 w-3" />
+                      Abrir no Google Maps
+                    </p>
+                  </div>
+                </div>
+              </a>
+            )}
+
             {/* Content area */}
             <div className="px-3.5 py-2">
               {/* Audio */}
