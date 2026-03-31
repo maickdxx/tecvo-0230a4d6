@@ -331,27 +331,62 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
             />
           ) : (
             <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-muted/[0.02] to-muted/[0.08] relative overflow-hidden">
-              {/* Subtle decorative elements */}
-              <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-[hsl(222,69%,49%)]/[0.03] blur-3xl pointer-events-none" />
-              <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-[hsl(222,69%,49%)]/[0.02] blur-2xl pointer-events-none" />
+              <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-primary/[0.03] blur-3xl pointer-events-none" />
+              <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-primary/[0.02] blur-2xl pointer-events-none" />
               
-              <div className="text-center space-y-5 relative z-10 px-6 max-w-md">
-                <div className="mx-auto w-24 h-24 rounded-2xl bg-gradient-to-br from-[hsl(222,69%,49%)]/10 to-[hsl(222,69%,49%)]/5 flex items-center justify-center shadow-lg shadow-primary/5 border border-[hsl(222,69%,49%)]/10">
-                  <MessageSquare className="h-10 w-10 text-[hsl(222,69%,49%)]/70" />
-                </div>
-                <div className="space-y-2.5">
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">
-                    Sua central de atendimento
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                    Selecione uma conversa à esquerda para visualizar o histórico e responder seus clientes em tempo real.
-                  </p>
-                </div>
-                <div className="pt-3 flex flex-col items-center gap-3">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(222,69%,49%)]/[0.06] border border-[hsl(222,69%,49%)]/10 text-[12px] text-[hsl(222,69%,49%)] font-medium">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/30" />
-                    Pronto para receber mensagens
-                  </div>
+              <div className="text-center space-y-6 relative z-10 px-6 max-w-lg">
+                {/* Stats summary */}
+                {contacts.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+                        <p className="text-2xl font-bold text-foreground">{contacts.length}</p>
+                        <p className="text-xs text-muted-foreground">Conversas</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+                        <p className="text-2xl font-bold text-foreground">
+                          {contacts.filter(c => c.unread_count && c.unread_count > 0).length}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Não lidas</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+                        <p className="text-2xl font-bold text-foreground">
+                          {contacts.filter(c => {
+                            if (!c.last_message_at) return false;
+                            const diff = Date.now() - new Date(c.last_message_at).getTime();
+                            return diff < 24 * 60 * 60 * 1000;
+                          }).length}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Ativas hoje</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Selecione uma conversa
+                      </h3>
+                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                        Escolha uma conversa à esquerda para visualizar e responder.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mx-auto w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/10">
+                      <MessageSquare className="h-9 w-9 text-primary/60" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Nenhuma conversa ainda
+                      </h3>
+                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                        Quando seus clientes enviarem mensagens pelo WhatsApp, elas aparecerão aqui automaticamente.
+                      </p>
+                    </div>
+                  </>
+                )}
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/[0.06] border border-primary/10 text-[12px] text-primary font-medium">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/30" />
+                  Pronto para receber mensagens
                 </div>
               </div>
             </div>
