@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, FileText, Users, MessageCircle, History, UsersRound, ArrowRight, X, ChevronDown } from "lucide-react";
 import { trackFBCustomEvent } from "@/lib/fbPixel";
+import { SocialProofNotification } from "@/components/landing/SocialProofNotification";
 
 const TOTAL_STEPS = 6;
 
