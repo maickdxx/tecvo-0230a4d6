@@ -843,8 +843,14 @@ Deno.serve(async (req) => {
       } else if (msg.audioMessage) {
         mediaType = "audio";
         mediaUrl = msg.audioMessage.url || null;
+      } else if (msg.documentWithCaptionMessage) {
+        // Document with caption (body text + attached file)
+        const inner = msg.documentWithCaptionMessage.message?.documentMessage || {};
+        content = msg.documentWithCaptionMessage.message?.documentMessage?.caption || inner.fileName || "";
+        mediaType = "document";
+        mediaUrl = inner.url || null;
       } else if (msg.documentMessage) {
-        content = msg.documentMessage.fileName || "";
+        content = msg.documentMessage.caption || msg.documentMessage.fileName || "";
         mediaType = "document";
         mediaUrl = msg.documentMessage.url || null;
       } else if (msg.stickerMessage) {
@@ -924,15 +930,18 @@ Deno.serve(async (req) => {
           || "";
         const footer = msg.interactiveMessage.footer?.text || "";
         content = [body, footer].filter(Boolean).join("\n") || "[Mensagem interativa]";
-        // Check for media header
+        // Check for media header (image, video, document)
         if (msg.interactiveMessage.header?.imageMessage) {
           mediaType = "image";
           mediaUrl = msg.interactiveMessage.header.imageMessage.url || null;
         } else if (msg.interactiveMessage.header?.videoMessage) {
           mediaType = "video";
           mediaUrl = msg.interactiveMessage.header.videoMessage.url || null;
+        } else if (msg.interactiveMessage.header?.documentMessage) {
+          mediaType = "document";
+          mediaUrl = msg.interactiveMessage.header.documentMessage.url || null;
         }
-        console.log("[WEBHOOK-WHATSAPP] interactiveMessage parsed — content:", content.slice(0, 100));
+        console.log("[WEBHOOK-WHATSAPP] interactiveMessage parsed — content:", content.slice(0, 100), "mediaType:", mediaType);
       } else if (msg.interactiveResponseMessage) {
         content = msg.interactiveResponseMessage.body?.text 
           || msg.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson 
