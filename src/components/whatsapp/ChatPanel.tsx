@@ -1280,6 +1280,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                     if (replyingTo.media_type === "audio") return "🎤 Áudio";
                     if (replyingTo.media_type === "video") return "🎥 Vídeo";
                     if (replyingTo.media_type === "document") return "📄 Documento";
+                    if (replyingTo.media_type === "contact") return "📇 Contato compartilhado";
                     return clean.length > 100 ? clean.substring(0, 100) + "…" : clean;
                   })()}
                 </p>
