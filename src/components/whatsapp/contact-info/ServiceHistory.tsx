@@ -138,9 +138,18 @@ function ServiceRow({ service, onClick }: { service: ServiceRecord; onClick: () 
   const statusCfg = STATUS_CONFIG[service.status] || STATUS_CONFIG.pending;
   const date = service.scheduled_date || service.completed_date;
 
+  const handleClick = () => {
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    if (isDesktop) {
+      window.open(`/ordens-servico/${service.id}`, '_blank', 'noopener,noreferrer');
+    } else {
+      onClick();
+    }
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className="w-full flex items-center gap-2 text-xs py-2 px-2.5 rounded-md hover:bg-muted/60 transition-colors text-left border border-transparent hover:border-border"
     >
       <div className="flex-1 min-w-0 space-y-0.5">
