@@ -136,8 +136,8 @@ type TechnicalReportQueryRow = Omit<TechnicalReport, "technician_profile">;
 const TECHNICAL_REPORT_SELECT = `
   *,
   client:clients!client_id(name, phone, email, address, city, state, zip_code),
-  service:services!service_id(quote_number, document_type),
-  quote_service:services!quote_service_id(quote_number, document_type)
+  service:services!service_id(quote_number, document_type, service_type),
+  quote_service:services!quote_service_id(quote_number, document_type, service_type)
 `;
 
 const normalizeOptionalText = (value?: string | null) => {
