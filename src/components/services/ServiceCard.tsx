@@ -1,6 +1,6 @@
 import { formatDateInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
-import { Calendar, ClipboardList, DollarSign, FileText, MapPin, MoreVertical, Pencil, Trash2, User } from "lucide-react";
+import { Calendar, ClipboardList, DollarSign, FileText, MapPin, MoreVertical, Pencil, Trash2, User, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -121,7 +121,7 @@ export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote
               <div className="space-y-1 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-foreground">
-                    {service.description ? service.description.substring(0, 50) + (service.description.length > 50 ? "..." : "") : `Serviço #${service.quote_number}`}
+                    OS #{service.quote_number?.toString().padStart(4, "0") ?? "—"}
                   </span>
                   <ServiceStatusBadge status={service.status} />
                   {service.service_type && (
@@ -138,6 +138,13 @@ export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote
                   </div>
                 )}
 
+                {service.assigned_profile?.full_name && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Wrench className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{service.assigned_profile.full_name}</span>
+                  </div>
+                )}
+
                 {formattedDate && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5 shrink-0" />
@@ -148,7 +155,7 @@ export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote
                 {formattedValue && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <DollarSign className="h-3.5 w-3.5 shrink-0" />
-                    <span>{formattedValue}</span>
+                    <span className="font-medium">{formattedValue}</span>
                   </div>
                 )}
 
