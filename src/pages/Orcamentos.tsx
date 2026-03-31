@@ -462,13 +462,35 @@ _PDF do orçamento em anexo_`.trim();
       </AlertDialog>
 
       {/* Convert to Service Order Confirmation Dialog */}
-      <AlertDialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+      <AlertDialog open={convertDialogOpen} onOpenChange={(open) => {
+        setConvertDialogOpen(open);
+        if (!open) { setServiceToConvert(null); setConvertScheduledDate(""); }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Gerar Ordem de Serviço?</AlertDialogTitle>
-            <AlertDialogDescription>
-              O orçamento #{serviceToConvert?.quote_number} será convertido em uma Ordem de Serviço. 
-              Isso manterá todos os dados e itens do orçamento.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  O orçamento #{serviceToConvert?.quote_number} será convertido em uma Ordem de Serviço. 
+                  Isso manterá todos os dados e itens do orçamento.
+                </p>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    Data de agendamento (opcional)
+                  </label>
+                  <input
+                    type="date"
+                    value={convertScheduledDate}
+                    onChange={(e) => setConvertScheduledDate(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Defina quando o serviço será executado. Você pode alterar depois.
+                  </p>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
