@@ -28,7 +28,7 @@ await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  outputLocation: "/tmp/tecvo-video-only.mp4",
+  outputLocation: "/tmp/tecvo-v3-video-only.mp4",
   puppeteerInstance: browser,
   muted: true,
   concurrency: 1,
