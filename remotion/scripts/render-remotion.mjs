@@ -28,7 +28,7 @@ await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  outputLocation: "/mnt/documents/tecvo-video.mp4",
+  outputLocation: "/mnt/documents/tecvo-tecnico-depoimento.mp4",
   puppeteerInstance: browser,
   muted: true,
   concurrency: 1,
