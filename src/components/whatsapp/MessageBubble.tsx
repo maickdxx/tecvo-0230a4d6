@@ -559,7 +559,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
               )}
 
               {/* Text content (skip for documents and contacts since we show custom UI above) */}
-              {message.content && mediaType !== "document" && mediaType !== "contact" && !editing && (
+              {message.content && mediaType !== "document" && mediaType !== "contact" && mediaType !== "location" && mediaType !== "sticker" && !editing && (
                 <p
                   className="whitespace-pre-wrap break-words text-sm leading-relaxed [&_strong]:font-bold [&_em]:italic [&_s]:line-through"
                   dangerouslySetInnerHTML={{
