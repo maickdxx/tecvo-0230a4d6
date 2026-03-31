@@ -88,12 +88,19 @@ export async function generateReportPDF({
     borderLight: { r: 232, g: 236, b: 242 },
   };
 
+  const startNewPage = (topOffset = margin + 8) => {
+    doc.addPage();
+    yPos = topOffset;
+  };
+
   const ensureSpace = (needed: number) => {
     if (yPos + needed > usableHeight) {
-      addFooter();
-      doc.addPage();
-      yPos = margin + 8;
+      startNewPage();
     }
+  };
+
+  const forceSectionPageBreak = () => {
+    startNewPage();
   };
 
   const addFooter = () => {
@@ -250,7 +257,14 @@ export async function generateReportPDF({
   //  EQUIPMENT BLOCKS
   // ════════════════════════════════════════
   if (equipment.length > 0) {
+    // Página 1 fica reservada para a capa; os equipamentos sempre começam em nova página.
+    forceSectionPageBreak();
+
     for (let idx = 0; idx < equipment.length; idx++) {
+      if (idx > 0) {
+        forceSectionPageBreak();
+      }
+
       const eq = equipment[idx];
       const eqChecklist = (eq.inspection_checklist as any[]) || [];
       const eqMeasurements = (eq.measurements as Record<string, string>) || {};
@@ -496,17 +510,11 @@ export async function generateReportPDF({
         yPos += 12;
       }
 
-      // ── Separator between equipment ──
-      if (idx < equipment.length - 1) {
-        yPos += 2;
-        doc.setDrawColor(colors.borderLight.r, colors.borderLight.g, colors.borderLight.b);
-        doc.setLineWidth(0.4);
-        doc.setLineDashPattern([2, 2], 0);
-        doc.line(margin + 30, yPos, pageWidth - margin - 30, yPos);
-        doc.setLineDashPattern([], 0);
-        yPos += 6;
-      }
+      // Próximo equipamento sempre inicia em página própria via forceSectionPageBreak().
     }
+
+    // Página final de consolidação e assinaturas sempre começa em nova página.
+    forceSectionPageBreak();
   } else {
     // Fallback: legacy single equipment from technical_reports
     const hasLegacyEquip = report.equipment_type || report.equipment_brand || report.equipment_model;
