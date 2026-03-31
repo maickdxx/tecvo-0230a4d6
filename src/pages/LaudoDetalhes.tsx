@@ -220,122 +220,179 @@ export default function LaudoDetalhes() {
 
         {/* Multi-Equipment Blocks */}
         {reportEquipment.length > 0 ? (
-          reportEquipment.map((eq, idx) => {
-            const eqChecklist = (eq.inspection_checklist as any[]) || [];
-            const eqMeasurements = (eq.measurements as Record<string, string>) || {};
-            const finalStatusColor = eq.final_status === "operational"
-              ? "bg-green-500/10 text-green-700 border-green-200"
-              : eq.final_status === "operational_with_caveats"
-              ? "bg-amber-500/10 text-amber-700 border-amber-200"
-              : "bg-red-500/10 text-red-700 border-red-200";
+          <div className="space-y-5">
+            {reportEquipment.length > 1 && (
+              <div className="flex items-center gap-2 px-1">
+                <Wrench className="h-4 w-4 text-primary" />
+                <h2 className="text-base font-bold text-foreground">Equipamentos Inspecionados</h2>
+                <Badge variant="secondary" className="ml-auto text-xs">{reportEquipment.length} {reportEquipment.length === 1 ? "equipamento" : "equipamentos"}</Badge>
+              </div>
+            )}
+            {reportEquipment.map((eq, idx) => {
+              const eqChecklist = (eq.inspection_checklist as any[]) || [];
+              const eqMeasurements = (eq.measurements as Record<string, string>) || {};
+              const finalStatusColor = eq.final_status === "operational"
+                ? "bg-green-500/10 text-green-700 border-green-200"
+                : eq.final_status === "operational_with_caveats"
+                ? "bg-amber-500/10 text-amber-700 border-amber-200"
+                : "bg-red-500/10 text-red-700 border-red-200";
 
-            return (
-              <Card key={eq.id} className="border-primary/20">
-                <CardContent className="p-4 md:p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
-                        <Wrench className="h-3.5 w-3.5 text-primary" />
+              return (
+                <Card key={eq.id} className="border-l-4 border-l-primary/60 shadow-sm">
+                  <CardContent className="p-0">
+                    {/* Equipment Header */}
+                    <div className="flex items-center justify-between px-5 py-3 bg-muted/40 border-b border-border/60">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-foreground">
+                            {eq.equipment_type || `Equipamento ${idx + 1}`}
+                          </h3>
+                          {(eq.equipment_brand || eq.equipment_model) && (
+                            <p className="text-xs text-muted-foreground">
+                              {[eq.equipment_brand, eq.equipment_model].filter(Boolean).join(" • ")}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <h3 className="text-sm font-semibold">Equipamento {idx + 1}</h3>
-                      {eq.equipment_type && <span className="text-sm text-muted-foreground">— {eq.equipment_type}</span>}
+                      {eq.final_status && (
+                        <Badge className={cn("text-xs font-semibold border", finalStatusColor)}>
+                          {FINAL_STATUS_OPTIONS[eq.final_status] || eq.final_status}
+                        </Badge>
+                      )}
                     </div>
-                    {eq.final_status && (
-                      <Badge className={cn("text-[10px] border", finalStatusColor)}>
-                        {FINAL_STATUS_OPTIONS[eq.final_status] || eq.final_status}
-                      </Badge>
-                    )}
-                  </div>
 
-                  {/* Equipment Info */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4">
-                    <InfoRow label="Tipo" value={eq.equipment_type} />
-                    <InfoRow label="Marca" value={eq.equipment_brand} />
-                    <InfoRow label="Modelo" value={eq.equipment_model} />
-                    <InfoRow label="Capacidade" value={eq.capacity_btus ? `${eq.capacity_btus} BTUs` : null} />
-                    <InfoRow label="Nº Série" value={eq.serial_number} />
-                    <InfoRow label="Local" value={eq.equipment_location} />
-                  </div>
-
-                  {/* Checklist */}
-                  {eqChecklist.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Checklist</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                        {eqChecklist.map((item: any) => {
-                          const label = CHECKLIST_ITEMS.find((c) => c.key === item.key)?.label || item.key;
-                          const statusIcon = item.status === "ok" ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                            : item.status === "attention" ? <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                            : <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />;
-                          const statusBadge = item.status === "ok" ? "text-green-700 bg-green-50"
-                            : item.status === "attention" ? "text-amber-700 bg-amber-50"
-                            : "text-red-700 bg-red-50";
-                          return (
-                            <div key={item.key} className="flex items-center gap-2 text-[13px] py-0.5 border-b border-border/50">
-                              {statusIcon}
-                              <span className="text-muted-foreground">{label}</span>
-                              <span className={cn("ml-auto font-medium text-[11px] px-1.5 rounded", statusBadge)}>
-                                {item.status === "ok" ? "OK" : item.status === "attention" ? "Atenção" : "Crítico"}
-                              </span>
-                            </div>
-                          );
-                        })}
+                    <div className="p-5 space-y-5">
+                      {/* Equipment Identification */}
+                      <div>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Wrench className="h-3 w-3" /> Identificação Técnica
+                        </p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 bg-muted/20 rounded-lg p-3 border border-border/40">
+                          <InfoRow label="Tipo" value={eq.equipment_type} />
+                          <InfoRow label="Marca" value={eq.equipment_brand} />
+                          <InfoRow label="Modelo" value={eq.equipment_model} />
+                          <InfoRow label="Capacidade" value={eq.capacity_btus ? `${eq.capacity_btus} BTUs` : null} />
+                          <InfoRow label="Nº Série" value={eq.serial_number} />
+                          <InfoRow label="Localização" value={eq.equipment_location} />
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Diagnosis */}
-                  {(eq.condition_found || eq.procedure_performed) && (
-                    <div className="space-y-3">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Diagnóstico</p>
-                      {eq.condition_found && (
+                      {/* Checklist */}
+                      {eqChecklist.length > 0 && (
                         <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-0.5">Condição encontrada</p>
-                          <p className="text-base leading-6 whitespace-pre-wrap">{eq.condition_found}</p>
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <ClipboardCheck className="h-3 w-3" /> Checklist de Inspeção
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 bg-muted/10 rounded-lg p-3 border border-border/30">
+                            {eqChecklist.map((item: any) => {
+                              const label = CHECKLIST_ITEMS.find((c) => c.key === item.key)?.label || item.key;
+                              const statusIcon = item.status === "ok" ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                                : item.status === "attention" ? <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                : <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />;
+                              const statusBadge = item.status === "ok" ? "text-green-700 bg-green-50 border-green-200"
+                                : item.status === "attention" ? "text-amber-700 bg-amber-50 border-amber-200"
+                                : "text-red-700 bg-red-50 border-red-200";
+                              return (
+                                <div key={item.key} className="flex items-center gap-2 text-sm py-1 border-b border-border/30 last:border-0">
+                                  {statusIcon}
+                                  <span className="text-foreground/80">{label}</span>
+                                  <Badge variant="outline" className={cn("ml-auto text-[10px] px-1.5 py-0 h-5 border", statusBadge)}>
+                                    {item.status === "ok" ? "OK" : item.status === "attention" ? "Atenção" : "Crítico"}
+                                  </Badge>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
-                      {eq.procedure_performed && (
+
+                      {/* Diagnosis */}
+                      {(eq.condition_found || eq.procedure_performed || eq.technical_observations) && (
                         <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-0.5">Procedimento realizado</p>
-                          <p className="text-base leading-6 whitespace-pre-wrap">{eq.procedure_performed}</p>
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                            <Stethoscope className="h-3 w-3" /> Diagnóstico Técnico
+                          </p>
+                          <div className="space-y-4 rounded-lg border border-border/40 p-4 bg-muted/10">
+                            {eq.condition_found && (
+                              <div>
+                                <p className="text-xs font-semibold text-primary mb-1">Condição encontrada</p>
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{eq.condition_found}</p>
+                              </div>
+                            )}
+                            {eq.procedure_performed && (
+                              <div>
+                                <p className="text-xs font-semibold text-primary mb-1">Procedimento realizado</p>
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{eq.procedure_performed}</p>
+                              </div>
+                            )}
+                            {eq.technical_observations && (
+                              <div>
+                                <p className="text-xs font-semibold text-primary mb-1">Observações técnicas</p>
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{eq.technical_observations}</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
-                      {eq.technical_observations && (
+
+                      {/* Impact */}
+                      {eq.impact_level && (
+                        <div className={cn("p-3 rounded-lg border",
+                          eq.impact_level === "low" ? "bg-green-50 border-green-200" :
+                          eq.impact_level === "medium" ? "bg-amber-50 border-amber-200" :
+                          "bg-red-50 border-red-200"
+                        )}>
+                          <p className="text-xs font-bold uppercase mb-0.5 flex items-center gap-1.5">
+                            <ShieldAlert className="h-3 w-3" />
+                            Impacto: {IMPACT_LEVELS[eq.impact_level]?.label || eq.impact_level}
+                          </p>
+                          <p className="text-xs text-foreground/80">{IMPACT_LEVELS[eq.impact_level]?.description}</p>
+                        </div>
+                      )}
+
+                      {/* Measurements */}
+                      {Object.values(eqMeasurements).some(Boolean) && (
                         <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-0.5">Observações técnicas</p>
-                          <p className="text-base leading-6 whitespace-pre-wrap">{eq.technical_observations}</p>
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <Gauge className="h-3 w-3" /> Medições
+                          </p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {eqMeasurements.pressure && (
+                              <div className="text-center p-2 rounded-lg bg-muted/30 border border-border/40">
+                                <p className="text-lg font-bold text-foreground">{eqMeasurements.pressure}</p>
+                                <p className="text-[10px] text-muted-foreground uppercase">PSI</p>
+                              </div>
+                            )}
+                            {eqMeasurements.temperature && (
+                              <div className="text-center p-2 rounded-lg bg-muted/30 border border-border/40">
+                                <p className="text-lg font-bold text-foreground">{eqMeasurements.temperature}</p>
+                                <p className="text-[10px] text-muted-foreground uppercase">°C</p>
+                              </div>
+                            )}
+                            {eqMeasurements.voltage_measured && (
+                              <div className="text-center p-2 rounded-lg bg-muted/30 border border-border/40">
+                                <p className="text-lg font-bold text-foreground">{eqMeasurements.voltage_measured}</p>
+                                <p className="text-[10px] text-muted-foreground uppercase">Volts</p>
+                              </div>
+                            )}
+                            {eqMeasurements.current_measured && (
+                              <div className="text-center p-2 rounded-lg bg-muted/30 border border-border/40">
+                                <p className="text-lg font-bold text-foreground">{eqMeasurements.current_measured}</p>
+                                <p className="text-[10px] text-muted-foreground uppercase">Amperes</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {/* Impact */}
-                  {eq.impact_level && (
-                    <div className={cn("p-3 rounded-lg border",
-                      eq.impact_level === "low" ? "bg-green-50 border-green-100" :
-                      eq.impact_level === "medium" ? "bg-amber-50 border-amber-100" :
-                      "bg-red-50 border-red-100"
-                    )}>
-                      <p className="text-[11px] font-bold uppercase mb-0.5">
-                        Impacto: {IMPACT_LEVELS[eq.impact_level]?.label || eq.impact_level}
-                      </p>
-                      <p className="text-xs">{IMPACT_LEVELS[eq.impact_level]?.description}</p>
-                    </div>
-                  )}
-
-                  {/* Measurements */}
-                  {Object.values(eqMeasurements).some(Boolean) && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <InfoRow label="Pressão" value={eqMeasurements.pressure ? `${eqMeasurements.pressure} PSI` : null} />
-                      <InfoRow label="Temperatura" value={eqMeasurements.temperature ? `${eqMeasurements.temperature} °C` : null} />
-                      <InfoRow label="Tensão" value={eqMeasurements.voltage_measured ? `${eqMeasurements.voltage_measured} V` : null} />
-                      <InfoRow label="Corrente" value={eqMeasurements.current_measured ? `${eqMeasurements.current_measured} A` : null} />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         ) : (
           /* Fallback: Legacy single equipment display */
           <>
