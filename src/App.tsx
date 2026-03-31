@@ -110,7 +110,6 @@ const LaudoDetalhes = lazy(() => import("./pages/LaudoDetalhes"));
 const SecretariaIA = lazy(() => import("./pages/SecretariaIA"));
 const ExecutarServico = lazy(() => import("./pages/ExecutarServico"));
 const ParaVoce = lazy(() => import("./pages/ParaVoce"));
-const MarketingReels = lazy(() => import("./pages/MarketingReels"));
 
 // Portal do Cliente
 const PortalLogin = lazy(() => import("./pages/portal/PortalLogin"));
@@ -458,14 +457,6 @@ const App = () => (
               element={
                 <ProtectedRoute allowEmployee>
                   <Atualizacoes />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/marketing/reels"
-              element={
-                <ProtectedRoute>
-                  <MarketingReels />
                 </ProtectedRoute>
               }
             />
