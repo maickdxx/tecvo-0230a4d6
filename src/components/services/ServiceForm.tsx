@@ -708,7 +708,7 @@ export function ServiceForm({
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Vencimento *</Label>
+                  <Label className="text-sm font-medium">Vencimento</Label>
                   <Controller
                     name="payment_due_date"
                     control={control}
