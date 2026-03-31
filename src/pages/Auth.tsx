@@ -453,7 +453,7 @@ export default function Auth() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="signup-whatsapp">WhatsApp</Label>
+              <Label htmlFor="signup-whatsapp">WhatsApp <span className="text-muted-foreground font-normal">(opcional)</span></Label>
               <Input
                 id="signup-whatsapp"
                 type="tel"
@@ -471,14 +471,13 @@ export default function Auth() {
               />
               <p className="text-xs text-muted-foreground">Usado para notificações e automações</p>
             </div>
-            <div className="flex items-start gap-2.5 py-1">
+            <div className={`flex items-start gap-2.5 py-2 px-3 rounded-lg border transition-colors ${!acceptedTerms ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20" : "border-transparent"}`}>
               <input
                 type="checkbox"
                 id="accept-terms"
                 checked={acceptedTerms}
                 onChange={(e) => setAcceptedTerms(e.target.checked)}
                 className="mt-0.5 h-5 w-5 rounded border-border accent-primary cursor-pointer shrink-0"
-                required
               />
               <label htmlFor="accept-terms" className="text-sm text-muted-foreground cursor-pointer select-none leading-snug">
                 Li e concordo com os <Link to="/termos-de-uso" target="_blank" className="text-primary hover:underline">Termos de Uso</Link> e a <Link to="/politica-de-privacidade" target="_blank" className="text-primary hover:underline">Política de Privacidade</Link>.
@@ -487,8 +486,13 @@ export default function Auth() {
             <Button
               type="submit"
               className="w-full h-13 text-base font-semibold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all active:scale-[0.98]"
-              disabled={isLoading || !acceptedTerms}
-              style={{ opacity: !acceptedTerms || isLoading ? 0.6 : 1 }}
+              disabled={isLoading}
+              onClick={(e) => {
+                if (!acceptedTerms) {
+                  e.preventDefault();
+                  toast({ variant: "destructive", title: "Termos obrigatórios", description: "Aceite os termos de uso para continuar" });
+                }
+              }}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {invite ? "Aceitar Convite" : "Começar meu teste grátis agora"}
