@@ -338,27 +338,8 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
                 {/* Stats summary */}
                 {contacts.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-                        <p className="text-2xl font-bold text-foreground">{contacts.length}</p>
-                        <p className="text-xs text-muted-foreground">Conversas</p>
-                      </div>
-                      <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-                        <p className="text-2xl font-bold text-foreground">
-                          {contacts.filter(c => c.unread_count && c.unread_count > 0).length}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Não lidas</p>
-                      </div>
-                      <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-                        <p className="text-2xl font-bold text-foreground">
-                          {contacts.filter(c => {
-                            if (!c.last_message_at) return false;
-                            const diff = Date.now() - new Date(c.last_message_at).getTime();
-                            return diff < 24 * 60 * 60 * 1000;
-                          }).length}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Ativas hoje</p>
-                      </div>
+                    <div className="mx-auto w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/10">
+                      <MessageSquare className="h-9 w-9 text-primary/60" />
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold text-foreground">
