@@ -843,8 +843,14 @@ Deno.serve(async (req) => {
       } else if (msg.audioMessage) {
         mediaType = "audio";
         mediaUrl = msg.audioMessage.url || null;
+      } else if (msg.documentWithCaptionMessage) {
+        // Document with caption (body text + attached file)
+        const inner = msg.documentWithCaptionMessage.message?.documentMessage || {};
+        content = msg.documentWithCaptionMessage.message?.documentMessage?.caption || inner.fileName || "";
+        mediaType = "document";
+        mediaUrl = inner.url || null;
       } else if (msg.documentMessage) {
-        content = msg.documentMessage.fileName || "";
+        content = msg.documentMessage.caption || msg.documentMessage.fileName || "";
         mediaType = "document";
         mediaUrl = msg.documentMessage.url || null;
       } else if (msg.stickerMessage) {
