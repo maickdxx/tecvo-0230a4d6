@@ -162,7 +162,7 @@ export default function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (!acceptedTerms) return;
     if (signupPassword.length < 6) {
       toast({ variant: "destructive", title: "Erro", description: "A senha deve ter pelo menos 6 caracteres" });
       return;
