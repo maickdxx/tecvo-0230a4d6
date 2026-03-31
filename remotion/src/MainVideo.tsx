@@ -17,36 +17,39 @@ export const MainVideo = () => {
     <AbsoluteFill>
       <PersistentBackground />
       <Audio src={staticFile("audio/narration.mp3")} volume={1} />
+      {/* Scene durations aligned to narration segments:
+          S1 0-8s (250f) | S2 8-17s (280f) | S3 17-28s (340f) | S4 28-36s (260f) | S5 36-42s (210f)
+          Total with 4x20f transitions: 1340-80 = 1260f */}
       <TransitionSeries>
-        <TransitionSeries.Sequence durationInFrames={270}>
+        <TransitionSeries.Sequence durationInFrames={250}>
           <Scene1Hook />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={wipe({ direction: "from-left" })}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: TRANSITION })}
         />
-        <TransitionSeries.Sequence durationInFrames={240}>
+        <TransitionSeries.Sequence durationInFrames={280}>
           <Scene2Problem />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: TRANSITION })}
         />
-        <TransitionSeries.Sequence durationInFrames={270}>
+        <TransitionSeries.Sequence durationInFrames={340}>
           <Scene3Features />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={slide({ direction: "from-right" })}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: TRANSITION })}
         />
-        <TransitionSeries.Sequence durationInFrames={250}>
+        <TransitionSeries.Sequence durationInFrames={260}>
           <Scene4Benefits />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: TRANSITION })}
         />
-        <TransitionSeries.Sequence durationInFrames={330}>
+        <TransitionSeries.Sequence durationInFrames={210}>
           <Scene5Closing />
         </TransitionSeries.Sequence>
       </TransitionSeries>
