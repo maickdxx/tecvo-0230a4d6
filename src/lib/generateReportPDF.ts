@@ -438,6 +438,7 @@ export async function generateReportPDF({
       yPos += 14;
 
       // ── Equipment identification grid ──
+      const WORKING_LABELS: Record<string, string> = { yes: "Sim", no: "Não", partial: "Parcial" };
       const idFields: Array<{ label: string; value: string | null | undefined }> = [
         { label: "Tipo", value: eq.equipment_type },
         { label: "Marca", value: eq.equipment_brand },
@@ -445,6 +446,7 @@ export async function generateReportPDF({
         { label: "Capacidade", value: eq.capacity_btus ? `${eq.capacity_btus} BTUs` : null },
         { label: "Local", value: eq.equipment_location },
         { label: "Nº de Série", value: eq.serial_number },
+        { label: "Funcionando", value: eq.equipment_working ? (WORKING_LABELS[eq.equipment_working] || eq.equipment_working) : null },
       ].filter(f => f.value);
 
       if (idFields.length > 0) {
