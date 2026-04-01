@@ -125,6 +125,8 @@ export default function Lixeira() {
     { value: "supplier", label: "Fornecedores", count: filterByType("supplier").length },
     { value: "service", label: "Serviços", count: filterByType("service").length },
     { value: "catalog", label: "Catálogo", count: filterByType("catalog").length },
+    { value: "transaction", label: "Transações", count: filterByType("transaction").length },
+    { value: "pmoc", label: "PMOC", count: filterByType("pmoc").length },
   ];
 
   return (
@@ -152,7 +154,7 @@ export default function Lixeira() {
         </div>
       ) : (
         <Tabs defaultValue="all">
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 flex-wrap h-auto">
             {tabs.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
                 {tab.label}
@@ -170,6 +172,8 @@ export default function Lixeira() {
           <TabsContent value="supplier">{renderItems(filterByType("supplier"))}</TabsContent>
           <TabsContent value="service">{renderItems(filterByType("service"))}</TabsContent>
           <TabsContent value="catalog">{renderItems(filterByType("catalog"))}</TabsContent>
+          <TabsContent value="transaction">{renderItems(filterByType("transaction"))}</TabsContent>
+          <TabsContent value="pmoc">{renderItems(filterByType("pmoc"))}</TabsContent>
         </Tabs>
       )}
 
