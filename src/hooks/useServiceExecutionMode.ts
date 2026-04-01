@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
+import { getTodayInTz } from "@/lib/timezone";
 import { toast } from "@/hooks/use-toast";
 
 export interface EquipmentReportData {
