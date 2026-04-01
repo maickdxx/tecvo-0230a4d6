@@ -49,7 +49,7 @@ export default function PontoRelatorios() {
     const endDate = new Date(year, month, 0); // last day of month
 
     const userDays = new Map<string, Map<string, typeof effectiveEntries>>();
-    for (const e of filteredEntries) {
+    for (const e of effectiveEntries) {
       if (!userDays.has(e.user_id)) userDays.set(e.user_id, new Map());
       const date = getDatePartInTz(e.recorded_at, tz);
       const days = userDays.get(e.user_id)!;
