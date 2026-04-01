@@ -49,6 +49,7 @@ export function useFinancialAccounts() {
       const { data, error } = await supabase
         .from("financial_accounts")
         .select("*")
+        .eq("organization_id", organizationId)
         .order("name");
       if (error) throw error;
       return data as FinancialAccount[];
