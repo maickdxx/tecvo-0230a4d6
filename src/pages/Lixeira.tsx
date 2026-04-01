@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout";
 import { useTrash, type TrashItem } from "@/hooks/useTrash";
 import { AlertTriangle, RotateCcw, Trash2, Users, Building2, Wrench, ClipboardList } from "lucide-react";
