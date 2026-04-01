@@ -109,6 +109,8 @@ export function useTrash() {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       queryClient.invalidateQueries({ queryKey: ["services"] });
       queryClient.invalidateQueries({ queryKey: ["catalog_services"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["pmoc_contracts"] });
       toast({ title: "Item restaurado", description: "O item foi restaurado com sucesso" });
     },
     onError: (error) => {
