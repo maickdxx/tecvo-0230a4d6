@@ -192,7 +192,7 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
           service_id: serviceId,
           technician_id: service.assigned_to || user?.id || null,
           responsible_technician_name: techName,
-          report_date: new Date().toISOString().slice(0, 10),
+          report_date: getTodayInTz(tz),
           status: "draft",
           equipment_quantity: 1,
           inspection_checklist: [],
