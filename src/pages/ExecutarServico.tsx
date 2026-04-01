@@ -80,6 +80,14 @@ export default function ExecutarServico() {
   const handleFinalizeService = async (payments?: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
     if (!serviceId) return;
     try {
+      // Finalize the technical report (draft → finalized)
+      if (reportId) {
+        await supabase
+          .from("technical_reports")
+          .update({ status: "finalized", updated_at: new Date().toISOString() })
+          .eq("id", reportId);
+      }
+
       const mainMethod = payments?.[0]?.payment_method;
       await updateStatus({
         id: serviceId,

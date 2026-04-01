@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
+import { getTodayInTz } from "@/lib/timezone";
 import { toast } from "@/hooks/use-toast";
 
 export interface EquipmentReportData {
@@ -34,6 +36,7 @@ export type SavingStatus = "idle" | "saving" | "saved" | "error";
 
 export function useServiceExecutionMode(serviceId: string | undefined) {
   const { user, organizationId } = useAuth();
+  const tz = useOrgTimezone();
   const queryClient = useQueryClient();
   const [savingStatus, setSavingStatus] = useState<SavingStatus>("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,7 +192,7 @@ export function useServiceExecutionMode(serviceId: string | undefined) {
           service_id: serviceId,
           technician_id: service.assigned_to || user?.id || null,
           responsible_technician_name: techName,
-          report_date: new Date().toISOString().slice(0, 10),
+          report_date: getTodayInTz(tz),
           status: "draft",
           equipment_quantity: 1,
           inspection_checklist: [],
