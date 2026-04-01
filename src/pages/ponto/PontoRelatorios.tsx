@@ -98,7 +98,7 @@ export default function PontoRelatorios() {
         if (!hasClockOut) incompleteCount++;
       }
 
-      const expectedDays = countExpectedWorkDays(p.user_id, empType, cutoff, today, tz);
+      const expectedDays = countExpectedWorkDays(p.user_id, empType, startDate, endDate, tz);
       const absentDays = Math.max(0, expectedDays - daysWorked);
       const pInfo = profileMap.get(p.user_id);
       
