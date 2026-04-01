@@ -128,19 +128,12 @@ export function useFinancialAccounts() {
     },
   });
 
-  // Update account balance (increment or decrement)
+  // Atomic balance update via DB function (avoids race conditions)
   const updateBalance = async (accountId: string, amount: number) => {
-    const { data: account, error: fetchErr } = await supabase
-      .from("financial_accounts")
-      .select("balance")
-      .eq("id", accountId)
-      .single();
-    if (fetchErr) throw fetchErr;
-
-    const { error } = await supabase
-      .from("financial_accounts")
-      .update({ balance: Number(account.balance) + amount })
-      .eq("id", accountId);
+    const { error } = await supabase.rpc("adjust_financial_account_balance", {
+      _account_id: accountId,
+      _delta: amount,
+    });
     if (error) throw error;
   };
 

@@ -764,16 +764,12 @@ export function useServices(options?: UseServicesOptions | string) {
 
         if (svcPayments && svcPayments.length > 0) {
           for (const sp of svcPayments) {
-            const { data: acct } = await supabase
-              .from("financial_accounts")
-              .select("balance")
-              .eq("id", sp.financial_account_id)
-              .single();
-            if (acct) {
-              await supabase
-                .from("financial_accounts")
-                .update({ balance: Number(acct.balance) - sp.amount })
-                .eq("id", sp.financial_account_id);
+            if (sp.financial_account_id) {
+              // Atomic balance adjustment via DB function (avoids race conditions)
+              await supabase.rpc("adjust_financial_account_balance", {
+                _account_id: sp.financial_account_id,
+                _delta: -sp.amount,
+              });
             }
           }
           await supabase.from("service_payments").delete().eq("service_id", serviceId);
