@@ -163,7 +163,7 @@ export function generateFinanceReportPDF({
         : transaction.description;
       doc.text(desc, margin + 25, yPos);
 
-      doc.text(CATEGORY_LABELS[transaction.category], margin + 95, yPos);
+      doc.text(CATEGORY_LABELS[transaction.category] || transaction.category || "—", margin + 95, yPos);
 
       // Value with color
       if (transaction.type === "income") {

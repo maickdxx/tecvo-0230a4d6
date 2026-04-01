@@ -132,6 +132,7 @@ export default function PontoRelatorios() {
       "Horas Extras": formatHours(r.overtimeMinutes), Atrasos: r.lateCount, Faltas: r.absentDays, Incompletas: r.incompleteCount,
     }));
     const headers = Object.keys(rows[0] || {});
+    if (headers.length === 0) return;
     const csv = [headers.join(";"), ...rows.map(r => headers.map(h => (r as any)[h]).join(";"))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
