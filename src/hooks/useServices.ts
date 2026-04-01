@@ -403,6 +403,7 @@ export function useServices(options?: UseServicesOptions | string) {
       })) as Service[];
     },
     enabled: !!organizationId && !skipQuery,
+    staleTime: 30_000,
   });
 
   const createMutation = useMutation({
