@@ -48,8 +48,7 @@ export function useCatalogServices() {
         .from("catalog_services")
         .select("*")
         .is("deleted_at", null)
-        .order("name")
-        .range(0, 499);
+        .order("name");
       if (error) throw error;
       return (data ?? []) as CatalogService[];
     },

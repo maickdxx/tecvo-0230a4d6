@@ -53,6 +53,20 @@ export function CatalogServiceForm({
         estimated_duration: service.estimated_duration || "01:00",
         standard_checklist: service.standard_checklist || [],
       });
+    } else {
+      setFormData({
+        name: "",
+        description: "",
+        unit_price: 0,
+        default_discount: 0,
+        notes: "",
+        is_active: true,
+        service_type: "",
+        category: "",
+        estimated_duration: "01:00",
+        standard_checklist: [],
+      });
+      setNewChecklistItem("");
     }
   }, [service]);
 
