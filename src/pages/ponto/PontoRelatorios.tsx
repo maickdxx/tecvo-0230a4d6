@@ -8,7 +8,7 @@ import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { getTodayInTz, getDatePartInTz } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Input } from "@/components/ui/input";
 import { BarChart3, Clock, AlertTriangle, UserX, TrendingUp, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
