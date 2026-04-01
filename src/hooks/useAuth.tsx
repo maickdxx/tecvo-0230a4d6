@@ -130,20 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionStorage.setItem("tecvo_login_tracked", "true");
         }
 
-        // Dispatch welcome for OAuth users (Google) who skip email verification.
-        // Idempotent — onboarding_delivery_logs unique constraint prevents duplicates.
-        if (!sessionStorage.getItem("tecvo_welcome_dispatched") && data.organization_id) {
-          sessionStorage.setItem("tecvo_welcome_dispatched", "true");
-          supabase.functions
-            .invoke("dispatch-welcome", {
-              body: { user_id: userId, organization_id: data.organization_id },
-            })
-            .then(({ error: welcomeErr }) => {
-              if (welcomeErr) {
-                console.warn("dispatch-welcome (non-blocking):", welcomeErr);
-              }
-            });
-        }
+        // Welcome dispatch is handled by the DB trigger on user_roles INSERT (owner only).
+        // Do NOT call dispatch-welcome from client-side to avoid duplicate sends.
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
