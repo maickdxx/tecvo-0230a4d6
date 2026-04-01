@@ -149,6 +149,7 @@ export function CatalogServiceForm({
         <p className="text-xs text-muted-foreground">Formato: HH:MM (ex: 01:30 = 1h30min)</p>
       </div>
 
+      <div className="space-y-2">
         <Label htmlFor="description">Descrição Detalhada</Label>
         <Textarea
           id="description"
