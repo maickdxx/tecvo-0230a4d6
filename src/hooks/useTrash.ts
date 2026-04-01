@@ -6,7 +6,7 @@ import { toast } from "./use-toast";
 export interface TrashItem {
   id: string;
   name: string;
-  type: "client" | "supplier" | "service" | "catalog";
+  type: "client" | "supplier" | "service" | "catalog" | "transaction" | "pmoc";
   deleted_at: string;
   table: string;
 }
