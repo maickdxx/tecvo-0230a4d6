@@ -216,8 +216,8 @@ export default function RelatoriosFinanceiros() {
                 </TableHeader>
                 <TableBody>
                   {expenseGroups.map((group) => (
-                    <>
-                      <TableRow key={group.parentId} className="bg-muted/30">
+                    <React.Fragment key={group.parentId}>
+                      <TableRow className="bg-muted/30">
                         <TableCell className="font-semibold">{group.parentName}</TableCell>
                         <TableCell className="text-right font-semibold text-red-600">
                           {formatCurrency(group.total)}
@@ -240,7 +240,7 @@ export default function RelatoriosFinanceiros() {
                           <TableCell />
                         </TableRow>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
