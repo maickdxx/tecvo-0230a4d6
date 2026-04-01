@@ -634,6 +634,7 @@ export function useServices(options?: UseServicesOptions | string) {
       queryClient.invalidateQueries({ queryKey: ["services"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
       queryClient.invalidateQueries({ queryKey: ["service-payments"] });
       queryClient.invalidateQueries({ queryKey: ["recebimentos-tecnico"] });
       toast({
