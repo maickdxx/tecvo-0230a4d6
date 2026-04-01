@@ -36,6 +36,7 @@ export type SavingStatus = "idle" | "saving" | "saved" | "error";
 
 export function useServiceExecutionMode(serviceId: string | undefined) {
   const { user, organizationId } = useAuth();
+  const tz = useOrgTimezone();
   const queryClient = useQueryClient();
   const [savingStatus, setSavingStatus] = useState<SavingStatus>("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
