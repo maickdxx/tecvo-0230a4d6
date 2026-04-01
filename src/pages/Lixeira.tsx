@@ -55,6 +55,8 @@ export default function Lixeira() {
     supplier: items.filter((i) => i.type === "supplier"),
     service: items.filter((i) => i.type === "service"),
     catalog: items.filter((i) => i.type === "catalog"),
+    transaction: items.filter((i) => i.type === "transaction"),
+    pmoc: items.filter((i) => i.type === "pmoc"),
   }), [items]);
 
   const filterByType = (type: TrashItem["type"]) => itemsByType[type];
