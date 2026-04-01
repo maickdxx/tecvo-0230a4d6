@@ -85,7 +85,9 @@ export function useDistanceBetweenServices(services: ServiceWithAddress[]) {
       setIsLoading(true);
       const result: DistanceMap = new Map();
 
-      for (let i = 0; i < services.length - 1; i++) {
+      // Limit to first 10 pairs to avoid excessive geocoding delays
+      const maxPairs = Math.min(services.length - 1, 10);
+      for (let i = 0; i < maxPairs; i++) {
         if (cancelled) break;
 
         const a = services[i];

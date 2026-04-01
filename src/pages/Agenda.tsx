@@ -189,7 +189,7 @@ export default function Agenda({ fullscreen = false }: { fullscreen?: boolean })
       const d = getDatePartInTz(s.scheduled_date!, tz);
       return d >= startStr && d <= endStr;
     });
-  }, [scheduledServices, selectedDateServices, viewMode, currentDate, tz]);
+  }, [scheduledServices, selectedDateServices, viewMode, currentDate, tz, selectedDate]);
 
   // Distance between day services
   const distanceServices = useMemo(() => {
