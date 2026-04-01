@@ -483,6 +483,7 @@ export function useServices(options?: UseServicesOptions | string) {
       queryClient.invalidateQueries({ queryKey: ["services"] });
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
       trackFBCustomEvent("CreateOS");
       toast({
         title: "Serviço registrado",
