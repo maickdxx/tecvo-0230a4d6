@@ -46,7 +46,14 @@ export default function Lixeira() {
     return Math.max(0, differenceInDays(expiry, new Date()));
   };
 
-  const filterByType = (type: TrashItem["type"]) => items.filter((i) => i.type === type);
+  const itemsByType = useMemo(() => ({
+    client: items.filter((i) => i.type === "client"),
+    supplier: items.filter((i) => i.type === "supplier"),
+    service: items.filter((i) => i.type === "service"),
+    catalog: items.filter((i) => i.type === "catalog"),
+  }), [items]);
+
+  const filterByType = (type: TrashItem["type"]) => itemsByType[type];
 
   const renderItems = (filtered: TrashItem[]) => {
     if (filtered.length === 0) {
