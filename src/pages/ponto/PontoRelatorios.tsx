@@ -118,7 +118,7 @@ export default function PontoRelatorios() {
         avgDailyMinutes: daysWorked > 0 ? Math.floor(totalWorkedMinutes / daysWorked) : 0,
       };
     }).sort((a, b) => b.daysWorked - a.daysWorked);
-  }, [effectiveEntries, teamProfiles, periodDays, profileMap, toleranceMin, getScheduleForEmployee, countExpectedWorkDays]);
+  }, [effectiveEntries, teamProfiles, filterMonth, profileMap, toleranceMin, getScheduleForEmployee, countExpectedWorkDays]);
 
   const EMPLOYEE_TYPE_LABELS: Record<string, string> = { tecnico: "Técnico", ajudante: "Ajudante", atendente: "Atendente" };
 
