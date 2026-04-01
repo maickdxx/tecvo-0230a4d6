@@ -9,18 +9,31 @@ import { getTodayInTz, getDatePartInTz } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { BarChart3, Clock, AlertTriangle, UserX, TrendingUp, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PontoRelatorios() {
-  const { effectiveEntries, teamProfiles, settings } = useTimeClockAdmin();
-  const { getScheduleForEmployee, countExpectedWorkDays } = useWorkSchedules();
   const { profile } = useAuth();
+  const { getScheduleForEmployee, countExpectedWorkDays } = useWorkSchedules();
   const tz = useOrgTimezone();
-  const [period, setPeriod] = useState("30");
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  // Derive date range from selected month
+  const dateRange = useMemo(() => {
+    const [year, month] = filterMonth.split("-").map(Number);
+    const start = `${year}-${String(month).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const end = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    return { start, end };
+  }, [filterMonth]);
+
+  const { effectiveEntries, teamProfiles, settings } = useTimeClockAdmin(dateRange);
 
   const toleranceMin = settings?.late_tolerance_minutes ?? 10;
-  const periodDays = parseInt(period);
 
   const profileMap = useMemo(() => {
     const map = new Map<string, { name: string; type: string }>();
