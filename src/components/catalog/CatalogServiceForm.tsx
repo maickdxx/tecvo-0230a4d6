@@ -53,6 +53,20 @@ export function CatalogServiceForm({
         estimated_duration: service.estimated_duration || "01:00",
         standard_checklist: service.standard_checklist || [],
       });
+    } else {
+      setFormData({
+        name: "",
+        description: "",
+        unit_price: 0,
+        default_discount: 0,
+        notes: "",
+        is_active: true,
+        service_type: "",
+        category: "",
+        estimated_duration: "01:00",
+        standard_checklist: [],
+      });
+      setNewChecklistItem("");
     }
   }, [service]);
 
@@ -119,6 +133,20 @@ export function CatalogServiceForm({
           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
           placeholder="Ex: Ar Condicionado"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="estimated_duration" className="flex items-center gap-2">
+          <Clock className="h-4 w-4" />
+          Duração Estimada
+        </Label>
+        <Input
+          id="estimated_duration"
+          value={formData.estimated_duration}
+          onChange={(e) => setFormData({ ...formData, estimated_duration: e.target.value })}
+          placeholder="Ex: 01:30 ou 2h"
+        />
+        <p className="text-xs text-muted-foreground">Formato: HH:MM (ex: 01:30 = 1h30min)</p>
       </div>
 
       <div className="space-y-2">
