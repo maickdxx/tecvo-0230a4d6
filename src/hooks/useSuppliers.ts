@@ -60,8 +60,8 @@ export function useSuppliers() {
       const { data, error } = await supabase
         .from("suppliers")
         .select("*")
-        .order("name")
-        .range(0, 499);
+        .is("deleted_at", null)
+        .order("name");
       if (error) throw error;
       return (data ?? []) as Supplier[];
     },
