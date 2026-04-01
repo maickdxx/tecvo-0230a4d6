@@ -44,12 +44,9 @@ export default function PontoRelatorios() {
   }, [teamProfiles]);
 
   const report = useMemo(() => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - periodDays);
-    const cutoffStr = cutoff.toLocaleDateString("en-CA", { timeZone: tz });
-    const today = new Date();
-
-    const filteredEntries = effectiveEntries.filter(e => e.recorded_at >= cutoffStr);
+    const [year, month] = filterMonth.split("-").map(Number);
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // last day of month
 
     const userDays = new Map<string, Map<string, typeof effectiveEntries>>();
     for (const e of filteredEntries) {
