@@ -483,6 +483,7 @@ export function useServices(options?: UseServicesOptions | string) {
       queryClient.invalidateQueries({ queryKey: ["services"] });
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
       trackFBCustomEvent("CreateOS");
       toast({
         title: "Serviço registrado",
@@ -634,6 +635,7 @@ export function useServices(options?: UseServicesOptions | string) {
       queryClient.invalidateQueries({ queryKey: ["services"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
       queryClient.invalidateQueries({ queryKey: ["service-payments"] });
       queryClient.invalidateQueries({ queryKey: ["recebimentos-tecnico"] });
       toast({
@@ -815,6 +817,7 @@ export function useServices(options?: UseServicesOptions | string) {
       queryClient.invalidateQueries({ queryKey: ["services"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
       queryClient.invalidateQueries({ queryKey: ["financial-accounts"] });
       queryClient.invalidateQueries({ queryKey: ["service-payments"] });
       queryClient.invalidateQueries({ queryKey: ["recebimentos-tecnico"] });
