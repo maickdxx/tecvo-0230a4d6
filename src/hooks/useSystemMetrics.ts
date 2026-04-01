@@ -192,7 +192,11 @@ export function useSystemMetrics() {
         const revenue = (orgsResult.data || []).reduce((sum, org) => {
           const price = getPlanPrice(org.plan || "");
           if (org.plan && org.plan !== "free") {
-            return sum + price;
+            // Only count if org was created before this month ended
+            const orgCreated = new Date(org.created_at);
+            if (orgCreated <= monthEnd) {
+              return sum + price;
+            }
           }
           return sum;
         }, 0);
