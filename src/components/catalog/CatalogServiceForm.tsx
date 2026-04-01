@@ -136,6 +136,19 @@ export function CatalogServiceForm({
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="estimated_duration" className="flex items-center gap-2">
+          <Clock className="h-4 w-4" />
+          Duração Estimada
+        </Label>
+        <Input
+          id="estimated_duration"
+          value={formData.estimated_duration}
+          onChange={(e) => setFormData({ ...formData, estimated_duration: e.target.value })}
+          placeholder="Ex: 01:30 ou 2h"
+        />
+        <p className="text-xs text-muted-foreground">Formato: HH:MM (ex: 01:30 = 1h30min)</p>
+      </div>
+
         <Label htmlFor="description">Descrição Detalhada</Label>
         <Textarea
           id="description"
