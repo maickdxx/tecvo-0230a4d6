@@ -187,14 +187,28 @@ function MonthView({
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   }, [currentDate]);
 
-  const getServicesForDay = (day: Date) => {
-    return services
-      .filter((s) => isSameDayInTz(s.scheduled_date!, day, tz))
-      .sort((a, b) => {
+  // Pre-index services by date string to avoid O(days*services) filtering
+  const servicesByDate = useMemo(() => {
+    const map: Record<string, Service[]> = {};
+    for (const s of services) {
+      const dateKey = getDatePartInTz(s.scheduled_date!, tz);
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push(s);
+    }
+    // Sort each day's services once
+    for (const key in map) {
+      map[key].sort((a, b) => {
         const timeA = a.entry_date || a.scheduled_date || "";
         const timeB = b.entry_date || b.scheduled_date || "";
         return timeA.localeCompare(timeB);
       });
+    }
+    return map;
+  }, [services, tz]);
+
+  const getServicesForDay = (day: Date) => {
+    const dateKey = getDatePartInTz(day.toISOString(), tz);
+    return servicesByDate[dateKey] || [];
   };
 
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
