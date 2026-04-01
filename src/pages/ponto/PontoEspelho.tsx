@@ -18,7 +18,6 @@ import { generateTimeClockPDF, type TimeClockDayRecord, type TimeClockPDFData } 
 import { toast } from "@/hooks/use-toast";
 
 export default function PontoEspelho() {
-  const { effectiveEntries, teamProfiles, settings, isLoading } = useTimeClockAdmin();
   const { getScheduleForEmployee, isWorkDay, countExpectedWorkDays } = useWorkSchedules();
   const { organization } = useOrganization();
   const tz = useOrgTimezone();
@@ -29,6 +28,17 @@ export default function PontoEspelho() {
   });
   const [searchName, setSearchName] = useState("");
   const [generatingPDF, setGeneratingPDF] = useState(false);
+
+  // Derive date range from selected month so the hook fetches the correct data
+  const dateRange = useMemo(() => {
+    const [year, month] = filterMonth.split("-").map(Number);
+    const start = `${year}-${String(month).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const end = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    return { start, end };
+  }, [filterMonth]);
+
+  const { effectiveEntries, teamProfiles, settings, isLoading } = useTimeClockAdmin(dateRange);
   const overtimePolicy: OvertimePolicy = settings?.overtime_policy === "pay" ? "pay" : "bank";
 
   const profileMap = useMemo(() => {
