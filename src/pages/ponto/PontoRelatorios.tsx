@@ -146,7 +146,7 @@ export default function PontoRelatorios() {
     const csv = [headers.join(";"), ...rows.map(r => headers.map(h => (r as any)[h]).join(";"))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `relatorio-ponto-${period}dias.csv`; a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement("a"); a.href = url; a.download = `relatorio-ponto-${filterMonth}.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
   return (
