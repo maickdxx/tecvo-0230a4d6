@@ -8,19 +8,32 @@ import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { getTodayInTz, getDatePartInTz } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import { Input } from "@/components/ui/input";
 import { BarChart3, Clock, AlertTriangle, UserX, TrendingUp, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PontoRelatorios() {
-  const { effectiveEntries, teamProfiles, settings } = useTimeClockAdmin();
-  const { getScheduleForEmployee, countExpectedWorkDays } = useWorkSchedules();
   const { profile } = useAuth();
+  const { getScheduleForEmployee, countExpectedWorkDays } = useWorkSchedules();
   const tz = useOrgTimezone();
-  const [period, setPeriod] = useState("30");
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  // Derive date range from selected month
+  const dateRange = useMemo(() => {
+    const [year, month] = filterMonth.split("-").map(Number);
+    const start = `${year}-${String(month).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const end = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    return { start, end };
+  }, [filterMonth]);
+
+  const { effectiveEntries, teamProfiles, settings } = useTimeClockAdmin(dateRange);
 
   const toleranceMin = settings?.late_tolerance_minutes ?? 10;
-  const periodDays = parseInt(period);
 
   const profileMap = useMemo(() => {
     const map = new Map<string, { name: string; type: string }>();
@@ -31,15 +44,12 @@ export default function PontoRelatorios() {
   }, [teamProfiles]);
 
   const report = useMemo(() => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - periodDays);
-    const cutoffStr = cutoff.toLocaleDateString("en-CA", { timeZone: tz });
-    const today = new Date();
-
-    const filteredEntries = effectiveEntries.filter(e => e.recorded_at >= cutoffStr);
+    const [year, month] = filterMonth.split("-").map(Number);
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // last day of month
 
     const userDays = new Map<string, Map<string, typeof effectiveEntries>>();
-    for (const e of filteredEntries) {
+    for (const e of effectiveEntries) {
       if (!userDays.has(e.user_id)) userDays.set(e.user_id, new Map());
       const date = getDatePartInTz(e.recorded_at, tz);
       const days = userDays.get(e.user_id)!;
@@ -88,7 +98,7 @@ export default function PontoRelatorios() {
         if (!hasClockOut) incompleteCount++;
       }
 
-      const expectedDays = countExpectedWorkDays(p.user_id, empType, cutoff, today, tz);
+      const expectedDays = countExpectedWorkDays(p.user_id, empType, startDate, endDate, tz);
       const absentDays = Math.max(0, expectedDays - daysWorked);
       const pInfo = profileMap.get(p.user_id);
       
@@ -108,7 +118,7 @@ export default function PontoRelatorios() {
         avgDailyMinutes: daysWorked > 0 ? Math.floor(totalWorkedMinutes / daysWorked) : 0,
       };
     }).sort((a, b) => b.daysWorked - a.daysWorked);
-  }, [effectiveEntries, teamProfiles, periodDays, profileMap, toleranceMin, getScheduleForEmployee, countExpectedWorkDays]);
+  }, [effectiveEntries, teamProfiles, filterMonth, profileMap, toleranceMin, getScheduleForEmployee, countExpectedWorkDays]);
 
   const EMPLOYEE_TYPE_LABELS: Record<string, string> = { tecnico: "Técnico", ajudante: "Ajudante", atendente: "Atendente" };
 
@@ -136,7 +146,7 @@ export default function PontoRelatorios() {
     const csv = [headers.join(";"), ...rows.map(r => headers.map(h => (r as any)[h]).join(";"))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `relatorio-ponto-${period}dias.csv`; a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement("a"); a.href = url; a.download = `relatorio-ponto-${filterMonth}.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
   return (
@@ -148,14 +158,12 @@ export default function PontoRelatorios() {
             <p className="text-sm text-muted-foreground">Resumo de horas, atrasos e faltas</p>
           </div>
           <div className="flex gap-2">
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Últimos 7 dias</SelectItem>
-                <SelectItem value="15">Últimos 15 dias</SelectItem>
-                <SelectItem value="30">Últimos 30 dias</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              type="month"
+              value={filterMonth}
+              onChange={e => setFilterMonth(e.target.value)}
+              className="w-[170px]"
+            />
             <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={report.length === 0}>
               <Download className="h-4 w-4 mr-1" /> CSV
             </Button>
