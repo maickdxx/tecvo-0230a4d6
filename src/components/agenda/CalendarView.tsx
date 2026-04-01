@@ -389,14 +389,27 @@ function WeekView({
     return Array.from({ length: 13 }, (_, i) => i + WEEK_GRID_START_HOUR);
   }, []);
 
-  const getServicesForDay = (day: Date) => {
-    return services
-      .filter((s) => isSameDayInTz(s.scheduled_date!, day, tz))
-      .sort((a, b) => {
+  // Pre-index services by date string
+  const servicesByDate = useMemo(() => {
+    const map: Record<string, Service[]> = {};
+    for (const s of services) {
+      const dateKey = getDatePartInTz(s.scheduled_date!, tz);
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push(s);
+    }
+    for (const key in map) {
+      map[key].sort((a, b) => {
         const timeA = a.entry_date || a.scheduled_date || "";
         const timeB = b.entry_date || b.scheduled_date || "";
         return timeA.localeCompare(timeB);
       });
+    }
+    return map;
+  }, [services, tz]);
+
+  const getServicesForDay = (day: Date) => {
+    const dateKey = getDatePartInTz(day.toISOString(), tz);
+    return servicesByDate[dateKey] || [];
   };
 
   return (
