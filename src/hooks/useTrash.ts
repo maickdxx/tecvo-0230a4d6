@@ -6,7 +6,7 @@ import { toast } from "./use-toast";
 export interface TrashItem {
   id: string;
   name: string;
-  type: "client" | "supplier" | "service" | "catalog";
+  type: "client" | "supplier" | "service" | "catalog" | "transaction" | "pmoc";
   deleted_at: string;
   table: string;
 }
@@ -24,7 +24,7 @@ export function useTrash() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const cutoff = thirtyDaysAgo.toISOString();
 
-      const [clients, suppliers, services, catalog] = await Promise.all([
+      const [clients, suppliers, services, catalog, transactions, pmocContracts] = await Promise.all([
         supabase
           .from("clients")
           .select("id, name, deleted_at")
@@ -45,6 +45,18 @@ export function useTrash() {
           .order("deleted_at", { ascending: false }),
         supabase
           .from("catalog_services")
+          .select("id, name, deleted_at")
+          .not("deleted_at", "is", null)
+          .gte("deleted_at", cutoff)
+          .order("deleted_at", { ascending: false }),
+        supabase
+          .from("transactions")
+          .select("id, description, deleted_at, type, category")
+          .not("deleted_at", "is", null)
+          .gte("deleted_at", cutoff)
+          .order("deleted_at", { ascending: false }),
+        supabase
+          .from("pmoc_contracts")
           .select("id, name, deleted_at")
           .not("deleted_at", "is", null)
           .gte("deleted_at", cutoff)
@@ -71,6 +83,12 @@ export function useTrash() {
       (catalog.data ?? []).forEach((c) =>
         items.push({ id: c.id, name: c.name, type: "catalog", deleted_at: c.deleted_at!, table: "catalog_services" })
       );
+      (transactions.data ?? []).forEach((t) =>
+        items.push({ id: t.id, name: t.description || `${t.type} - ${t.category}`, type: "transaction", deleted_at: t.deleted_at!, table: "transactions" })
+      );
+      (pmocContracts.data ?? []).forEach((p) =>
+        items.push({ id: p.id, name: p.name, type: "pmoc", deleted_at: p.deleted_at!, table: "pmoc_contracts" })
+      );
 
       return items;
     },
@@ -91,6 +109,8 @@ export function useTrash() {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       queryClient.invalidateQueries({ queryKey: ["services"] });
       queryClient.invalidateQueries({ queryKey: ["catalog_services"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["pmoc_contracts"] });
       toast({ title: "Item restaurado", description: "O item foi restaurado com sucesso" });
     },
     onError: (error) => {
@@ -100,6 +120,11 @@ export function useTrash() {
 
   const permanentDeleteMutation = useMutation({
     mutationFn: async (item: TrashItem) => {
+      // Cascade: delete child records when deleting a service
+      if (item.table === "services") {
+        await supabase.from("service_items").delete().eq("service_id", item.id);
+        await supabase.from("transactions").delete().eq("service_id", item.id);
+      }
       const { error } = await supabase
         .from(item.table as any)
         .delete()

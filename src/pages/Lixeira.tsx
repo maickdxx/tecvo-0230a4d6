@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout";
 import { useTrash, type TrashItem } from "@/hooks/useTrash";
-import { AlertTriangle, RotateCcw, Trash2, Users, Building2, Wrench, ClipboardList } from "lucide-react";
+import { AlertTriangle, RotateCcw, Trash2, Users, Building2, Wrench, ClipboardList, DollarSign, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -26,6 +26,8 @@ const typeLabels: Record<TrashItem["type"], string> = {
   supplier: "Fornecedor",
   service: "Serviço",
   catalog: "Catálogo",
+  transaction: "Transação",
+  pmoc: "Contrato PMOC",
 };
 
 const typeIcons: Record<TrashItem["type"], React.ElementType> = {
@@ -33,6 +35,8 @@ const typeIcons: Record<TrashItem["type"], React.ElementType> = {
   supplier: Building2,
   service: ClipboardList,
   catalog: Wrench,
+  transaction: DollarSign,
+  pmoc: FileText,
 };
 
 export default function Lixeira() {
@@ -51,6 +55,8 @@ export default function Lixeira() {
     supplier: items.filter((i) => i.type === "supplier"),
     service: items.filter((i) => i.type === "service"),
     catalog: items.filter((i) => i.type === "catalog"),
+    transaction: items.filter((i) => i.type === "transaction"),
+    pmoc: items.filter((i) => i.type === "pmoc"),
   }), [items]);
 
   const filterByType = (type: TrashItem["type"]) => itemsByType[type];
@@ -119,6 +125,8 @@ export default function Lixeira() {
     { value: "supplier", label: "Fornecedores", count: filterByType("supplier").length },
     { value: "service", label: "Serviços", count: filterByType("service").length },
     { value: "catalog", label: "Catálogo", count: filterByType("catalog").length },
+    { value: "transaction", label: "Transações", count: filterByType("transaction").length },
+    { value: "pmoc", label: "PMOC", count: filterByType("pmoc").length },
   ];
 
   return (
@@ -146,7 +154,7 @@ export default function Lixeira() {
         </div>
       ) : (
         <Tabs defaultValue="all">
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 flex-wrap h-auto">
             {tabs.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
                 {tab.label}
@@ -164,6 +172,8 @@ export default function Lixeira() {
           <TabsContent value="supplier">{renderItems(filterByType("supplier"))}</TabsContent>
           <TabsContent value="service">{renderItems(filterByType("service"))}</TabsContent>
           <TabsContent value="catalog">{renderItems(filterByType("catalog"))}</TabsContent>
+          <TabsContent value="transaction">{renderItems(filterByType("transaction"))}</TabsContent>
+          <TabsContent value="pmoc">{renderItems(filterByType("pmoc"))}</TabsContent>
         </Tabs>
       )}
 
