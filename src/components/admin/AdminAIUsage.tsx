@@ -129,7 +129,7 @@ export function AdminAIUsage() {
     return Object.entries(map)
       .map(([orgId, stats]) => ({
         orgId,
-        orgName: orgMap[orgId] || orgId === "unknown" ? "(Sistema)" : orgId.substring(0, 8),
+        orgName: orgMap[orgId] || (orgId === "unknown" ? "(Sistema)" : orgId.substring(0, 8)),
         calls: stats.calls,
         tokens: stats.tokens,
         cost: stats.cost,
