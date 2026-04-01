@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AppLayout } from "@/components/layout";
@@ -68,10 +68,14 @@ export default function RelatoriosFinanceiros() {
     return map;
   }, [categories]);
 
+  // Helper to get grouped categories by type
+  const getGroupedCategories = (txType: "income" | "expense") =>
+    txType === "income" ? groupedIncomeCategories : groupedExpenseCategories;
+
   // Group transactions by parent category
   const groupedByParent = (txType: "income" | "expense") => {
     const filtered = transactions.filter((t) => t.type === txType);
-    const grouped = groupedCategories(txType);
+    const grouped = getGroupedCategories(txType);
     const totalAmount = filtered.reduce((sum, t) => sum + Number(t.amount), 0);
 
     return grouped.map((group) => {
@@ -99,11 +103,8 @@ export default function RelatoriosFinanceiros() {
     }).filter((g) => g.total > 0).sort((a, b) => b.total - a.total);
   };
 
-  const groupedCategories = (txType: "income" | "expense") =>
-    txType === "income" ? groupedIncomeCategories : groupedExpenseCategories;
-
-  const expenseGroups = useMemo(() => groupedByParent("expense"), [transactions, groupedExpenseCategories]);
-  const incomeGroups = useMemo(() => groupedByParent("income"), [transactions, groupedIncomeCategories]);
+  const expenseGroups = useMemo(() => groupedByParent("expense"), [transactions, groupedExpenseCategories, categories]);
+  const incomeGroups = useMemo(() => groupedByParent("income"), [transactions, groupedIncomeCategories, categories]);
 
   const handleExportPDF = () => {
     generateFinanceReportPDF({
@@ -215,8 +216,8 @@ export default function RelatoriosFinanceiros() {
                 </TableHeader>
                 <TableBody>
                   {expenseGroups.map((group) => (
-                    <>
-                      <TableRow key={group.parentId} className="bg-muted/30">
+                    <React.Fragment key={group.parentId}>
+                      <TableRow className="bg-muted/30">
                         <TableCell className="font-semibold">{group.parentName}</TableCell>
                         <TableCell className="text-right font-semibold text-red-600">
                           {formatCurrency(group.total)}
@@ -239,7 +240,7 @@ export default function RelatoriosFinanceiros() {
                           <TableCell />
                         </TableRow>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
@@ -273,8 +274,8 @@ export default function RelatoriosFinanceiros() {
                 </TableHeader>
                 <TableBody>
                   {incomeGroups.map((group) => (
-                    <>
-                      <TableRow key={group.parentId} className="bg-muted/30">
+                    <React.Fragment key={group.parentId}>
+                      <TableRow className="bg-muted/30">
                         <TableCell className="font-semibold">{group.parentName}</TableCell>
                         <TableCell className="text-right font-semibold text-green-600">
                           {formatCurrency(group.total)}
@@ -297,7 +298,7 @@ export default function RelatoriosFinanceiros() {
                           <TableCell />
                         </TableRow>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
