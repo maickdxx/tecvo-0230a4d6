@@ -158,14 +158,12 @@ export default function PontoRelatorios() {
             <p className="text-sm text-muted-foreground">Resumo de horas, atrasos e faltas</p>
           </div>
           <div className="flex gap-2">
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Últimos 7 dias</SelectItem>
-                <SelectItem value="15">Últimos 15 dias</SelectItem>
-                <SelectItem value="30">Últimos 30 dias</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              type="month"
+              value={filterMonth}
+              onChange={e => setFilterMonth(e.target.value)}
+              className="w-[170px]"
+            />
             <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={report.length === 0}>
               <Download className="h-4 w-4 mr-1" /> CSV
             </Button>
