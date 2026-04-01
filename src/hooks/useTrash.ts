@@ -24,7 +24,7 @@ export function useTrash() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const cutoff = thirtyDaysAgo.toISOString();
 
-      const [clients, suppliers, services, catalog] = await Promise.all([
+      const [clients, suppliers, services, catalog, transactions, pmocContracts] = await Promise.all([
         supabase
           .from("clients")
           .select("id, name, deleted_at")
@@ -45,6 +45,18 @@ export function useTrash() {
           .order("deleted_at", { ascending: false }),
         supabase
           .from("catalog_services")
+          .select("id, name, deleted_at")
+          .not("deleted_at", "is", null)
+          .gte("deleted_at", cutoff)
+          .order("deleted_at", { ascending: false }),
+        supabase
+          .from("transactions")
+          .select("id, description, deleted_at, type, category")
+          .not("deleted_at", "is", null)
+          .gte("deleted_at", cutoff)
+          .order("deleted_at", { ascending: false }),
+        supabase
+          .from("pmoc_contracts")
           .select("id, name, deleted_at")
           .not("deleted_at", "is", null)
           .gte("deleted_at", cutoff)
@@ -70,6 +82,12 @@ export function useTrash() {
       );
       (catalog.data ?? []).forEach((c) =>
         items.push({ id: c.id, name: c.name, type: "catalog", deleted_at: c.deleted_at!, table: "catalog_services" })
+      );
+      (transactions.data ?? []).forEach((t) =>
+        items.push({ id: t.id, name: t.description || `${t.type} - ${t.category}`, type: "transaction", deleted_at: t.deleted_at!, table: "transactions" })
+      );
+      (pmocContracts.data ?? []).forEach((p) =>
+        items.push({ id: p.id, name: p.name, type: "pmoc", deleted_at: p.deleted_at!, table: "pmoc_contracts" })
       );
 
       return items;
