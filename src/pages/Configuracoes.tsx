@@ -83,7 +83,7 @@ export default function Configuracoes() {
 
     const subscriptionStatus = searchParams.get("subscription");
     if (subscriptionStatus === "success") {
-      toast({ title: "Assinatura ativada!", description: "Bem-vindo ao TechFlow PRO! Aproveite todos os benefícios." });
+      toast({ title: "Assinatura ativada!", description: "Bem-vindo ao Tecvo! Aproveite todos os benefícios." });
       refetch();
     } else if (subscriptionStatus === "cancelled") {
       toast({ title: "Assinatura cancelada", description: "Você pode tentar novamente a qualquer momento." });
