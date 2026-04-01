@@ -118,6 +118,11 @@ export function useTrash() {
 
   const permanentDeleteMutation = useMutation({
     mutationFn: async (item: TrashItem) => {
+      // Cascade: delete child records when deleting a service
+      if (item.table === "services") {
+        await supabase.from("service_items").delete().eq("service_id", item.id);
+        await supabase.from("transactions").delete().eq("service_id", item.id);
+      }
       const { error } = await supabase
         .from(item.table as any)
         .delete()

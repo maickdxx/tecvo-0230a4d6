@@ -26,6 +26,8 @@ const typeLabels: Record<TrashItem["type"], string> = {
   supplier: "Fornecedor",
   service: "Serviço",
   catalog: "Catálogo",
+  transaction: "Transação",
+  pmoc: "Contrato PMOC",
 };
 
 const typeIcons: Record<TrashItem["type"], React.ElementType> = {
@@ -33,6 +35,8 @@ const typeIcons: Record<TrashItem["type"], React.ElementType> = {
   supplier: Building2,
   service: ClipboardList,
   catalog: Wrench,
+  transaction: DollarSign,
+  pmoc: FileText,
 };
 
 export default function Lixeira() {
