@@ -83,11 +83,21 @@ export function TomorrowServices() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
-  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const storageKey = `reminder-sent-${tomorrowStr}`;
+  const [sentIds, setSentIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
   const [reminderDialog, setReminderDialog] = useState<ReminderDialogState | null>(null);
   const markAsSent = useCallback((id: string) => {
-    setSentIds(prev => new Set(prev).add(id));
-  }, []);
+    setSentIds(prev => {
+      const next = new Set(prev).add(id);
+      localStorage.setItem(storageKey, JSON.stringify([...next]));
+      return next;
+    });
+  }, [storageKey]);
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["tomorrow-services", "entry-date-priority", organizationId, tomorrowStr, tz, isDemoMode],
