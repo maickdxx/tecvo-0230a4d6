@@ -89,13 +89,11 @@ export function SecretariaDashboard({
     const todayStr = getTodayInTz(DEFAULT_TIMEZONE);
     const limite30Str = formatDateObjInTz(limite30, DEFAULT_TIMEZONE);
 
-    const servicosFuturos = (services || []).filter((s) =>
-      (s.status === "scheduled" || s.status === "in_progress") &&
-      s.scheduled_date &&
-      s.scheduled_date.substring(0, 10) >= todayStr &&
-      s.scheduled_date.substring(0, 10) <= limite30Str &&
-      Number(s.value) > 0
-    );
+    const servicosFuturos = (services || []).filter((s) => {
+      if (!((s.status === "scheduled" || s.status === "in_progress") && s.scheduled_date && Number(s.value) > 0)) return false;
+      const d = getDatePartInTz(s.scheduled_date, DEFAULT_TIMEZONE);
+      return d >= todayStr && d <= limite30Str;
+    });
 
     const incomeNext30 = servicosFuturos.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
 
