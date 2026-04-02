@@ -15,7 +15,7 @@ import { ExecutiveDashboard } from "@/components/admin/ExecutiveDashboard";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { FinancialDashboard } from "@/components/admin/FinancialDashboard";
 import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
-import { AdminCampaigns } from "@/components/admin/AdminCampaigns";
+
 import { useAdminOrganizations } from "@/hooks/useAdminOrganizations";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useEngagementMetrics } from "@/hooks/useEngagementMetrics";
@@ -115,10 +115,6 @@ export default function Admin() {
               </TabsTrigger>
               <TabsTrigger value="ai-credits" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">IA</TabsTrigger>
               <TabsTrigger value="backups" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Backups</TabsTrigger>
-              <TabsTrigger value="campaigns" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-                <span className="hidden sm:inline">Campanhas</span>
-                <span className="sm:hidden">Camp</span>
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -189,9 +185,6 @@ export default function Admin() {
             <AdminWhatsAppStatus />
           </TabsContent>
 
-          <TabsContent value="campaigns">
-            <AdminCampaigns />
-          </TabsContent>
 
           <TabsContent value="whatsapp-tecvo">
             <AdminWhatsAppTecvo />
