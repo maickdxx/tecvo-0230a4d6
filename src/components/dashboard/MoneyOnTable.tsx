@@ -57,8 +57,7 @@ export function MoneyOnTable() {
         .select("service_id, amount")
         .in("service_id", serviceIds)
         .eq("type", "expense" as any)
-        .eq("category", "taxa_pagamento")
-        .eq("status", "paid");
+        .eq("category", "taxa_pagamento");
 
       // Sum payments + fees per service (both represent covered value)
       const paidMap = new Map<string, number>();

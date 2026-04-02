@@ -214,12 +214,14 @@ export function useAccounts(options: UseAccountsOptions = {}) {
       compensation_date?: string;
       financial_account_id?: string;
     }) => {
+      const effectivePaymentDate = payment_date || getTodayInTz(DEFAULT_TIMEZONE);
+
       // Update the transaction
       const { data: account, error } = await supabase
         .from("transactions")
         .update({
           status: "paid",
-          payment_date: payment_date || getTodayInTz(DEFAULT_TIMEZONE),
+          payment_date: effectivePaymentDate,
           compensation_date: compensation_date || null,
           financial_account_id: financial_account_id || null,
         } as any)
@@ -228,6 +230,21 @@ export function useAccounts(options: UseAccountsOptions = {}) {
         .single();
 
       if (error) throw error;
+
+      // If this is an income transaction with a service_id, also mark pending fee expenses as paid
+      if (account && (account as any).type === "income" && (account as any).service_id) {
+        await supabase
+          .from("transactions")
+          .update({
+            status: "paid",
+            payment_date: effectivePaymentDate,
+          } as any)
+          .eq("service_id", (account as any).service_id)
+          .eq("type", "expense")
+          .eq("category", "taxa_pagamento")
+          .eq("status", "pending");
+      }
+
       // Balance is automatically synced by the DB trigger (handle_transaction_balance_sync)
 
       return account;

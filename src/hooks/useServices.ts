@@ -325,8 +325,8 @@ async function createSplitPaymentTransactions(params: {
         amount: feeAmount,
         description: `Taxa ${pmName} - ${clientName}`,
         date: todayStr,
-        status: "paid",
-        payment_date: todayStr,
+        status: "pending",
+        payment_date: null,
         financial_account_id: null,
       });
     }
