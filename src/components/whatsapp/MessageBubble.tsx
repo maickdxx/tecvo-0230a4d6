@@ -63,24 +63,38 @@ import { toast } from "sonner";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
-// Distinct colors for group sender names
-const SENDER_COLORS = [
-  "text-blue-600 dark:text-blue-400",
-  "text-emerald-600 dark:text-emerald-400",
-  "text-purple-600 dark:text-purple-400",
-  "text-orange-600 dark:text-orange-400",
-  "text-pink-600 dark:text-pink-400",
-  "text-teal-600 dark:text-teal-400",
-  "text-red-600 dark:text-red-400",
-  "text-indigo-600 dark:text-indigo-400",
+// Distinct colors for group sender names (text + bg pairs)
+const SENDER_COLORS: { text: string; bg: string }[] = [
+  { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-900/40" },
+  { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-900/40" },
+  { text: "text-purple-600 dark:text-purple-400", bg: "bg-purple-100 dark:bg-purple-900/40" },
+  { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-100 dark:bg-orange-900/40" },
+  { text: "text-pink-600 dark:text-pink-400", bg: "bg-pink-100 dark:bg-pink-900/40" },
+  { text: "text-teal-600 dark:text-teal-400", bg: "bg-teal-100 dark:bg-teal-900/40" },
+  { text: "text-red-600 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/40" },
+  { text: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-100 dark:bg-indigo-900/40" },
 ];
 
-function getSenderColor(senderName: string): string {
+function getSenderHash(senderName: string): number {
   let hash = 0;
   for (let i = 0; i < senderName.length; i++) {
     hash = senderName.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return SENDER_COLORS[Math.abs(hash) % SENDER_COLORS.length];
+  return Math.abs(hash) % SENDER_COLORS.length;
+}
+
+function getSenderColor(senderName: string): string {
+  return SENDER_COLORS[getSenderHash(senderName)].text;
+}
+
+function getSenderBg(senderName: string): string {
+  return SENDER_COLORS[getSenderHash(senderName)].bg;
+}
+
+function getSenderInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.substring(0, 2).toUpperCase();
 }
 
 interface MessageBubbleProps {
@@ -189,9 +203,16 @@ function SharedContactCard({ content, isMe }: { content: string; isMe: boolean }
 /* ─── Main Component ─── */
 export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, onEdit, onReact, onRetry, onAIReply, onReply, onScrollToMessage }: MessageBubbleProps) {
   // In groups, also detect "me" by comparing sender_phone with channel owner phone
+  // Normalize: strip non-digits and compare last 10+ digits to handle country code differences
   const isMe = message.is_from_me || !!(
-    isGroup && channelOwnerPhone && message.sender_phone &&
-    channelOwnerPhone === message.sender_phone
+    isGroup && channelOwnerPhone && message.sender_phone && (() => {
+      const ownerDigits = channelOwnerPhone.replace(/\D/g, "");
+      const senderDigits = message.sender_phone.replace(/\D/g, "");
+      if (ownerDigits === senderDigits) return true;
+      // Compare last 10 digits (handles +55 vs without)
+      const minLen = Math.min(ownerDigits.length, senderDigits.length, 10);
+      return minLen >= 8 && ownerDigits.slice(-minLen) === senderDigits.slice(-minLen);
+    })()
   );
   const time = message.created_at ? format(new Date(message.created_at), "HH:mm") : "";
   const [showLightbox, setShowLightbox] = useState(false);
@@ -246,6 +267,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
   if (isDeleted) {
     return (
       <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
+        {isGroup && !isMe && <div className="w-7 flex-shrink-0 mr-1.5" />}
         <div className={cn(
           "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm border border-dashed",
           isMe ? "rounded-br-sm border-primary/20 bg-primary/5" : "rounded-bl-sm border-border/40 bg-muted/30"
@@ -339,6 +361,20 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div className={cn("flex group", isMe ? "justify-end" : "justify-start")}>
+            {/* Group avatar for non-own messages */}
+            {isGroup && !isMe && message.sender_name && (
+              <div className={cn(
+                "h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 mt-auto mb-1 mr-1.5 text-[10px] font-bold select-none",
+                getSenderBg(message.sender_name),
+                getSenderColor(message.sender_name)
+              )}>
+                {getSenderInitials(message.sender_name)}
+              </div>
+            )}
+            {/* Spacer for group messages without sender_name */}
+            {isGroup && !isMe && !message.sender_name && (
+              <div className="w-7 flex-shrink-0 mr-1.5" />
+            )}
             <div className="relative max-w-[75%]">
               {/* Action menu - visible on hover */}
               <div className={cn(
@@ -370,9 +406,9 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
           >
             {/* Group sender name */}
             {isGroup && !isMe && message.sender_name && (
-              <div className="px-3.5 pt-2 pb-0">
+              <div className="px-3.5 pt-2 pb-0.5">
                 <p className={cn(
-                  "text-[11px] font-semibold truncate",
+                  "text-[11px] font-bold truncate",
                   getSenderColor(message.sender_name)
                 )}>
                   {message.sender_name}
