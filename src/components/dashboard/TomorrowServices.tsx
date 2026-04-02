@@ -16,13 +16,13 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
   repair: "Reparo",
 };
 
+const GENERIC_TYPES = new Set(["other", "others", "outro", "outros", ""]);
+
 function formatTime(dateStr: string): string | null {
   try {
-    const d = new Date(dateStr);
-    const h = d.getUTCHours();
-    const m = d.getUTCMinutes();
-    if (h === 0 && m === 0) return null;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    const formatted = formatTimeInTz(dateStr, DEFAULT_TIMEZONE);
+    if (formatted === "—" || formatted === "00:00") return null;
+    return formatted;
   } catch {
     return null;
   }
