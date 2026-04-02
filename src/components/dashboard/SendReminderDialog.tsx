@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { MessageCircle, Send, User, Phone, Clock, Loader2, CheckCircle2, Radio } from "lucide-react";
+import { MessageCircle, Send, User, Phone, Clock, Loader2, CheckCircle2, Radio, Wifi } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -43,12 +45,31 @@ export function SendReminderDialog({
   message,
   onMessageChange,
 }: SendReminderDialogProps) {
+  const { organizationId } = useAuth();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sentChannel, setSentChannel] = useState<string>("");
   const [editing, setEditing] = useState(false);
   const [channelOptions, setChannelOptions] = useState<ChannelOption[] | null>(null);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+
+  // Fetch connected channels to show which one will be used
+  const { data: connectedChannels } = useQuery({
+    queryKey: ["connected-channels-reminder", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data } = await supabase
+        .from("whatsapp_channels")
+        .select("id, name, phone_number")
+        .eq("organization_id", organizationId)
+        .eq("is_connected", true)
+        .eq("channel_status", "connected")
+        .in("channel_type", ["CUSTOMER_INBOX", "customer_inbox"]);
+      return data || [];
+    },
+    enabled: !!organizationId && open,
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
     if (!open) {
