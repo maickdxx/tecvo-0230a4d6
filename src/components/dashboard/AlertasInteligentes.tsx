@@ -4,6 +4,8 @@ import { AlertTriangle, FileText, UserX, CheckCircle2, ChevronRight } from "luci
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
 import { useTransactions } from "@/hooks/useTransactions";
+import { getTodayInTz, getDatePartInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 
 interface Alert {
   id: string;
@@ -18,11 +20,11 @@ export function AlertasInteligentes() {
   const { services, isLoading: isLoadingServices } = useServices();
   const { clients, isLoading: isLoadingClients } = useClients();
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
+  const tz = useOrgTimezone();
 
   const alerts = useMemo((): Alert[] => {
     const result: Alert[] = [];
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr = getTodayInTz(tz);
 
     // 1. Overdue services
     const overdueServices = services.filter((s) => {
