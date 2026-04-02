@@ -19,9 +19,9 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 
 const GENERIC_TYPES = new Set(["other", "others", "outro", "outros", ""]);
 
-function formatTime(dateStr: string): string | null {
+function formatTime(dateStr: string, tz: string): string | null {
   try {
-    const formatted = formatTimeInTz(dateStr, DEFAULT_TIMEZONE);
+    const formatted = formatTimeInTz(dateStr, tz);
     if (formatted === "—" || formatted === "00:00") return null;
     return formatted;
   } catch {
@@ -29,8 +29,8 @@ function formatTime(dateStr: string): string | null {
   }
 }
 
-function getTomorrowStr(): string {
-  const todayStr = getTodayInTz(DEFAULT_TIMEZONE);
+function getTomorrowStr(tz: string): string {
+  const todayStr = getTodayInTz(tz);
   const [y, m, d] = todayStr.split("-").map(Number);
   const tomorrow = new Date(y, m - 1, d + 1);
   const ty = tomorrow.getFullYear();
