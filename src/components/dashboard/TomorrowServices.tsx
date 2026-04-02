@@ -8,7 +8,7 @@ import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { getTodayInTz, formatTimeInTz, getLocalDayBoundsUTC } from "@/lib/timezone";
+import { getTodayInTz, formatTimeInTz, getLocalDayBoundsUTC, getDatePartInTz } from "@/lib/timezone";
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   installation: "Instalação",
