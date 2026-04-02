@@ -238,7 +238,7 @@ export default function OrdensServico() {
         groups.noDate.items.push(s);
         continue;
       }
-      const dateYmd = s.scheduled_date.substring(0, 10);
+      const dateYmd = getDatePartInTz(s.scheduled_date, tz);
       const isTerminal = s.status === "completed" || s.status === "cancelled";
 
       if (dateYmd < today && !isTerminal) {
