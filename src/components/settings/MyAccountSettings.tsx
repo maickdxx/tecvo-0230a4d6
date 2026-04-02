@@ -58,17 +58,6 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { colorTheme, setColorTheme } = useColorTheme();
   const { role, isOwner, isAdmin, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
   
-  // Log de diagnóstico obrigatório conforme item 2 da solicitação
-  useEffect(() => {
-    if (!isLoadingRole) {
-      console.log("[MyAccountSettings] Diagnóstico de Perfil:", { 
-        role, 
-        isOwner, 
-        isSuperAdmin,
-        userId: profile?.user_id
-      });
-    }
-  }, [role, isLoadingRole, isOwner, isSuperAdmin, profile?.user_id]);
 
   // Condição explícita de acesso total (Owner ou Super Admin) conforme itens 3 e 4
   const hasFullAccess = role === 'owner' || role === 'super_admin' || role === 'admin' || isSuperAdmin || isOwner || isAdmin;
