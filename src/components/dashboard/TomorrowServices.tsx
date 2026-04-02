@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { CalendarClock, MessageCircle, Clock, User, ChevronDown, ChevronUp, CalendarDays, Pencil } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { CalendarClock, MessageCircle, Clock, User, ChevronDown, ChevronUp, CalendarDays, Pencil, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -83,7 +83,11 @@ export function TomorrowServices() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
   const [reminderDialog, setReminderDialog] = useState<ReminderDialogState | null>(null);
+  const markAsSent = useCallback((id: string) => {
+    setSentIds(prev => new Set(prev).add(id));
+  }, []);
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["tomorrow-services", "entry-date-priority", organizationId, tomorrowStr, tz, isDemoMode],
@@ -171,6 +175,7 @@ export function TomorrowServices() {
             const currentMessage = editedMessages[svc.id] ?? defaultMessage;
             const isExpanded = expandedId === svc.id;
             const isEditing = editingId === svc.id;
+            const isSent = sentIds.has(svc.id);
 
             return (
               <div key={svc.id} className="border border-border rounded-lg overflow-hidden">
@@ -205,15 +210,22 @@ export function TomorrowServices() {
                       {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </Button>
                     {phone && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 gap-1 text-xs text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/30"
-                        onClick={() => openReminderDialog(svc, currentMessage)}
-                      >
-                        <MessageCircle className="h-3 w-3" />
-                        Lembrar
-                      </Button>
+                      isSent ? (
+                        <span className="flex items-center gap-1 text-xs font-medium text-primary px-2">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Enviado
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 gap-1 text-xs text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/30"
+                          onClick={() => openReminderDialog(svc, currentMessage)}
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          Lembrar
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>
@@ -290,6 +302,9 @@ export function TomorrowServices() {
           onMessageChange={(msg) =>
             setReminderDialog((prev) => prev ? { ...prev, message: msg } : null)
           }
+          onSent={() => {
+            if (reminderDialog) markAsSent(reminderDialog.serviceId);
+          }}
         />
       )}
     </>

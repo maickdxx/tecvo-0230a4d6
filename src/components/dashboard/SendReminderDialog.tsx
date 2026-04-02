@@ -32,6 +32,7 @@ interface SendReminderDialogProps {
   dateFormatted: string;
   message: string;
   onMessageChange: (message: string) => void;
+  onSent?: () => void;
 }
 
 export function SendReminderDialog({
@@ -44,6 +45,7 @@ export function SendReminderDialog({
   dateFormatted,
   message,
   onMessageChange,
+  onSent,
 }: SendReminderDialogProps) {
   const { organizationId } = useAuth();
   const [sending, setSending] = useState(false);
@@ -126,6 +128,7 @@ export function SendReminderDialog({
       setSent(true);
       setSentChannel(data?.channel_name || "");
       toast.success(`Lembrete enviado${data?.channel_name ? ` via ${data.channel_name}` : ""}!`);
+      onSent?.();
       setTimeout(() => onOpenChange(false), 2000);
     } catch (err) {
       console.error("Reminder send error:", err);
