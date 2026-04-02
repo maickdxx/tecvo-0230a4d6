@@ -93,9 +93,7 @@ export function SecretariaDashboard({
 
     const incomeNext30 = servicosFuturos.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
 
-    console.log("SECRETARIA IA - SERVIÇOS TOTAIS:", (services || []).length);
-    console.log("SECRETARIA IA - SERVIÇOS FUTUROS (30d):", servicosFuturos.length, servicosFuturos.map(s => ({ id: s.id, status: s.status, date: s.scheduled_date, value: s.value })));
-    console.log("SECRETARIA IA - RECEITA PREVISTA FINAL:", incomeNext30);
+
 
     const expenseNext30 = (transactions || [])
       .filter((t) => t.type === "expense" && t.due_date && new Date(t.due_date) >= now && new Date(t.due_date) <= new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000))
