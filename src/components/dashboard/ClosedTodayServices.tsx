@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useServices, SERVICE_TYPE_LABELS } from "@/hooks/useServices";
-import { getDatePartInTz } from "@/lib/timezone";
+import { getDatePartInTz, formatTimeInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 
 interface ClosedTodayServicesProps {
