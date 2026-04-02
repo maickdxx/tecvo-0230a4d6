@@ -27,7 +27,8 @@ import {
 import { useSuppliers } from "@/hooks/useSuppliers";
 import { usePaymentMethods, type PaymentMethod } from "@/hooks/usePaymentMethods";
 import { useFinancialAccounts } from "@/hooks/useFinancialAccounts";
-
+import { getTodayInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 const transactionSchema = z.object({
   type: z.enum(["income", "expense"]),
   category: z.string().min(1, "Selecione uma categoria"),
@@ -61,6 +62,7 @@ export function TransactionForm({
   const { suppliers, isLoading: isLoadingSuppliers } = useSuppliers();
   const { paymentMethods, isLoading: isLoadingPaymentMethods, formatFee } = usePaymentMethods();
   const { activeAccounts, isLoading: isLoadingFinancialAccounts } = useFinancialAccounts();
+  const tz = useOrgTimezone();
 
   // Separate regular methods from credit card installments
   const regularMethods = paymentMethods.filter((m) => m.installments === null);
@@ -82,7 +84,7 @@ export function TransactionForm({
       category: transaction?.category ?? defaultCategory ?? "",
       amount: transaction?.amount ?? undefined,
       description: transaction?.description ?? (defaultCategory === "prolabore" ? "Pró-labore" : ""),
-      date: transaction?.date ?? new Date().toISOString().split("T")[0],
+      date: transaction?.date ?? getTodayInTz(tz),
       payment_method: transaction?.payment_method ?? "",
       notes: transaction?.notes ?? "",
       supplier_id: (transaction as Transaction & { supplier_id?: string })?.supplier_id ?? "",

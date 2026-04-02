@@ -13,6 +13,8 @@ import {
 import { Service } from "@/hooks/useServices";
 import { getEffectiveStatus } from "@/components/agenda/CalendarView";
 import { AgendaServiceCard } from "./AgendaServiceCard";
+import { formatTimeInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { AgendaSmartAlerts } from "./AgendaSmartAlerts";
 import type { OperationalCapacity } from "@/hooks/useOperationalCapacity";
 
@@ -61,20 +63,18 @@ function ServiceTimeline({
   highlightedServiceId?: string | null;
 }) {
 
+  const tz = useOrgTimezone();
+
   // Flatten all rows into a single sorted list — no side-by-side in the card list
   const sortedServices = useMemo(() => {
     const getTimeKey = (s: Service): string => {
       const raw = s.entry_date || s.scheduled_date;
       if (!raw) return "99:99";
-      if (raw.includes("T")) {
-        const timePart = raw.split("T")[1];
-        return timePart ? timePart.substring(0, 5) : "99:99";
-      }
-      if (/^\d{2}:\d{2}/.test(raw)) return raw.substring(0, 5);
-      return "99:99";
+      const t = formatTimeInTz(raw, tz);
+      return t === "—" ? "99:99" : t;
     };
     return [...services].sort((a, b) => getTimeKey(a).localeCompare(getTimeKey(b)));
-  }, [services]);
+  }, [services, tz]);
 
   return (
     <div className="space-y-2">

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { getTodayInTz, formatDateObjInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
+import { getTodayInTz, formatDateObjInTz, getDatePartInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
 import { useNavigate } from "react-router-dom";
 import { 
   DollarSign, 
@@ -89,13 +89,11 @@ export function SecretariaDashboard({
     const todayStr = getTodayInTz(DEFAULT_TIMEZONE);
     const limite30Str = formatDateObjInTz(limite30, DEFAULT_TIMEZONE);
 
-    const servicosFuturos = (services || []).filter((s) =>
-      (s.status === "scheduled" || s.status === "in_progress") &&
-      s.scheduled_date &&
-      s.scheduled_date.substring(0, 10) >= todayStr &&
-      s.scheduled_date.substring(0, 10) <= limite30Str &&
-      Number(s.value) > 0
-    );
+    const servicosFuturos = (services || []).filter((s) => {
+      if (!((s.status === "scheduled" || s.status === "in_progress") && s.scheduled_date && Number(s.value) > 0)) return false;
+      const d = getDatePartInTz(s.scheduled_date, DEFAULT_TIMEZONE);
+      return d >= todayStr && d <= limite30Str;
+    });
 
     const incomeNext30 = servicosFuturos.reduce((sum, s) => sum + (Number(s.value) || 0), 0);
 
@@ -109,13 +107,11 @@ export function SecretariaDashboard({
 
     // Schedule next 7 days
     const sevenStr = formatDateObjInTz(sevenDaysAhead, DEFAULT_TIMEZONE);
-    const next7DaysServices = (services || []).filter(
-      (s) =>
-        s.status === "scheduled" &&
-        s.scheduled_date &&
-        s.scheduled_date.substring(0, 10) >= todayStr &&
-        s.scheduled_date.substring(0, 10) <= sevenStr
-    );
+    const next7DaysServices = (services || []).filter((s) => {
+      if (!(s.status === "scheduled" && s.scheduled_date)) return false;
+      const d = getDatePartInTz(s.scheduled_date, DEFAULT_TIMEZONE);
+      return d >= todayStr && d <= sevenStr;
+    });
 
     const overdueTotal = overduePayments.reduce((s, t) => s + t.amount, 0);
 

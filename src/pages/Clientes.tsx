@@ -18,6 +18,8 @@ import { useClients, type Client, type ClientFormData } from "@/hooks/useClients
 import { usePaginatedClients } from "@/hooks/usePaginatedClients";
 import { useServices } from "@/hooks/useServices";
 import { useNavigate } from "react-router-dom";
+import { getTodayInTz, getDatePartInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export interface ClientMetrics {
@@ -47,12 +49,13 @@ export default function Clientes() {
   const { create, update, remove, isCreating, isUpdating } = useClients();
 
   const { services } = useServices({ documentType: "service_order" });
+  const tz = useOrgTimezone();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [deleteClient, setDeleteClient] = useState<Client | null>(null);
 
   const clientMetrics = useMemo(() => {
-    const today = new Date().toISOString().substring(0, 10);
+    const today = getTodayInTz(tz);
     const map: Record<string, ClientMetrics> = {};
 
     for (const s of services) {
@@ -65,14 +68,14 @@ export default function Clientes() {
       if (s.status === "completed") {
         m.totalServices += 1;
         m.totalRevenue += s.value || 0;
-        const completedDate = (s.completed_date || s.scheduled_date || s.created_at).substring(0, 10);
+        const completedDate = getDatePartInTz(s.completed_date || s.scheduled_date || s.created_at, tz);
         if (!m.lastServiceDate || completedDate > m.lastServiceDate) {
           m.lastServiceDate = completedDate;
         }
       }
 
       if ((s.status === "scheduled" || s.status === "in_progress") && s.scheduled_date) {
-        const sd = s.scheduled_date.substring(0, 10);
+        const sd = getDatePartInTz(s.scheduled_date, tz);
         if (sd >= today) {
           m.hasScheduled = true;
         }

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useServices, SERVICE_TYPE_LABELS } from "@/hooks/useServices";
-import { getDatePartInTz } from "@/lib/timezone";
+import { getDatePartInTz, formatTimeInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 
 interface ClosedTodayServicesProps {
@@ -47,9 +47,9 @@ function formatCurrency(value: number | null): string {
   }).format(value);
 }
 
-function formatTime(dateStr: string | null): string {
-  if (!dateStr || !dateStr.includes("T")) return "—";
-  return dateStr.split("T")[1].substring(0, 5);
+function formatTimeFallback(dateStr: string | null, tz: string): string {
+  if (!dateStr) return "—";
+  return formatTimeInTz(dateStr, tz);
 }
 
 export function ClosedTodayServices({ startDate: _startDate, endDate: _endDate }: ClosedTodayServicesProps) {
@@ -185,7 +185,7 @@ export function ClosedTodayServices({ startDate: _startDate, endDate: _endDate }
                       <span className="text-muted-foreground/40">·</span>
                       <span className="flex items-center gap-0.5">
                         <Clock className="h-3 w-3" />
-                        {formatTime(s.scheduled_date)}
+                        {formatTimeFallback(s.scheduled_date, tz)}
                       </span>
                       <span className="text-muted-foreground/40">·</span>
                       <span className="flex items-center gap-0.5 truncate max-w-[120px]">

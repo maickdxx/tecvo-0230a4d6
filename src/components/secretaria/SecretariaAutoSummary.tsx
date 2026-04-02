@@ -4,22 +4,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
 import { useTransactions } from "@/hooks/useTransactions";
+import { getTodayInTz, getDatePartInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 
 export function SecretariaAutoSummary() {
   const { services } = useServices();
   const { clients } = useClients();
   const { transactions } = useTransactions();
+  const tz = useOrgTimezone();
 
   const summary = useMemo(() => {
     const now = new Date();
-    const todayStr = now.toISOString().split("T")[0];
+    const todayStr = getTodayInTz(tz);
     const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
 
     // Today's services
     const todayServices = (services || []).filter(
       (s) =>
         s.status !== "cancelled" &&
-        s.scheduled_date?.startsWith(todayStr)
+        s.scheduled_date && getDatePartInTz(s.scheduled_date, tz) === todayStr
     );
 
     const scheduled = todayServices.filter((s) => s.status === "scheduled").length;

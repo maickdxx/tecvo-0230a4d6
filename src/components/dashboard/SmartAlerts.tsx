@@ -3,6 +3,8 @@ import { AlertTriangle, Clock, FileText, CheckCircle2, UserX } from "lucide-reac
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
 import { useTransactions } from "@/hooks/useTransactions";
+import { getTodayInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 
 interface Alert {
   id: string;
@@ -16,11 +18,12 @@ export function SmartAlerts() {
   const { services, isLoading: isLoadingServices } = useServices();
   const { clients, isLoading: isLoadingClients } = useClients();
   const { transactions, isLoading: isLoadingTransactions } = useTransactions();
+  const tz = useOrgTimezone();
 
   const alerts = useMemo((): Alert[] => {
     const result: Alert[] = [];
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr = getTodayInTz(tz);
     const sixMonthsAgo = new Date(today);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 

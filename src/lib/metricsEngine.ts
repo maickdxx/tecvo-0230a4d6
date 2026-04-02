@@ -12,6 +12,7 @@
 
 import type { Service } from "@/hooks/useServices";
 import type { Transaction } from "@/hooks/useTransactions";
+import { getDatePartInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
 import {
   getServicosAtivos,
   getServicosConcluidos,
@@ -93,7 +94,7 @@ export function getReceitaPrevista(services: Service[], dataInicio: string, data
       if (!s.scheduled_date) return false;
       if (s.document_type === "quote") return false;
 
-      const dataDate = s.scheduled_date.substring(0, 10);
+      const dataDate = getDatePartInTz(s.scheduled_date, DEFAULT_TIMEZONE);
       const isDentroPeriodo = dataDate >= inicioDate && dataDate <= fimDate;
 
       const isPrevisto =

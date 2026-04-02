@@ -29,9 +29,13 @@ function formatTime(dateStr: string): string | null {
 }
 
 function getTomorrowStr(): string {
-  const today = new Date(getTodayInTz(DEFAULT_TIMEZONE));
-  today.setDate(today.getDate() + 1);
-  return today.toISOString().split("T")[0];
+  const todayStr = getTodayInTz(DEFAULT_TIMEZONE);
+  const [y, m, d] = todayStr.split("-").map(Number);
+  const tomorrow = new Date(y, m - 1, d + 1);
+  const ty = tomorrow.getFullYear();
+  const tm = String(tomorrow.getMonth() + 1).padStart(2, "0");
+  const td = String(tomorrow.getDate()).padStart(2, "0");
+  return `${ty}-${tm}-${td}`;
 }
 
 function getDaysAgo(createdAt: string): number {

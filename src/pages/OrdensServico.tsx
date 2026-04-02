@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ClipboardList, Loader2, Search, Plus, Edit, Download, Trash2, MapPin, StickyNote, ArrowUpDown, MoreVertical, Play, CheckCircle2, Send, Eye, ChevronLeft, ChevronRight, FileText } from "lucide-react";
-import { formatDateInTz, formatTimeInTz, formatDateTimeInTz } from "@/lib/timezone";
+import { formatDateInTz, formatTimeInTz, formatDateTimeInTz, getDatePartInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { AppLayout } from "@/components/layout";
 import { PageTutorialBanner } from "@/components/onboarding";
@@ -90,8 +90,7 @@ const STATUS_ORDER: Record<string, number> = {
 type SortOption = "date-asc" | "date-desc" | "created" | "client" | "status";
 
 function getLocalToday(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 function addDays(ymd: string, days: number): string {
@@ -239,7 +238,7 @@ export default function OrdensServico() {
         groups.noDate.items.push(s);
         continue;
       }
-      const dateYmd = s.scheduled_date.substring(0, 10);
+      const dateYmd = getDatePartInTz(s.scheduled_date, tz);
       const isTerminal = s.status === "completed" || s.status === "cancelled";
 
       if (dateYmd < today && !isTerminal) {
@@ -268,12 +267,12 @@ export default function OrdensServico() {
   const isServiceOverdue = (service: typeof services[0]) => {
     if (!service.scheduled_date) return false;
     if (service.status === "completed" || service.status === "cancelled") return false;
-    return service.scheduled_date.substring(0, 10) < getLocalToday();
+    return getDatePartInTz(service.scheduled_date, tz) < getLocalToday();
   };
 
   const isServiceToday = (service: typeof services[0]) => {
     if (!service.scheduled_date) return false;
-    return service.scheduled_date.substring(0, 10) === getLocalToday();
+    return getDatePartInTz(service.scheduled_date, tz) === getLocalToday();
   };
 
   const formatAddress = (service: typeof services[0]) => {

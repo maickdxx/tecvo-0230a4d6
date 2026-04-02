@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { getHojeBRT } from "@/lib/periodoGlobal";
+import { getDatePartInTz } from "@/lib/timezone";
 import { ServiceStatusBadge, type EffectiveStatus } from "@/components/services/ServiceStatusBadge";
 import { Button } from "@/components/ui/button";
 
@@ -135,7 +136,7 @@ export function AgendaResumo() {
       <div className="divide-y divide-border/50">
         {allServices.map((s) => {
           const clientName = (s.client as any)?.name || "Cliente";
-          const dateStr = s.scheduled_date?.substring(0, 10) || "";
+          const dateStr = s.scheduled_date ? getDatePartInTz(s.scheduled_date, "America/Sao_Paulo") : "";
           const effectiveStatus: EffectiveStatus = (s as any)._overdue ? "overdue" : (s.status as EffectiveStatus);
           return (
             <button
