@@ -210,15 +210,22 @@ export function TomorrowServices() {
                       {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </Button>
                     {phone && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 gap-1 text-xs text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/30"
-                        onClick={() => openReminderDialog(svc, currentMessage)}
-                      >
-                        <MessageCircle className="h-3 w-3" />
-                        Lembrar
-                      </Button>
+                      isSent ? (
+                        <span className="flex items-center gap-1 text-xs font-medium text-primary px-2">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Enviado
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 gap-1 text-xs text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/30"
+                          onClick={() => openReminderDialog(svc, currentMessage)}
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          Lembrar
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>
