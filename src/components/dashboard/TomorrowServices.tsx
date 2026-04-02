@@ -168,7 +168,7 @@ export function TomorrowServices() {
                       size="sm"
                       variant="outline"
                       className="h-7 px-2 gap-1 text-xs text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/30"
-                      onClick={() => window.open(buildWhatsAppUrl(phone, message), "_blank")}
+                      onClick={() => window.open(buildWhatsAppUrl(phone, currentMessage), "_blank")}
                     >
                       <MessageCircle className="h-3 w-3" />
                       Lembrar
@@ -178,15 +178,46 @@ export function TomorrowServices() {
               </div>
 
               {isExpanded && (
-                <div className="px-3 pb-2.5 pt-0">
-                  <div className="bg-muted/50 rounded-md p-2.5 border border-border">
-                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Mensagem que será enviada:</p>
-                    <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">
-                      {message.replace(/\*/g, "")}
-                    </p>
-                  </div>
+                <div className="px-3 pb-2.5 pt-0 space-y-2">
+                  {isEditing ? (
+                    <div className="space-y-1.5">
+                      <Textarea
+                        value={currentMessage}
+                        onChange={(e) => setEditedMessages(prev => ({ ...prev, [svc.id]: e.target.value }))}
+                        className="text-xs min-h-[100px] resize-none"
+                      />
+                      <div className="flex gap-1.5 justify-end">
+                        <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => {
+                          setEditedMessages(prev => { const n = { ...prev }; delete n[svc.id]; return n; });
+                          setEditingId(null);
+                        }}>
+                          Resetar
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => setEditingId(null)}>
+                          OK
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-muted/50 rounded-md p-2.5 border border-border relative group">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] font-medium text-muted-foreground">Mensagem que será enviada:</p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-5 w-5 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => setEditingId(svc.id)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">
+                        {currentMessage.replace(/\*/g, "")}
+                      </p>
+                    </div>
+                  )}
                   {daysAgo >= 3 && (
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
                       ⚠️ Agendado há {daysAgo} dias — o cliente pode ter esquecido. Bom lembrar!
                     </p>
                   )}
