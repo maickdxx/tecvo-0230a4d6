@@ -173,13 +173,11 @@ export function useStrategicAlerts() {
       const next7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       const next7Str = formatDateObjInTz(next7, DEFAULT_TIMEZONE);
 
-      const scheduledNext7 = (services || []).filter(
-        (s) =>
-          s.status === "scheduled" &&
-          s.scheduled_date &&
-          s.scheduled_date.substring(0, 10) >= todayStr &&
-          s.scheduled_date.substring(0, 10) <= next7Str
-      );
+      const scheduledNext7 = (services || []).filter((s) => {
+        if (!(s.status === "scheduled" && s.scheduled_date)) return false;
+        const d = getDatePartInTz(s.scheduled_date, DEFAULT_TIMEZONE);
+        return d >= todayStr && d <= next7Str;
+      });
 
       // Estimate: average 90 min per service
       const avgServiceMin = 90;
