@@ -51,10 +51,24 @@ export function MoneyOnTable() {
         .in("service_id", serviceIds)
         .eq("is_confirmed", true);
 
-      // Sum payments per service
+      // Get fee expenses (taxa_pagamento) for these services — they cover the gap between gross and net
+      const { data: feeTransactions } = await supabase
+        .from("transactions")
+        .select("service_id, amount")
+        .in("service_id", serviceIds)
+        .eq("type", "expense" as any)
+        .eq("category", "taxa_pagamento")
+        .eq("status", "paid");
+
+      // Sum payments + fees per service (both represent covered value)
       const paidMap = new Map<string, number>();
       (payments || []).forEach((p) => {
         paidMap.set(p.service_id, (paidMap.get(p.service_id) || 0) + Number(p.amount));
+      });
+      (feeTransactions || []).forEach((f) => {
+        if (f.service_id) {
+          paidMap.set(f.service_id, (paidMap.get(f.service_id) || 0) + Number(f.amount));
+        }
       });
 
       // Find unpaid/partially paid services
