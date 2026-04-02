@@ -29,7 +29,7 @@ export function AlertasInteligentes() {
     // 1. Overdue services
     const overdueServices = services.filter((s) => {
       if (!s.scheduled_date || s.status === "completed" || s.status === "cancelled") return false;
-      return s.scheduled_date.substring(0, 10) < todayStr;
+      return getDatePartInTz(s.scheduled_date, tz) < todayStr;
     });
 
     if (overdueServices.length > 0) {

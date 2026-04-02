@@ -66,15 +66,11 @@ function ServiceTimeline({
     const getTimeKey = (s: Service): string => {
       const raw = s.entry_date || s.scheduled_date;
       if (!raw) return "99:99";
-      if (raw.includes("T")) {
-        const timePart = raw.split("T")[1];
-        return timePart ? timePart.substring(0, 5) : "99:99";
-      }
-      if (/^\d{2}:\d{2}/.test(raw)) return raw.substring(0, 5);
-      return "99:99";
+      const t = formatTimeInTz(raw, tz);
+      return t === "—" ? "99:99" : t;
     };
     return [...services].sort((a, b) => getTimeKey(a).localeCompare(getTimeKey(b)));
-  }, [services]);
+  }, [services, tz]);
 
   return (
     <div className="space-y-2">

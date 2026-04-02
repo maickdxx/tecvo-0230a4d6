@@ -2,22 +2,24 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
-import { format } from "date-fns";
+import { getTodayInTz, getDatePartInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 
 export function TodayActionsBar() {
   const navigate = useNavigate();
   const { services } = useServices({ documentType: "service_order" });
+  const tz = useOrgTimezone();
 
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = getTodayInTz(tz);
 
   const insights = useMemo(() => {
     const todayServices = services.filter(
-      (s) => s.scheduled_date?.startsWith(today) && s.status !== "cancelled"
+      (s) => s.scheduled_date && getDatePartInTz(s.scheduled_date, tz) === today && s.status !== "cancelled"
     );
     const inProgress = services.filter((s) => s.status === "in_progress");
     const overdue = services.filter((s) => {
       if (!s.scheduled_date || s.status === "completed" || s.status === "cancelled") return false;
-      return s.scheduled_date < today;
+      return getDatePartInTz(s.scheduled_date, tz) < today;
     });
     const completedUnpaid = services.filter(
       (s) => s.status === "completed" && (s as any).total_paid < (s as any).value

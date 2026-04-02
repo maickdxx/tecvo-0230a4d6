@@ -107,13 +107,11 @@ export function SecretariaDashboard({
 
     // Schedule next 7 days
     const sevenStr = formatDateObjInTz(sevenDaysAhead, DEFAULT_TIMEZONE);
-    const next7DaysServices = (services || []).filter(
-      (s) =>
-        s.status === "scheduled" &&
-        s.scheduled_date &&
-        s.scheduled_date.substring(0, 10) >= todayStr &&
-        s.scheduled_date.substring(0, 10) <= sevenStr
-    );
+    const next7DaysServices = (services || []).filter((s) => {
+      if (!(s.status === "scheduled" && s.scheduled_date)) return false;
+      const d = getDatePartInTz(s.scheduled_date, DEFAULT_TIMEZONE);
+      return d >= todayStr && d <= sevenStr;
+    });
 
     const overdueTotal = overduePayments.reduce((s, t) => s + t.amount, 0);
 

@@ -72,7 +72,7 @@ export default function Clientes() {
       }
 
       if ((s.status === "scheduled" || s.status === "in_progress") && s.scheduled_date) {
-        const sd = s.scheduled_date.substring(0, 10);
+        const sd = getDatePartInTz(s.scheduled_date, tz);
         if (sd >= today) {
           m.hasScheduled = true;
         }

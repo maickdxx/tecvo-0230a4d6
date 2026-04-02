@@ -82,7 +82,7 @@ export function TransactionForm({
       category: transaction?.category ?? defaultCategory ?? "",
       amount: transaction?.amount ?? undefined,
       description: transaction?.description ?? (defaultCategory === "prolabore" ? "Pró-labore" : ""),
-      date: transaction?.date ?? new Date().toISOString().split("T")[0],
+      date: transaction?.date ?? getTodayInTz(tz),
       payment_method: transaction?.payment_method ?? "",
       notes: transaction?.notes ?? "",
       supplier_id: (transaction as Transaction & { supplier_id?: string })?.supplier_id ?? "",

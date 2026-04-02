@@ -267,12 +267,12 @@ export default function OrdensServico() {
   const isServiceOverdue = (service: typeof services[0]) => {
     if (!service.scheduled_date) return false;
     if (service.status === "completed" || service.status === "cancelled") return false;
-    return service.scheduled_date.substring(0, 10) < getLocalToday();
+    return getDatePartInTz(service.scheduled_date, tz) < getLocalToday();
   };
 
   const isServiceToday = (service: typeof services[0]) => {
     if (!service.scheduled_date) return false;
-    return service.scheduled_date.substring(0, 10) === getLocalToday();
+    return getDatePartInTz(service.scheduled_date, tz) === getLocalToday();
   };
 
   const formatAddress = (service: typeof services[0]) => {

@@ -47,9 +47,9 @@ function formatCurrency(value: number | null): string {
   }).format(value);
 }
 
-function formatTime(dateStr: string | null): string {
-  if (!dateStr || !dateStr.includes("T")) return "—";
-  return dateStr.split("T")[1].substring(0, 5);
+function formatTimeFallback(dateStr: string | null, tz: string): string {
+  if (!dateStr) return "—";
+  return formatTimeInTz(dateStr, tz);
 }
 
 export function ClosedTodayServices({ startDate: _startDate, endDate: _endDate }: ClosedTodayServicesProps) {
