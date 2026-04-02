@@ -140,7 +140,7 @@ export function TomorrowServices() {
                     <span className="text-sm font-medium text-foreground truncate">{client?.name}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <span className="text-xs text-muted-foreground">{typeLabel}</span>
+                    <span className="text-xs text-muted-foreground">{isGenericType ? "Agendamento" : typeLabel}</span>
                     {time && (
                       <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                         <Clock className="h-2.5 w-2.5" /> {time}
