@@ -63,6 +63,8 @@ function ServiceTimeline({
   highlightedServiceId?: string | null;
 }) {
 
+  const tz = useOrgTimezone();
+
   // Flatten all rows into a single sorted list — no side-by-side in the card list
   const sortedServices = useMemo(() => {
     const getTimeKey = (s: Service): string => {

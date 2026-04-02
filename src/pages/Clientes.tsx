@@ -49,6 +49,7 @@ export default function Clientes() {
   const { create, update, remove, isCreating, isUpdating } = useClients();
 
   const { services } = useServices({ documentType: "service_order" });
+  const tz = useOrgTimezone();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [deleteClient, setDeleteClient] = useState<Client | null>(null);

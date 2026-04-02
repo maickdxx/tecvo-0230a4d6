@@ -62,6 +62,7 @@ export function TransactionForm({
   const { suppliers, isLoading: isLoadingSuppliers } = useSuppliers();
   const { paymentMethods, isLoading: isLoadingPaymentMethods, formatFee } = usePaymentMethods();
   const { activeAccounts, isLoading: isLoadingFinancialAccounts } = useFinancialAccounts();
+  const tz = useOrgTimezone();
 
   // Separate regular methods from credit card installments
   const regularMethods = paymentMethods.filter((m) => m.installments === null);
