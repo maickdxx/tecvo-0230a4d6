@@ -88,12 +88,12 @@ export function TomorrowServices() {
 
       let q = supabase
         .from("services")
-        .select("id, scheduled_date, service_type, client_id, created_at, clients!inner(name, phone, whatsapp)")
+        .select("id, scheduled_date, entry_date, service_type, client_id, created_at, clients!inner(name, phone, whatsapp)")
         .eq("organization_id", organizationId)
         .in("status", ["scheduled", "in_progress"])
-        .gte("scheduled_date", bounds.start)
-        .lte("scheduled_date", bounds.end)
+        .or(`and(entry_date.gte.${bounds.start},entry_date.lte.${bounds.end}),and(entry_date.is.null,scheduled_date.gte.${bounds.start},scheduled_date.lte.${bounds.end})`)
         .is("deleted_at", null)
+        .order("entry_date", { ascending: true, nullsFirst: false })
         .order("scheduled_date", { ascending: true });
 
       if (!isDemoMode) {
@@ -101,7 +101,10 @@ export function TomorrowServices() {
       }
 
       const { data } = await q;
-      return data || [];
+      return (data || []).filter((service: any) => {
+        const reminderDate = service.entry_date || service.scheduled_date;
+        return reminderDate ? getDatePartInTz(reminderDate, tz) === tomorrowStr : false;
+      });
     },
     enabled: !!organizationId,
   });
