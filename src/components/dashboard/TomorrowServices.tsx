@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
-import { CalendarClock, MessageCircle, Clock, User, ChevronDown, ChevronUp, CalendarDays } from "lucide-react";
+import { CalendarClock, MessageCircle, Clock, User, ChevronDown, ChevronUp, CalendarDays, Pencil } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getTodayInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
+import { Textarea } from "@/components/ui/textarea";
+import { getTodayInTz, DEFAULT_TIMEZONE, formatTimeInTz } from "@/lib/timezone";
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   installation: "Instalação",
@@ -15,13 +16,13 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
   repair: "Reparo",
 };
 
+const GENERIC_TYPES = new Set(["other", "others", "outro", "outros", ""]);
+
 function formatTime(dateStr: string): string | null {
   try {
-    const d = new Date(dateStr);
-    const h = d.getUTCHours();
-    const m = d.getUTCMinutes();
-    if (h === 0 && m === 0) return null;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    const formatted = formatTimeInTz(dateStr, DEFAULT_TIMEZONE);
+    if (formatted === "—" || formatted === "00:00") return null;
+    return formatted;
   } catch {
     return null;
   }
@@ -40,11 +41,17 @@ function getDaysAgo(createdAt: string): number {
 }
 
 function buildMessage(clientName: string, serviceType: string, time: string | null, date: string): string {
-  const typeLabel = SERVICE_TYPE_LABELS[serviceType] || serviceType || "serviço";
+  const typeLabel = SERVICE_TYPE_LABELS[serviceType] || "";
+  const isGeneric = GENERIC_TYPES.has((serviceType || "").toLowerCase()) || !typeLabel;
   const [y, m, d] = date.split("-");
   const dateFormatted = `${d}/${m}/${y}`;
 
-  let msg = `Olá ${clientName}! 😊\n\nPassando para lembrar do seu serviço de *${typeLabel}* agendado para *${dateFormatted}*`;
+  let msg = `Olá ${clientName}! 😊\n\n`;
+  if (isGeneric) {
+    msg += `Passando para lembrar do seu agendamento para *${dateFormatted}*`;
+  } else {
+    msg += `Passando para lembrar do seu serviço de *${typeLabel.toLowerCase()}* agendado para *${dateFormatted}*`;
+  }
   if (time) {
     msg += ` às *${time}*`;
   }
@@ -63,6 +70,8 @@ export function TomorrowServices() {
   const { isDemoMode } = useDemoMode();
   const tomorrowStr = useMemo(getTomorrowStr, []);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["tomorrow-services", organizationId, tomorrowStr, isDemoMode],
@@ -113,10 +122,14 @@ export function TomorrowServices() {
           const client = svc.clients as any;
           const phone = client?.whatsapp || client?.phone;
           const time = svc.scheduled_date ? formatTime(svc.scheduled_date) : null;
-          const typeLabel = SERVICE_TYPE_LABELS[svc.service_type] || svc.service_type || "Serviço";
+          const serviceLabel = SERVICE_TYPE_LABELS[svc.service_type];
+          const isGenericType = GENERIC_TYPES.has((svc.service_type || "").toLowerCase()) || !serviceLabel;
+          const typeLabel = serviceLabel || svc.service_type || "Serviço";
           const daysAgo = getDaysAgo(svc.created_at);
-          const message = buildMessage(client?.name || "Cliente", svc.service_type, time, tomorrowStr);
+          const defaultMessage = buildMessage(client?.name || "Cliente", svc.service_type, time, tomorrowStr);
+          const currentMessage = editedMessages[svc.id] ?? defaultMessage;
           const isExpanded = expandedId === svc.id;
+          const isEditing = editingId === svc.id;
 
           return (
             <div key={svc.id} className="border border-border rounded-lg overflow-hidden">
@@ -127,7 +140,7 @@ export function TomorrowServices() {
                     <span className="text-sm font-medium text-foreground truncate">{client?.name}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <span className="text-xs text-muted-foreground">{typeLabel}</span>
+                    <span className="text-xs text-muted-foreground">{isGenericType ? "Agendamento" : typeLabel}</span>
                     {time && (
                       <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                         <Clock className="h-2.5 w-2.5" /> {time}
@@ -155,7 +168,7 @@ export function TomorrowServices() {
                       size="sm"
                       variant="outline"
                       className="h-7 px-2 gap-1 text-xs text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/30"
-                      onClick={() => window.open(buildWhatsAppUrl(phone, message), "_blank")}
+                      onClick={() => window.open(buildWhatsAppUrl(phone, currentMessage), "_blank")}
                     >
                       <MessageCircle className="h-3 w-3" />
                       Lembrar
@@ -165,15 +178,46 @@ export function TomorrowServices() {
               </div>
 
               {isExpanded && (
-                <div className="px-3 pb-2.5 pt-0">
-                  <div className="bg-muted/50 rounded-md p-2.5 border border-border">
-                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Mensagem que será enviada:</p>
-                    <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">
-                      {message.replace(/\*/g, "")}
-                    </p>
-                  </div>
+                <div className="px-3 pb-2.5 pt-0 space-y-2">
+                  {isEditing ? (
+                    <div className="space-y-1.5">
+                      <Textarea
+                        value={currentMessage}
+                        onChange={(e) => setEditedMessages(prev => ({ ...prev, [svc.id]: e.target.value }))}
+                        className="text-xs min-h-[100px] resize-none"
+                      />
+                      <div className="flex gap-1.5 justify-end">
+                        <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => {
+                          setEditedMessages(prev => { const n = { ...prev }; delete n[svc.id]; return n; });
+                          setEditingId(null);
+                        }}>
+                          Resetar
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => setEditingId(null)}>
+                          OK
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-muted/50 rounded-md p-2.5 border border-border relative group">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] font-medium text-muted-foreground">Mensagem que será enviada:</p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-5 w-5 p-0 opacity-60 hover:opacity-100"
+                          onClick={() => setEditingId(svc.id)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">
+                        {currentMessage.replace(/\*/g, "")}
+                      </p>
+                    </div>
+                  )}
                   {daysAgo >= 3 && (
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
                       ⚠️ Agendado há {daysAgo} dias — o cliente pode ter esquecido. Bom lembrar!
                     </p>
                   )}
