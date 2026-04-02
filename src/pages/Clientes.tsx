@@ -18,6 +18,8 @@ import { useClients, type Client, type ClientFormData } from "@/hooks/useClients
 import { usePaginatedClients } from "@/hooks/usePaginatedClients";
 import { useServices } from "@/hooks/useServices";
 import { useNavigate } from "react-router-dom";
+import { getTodayInTz, getDatePartInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export interface ClientMetrics {

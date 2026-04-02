@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ClipboardList, Loader2, Search, Plus, Edit, Download, Trash2, MapPin, StickyNote, ArrowUpDown, MoreVertical, Play, CheckCircle2, Send, Eye, ChevronLeft, ChevronRight, FileText } from "lucide-react";
-import { formatDateInTz, formatTimeInTz, formatDateTimeInTz } from "@/lib/timezone";
+import { formatDateInTz, formatTimeInTz, formatDateTimeInTz, getDatePartInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { AppLayout } from "@/components/layout";
 import { PageTutorialBanner } from "@/components/onboarding";

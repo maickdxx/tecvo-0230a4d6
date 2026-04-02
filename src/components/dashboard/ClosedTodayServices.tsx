@@ -185,7 +185,7 @@ export function ClosedTodayServices({ startDate: _startDate, endDate: _endDate }
                       <span className="text-muted-foreground/40">·</span>
                       <span className="flex items-center gap-0.5">
                         <Clock className="h-3 w-3" />
-                        {formatTime(s.scheduled_date)}
+                        {formatTimeFallback(s.scheduled_date, tz)}
                       </span>
                       <span className="text-muted-foreground/40">·</span>
                       <span className="flex items-center gap-0.5 truncate max-w-[120px]">

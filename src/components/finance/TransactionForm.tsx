@@ -27,7 +27,8 @@ import {
 import { useSuppliers } from "@/hooks/useSuppliers";
 import { usePaymentMethods, type PaymentMethod } from "@/hooks/usePaymentMethods";
 import { useFinancialAccounts } from "@/hooks/useFinancialAccounts";
-
+import { getTodayInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 const transactionSchema = z.object({
   type: z.enum(["income", "expense"]),
   category: z.string().min(1, "Selecione uma categoria"),

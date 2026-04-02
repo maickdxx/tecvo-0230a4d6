@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Service } from "@/hooks/useServices";
 import { getEffectiveStatus } from "@/components/agenda/CalendarView";
 import { AgendaServiceCard } from "./AgendaServiceCard";
-import { isSameDayInTz, getDatePartInTz } from "@/lib/timezone";
+import { isSameDayInTz, getDatePartInTz, formatTimeInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import type { OperationalCapacity } from "@/hooks/useOperationalCapacity";
 

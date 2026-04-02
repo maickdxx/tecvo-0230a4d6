@@ -60,7 +60,7 @@ export function AlertasInteligentes() {
     }
 
     // 3. Pending quotes > 5 days
-    const fiveDaysAgo = new Date(today);
+    const fiveDaysAgo = new Date();
     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
     const pendingQuotes = services.filter(
       (s) => s.document_type === "quote" && s.status === "scheduled" && new Date(s.created_at) < fiveDaysAgo

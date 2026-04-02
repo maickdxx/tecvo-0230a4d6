@@ -12,6 +12,7 @@
 
 import type { Service } from "@/hooks/useServices";
 import type { Transaction } from "@/hooks/useTransactions";
+import { getDatePartInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
 import {
   getServicosAtivos,
   getServicosConcluidos,

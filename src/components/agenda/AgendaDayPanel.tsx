@@ -13,6 +13,8 @@ import {
 import { Service } from "@/hooks/useServices";
 import { getEffectiveStatus } from "@/components/agenda/CalendarView";
 import { AgendaServiceCard } from "./AgendaServiceCard";
+import { formatTimeInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { AgendaSmartAlerts } from "./AgendaSmartAlerts";
 import type { OperationalCapacity } from "@/hooks/useOperationalCapacity";
 
