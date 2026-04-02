@@ -203,9 +203,16 @@ function SharedContactCard({ content, isMe }: { content: string; isMe: boolean }
 /* ─── Main Component ─── */
 export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, onEdit, onReact, onRetry, onAIReply, onReply, onScrollToMessage }: MessageBubbleProps) {
   // In groups, also detect "me" by comparing sender_phone with channel owner phone
+  // Normalize: strip non-digits and compare last 10+ digits to handle country code differences
   const isMe = message.is_from_me || !!(
-    isGroup && channelOwnerPhone && message.sender_phone &&
-    channelOwnerPhone === message.sender_phone
+    isGroup && channelOwnerPhone && message.sender_phone && (() => {
+      const ownerDigits = channelOwnerPhone.replace(/\D/g, "");
+      const senderDigits = message.sender_phone.replace(/\D/g, "");
+      if (ownerDigits === senderDigits) return true;
+      // Compare last 10 digits (handles +55 vs without)
+      const minLen = Math.min(ownerDigits.length, senderDigits.length, 10);
+      return minLen >= 8 && ownerDigits.slice(-minLen) === senderDigits.slice(-minLen);
+    })()
   );
   const time = message.created_at ? format(new Date(message.created_at), "HH:mm") : "";
   const [showLightbox, setShowLightbox] = useState(false);
