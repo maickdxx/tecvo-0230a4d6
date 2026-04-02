@@ -63,24 +63,38 @@ import { toast } from "sonner";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
-// Distinct colors for group sender names
-const SENDER_COLORS = [
-  "text-blue-600 dark:text-blue-400",
-  "text-emerald-600 dark:text-emerald-400",
-  "text-purple-600 dark:text-purple-400",
-  "text-orange-600 dark:text-orange-400",
-  "text-pink-600 dark:text-pink-400",
-  "text-teal-600 dark:text-teal-400",
-  "text-red-600 dark:text-red-400",
-  "text-indigo-600 dark:text-indigo-400",
+// Distinct colors for group sender names (text + bg pairs)
+const SENDER_COLORS: { text: string; bg: string }[] = [
+  { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-900/40" },
+  { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-900/40" },
+  { text: "text-purple-600 dark:text-purple-400", bg: "bg-purple-100 dark:bg-purple-900/40" },
+  { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-100 dark:bg-orange-900/40" },
+  { text: "text-pink-600 dark:text-pink-400", bg: "bg-pink-100 dark:bg-pink-900/40" },
+  { text: "text-teal-600 dark:text-teal-400", bg: "bg-teal-100 dark:bg-teal-900/40" },
+  { text: "text-red-600 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/40" },
+  { text: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-100 dark:bg-indigo-900/40" },
 ];
 
-function getSenderColor(senderName: string): string {
+function getSenderHash(senderName: string): number {
   let hash = 0;
   for (let i = 0; i < senderName.length; i++) {
     hash = senderName.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return SENDER_COLORS[Math.abs(hash) % SENDER_COLORS.length];
+  return Math.abs(hash) % SENDER_COLORS.length;
+}
+
+function getSenderColor(senderName: string): string {
+  return SENDER_COLORS[getSenderHash(senderName)].text;
+}
+
+function getSenderBg(senderName: string): string {
+  return SENDER_COLORS[getSenderHash(senderName)].bg;
+}
+
+function getSenderInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.substring(0, 2).toUpperCase();
 }
 
 interface MessageBubbleProps {
