@@ -353,6 +353,20 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div className={cn("flex group", isMe ? "justify-end" : "justify-start")}>
+            {/* Group avatar for non-own messages */}
+            {isGroup && !isMe && message.sender_name && (
+              <div className={cn(
+                "h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 mt-auto mb-1 mr-1.5 text-[10px] font-bold select-none",
+                getSenderBg(message.sender_name),
+                getSenderColor(message.sender_name)
+              )}>
+                {getSenderInitials(message.sender_name)}
+              </div>
+            )}
+            {/* Spacer for group messages without sender_name */}
+            {isGroup && !isMe && !message.sender_name && (
+              <div className="w-7 flex-shrink-0 mr-1.5" />
+            )}
             <div className="relative max-w-[75%]">
               {/* Action menu - visible on hover */}
               <div className={cn(
@@ -384,9 +398,9 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
           >
             {/* Group sender name */}
             {isGroup && !isMe && message.sender_name && (
-              <div className="px-3.5 pt-2 pb-0">
+              <div className="px-3.5 pt-2 pb-0.5">
                 <p className={cn(
-                  "text-[11px] font-semibold truncate",
+                  "text-[11px] font-bold truncate",
                   getSenderColor(message.sender_name)
                 )}>
                   {message.sender_name}
