@@ -90,8 +90,7 @@ const STATUS_ORDER: Record<string, number> = {
 type SortOption = "date-asc" | "date-desc" | "created" | "client" | "status";
 
 function getLocalToday(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 function addDays(ymd: string, days: number): string {
