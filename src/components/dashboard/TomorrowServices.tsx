@@ -8,7 +8,7 @@ import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { getTodayInTz, formatTimeInTz, getLocalDayBoundsUTC } from "@/lib/timezone";
+import { getTodayInTz, formatTimeInTz, getLocalDayBoundsUTC, getDatePartInTz } from "@/lib/timezone";
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   installation: "Instalação",
@@ -80,7 +80,7 @@ export function TomorrowServices() {
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
 
   const { data: services, isLoading } = useQuery({
-    queryKey: ["tomorrow-services", organizationId, tomorrowStr, isDemoMode],
+    queryKey: ["tomorrow-services", "entry-date-priority", organizationId, tomorrowStr, tz, isDemoMode],
     queryFn: async () => {
       if (!organizationId) return [];
 
@@ -88,12 +88,12 @@ export function TomorrowServices() {
 
       let q = supabase
         .from("services")
-        .select("id, scheduled_date, service_type, client_id, created_at, clients!inner(name, phone, whatsapp)")
+        .select("id, scheduled_date, entry_date, service_type, client_id, created_at, clients!inner(name, phone, whatsapp)")
         .eq("organization_id", organizationId)
         .in("status", ["scheduled", "in_progress"])
-        .gte("scheduled_date", bounds.start)
-        .lte("scheduled_date", bounds.end)
+        .or(`and(entry_date.gte.${bounds.start},entry_date.lte.${bounds.end}),and(entry_date.is.null,scheduled_date.gte.${bounds.start},scheduled_date.lte.${bounds.end})`)
         .is("deleted_at", null)
+        .order("entry_date", { ascending: true, nullsFirst: false })
         .order("scheduled_date", { ascending: true });
 
       if (!isDemoMode) {
@@ -101,7 +101,10 @@ export function TomorrowServices() {
       }
 
       const { data } = await q;
-      return data || [];
+      return (data || []).filter((service: any) => {
+        const reminderDate = service.entry_date || service.scheduled_date;
+        return reminderDate ? getDatePartInTz(reminderDate, tz) === tomorrowStr : false;
+      });
     },
     enabled: !!organizationId,
   });
@@ -129,7 +132,8 @@ export function TomorrowServices() {
         {services.slice(0, 6).map((svc: any) => {
           const client = svc.clients as any;
           const phone = client?.whatsapp || client?.phone;
-          const time = svc.scheduled_date ? formatTime(svc.scheduled_date, tz) : null;
+          const reminderDate = svc.entry_date || svc.scheduled_date;
+          const time = reminderDate ? formatTime(reminderDate, tz) : null;
           const serviceLabel = SERVICE_TYPE_LABELS[svc.service_type];
           const isGenericType = GENERIC_TYPES.has((svc.service_type || "").toLowerCase()) || !serviceLabel;
           const typeLabel = serviceLabel || svc.service_type || "Serviço";
