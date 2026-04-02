@@ -55,7 +55,7 @@ function buildMessage(clientName: string, serviceType: string, time: string | nu
   if (time) {
     msg += ` às *${time}*`;
   }
-  msg += `.\n\nPodemos confirmar? Qualquer dúvida estou à disposição!`;
+  msg += `.\n\nQualquer dúvida estou à disposição! 😉`;
   return msg;
 }
 
