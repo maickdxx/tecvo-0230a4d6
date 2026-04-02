@@ -345,8 +345,19 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   };
 
   const handleTextChange = (value: string) => {
+    // Auto-replace /// with contact first name anywhere in text
+    if (value.includes("///") && contactFirstName) {
+      const replaced = value.replace(/\/{3}/g, contactFirstName);
+      setText(replaced);
+      // Don't show slash menu after replacement
+      if (!replaced.startsWith("/")) {
+        setShowSlashMenu(false);
+        setSlashFilter("");
+      }
+      return;
+    }
     setText(value);
-    if (value.startsWith("/")) {
+    if (value.startsWith("/") && !value.startsWith("///")) {
       setShowSlashMenu(true);
       setSlashFilter(value.substring(1));
       setSlashIndex(0);
@@ -441,14 +452,6 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   }, [contact?.name, contact?.linked_client?.name, linkedClientData?.name]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // / + TAB shortcut: insert contact first name
-    if (e.key === "Tab" && text.trim() === "/") {
-      e.preventDefault();
-      setText(contactFirstName);
-      setShowSlashMenu(false);
-      setSlashFilter("");
-      return;
-    }
     if (showSlashMenu && filteredSlashReplies.length > 0) {
       if (e.key === "ArrowDown") { e.preventDefault(); setSlashIndex((prev) => Math.min(prev + 1, filteredSlashReplies.length - 1)); return; }
       if (e.key === "ArrowUp") { e.preventDefault(); setSlashIndex((prev) => Math.max(prev - 1, 0)); return; }
