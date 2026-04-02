@@ -52,7 +52,7 @@ export default function Clientes() {
   const [deleteClient, setDeleteClient] = useState<Client | null>(null);
 
   const clientMetrics = useMemo(() => {
-    const today = new Date().toISOString().substring(0, 10);
+    const today = getTodayInTz(tz);
     const map: Record<string, ClientMetrics> = {};
 
     for (const s of services) {
