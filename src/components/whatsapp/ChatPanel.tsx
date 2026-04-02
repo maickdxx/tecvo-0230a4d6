@@ -345,8 +345,19 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   };
 
   const handleTextChange = (value: string) => {
+    // Auto-replace /// with contact first name anywhere in text
+    if (value.includes("///") && contactFirstName) {
+      const replaced = value.replace(/\/{3}/g, contactFirstName);
+      setText(replaced);
+      // Don't show slash menu after replacement
+      if (!replaced.startsWith("/")) {
+        setShowSlashMenu(false);
+        setSlashFilter("");
+      }
+      return;
+    }
     setText(value);
-    if (value.startsWith("/")) {
+    if (value.startsWith("/") && !value.startsWith("///")) {
       setShowSlashMenu(true);
       setSlashFilter(value.substring(1));
       setSlashIndex(0);
