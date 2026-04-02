@@ -260,7 +260,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
   if (isDeleted) {
     return (
       <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
-        <div className={cn(
+        {isGroup && !isMe && <div className="w-7 flex-shrink-0 mr-1.5" />}
           "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm border border-dashed",
           isMe ? "rounded-br-sm border-primary/20 bg-primary/5" : "rounded-bl-sm border-border/40 bg-muted/30"
         )}>
