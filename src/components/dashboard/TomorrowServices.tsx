@@ -70,6 +70,8 @@ export function TomorrowServices() {
   const { isDemoMode } = useDemoMode();
   const tomorrowStr = useMemo(getTomorrowStr, []);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["tomorrow-services", organizationId, tomorrowStr, isDemoMode],
