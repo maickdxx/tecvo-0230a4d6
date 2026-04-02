@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { getHojeBRT } from "@/lib/periodoGlobal";
+import { getDatePartInTz } from "@/lib/timezone";
 import { ServiceStatusBadge, type EffectiveStatus } from "@/components/services/ServiceStatusBadge";
 import { Button } from "@/components/ui/button";
 
