@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { getTodayInTz, DEFAULT_TIMEZONE, formatTimeInTz } from "@/lib/timezone";
+import { getTodayInTz, formatTimeInTz, getLocalDayBoundsUTC } from "@/lib/timezone";
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   installation: "Instalação",
