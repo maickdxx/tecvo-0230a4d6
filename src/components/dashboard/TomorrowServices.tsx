@@ -175,6 +175,7 @@ export function TomorrowServices() {
             const currentMessage = editedMessages[svc.id] ?? defaultMessage;
             const isExpanded = expandedId === svc.id;
             const isEditing = editingId === svc.id;
+            const isSent = sentIds.has(svc.id);
 
             return (
               <div key={svc.id} className="border border-border rounded-lg overflow-hidden">
