@@ -41,11 +41,17 @@ function getDaysAgo(createdAt: string): number {
 }
 
 function buildMessage(clientName: string, serviceType: string, time: string | null, date: string): string {
-  const typeLabel = SERVICE_TYPE_LABELS[serviceType] || serviceType || "serviço";
+  const typeLabel = SERVICE_TYPE_LABELS[serviceType] || "";
+  const isGeneric = GENERIC_TYPES.has((serviceType || "").toLowerCase()) || !typeLabel;
   const [y, m, d] = date.split("-");
   const dateFormatted = `${d}/${m}/${y}`;
 
-  let msg = `Olá ${clientName}! 😊\n\nPassando para lembrar do seu serviço de *${typeLabel}* agendado para *${dateFormatted}*`;
+  let msg = `Olá ${clientName}! 😊\n\n`;
+  if (isGeneric) {
+    msg += `Passando para lembrar do seu agendamento para *${dateFormatted}*`;
+  } else {
+    msg += `Passando para lembrar do seu serviço de *${typeLabel.toLowerCase()}* agendado para *${dateFormatted}*`;
+  }
   if (time) {
     msg += ` às *${time}*`;
   }
