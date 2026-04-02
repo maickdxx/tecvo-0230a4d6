@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { MessageCircle, Send, User, Phone, Clock, Loader2, CheckCircle2, Radio } from "lucide-react";
+import { MessageCircle, Send, User, Phone, Clock, Loader2, CheckCircle2, Radio, Wifi } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -43,12 +45,31 @@ export function SendReminderDialog({
   message,
   onMessageChange,
 }: SendReminderDialogProps) {
+  const { organizationId } = useAuth();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sentChannel, setSentChannel] = useState<string>("");
   const [editing, setEditing] = useState(false);
   const [channelOptions, setChannelOptions] = useState<ChannelOption[] | null>(null);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+
+  // Fetch connected channels to show which one will be used
+  const { data: connectedChannels } = useQuery({
+    queryKey: ["connected-channels-reminder", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data } = await supabase
+        .from("whatsapp_channels")
+        .select("id, name, phone_number")
+        .eq("organization_id", organizationId)
+        .eq("is_connected", true)
+        .eq("channel_status", "connected")
+        .in("channel_type", ["CUSTOMER_INBOX", "customer_inbox"]);
+      return data || [];
+    },
+    enabled: !!organizationId && open,
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
     if (!open) {
@@ -207,6 +228,20 @@ export function SendReminderDialog({
                 <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                   {serviceType}
                 </span>
+              )}
+              {/* Channel indicator */}
+              {connectedChannels && connectedChannels.length > 0 && (
+                <div className="flex items-center gap-1.5 pt-1 border-t border-border/50 mt-1">
+                  <Wifi className="h-3 w-3 text-green-500" />
+                  <span className="text-[10px] text-muted-foreground">
+                    Será enviado via:{" "}
+                    <span className="font-medium text-foreground">
+                      {connectedChannels.length === 1
+                        ? connectedChannels[0].name
+                        : "Auto (canal do contato)"}
+                    </span>
+                  </span>
+                </div>
               )}
             </div>
 
