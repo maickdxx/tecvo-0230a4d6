@@ -132,7 +132,8 @@ export function TomorrowServices() {
         {services.slice(0, 6).map((svc: any) => {
           const client = svc.clients as any;
           const phone = client?.whatsapp || client?.phone;
-          const time = svc.scheduled_date ? formatTime(svc.scheduled_date, tz) : null;
+          const reminderDate = svc.entry_date || svc.scheduled_date;
+          const time = reminderDate ? formatTime(reminderDate, tz) : null;
           const serviceLabel = SERVICE_TYPE_LABELS[svc.service_type];
           const isGenericType = GENERIC_TYPES.has((svc.service_type || "").toLowerCase()) || !serviceLabel;
           const typeLabel = serviceLabel || svc.service_type || "Serviço";
