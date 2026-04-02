@@ -14,6 +14,7 @@ import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodService
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
 
 import { MoneyOnTable } from "@/components/dashboard/MoneyOnTable";
+import { TomorrowServices } from "@/components/dashboard/TomorrowServices";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
@@ -86,6 +87,9 @@ export default function Dashboard() {
 
         {/* Money on Table Alert */}
         {canViewFinance && <MoneyOnTable />}
+
+        {/* Tomorrow Services Reminder */}
+        <TomorrowServices />
 
 
         {/* Page Header */}
