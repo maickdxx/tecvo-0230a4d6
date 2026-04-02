@@ -80,7 +80,7 @@ export function TomorrowServices() {
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
 
   const { data: services, isLoading } = useQuery({
-    queryKey: ["tomorrow-services", organizationId, tomorrowStr, isDemoMode],
+    queryKey: ["tomorrow-services", "entry-date-priority", organizationId, tomorrowStr, tz, isDemoMode],
     queryFn: async () => {
       if (!organizationId) return [];
 
