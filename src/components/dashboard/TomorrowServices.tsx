@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { getTodayInTz, DEFAULT_TIMEZONE, formatTimeInTz } from "@/lib/timezone";
+import { getTodayInTz, formatTimeInTz, getLocalDayBoundsUTC } from "@/lib/timezone";
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   installation: "Instalação",
@@ -18,9 +19,9 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 
 const GENERIC_TYPES = new Set(["other", "others", "outro", "outros", ""]);
 
-function formatTime(dateStr: string): string | null {
+function formatTime(dateStr: string, tz: string): string | null {
   try {
-    const formatted = formatTimeInTz(dateStr, DEFAULT_TIMEZONE);
+    const formatted = formatTimeInTz(dateStr, tz);
     if (formatted === "—" || formatted === "00:00") return null;
     return formatted;
   } catch {
@@ -28,8 +29,8 @@ function formatTime(dateStr: string): string | null {
   }
 }
 
-function getTomorrowStr(): string {
-  const todayStr = getTodayInTz(DEFAULT_TIMEZONE);
+function getTomorrowStr(tz: string): string {
+  const todayStr = getTodayInTz(tz);
   const [y, m, d] = todayStr.split("-").map(Number);
   const tomorrow = new Date(y, m - 1, d + 1);
   const ty = tomorrow.getFullYear();
@@ -70,9 +71,10 @@ function buildWhatsAppUrl(phone: string, message: string): string {
 }
 
 export function TomorrowServices() {
+  const tz = useOrgTimezone();
   const { organizationId } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const tomorrowStr = useMemo(getTomorrowStr, []);
+  const tomorrowStr = useMemo(() => getTomorrowStr(tz), [tz]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
@@ -82,13 +84,15 @@ export function TomorrowServices() {
     queryFn: async () => {
       if (!organizationId) return [];
 
+      const bounds = getLocalDayBoundsUTC(tomorrowStr, tz);
+
       let q = supabase
         .from("services")
         .select("id, scheduled_date, service_type, client_id, created_at, clients!inner(name, phone, whatsapp)")
         .eq("organization_id", organizationId)
         .in("status", ["scheduled", "in_progress"])
-        .gte("scheduled_date", `${tomorrowStr}T00:00:00`)
-        .lt("scheduled_date", `${tomorrowStr}T23:59:59`)
+        .gte("scheduled_date", bounds.start)
+        .lte("scheduled_date", bounds.end)
         .is("deleted_at", null)
         .order("scheduled_date", { ascending: true });
 
@@ -125,7 +129,7 @@ export function TomorrowServices() {
         {services.slice(0, 6).map((svc: any) => {
           const client = svc.clients as any;
           const phone = client?.whatsapp || client?.phone;
-          const time = svc.scheduled_date ? formatTime(svc.scheduled_date) : null;
+          const time = svc.scheduled_date ? formatTime(svc.scheduled_date, tz) : null;
           const serviceLabel = SERVICE_TYPE_LABELS[svc.service_type];
           const isGenericType = GENERIC_TYPES.has((svc.service_type || "").toLowerCase()) || !serviceLabel;
           const typeLabel = serviceLabel || svc.service_type || "Serviço";
