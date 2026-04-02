@@ -65,7 +65,7 @@ export default function Clientes() {
       if (s.status === "completed") {
         m.totalServices += 1;
         m.totalRevenue += s.value || 0;
-        const completedDate = (s.completed_date || s.scheduled_date || s.created_at).substring(0, 10);
+        const completedDate = getDatePartInTz(s.completed_date || s.scheduled_date || s.created_at, tz);
         if (!m.lastServiceDate || completedDate > m.lastServiceDate) {
           m.lastServiceDate = completedDate;
         }
