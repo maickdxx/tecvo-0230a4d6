@@ -84,13 +84,15 @@ export function TomorrowServices() {
     queryFn: async () => {
       if (!organizationId) return [];
 
+      const bounds = getLocalDayBoundsUTC(tomorrowStr, tz);
+
       let q = supabase
         .from("services")
         .select("id, scheduled_date, service_type, client_id, created_at, clients!inner(name, phone, whatsapp)")
         .eq("organization_id", organizationId)
         .in("status", ["scheduled", "in_progress"])
-        .gte("scheduled_date", `${tomorrowStr}T00:00:00`)
-        .lt("scheduled_date", `${tomorrowStr}T23:59:59`)
+        .gte("scheduled_date", bounds.start)
+        .lte("scheduled_date", bounds.end)
         .is("deleted_at", null)
         .order("scheduled_date", { ascending: true });
 
