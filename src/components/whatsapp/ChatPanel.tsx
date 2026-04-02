@@ -434,7 +434,21 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
     }
   };
 
+  // Get contact first name for / + TAB shortcut
+  const contactFirstName = useMemo(() => {
+    const fullName = contact?.linked_client?.name || linkedClientData?.name || contact?.name || "";
+    return fullName.split(" ")[0] || "";
+  }, [contact?.name, contact?.linked_client?.name, linkedClientData?.name]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // / + TAB shortcut: insert contact first name
+    if (e.key === "Tab" && text.trim() === "/") {
+      e.preventDefault();
+      setText(contactFirstName);
+      setShowSlashMenu(false);
+      setSlashFilter("");
+      return;
+    }
     if (showSlashMenu && filteredSlashReplies.length > 0) {
       if (e.key === "ArrowDown") { e.preventDefault(); setSlashIndex((prev) => Math.min(prev + 1, filteredSlashReplies.length - 1)); return; }
       if (e.key === "ArrowUp") { e.preventDefault(); setSlashIndex((prev) => Math.max(prev - 1, 0)); return; }
