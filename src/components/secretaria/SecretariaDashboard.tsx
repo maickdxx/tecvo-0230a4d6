@@ -54,10 +54,6 @@ export function SecretariaDashboard({
       return last && last < sixMonthsAgo;
     });
 
-    console.log("SECRETARIA DASHBOARD - DATA LIMITE 6 MESES:", sixMonthsAgo.toISOString());
-    console.log("SECRETARIA DASHBOARD - CLIENTES COM ÚLTIMO SERVIÇO CONCLUÍDO:", Object.entries(clientLastService).map(([id, d]) => ({ id, date: d.toISOString() })));
-    console.log("SECRETARIA DASHBOARD - CLIENTES INATIVOS:", inactiveClients.length);
-
     // Overdue payments
     const overduePayments = (transactions || []).filter(
       (t) =>
