@@ -4,7 +4,7 @@ import { useTransactions } from "./useTransactions";
 import { useClients } from "./useClients";
 import { useOrganization } from "./useOrganization";
 import { useOperationalCapacityConfig } from "./useOperationalCapacityConfig";
-import { getTodayInTz, formatDateObjInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
+import { getTodayInTz, formatDateObjInTz, getDatePartInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
 
 export interface StrategicAlert {
   id: string;
