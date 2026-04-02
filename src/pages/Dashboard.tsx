@@ -169,6 +169,9 @@ export default function Dashboard() {
 
             {/* 4. Serviços Fechados */}
             <ClosedPeriodServices />
+
+            {/* 5. Lembretes de Amanhã */}
+            <TomorrowServices />
           </div>
         </div>
       </div>
