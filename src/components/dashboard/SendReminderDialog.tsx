@@ -32,6 +32,7 @@ interface SendReminderDialogProps {
   dateFormatted: string;
   message: string;
   onMessageChange: (message: string) => void;
+  onSent?: () => void;
 }
 
 export function SendReminderDialog({
