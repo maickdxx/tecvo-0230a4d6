@@ -55,7 +55,7 @@ function buildMessage(clientName: string, serviceType: string, time: string | nu
   if (time) {
     msg += ` às *${time}*`;
   }
-  msg += `.\n\nPodemos confirmar? Qualquer dúvida estou à disposição!`;
+  msg += `.\n\nQualquer dúvida estou à disposição! 😉`;
   return msg;
 }
 
@@ -101,17 +101,17 @@ export function TomorrowServices() {
   if (isLoading || !services || services.length === 0) return null;
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="border-green-200 dark:border-green-800/50 bg-gradient-to-br from-green-50/80 to-emerald-50/50 dark:from-green-950/30 dark:to-emerald-950/20 shadow-sm">
       <CardHeader className="pb-2 pt-3 px-4">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-            <CalendarClock className="h-3.5 w-3.5 text-primary" />
+          <div className="h-8 w-8 rounded-xl bg-green-500/15 dark:bg-green-500/20 flex items-center justify-center">
+            <CalendarClock className="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
           <div className="flex-1">
-            <CardTitle className="text-sm font-semibold text-foreground">
-              Serviços de Amanhã ({services.length})
+            <CardTitle className="text-sm font-semibold text-green-900 dark:text-green-100">
+              📋 Serviços de Amanhã ({services.length})
             </CardTitle>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
+            <p className="text-[10px] text-green-700/70 dark:text-green-300/60 mt-0.5">
               Lembre seus clientes com um toque — a mensagem já vai pronta
             </p>
           </div>
