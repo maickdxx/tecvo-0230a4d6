@@ -229,6 +229,20 @@ export function SendReminderDialog({
                   {serviceType}
                 </span>
               )}
+              {/* Channel indicator */}
+              {connectedChannels && connectedChannels.length > 0 && (
+                <div className="flex items-center gap-1.5 pt-1 border-t border-border/50 mt-1">
+                  <Wifi className="h-3 w-3 text-green-500" />
+                  <span className="text-[10px] text-muted-foreground">
+                    Será enviado via:{" "}
+                    <span className="font-medium text-foreground">
+                      {connectedChannels.length === 1
+                        ? connectedChannels[0].name
+                        : "Auto (canal do contato)"}
+                    </span>
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Message preview / editor */}
