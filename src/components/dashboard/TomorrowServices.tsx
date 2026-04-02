@@ -122,10 +122,14 @@ export function TomorrowServices() {
           const client = svc.clients as any;
           const phone = client?.whatsapp || client?.phone;
           const time = svc.scheduled_date ? formatTime(svc.scheduled_date) : null;
-          const typeLabel = SERVICE_TYPE_LABELS[svc.service_type] || svc.service_type || "Serviço";
+          const serviceLabel = SERVICE_TYPE_LABELS[svc.service_type];
+          const isGenericType = GENERIC_TYPES.has((svc.service_type || "").toLowerCase()) || !serviceLabel;
+          const typeLabel = serviceLabel || svc.service_type || "Serviço";
           const daysAgo = getDaysAgo(svc.created_at);
-          const message = buildMessage(client?.name || "Cliente", svc.service_type, time, tomorrowStr);
+          const defaultMessage = buildMessage(client?.name || "Cliente", svc.service_type, time, tomorrowStr);
+          const currentMessage = editedMessages[svc.id] ?? defaultMessage;
           const isExpanded = expandedId === svc.id;
+          const isEditing = editingId === svc.id;
 
           return (
             <div key={svc.id} className="border border-border rounded-lg overflow-hidden">
