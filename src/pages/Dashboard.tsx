@@ -88,8 +88,7 @@ export default function Dashboard() {
         {/* Money on Table Alert */}
         {canViewFinance && <MoneyOnTable />}
 
-        {/* Tomorrow Services Reminder */}
-        <TomorrowServices />
+        
 
 
         {/* Page Header */}
@@ -170,6 +169,9 @@ export default function Dashboard() {
 
             {/* 4. Serviços Fechados */}
             <ClosedPeriodServices />
+
+            {/* 5. Lembretes de Amanhã */}
+            <TomorrowServices />
           </div>
         </div>
       </div>
