@@ -1,7 +1,7 @@
 /**
  * ── SEND FLOW: ORG_AUTOMATION (Reminder) ──
  * Sends a reminder message to a client by phone number.
- * Auto-resolves org channel and contact. Creates contact if not found.
+ * Respects channel isolation: uses existing contact's channel or requires explicit channel_id.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     }
 
     const orgId = profile.organization_id;
-    const { phone, message, client_name } = await req.json();
+    const { phone, message, client_name, channel_id: requestedChannelId } = await req.json();
 
     if (!phone || !message) {
       return new Response(JSON.stringify({ error: "Missing phone or message" }), {
@@ -73,18 +73,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Find the org's first connected channel
-    const { data: channels } = await supabase
+    // Get all connected CUSTOMER_INBOX channels for this org
+    const { data: connectedChannels } = await supabase
       .from("whatsapp_channels")
-      .select("id, instance_name, phone_number, is_connected, channel_status")
+      .select("id, instance_name, phone_number, is_connected, channel_status, name")
       .eq("organization_id", orgId)
       .eq("is_connected", true)
       .eq("channel_status", "connected")
-      .in("channel_type", ["CUSTOMER_INBOX", "customer_inbox"])
-      .limit(1);
+      .in("channel_type", ["CUSTOMER_INBOX", "customer_inbox"]);
 
-    const activeChannel = channels?.[0];
-    if (!activeChannel) {
+    if (!connectedChannels || connectedChannels.length === 0) {
       return new Response(JSON.stringify({
         error: "no_channel",
         message: "Nenhum canal WhatsApp conectado. Conecte um número para enviar lembretes.",
@@ -94,21 +92,57 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Find existing contact by normalized phone on this channel
+    // Try to find existing contact by phone across all channels
     const phoneSuffix = normalizedPhone.slice(-8);
     const { data: existingContacts } = await supabase
       .from("whatsapp_contacts")
       .select("id, phone, normalized_phone, whatsapp_id, channel_id")
       .eq("organization_id", orgId)
-      .eq("channel_id", activeChannel.id)
       .or(`normalized_phone.like.%${phoneSuffix},phone.like.%${phoneSuffix}`);
 
-    let contactId: string;
+    let contactId: string | null = null;
+    let activeChannel: typeof connectedChannels[0] | null = null;
 
     if (existingContacts && existingContacts.length > 0) {
-      contactId = existingContacts[0].id;
-    } else {
-      // Create a new contact for this reminder
+      // Prefer contact on a connected channel
+      for (const c of existingContacts) {
+        const ch = connectedChannels.find(ch => ch.id === c.channel_id);
+        if (ch) {
+          contactId = c.id;
+          activeChannel = ch;
+          break;
+        }
+      }
+      // If no contact on a connected channel, we still have the contact but need a channel
+      if (!contactId && existingContacts.length > 0) {
+        contactId = existingContacts[0].id;
+      }
+    }
+
+    // If no channel resolved from contact, use requested channel_id or pick the single available one
+    if (!activeChannel) {
+      if (requestedChannelId) {
+        activeChannel = connectedChannels.find(ch => ch.id === requestedChannelId) || null;
+      }
+      if (!activeChannel) {
+        if (connectedChannels.length === 1) {
+          activeChannel = connectedChannels[0];
+        } else {
+          // Multiple channels, no contact found, no channel specified — return channels for user to pick
+          return new Response(JSON.stringify({
+            error: "choose_channel",
+            message: "Selecione o canal para enviar o lembrete.",
+            channels: connectedChannels.map(ch => ({ id: ch.id, name: ch.name, phone_number: ch.phone_number })),
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
+    // Create contact if none found
+    if (!contactId) {
       const whatsappId = `${normalizedPhone}@s.whatsapp.net`;
       const { data: newContact, error: createErr } = await supabase
         .from("whatsapp_contacts")
@@ -156,7 +190,7 @@ Deno.serve(async (req) => {
     }
 
     const recipientJid = `${normalizedPhone}@s.whatsapp.net`;
-    console.log("[REMINDER-SEND] Sending to:", recipientJid, "via:", activeChannel.instance_name);
+    console.log("[REMINDER-SEND] Sending to:", recipientJid, "via:", activeChannel.instance_name, "channel:", activeChannel.name);
 
     const evoResponse = await fetch(`${vpsUrl}/message/sendText/${activeChannel.instance_name}`, {
       method: "POST",
@@ -218,9 +252,9 @@ Deno.serve(async (req) => {
       })
       .eq("id", contactId);
 
-    console.log("[REMINDER-SEND] Reminder sent successfully:", realMessageId);
+    console.log("[REMINDER-SEND] Reminder sent successfully via", activeChannel.name, ":", realMessageId);
 
-    return new Response(JSON.stringify({ ok: true, message_id: realMessageId }), {
+    return new Response(JSON.stringify({ ok: true, message_id: realMessageId, channel_name: activeChannel.name }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
