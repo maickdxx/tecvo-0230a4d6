@@ -45,6 +45,7 @@ export function SendReminderDialog({
   dateFormatted,
   message,
   onMessageChange,
+  onSent,
 }: SendReminderDialogProps) {
   const { organizationId } = useAuth();
   const [sending, setSending] = useState(false);
