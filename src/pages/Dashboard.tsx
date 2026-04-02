@@ -88,6 +88,9 @@ export default function Dashboard() {
         {/* Money on Table Alert */}
         {canViewFinance && <MoneyOnTable />}
 
+        {/* Tomorrow Services Reminder */}
+        <TomorrowServices />
+
 
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6 mt-8">
