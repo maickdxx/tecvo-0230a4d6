@@ -142,7 +142,6 @@ export function TransactionForm({
       supplier_id: formData.supplier_id as string | undefined,
       financial_account_id: formData.financial_account_id as string | undefined,
     };
-    console.log("SALVANDO TRANSAÇÃO:", data);
     await onSubmit(data);
   };
 
