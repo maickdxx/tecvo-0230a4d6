@@ -71,9 +71,10 @@ function buildWhatsAppUrl(phone: string, message: string): string {
 }
 
 export function TomorrowServices() {
+  const tz = useOrgTimezone();
   const { organizationId } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const tomorrowStr = useMemo(getTomorrowStr, []);
+  const tomorrowStr = useMemo(() => getTomorrowStr(tz), [tz]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
