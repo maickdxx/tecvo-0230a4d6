@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
-import { CalendarClock, MessageCircle, Clock, User, ChevronDown, ChevronUp, CalendarDays } from "lucide-react";
+import { CalendarClock, MessageCircle, Clock, User, ChevronDown, ChevronUp, CalendarDays, Pencil } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getTodayInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
+import { Textarea } from "@/components/ui/textarea";
+import { getTodayInTz, DEFAULT_TIMEZONE, formatTimeInTz } from "@/lib/timezone";
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   installation: "Instalação",
