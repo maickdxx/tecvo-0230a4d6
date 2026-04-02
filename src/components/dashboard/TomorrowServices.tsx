@@ -302,6 +302,9 @@ export function TomorrowServices() {
           onMessageChange={(msg) =>
             setReminderDialog((prev) => prev ? { ...prev, message: msg } : null)
           }
+          onSent={() => {
+            if (reminderDialog) markAsSent(reminderDialog.serviceId);
+          }}
         />
       )}
     </>
