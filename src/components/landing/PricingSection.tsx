@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { analytics } from "@/lib/analytics";
-import { Check, X, ArrowRight, Star, Crown, Zap, Sparkles } from "lucide-react";
+import { Check, X, ArrowRight, Star, Crown, Zap, Sparkles, Egg } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PAID_PLANS } from "@/lib/planConfig";
