@@ -92,7 +92,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; icon: st
   },
   completed: { 
     label: "Concluído", 
-    className: "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-700",
+    className: "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-200 dark:border-emerald-700",
     icon: "✅"
   },
   cancelled: { 
@@ -649,8 +649,8 @@ export function ServiceDetailsDialog({
 
               {service.status === "completed" && (
                 <Button
-                  variant="outline"
-                  className="w-full rounded-xl shadow-sm"
+                  variant="default"
+                  className="w-full rounded-xl shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={handleDownloadReceipt}
                   disabled={downloadingReceipt}
                 >
