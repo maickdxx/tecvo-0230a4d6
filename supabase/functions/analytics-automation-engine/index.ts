@@ -258,11 +258,17 @@ Deno.serve(async (req) => {
 
     if (activationTriggers.length > 0 || freeRecoveryTriggers.length > 0) {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
-      // Resolve ONLY owners (STRICT rule)
+      
+      // Get owner user_ids first (no FK between profiles and user_roles)
+      const { data: ownerRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "owner");
+      const ownerUserIds = new Set((ownerRoles || []).map((r: any) => r.user_id));
+
       const { data: profiles, error: profError } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan), user_roles!inner(role)")
-        .eq("user_roles.role", "owner")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan)")
         .gte("created_at", thirtyDaysAgo);
 
       if (profError) {
