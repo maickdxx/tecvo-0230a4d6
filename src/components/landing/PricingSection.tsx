@@ -3,7 +3,7 @@ import { analytics } from "@/lib/analytics";
 import { Check, X, ArrowRight, Star, Crown, Zap, Sparkles, Egg } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PAID_PLANS } from "@/lib/planConfig";
+import { PAID_PLANS, PLAN_CONFIG } from "@/lib/planConfig";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -26,6 +26,10 @@ export function PricingSection() {
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-background" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_30%,hsl(var(--primary)/0.06),transparent)]" />
+      {/* Easter decorative */}
+      <div className="absolute top-12 right-[6%] text-4xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '3s' }}>🐰</div>
+      <div className="absolute top-24 left-[4%] text-3xl opacity-10 animate-bounce hidden md:block" style={{ animationDuration: '4s', animationDelay: '1s' }}>🥚</div>
+      <div className="absolute bottom-16 right-[10%] text-3xl opacity-10 animate-bounce hidden md:block" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🌷</div>
 
       <div ref={ref} className="container mx-auto px-4 relative z-10">
         {/* Header */}
@@ -113,6 +117,15 @@ export function PricingSection() {
                       <span className="text-sm text-muted-foreground font-medium">{plan.period}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1.5">Cobrado mensalmente • Cancele quando quiser</p>
+                    {plan.slug && (
+                      <p className="text-xs font-semibold text-primary mt-1.5 flex items-center gap-1">
+                        🐣 Com PASCOA60: <span className="line-through text-muted-foreground mr-1">{plan.price}</span>
+                        <span className="text-primary font-bold">
+                          R$ {Math.round((PLAN_CONFIG[plan.slug]?.pricePerMonth ?? 0) * 0.4)}
+                        </span>
+                        /mês
+                      </p>
+                    )}
                   </div>
 
                   {/* Features */}

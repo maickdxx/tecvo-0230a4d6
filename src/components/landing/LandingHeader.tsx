@@ -27,14 +27,19 @@ export function LandingHeader() {
   };
 
   return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled
-          ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-xs"
-          : "bg-transparent"
-      )}
-    >
+    <>
+      {/* Easter promo strip */}
+      <div className="fixed top-0 left-0 right-0 z-[60] bg-primary text-primary-foreground text-center text-xs font-semibold py-1.5">
+        🐣 Páscoa Tecvo — <strong>60% OFF</strong> no primeiro mês com o cupom <code className="bg-white/20 px-1 rounded">PASCOA60</code> 🥚
+      </div>
+      <header
+        className={cn(
+          "fixed top-[30px] left-0 right-0 z-50 transition-all duration-300",
+          scrolled
+            ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-xs"
+            : "bg-transparent"
+        )}
+      >
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 group">
@@ -109,5 +114,6 @@ export function LandingHeader() {
         </nav>
       </div>
     </header>
+    </>
   );
 }

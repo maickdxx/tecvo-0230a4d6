@@ -20,11 +20,16 @@ export function HeroSection() {
   const cta = variant?.config?.hero_cta || "Testar grátis por 7 dias";
 
   return (
-    <section className="relative pt-28 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+    <section className="relative pt-36 pb-20 md:pt-48 md:pb-28 overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.12),transparent)]" />
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
       <div className="absolute top-20 left-[10%] w-72 h-72 bg-primary/[0.06] rounded-full blur-[100px]" />
       <div className="absolute bottom-0 right-[5%] w-96 h-96 bg-primary/[0.04] rounded-full blur-[120px]" />
+      {/* Easter decorative elements */}
+      <div className="absolute top-16 right-[8%] text-4xl opacity-20 animate-bounce hidden md:block" style={{ animationDuration: '3s' }}>🥚</div>
+      <div className="absolute top-32 left-[5%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '4s', animationDelay: '1s' }}>🐰</div>
+      <div className="absolute bottom-20 left-[15%] text-2xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🌸</div>
+      <div className="absolute bottom-32 right-[12%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '4.5s', animationDelay: '1.5s' }}>🐣</div>
       <div
         className="absolute inset-0 opacity-[0.025]"
         style={{
@@ -37,11 +42,8 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary/[0.08] border border-primary/20 text-primary text-xs font-semibold mb-7 animate-fade-in backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-              </span>
-              Usado por mais de 500 empresas de climatização
+              <span className="text-base">🐣</span>
+              Promoção de Páscoa — 60% OFF com <code className="bg-primary/15 px-1 rounded font-bold">PASCOA60</code>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-black tracking-[-0.03em] text-foreground leading-[1.08] mb-5 animate-fade-in">
