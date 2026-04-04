@@ -256,7 +256,7 @@ export function UpgradeModal({ open, onOpenChange, servicesUsed = 15, servicesLi
               ) : (
                 <ExternalLink className="h-4 w-4" />
               )}
-              {isLoading ? "Carregando..." : "Assinar agora"}
+              {isLoading ? "Carregando..." : "Assinar por R$1"}
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
               Agora não
