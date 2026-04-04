@@ -189,6 +189,8 @@ export default function OrdemServicoDetalhes() {
   const [isDownloading, setIsDownloading] = useState(false);
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
   const { typeLabels } = useServiceTypes();
+  const { paymentMethods } = usePaymentMethods();
+  const [receiptAction, setReceiptAction] = useState<"generate" | "download" | null>(null);
 
   const service = services.find(s => s.id === id);
   const { laudos, laudoCount } = useServiceLaudos(id);
