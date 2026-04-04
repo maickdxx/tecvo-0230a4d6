@@ -145,7 +145,7 @@ export function useSubscription() {
 
       const servicesUsed = usage?.services_created || 0;
       const servicesLimit = PLAN_LIMITS[plan];
-      const canCreateService = isTrialExpired ? false : (plan === "pro" || servicesUsed < PLAN_LIMITS[plan]);
+      const canCreateService = plan === "pro" || servicesUsed < PLAN_LIMITS[plan];
       const usagePercentage = plan === "pro" ? 0 : (servicesUsed / PLAN_LIMITS[plan]) * 100;
       const isNearLimit = plan !== "pro" && servicesUsed >= PLAN_LIMITS[plan] * 0.8;
 
