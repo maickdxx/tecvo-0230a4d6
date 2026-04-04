@@ -357,7 +357,8 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       return;
     }
     setText(value);
-    if (value.startsWith("/") && !value.startsWith("///")) {
+    // Show slash menu only for single "/" prefix, not while typing "//" or "///"
+    if (value.startsWith("/") && !value.startsWith("//")) {
       setShowSlashMenu(true);
       setSlashFilter(value.substring(1));
       setSlashIndex(0);
