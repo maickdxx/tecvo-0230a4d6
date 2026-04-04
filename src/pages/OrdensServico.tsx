@@ -145,6 +145,8 @@ export default function OrdensServico() {
   const { clients } = useClients();
   const { canCreateService, servicesUsed, isFreePlan } = useSubscription();
   const { profile } = useAuth();
+  const { organization } = useOrganization();
+  const { paymentMethods } = usePaymentMethods();
   const tz = useOrgTimezone();
   const { sendOSViaWhatsApp } = useServicePDFSend();
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
@@ -156,6 +158,12 @@ export default function OrdensServico() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<typeof services[0] | null>(null);
+  const [receiptAction, setReceiptAction] = useState<{ serviceId: string; type: "generate" | "download" } | null>(null);
+
+  const paymentMethodNames = useMemo(
+    () => Object.fromEntries(paymentMethods.map((method) => [method.slug, method.name])),
+    [paymentMethods]
+  );
 
   // Handle query params from QuickActions
   useEffect(() => {
