@@ -63,6 +63,7 @@ import { formatDateTimeInTz, formatDateInTz, formatTimeInTz } from "@/lib/timezo
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { useServices, SERVICE_STATUS_LABELS } from "@/hooks/useServices";
 import { useServiceTypes } from "@/hooks/useServiceTypes";
+import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import type { ServiceStatus } from "@/hooks/useServices";
 import { useServicePDFSend } from "@/hooks/useServicePDFSend";
 import { useServiceSignatures } from "@/hooks/useServiceSignatures";
@@ -73,6 +74,12 @@ import { useDocumentGuard } from "@/hooks/useDocumentGuard";
 import { CompanyDataCompletionModal } from "@/components/onboarding/CompanyDataCompletionModal";
 import { ServiceCompleteDialog } from "@/components/services/ServiceCompleteDialog";
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
+import {
+  downloadReceiptPdf,
+  ensureReceiptDraft,
+  fetchServicePayments,
+  resolveReceiptPayments,
+} from "@/lib/serviceReceipt";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -182,6 +189,8 @@ export default function OrdemServicoDetalhes() {
   const [isDownloading, setIsDownloading] = useState(false);
   const { guardAction, modalOpen: companyModalOpen, closeModal: closeCompanyModal, onDataSaved: onCompanyDataSaved } = useDocumentGuard();
   const { typeLabels } = useServiceTypes();
+  const { paymentMethods } = usePaymentMethods();
+  const [receiptAction, setReceiptAction] = useState<"generate" | "download" | null>(null);
 
   const service = services.find(s => s.id === id);
   const { laudos, laudoCount } = useServiceLaudos(id);
@@ -395,6 +404,96 @@ export default function OrdemServicoDetalhes() {
     }
   };
 
+  const paymentMethodNames = Object.fromEntries(
+    paymentMethods.map((method) => [method.slug, method.name])
+  );
+
+  const buildReceiptService = () => ({
+    id: service.id,
+    organization_id: service.organization_id,
+    client_name: service.client?.name || "Cliente",
+    client_phone: service.client?.phone || null,
+    quote_number: service.quote_number,
+    description: service.description,
+    value: service.value || 0,
+    payment_method: service.payment_method,
+    completed_date: service.completed_date,
+  });
+
+  const handleGenerateReceipt = async () => {
+    setReceiptAction("generate");
+    try {
+      const receiptService = buildReceiptService();
+      const payments = resolveReceiptPayments({
+        servicePayments: await fetchServicePayments(service.id),
+        paymentMethodNames,
+        fallbackPaymentMethod: service.payment_method,
+        serviceValue: service.value || 0,
+      });
+
+      const { created } = await ensureReceiptDraft({
+        organization,
+        service: receiptService,
+        payments,
+      });
+
+      toast({
+        title: created ? "Recibo gerado" : "Recibo já existente",
+        description: created
+          ? "Agora você já pode baixar o PDF do recibo."
+          : "Esta OS já possui um recibo gerado.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar recibo",
+        description: (error as Error).message,
+      });
+    } finally {
+      setReceiptAction(null);
+    }
+  };
+
+  const handleDownloadReceipt = async () => {
+    setReceiptAction("download");
+    try {
+      const receiptService = buildReceiptService();
+      const payments = resolveReceiptPayments({
+        servicePayments: await fetchServicePayments(service.id),
+        paymentMethodNames,
+        fallbackPaymentMethod: service.payment_method,
+        serviceValue: service.value || 0,
+      });
+
+      const { created } = await ensureReceiptDraft({
+        organization,
+        service: receiptService,
+        payments,
+      });
+
+      await downloadReceiptPdf({
+        organization,
+        service: receiptService,
+        payments,
+      });
+
+      toast({
+        title: created ? "Recibo gerado e baixado" : "Recibo baixado",
+        description: created
+          ? "Criamos o recibo desta OS antes do download."
+          : "O PDF do recibo foi baixado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao baixar recibo",
+        description: (error as Error).message,
+      });
+    } finally {
+      setReceiptAction(null);
+    }
+  };
+
   const itemsTotal = serviceItems.reduce((sum, item) => sum + calculateItemSubtotal(item), 0);
 
   return (
@@ -462,6 +561,32 @@ export default function OrdemServicoDetalhes() {
                   {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Baixar PDF
                 </DropdownMenuItem>
+                {service.status === "completed" && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => void handleGenerateReceipt()}
+                      disabled={!!receiptAction}
+                    >
+                      {receiptAction === "generate" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileText className="mr-2 h-4 w-4" />
+                      )}
+                      Gerar Recibo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => guardAction(() => void handleDownloadReceipt())}
+                      disabled={!!receiptAction}
+                    >
+                      {receiptAction === "download" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="mr-2 h-4 w-4" />
+                      )}
+                      Baixar Recibo PDF
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 {laudoCount > 0 && (
                   <DropdownMenuItem onClick={() => {
