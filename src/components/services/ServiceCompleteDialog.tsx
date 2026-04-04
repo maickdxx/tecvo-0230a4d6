@@ -34,7 +34,8 @@ interface ServiceCompleteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   serviceValue: number;
-  onConfirm: (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => Promise<void>;
+  onConfirm: (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string, sendReceipt?: boolean) => Promise<void>;
+  showReceiptOption?: boolean;
 }
 
 const formatCurrency = (value: number) =>
