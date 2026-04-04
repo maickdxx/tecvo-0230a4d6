@@ -111,9 +111,13 @@ export default function ExecutarServico() {
   };
 
   // Called from ServiceCompleteDialog (has value)
-  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
+  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string, sendReceipt?: boolean) => {
     await handleFinalizeService(payments, signatureBlob, signerName);
     setShowCompleteDialog(false);
+    if (sendReceipt && service?.client?.phone) {
+      setLastPayments(payments);
+      setShowReceiptDialog(true);
+    }
   };
 
   // Called from signature-only view (no value)
