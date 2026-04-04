@@ -13,7 +13,9 @@ import { toast } from "@/hooks/use-toast";
 import { SignatureCanvas } from "@/components/services/SignatureCanvas";
 import { useServiceSignatures } from "@/hooks/useServiceSignatures";
 import { ServiceCompleteDialog } from "@/components/services/ServiceCompleteDialog";
+import { SendReceiptDialog } from "@/components/services/SendReceiptDialog";
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
+import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +37,8 @@ export default function ExecutarServico() {
   const [showFinalizeDialog, setShowFinalizeDialog] = useState(false);
   const [showSignatureView, setShowSignatureView] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [lastPayments, setLastPayments] = useState<ServicePaymentInput[]>([]);
 
   const {
     equipmentList,
@@ -54,6 +58,7 @@ export default function ExecutarServico() {
 
   const { updateStatus } = useServices({ skipQuery: true });
   const { createSignature, isCreating: isSavingSignature } = useServiceSignatures(serviceId);
+  const { paymentMethods } = usePaymentMethods();
 
   // Fetch service details including value for payment flow
   const { data: service } = useQuery({
@@ -62,7 +67,7 @@ export default function ExecutarServico() {
       if (!serviceId) return null;
       const { data } = await supabase
         .from("services")
-        .select("id, description, quote_number, status, value, payment_method, client:clients!client_id(name)")
+        .select("id, description, quote_number, status, value, payment_method, client:clients!client_id(name, phone)")
         .eq("id", serviceId)
         .single();
       return data;
@@ -77,7 +82,7 @@ export default function ExecutarServico() {
     : null;
 
   // Finalize without payment (value = 0)
-  const handleFinalizeService = async (payments?: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
+  const handleFinalizeService = async (payments?: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string, skipNavigate?: boolean) => {
     if (!serviceId) return;
     try {
       // Finalize the technical report (draft → finalized)
@@ -99,16 +104,23 @@ export default function ExecutarServico() {
         await createSignature({ serviceId, blob: signatureBlob, signerName });
       }
       toast({ title: "Serviço finalizado com sucesso! 🚀" });
-      navigate("/meus-servicos");
+      if (!skipNavigate) {
+        navigate("/meus-servicos");
+      }
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erro", description: e.message });
     }
   };
 
   // Called from ServiceCompleteDialog (has value)
-  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
-    await handleFinalizeService(payments, signatureBlob, signerName);
+  const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string, sendReceipt?: boolean) => {
+    const willShowReceipt = sendReceipt && !!service?.client?.phone;
+    await handleFinalizeService(payments, signatureBlob, signerName, willShowReceipt);
     setShowCompleteDialog(false);
+    if (willShowReceipt) {
+      setLastPayments(payments);
+      setShowReceiptDialog(true);
+    }
   };
 
   // Called from signature-only view (no value)
@@ -286,6 +298,25 @@ export default function ExecutarServico() {
         onOpenChange={setShowCompleteDialog}
         serviceValue={serviceValue}
         onConfirm={handleCompleteWithPayments}
+        showReceiptOption={!!service?.client?.phone}
+      />
+
+      {/* Receipt dialog */}
+      <SendReceiptDialog
+        open={showReceiptDialog}
+        onOpenChange={(open) => {
+          setShowReceiptDialog(open);
+          if (!open) navigate("/meus-servicos");
+        }}
+        clientName={service?.client?.name || ""}
+        clientPhone={service?.client?.phone || ""}
+        serviceDescription={service?.description || ""}
+        quoteNumber={service?.quote_number ? String(service.quote_number) : null}
+        serviceValue={serviceValue}
+        payments={lastPayments}
+        paymentMethodNames={Object.fromEntries(
+          paymentMethods.map((m) => [m.slug, m.name])
+        )}
       />
     </AppLayout>
   );

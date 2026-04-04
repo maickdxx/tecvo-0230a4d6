@@ -34,7 +34,8 @@ interface ServiceCompleteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   serviceValue: number;
-  onConfirm: (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => Promise<void>;
+  onConfirm: (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string, sendReceipt?: boolean) => Promise<void>;
+  showReceiptOption?: boolean;
 }
 
 const formatCurrency = (value: number) =>
@@ -55,6 +56,7 @@ export function ServiceCompleteDialog({
   onOpenChange,
   serviceValue,
   onConfirm,
+  showReceiptOption = false,
 }: ServiceCompleteDialogProps) {
   const [lines, setLines] = useState<PaymentLine[]>([
     { payment_method: "", amount: serviceValue > 0 ? String(serviceValue) : "", financial_account_id: "" },
@@ -63,6 +65,7 @@ export function ServiceCompleteDialog({
   const [clientDidNotPay, setClientDidNotPay] = useState(false);
   const [step, setStep] = useState<"payment" | "signature">("payment");
   const [signerName, setSignerName] = useState("");
+  const [sendReceipt, setSendReceipt] = useState(showReceiptOption);
   const [hasSignatureDrawn, setHasSignatureDrawn] = useState(false);
   const signatureRef = useRef<SignatureCanvasRef>(null);
 
@@ -155,7 +158,7 @@ export function ServiceCompleteDialog({
             amount: parseFloat(l.amount),
             financial_account_id: l.financial_account_id,
           }));
-      await onConfirm(payments, signatureBlob, signerName || undefined);
+      await onConfirm(payments, signatureBlob, signerName || undefined, sendReceipt);
       onOpenChange(false);
       setStep("payment");
       setSignerName("");
@@ -335,6 +338,20 @@ export function ServiceCompleteDialog({
                   </div>
                 )}
               </div>
+
+              {/* Receipt option */}
+              {showReceiptOption && !clientDidNotPay && (
+                <div className="flex items-center space-x-2 mt-3 rounded-lg border border-border p-3 bg-muted/30">
+                  <Checkbox
+                    id="sendReceipt"
+                    checked={sendReceipt}
+                    onCheckedChange={(checked) => setSendReceipt(checked === true)}
+                  />
+                  <Label htmlFor="sendReceipt" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                    🧾 Enviar recibo via WhatsApp
+                  </Label>
+                </div>
+              )}
             </div>
 
             <DialogFooter>
