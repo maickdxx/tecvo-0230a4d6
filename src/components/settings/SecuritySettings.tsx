@@ -146,29 +146,41 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
           <CardDescription>Altere sua senha de acesso</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">Nova senha</Label>
+              <Label htmlFor="current-password">Senha atual</Label>
               <Input
-                id="new-password"
+                id="current-password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Digite sua senha atual"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirmar nova senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="Repita a nova senha"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nova senha</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar nova senha</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Repita a nova senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
             </div>
           </div>
-          <Button onClick={handleChangePassword} disabled={changingPassword || !newPassword}>
+          <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword}>
             {changingPassword ? "Alterando..." : "Alterar senha"}
           </Button>
         </CardContent>
