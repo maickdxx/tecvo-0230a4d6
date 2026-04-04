@@ -372,9 +372,21 @@ async function fetchConversationHistory(supabase: any, contactId: string, limit 
 /**
  * Call Lovable AI Gateway (non-streaming)
  */
-async function callAI(systemPrompt: string, conversationMessages: any[]): Promise<{ content: string; usage: any }> {
+async function callAI(systemPrompt: string, conversationMessages: any[], tools?: any[]): Promise<{ content: string; usage: any; toolCalls: any[] | null }> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  const body: any = {
+    model: "google/gemini-3-flash-preview",
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...conversationMessages,
+    ],
+    stream: false,
+  };
+  if (tools && tools.length > 0) {
+    body.tools = tools;
+  }
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -382,14 +394,7 @@ async function callAI(systemPrompt: string, conversationMessages: any[]): Promis
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...conversationMessages,
-      ],
-      stream: false,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -399,10 +404,75 @@ async function callAI(systemPrompt: string, conversationMessages: any[]): Promis
   }
 
   const result = await response.json();
+  const choice = result.choices?.[0];
   return {
-    content: result.choices?.[0]?.message?.content || "",
+    content: choice?.message?.content || "",
     usage: result.usage || {},
+    toolCalls: choice?.message?.tool_calls || null,
   };
+}
+
+// Financial tools for admin_empresa mode
+const FINANCIAL_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "register_transaction",
+      description: "Registra uma transação financeira (receita ou despesa) no sistema. Use quando o usuário pedir para registrar um gasto, despesa, receita ou pagamento.",
+      parameters: {
+        type: "object",
+        properties: {
+          type: { type: "string", enum: ["income", "expense"], description: "Tipo: income (receita) ou expense (despesa)" },
+          amount: { type: "number", description: "Valor em reais (positivo)" },
+          description: { type: "string", description: "Descrição da transação" },
+          category: { type: "string", description: "Categoria: ex: material, combustível, alimentação, aluguel, fornecedor, serviço, outro" },
+          date: { type: "string", description: "Data no formato YYYY-MM-DD. Use a data de hoje se não especificada." },
+          payment_method: { type: "string", enum: ["pix", "dinheiro", "cartao_credito", "cartao_debito", "boleto", "transferencia", "outro"], description: "Forma de pagamento" },
+        },
+        required: ["type", "amount", "description", "category", "date"],
+        additionalProperties: false,
+      },
+    },
+  },
+];
+
+async function executeFinancialTool(supabase: any, organizationId: string, toolCall: any): Promise<string> {
+  const fnName = toolCall.function?.name;
+  let args: any;
+  try {
+    args = JSON.parse(toolCall.function?.arguments || "{}");
+  } catch {
+    return "Erro: argumentos inválidos.";
+  }
+
+  if (fnName === "register_transaction") {
+    const { type, amount, description, category, date, payment_method } = args;
+    if (!type || !amount || !description || !category || !date) {
+      return "Erro: campos obrigatórios faltando (type, amount, description, category, date).";
+    }
+    if (amount <= 0) return "Erro: valor deve ser positivo.";
+
+    const { error } = await supabase.from("transactions").insert({
+      organization_id: organizationId,
+      type,
+      amount,
+      description,
+      category,
+      date,
+      status: type === "expense" ? "paid" : "pending",
+      ...(payment_method ? { payment_method } : {}),
+    });
+
+    if (error) {
+      console.error("[WEBHOOK-WHATSAPP] Transaction insert error:", error);
+      return `Erro ao registrar: ${error.message}`;
+    }
+
+    const typeLabel = type === "income" ? "Receita" : "Despesa";
+    return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}.`;
+  }
+
+  return "Ferramenta desconhecida.";
 }
 
 /**
