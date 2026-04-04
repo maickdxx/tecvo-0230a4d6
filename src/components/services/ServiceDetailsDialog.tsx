@@ -649,8 +649,8 @@ export function ServiceDetailsDialog({
 
               {service.status === "completed" && (
                 <Button
-                  variant="outline"
-                  className="w-full rounded-xl shadow-sm"
+                  variant="default"
+                  className="w-full rounded-xl shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={handleDownloadReceipt}
                   disabled={downloadingReceipt}
                 >
