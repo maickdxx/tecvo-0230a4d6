@@ -10,8 +10,34 @@ const corsHeaders = {
 /**
  * Priority map: higher number = higher priority.
  * When multiple automations are eligible on the same day, only the highest priority fires.
+ *
+ * NEW MODEL (R$1 first month):
+ *  - activation_d0..d7  → onboarding journey for new signups (replaces old trial_d0..d7)
+ *  - free_recovery_d1/d3/d7 → recovery for users who signed up but never subscribed
+ *  - inactive_3d/7d/15d → inactivity re-engagement (unchanged)
+ *  - churn_recovery      → 30-day inactive (unchanged)
+ *  - new_user_activation  → no-OS nudge (unchanged)
+ *  - signup_recovery      → abandoned signup (unchanged)
  */
 const TRIGGER_PRIORITY: Record<string, number> = {
+  // Activation journey (first 7 days after signup)
+  activation_d0: 5,
+  activation_d1: 10,
+  activation_d3: 20,
+  activation_d5: 30,
+  activation_d7: 40,
+  // Free user recovery (days after signup for users still on free plan)
+  free_recovery_d1: 45,
+  free_recovery_d3: 35,
+  free_recovery_d7: 25,
+  // Other
+  new_user_activation: 15,
+  signup_recovery: 5,
+  churn_recovery: 15,
+  inactive_3d: 12,
+  inactive_7d: 18,
+  inactive_15d: 22,
+  // Legacy trial triggers — kept for backward compat but mapped to activation
   trial_d0: 5,
   trial_d1: 10,
   trial_d3: 20,
@@ -23,15 +49,19 @@ const TRIGGER_PRIORITY: Record<string, number> = {
   post_trial_d1: 45,
   post_trial_d3: 35,
   post_trial_d7: 25,
-  new_user_activation: 15,
-  signup_recovery: 5,
-  churn_recovery: 15,
-  inactive_3d: 12,
-  inactive_7d: 18,
-  inactive_15d: 22,
 };
 
-const TRIAL_DAY_MAP: Record<string, number> = {
+/**
+ * Activation day map: triggers based on days since signup.
+ * Works for both new activation_dX triggers AND legacy trial_dX triggers.
+ */
+const ACTIVATION_DAY_MAP: Record<string, number> = {
+  activation_d0: 0,
+  activation_d1: 1,
+  activation_d3: 3,
+  activation_d5: 5,
+  activation_d7: 7,
+  // Legacy mappings
   trial_d0: 0,
   trial_d1: 1,
   trial_d3: 3,
@@ -39,18 +69,21 @@ const TRIAL_DAY_MAP: Record<string, number> = {
   trial_d7: 7,
 };
 
-const POST_TRIAL_DAY_MAP: Record<string, number> = {
-  post_trial_d1: 1,
-  post_trial_d3: 3,
-  post_trial_d7: 7,
+/**
+ * Free user recovery: days since signup for users who never subscribed.
+ * Replaces post_trial_dX triggers.
+ */
+const FREE_RECOVERY_DAY_MAP: Record<string, number> = {
+  free_recovery_d1: 8,   // 1 day after the 7-day activation window
+  free_recovery_d3: 10,
+  free_recovery_d7: 14,
+  // Legacy mappings
+  post_trial_d1: 8,
+  post_trial_d3: 10,
+  post_trial_d7: 14,
 };
 
-/**
- * Calculate days between two dates using Brazil timezone (America/Sao_Paulo).
- * This avoids off-by-one errors for users in BRT/BRST timezones.
- */
 function daysBetween(dateA: Date, dateB: Date): number {
-  // Convert to BRT date strings and compare calendar days
   const fmt = (d: Date) => {
     const parts = d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).split("-");
     return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
@@ -125,23 +158,35 @@ function buildAutomationEmailHtml(userName: string, bodyText: string): string {
 
 // ── Email subject map ──
 const EMAIL_SUBJECTS: Record<string, string> = {
-  trial_d0: "🚀 Bem-vindo à Tecvo!",
-  trial_d1: "📊 Como está sua experiência na Tecvo?",
-  trial_d3: "🏆 Resultados Reais com a Tecvo",
-  trial_d5: "🔥 Chega de planilhas e papelada!",
-  trial_d7: "{{name}}, testar sem usar não mostra resultado",
-  trial_ending_3d: "{{name}}, em 3 dias você perde o controle dos seus clientes",
-  trial_ending_1d: "Amanhã você perde seus clientes de vista, {{name}}",
-  trial_ending_0d: "{{name}}, seu faturamento automático parou agora",
-  post_trial_d1: "💪 Seus dados ainda estão salvos",
-  post_trial_d3: "🚀 Sentimos sua falta!",
-  post_trial_d7: "⏰ Última chamada — reative agora",
+  // Activation journey
+  activation_d0: "🚀 Bem-vindo à Tecvo!",
+  activation_d1: "📊 Como está sua experiência na Tecvo?",
+  activation_d3: "🏆 Resultados Reais com a Tecvo",
+  activation_d5: "🔥 Chega de planilhas e papelada!",
+  activation_d7: "{{name}}, comece por R$1 e organize seu negócio",
+  // Free recovery
+  free_recovery_d1: "💪 A Tecvo está esperando por você",
+  free_recovery_d3: "🚀 Sentimos sua falta!",
+  free_recovery_d7: "⏰ Última chamada — assine por R$1",
+  // Other
   new_user_activation: "🚀 Crie sua primeira Ordem de Serviço",
   signup_recovery: "😊 Falta pouco pra finalizar seu cadastro",
   churn_recovery: "{{name}}, seus clientes continuam precisando de manutenção",
   inactive_3d: "{{name}}, seus clientes podem estar esperando",
   inactive_7d: "{{name}}, faz 1 semana — quanto dinheiro ficou na mesa?",
   inactive_15d: "{{name}}, última chamada antes de perder o controle",
+  // Legacy trial triggers → map to same subjects
+  trial_d0: "🚀 Bem-vindo à Tecvo!",
+  trial_d1: "📊 Como está sua experiência na Tecvo?",
+  trial_d3: "🏆 Resultados Reais com a Tecvo",
+  trial_d5: "🔥 Chega de planilhas e papelada!",
+  trial_d7: "{{name}}, comece por R$1 e organize seu negócio",
+  trial_ending_3d: "{{name}}, assine por R$1 e não perca seus clientes",
+  trial_ending_1d: "{{name}}, assine por R$1 e mantenha o controle",
+  trial_ending_0d: "{{name}}, seu acesso está limitado — assine por R$1",
+  post_trial_d1: "💪 A Tecvo está esperando por você",
+  post_trial_d3: "🚀 Sentimos sua falta!",
+  post_trial_d7: "⏰ Última chamada — assine por R$1",
 };
 
 Deno.serve(async (req) => {
@@ -185,7 +230,7 @@ Deno.serve(async (req) => {
       trigger_type: string;
       automation_id: string;
       priority: number;
-      email?: string; // for signup_recovery
+      email?: string;
       metadata?: any;
     }
     const candidatesByUser = new Map<string, Candidate[]>();
@@ -197,7 +242,6 @@ Deno.serve(async (req) => {
       candidatesByUser.set(c.user_id, existing);
     }
 
-    // Helper to get user email from auth
     async function getUserEmail(userId: string): Promise<string | null> {
       try {
         const { data } = await supabase.auth.admin.getUserById(userId);
@@ -207,17 +251,24 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 2a. Trial journey (D0, D1, D3, D5, D7) ──
-    const trialTriggers = automations.filter((a: any) => TRIAL_DAY_MAP[a.trigger_type] !== undefined);
-    const postTrialTriggers = automations.filter((a: any) => POST_TRIAL_DAY_MAP[a.trigger_type] !== undefined);
+    // ── 2a. Activation journey (replaces trial journey) ──
+    // Based on days since signup, targeting users who haven't subscribed yet (free plan).
+    const activationTriggers = automations.filter((a: any) => ACTIVATION_DAY_MAP[a.trigger_type] !== undefined);
+    const freeRecoveryTriggers = automations.filter((a: any) => FREE_RECOVERY_DAY_MAP[a.trigger_type] !== undefined);
 
-    if (trialTriggers.length > 0 || postTrialTriggers.length > 0) {
+    if (activationTriggers.length > 0 || freeRecoveryTriggers.length > 0) {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
-      // ── Resolve ONLY owners (STRICT rule) ──
+      
+      // Get owner user_ids first (no FK between profiles and user_roles)
+      const { data: ownerRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "owner");
+      const ownerUserIds = new Set((ownerRoles || []).map((r: any) => r.user_id));
+
       const { data: profiles, error: profError } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(trial_ends_at, subscription_status, plan), user_roles!inner(role)")
-        .eq("user_roles.role", "owner")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan)")
         .gte("created_at", thirtyDaysAgo);
 
       if (profError) {
@@ -225,113 +276,62 @@ Deno.serve(async (req) => {
       } else if (profiles && profiles.length > 0) {
         console.log(`[AUTOMATION-ENGINE] Found ${profiles.length} recent profiles to evaluate`);
 
-        // Email cache is declared at outer scope
-
         for (const profile of profiles) {
+          // Only process owners
+          if (!ownerUserIds.has(profile.user_id)) continue;
           const org = profile.organizations as any;
-          const trialEndsAt = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
           const signupDate = new Date(profile.created_at);
           const daysSinceSignup = daysBetween(signupDate, now);
           const phone = profile.whatsapp_ai_enabled ? profile.phone : null;
           const firstName = profile.full_name?.split(" ")[0] || "amigo(a)";
 
-          // Get user email (cached)
           if (!emailCache.has(profile.user_id)) {
             emailCache.set(profile.user_id, await getUserEmail(profile.user_id));
           }
           const userEmail = emailCache.get(profile.user_id) || null;
 
-          const trialActive = trialEndsAt && trialEndsAt > now;
-          const trialExpired = trialEndsAt && trialEndsAt <= now;
-          const daysSinceExpiry = trialEndsAt ? daysBetween(trialEndsAt, now) : -1;
+          // Skip users who already have a paid active plan
+          const hasPaidPlan = org?.subscription_status === "active" && org?.plan && org.plan !== "free";
+          if (hasPaidPlan) continue;
 
-          // Skip users who already have a paid plan
-          if (org?.subscription_status === "active" && org?.plan && org.plan !== "trial") {
-            continue;
-          }
-
-          // Trial automations
-          if (trialActive) {
-            for (const auto of trialTriggers) {
-              const targetDay = TRIAL_DAY_MAP[auto.trigger_type];
-              if (daysSinceSignup === targetDay) {
-                addCandidate({
-                  user_id: profile.id,
-                  org_id: profile.organization_id,
-                  phone,
-                  user_email: userEmail,
-                  name: firstName,
-                  trigger_type: auto.trigger_type,
-                  automation_id: auto.id,
-                  priority: TRIGGER_PRIORITY[auto.trigger_type] || 0,
-                });
-              }
+          // Activation automations (D0-D7, first week after signup)
+          for (const auto of activationTriggers) {
+            const targetDay = ACTIVATION_DAY_MAP[auto.trigger_type];
+            if (daysSinceSignup === targetDay) {
+              addCandidate({
+                user_id: profile.id,
+                org_id: profile.organization_id,
+                phone,
+                user_email: userEmail,
+                name: firstName,
+                trigger_type: auto.trigger_type,
+                automation_id: auto.id,
+                priority: TRIGGER_PRIORITY[auto.trigger_type] || 0,
+              });
             }
           }
 
-          // Post-trial automations
-          if (trialExpired && daysSinceExpiry >= 0) {
-            for (const auto of postTrialTriggers) {
-              const targetDay = POST_TRIAL_DAY_MAP[auto.trigger_type];
-              if (daysSinceExpiry === targetDay) {
-                addCandidate({
-                  user_id: profile.id,
-                  org_id: profile.organization_id,
-                  phone,
-                  user_email: userEmail,
-                  name: firstName,
-                  trigger_type: auto.trigger_type,
-                  automation_id: auto.id,
-                  priority: TRIGGER_PRIORITY[auto.trigger_type] || 0,
-                });
-              }
+          // Free recovery automations (after activation window, still free)
+          for (const auto of freeRecoveryTriggers) {
+            const targetDay = FREE_RECOVERY_DAY_MAP[auto.trigger_type];
+            if (daysSinceSignup === targetDay) {
+              addCandidate({
+                user_id: profile.id,
+                org_id: profile.organization_id,
+                phone,
+                user_email: userEmail,
+                name: firstName,
+                trigger_type: auto.trigger_type,
+                automation_id: auto.id,
+                priority: TRIGGER_PRIORITY[auto.trigger_type] || 0,
+              });
             }
           }
         }
       }
     }
 
-    // ── 2b. Trial ending alerts ──
-    const endingTriggers = automations.filter((a: any) => a.trigger_type.startsWith("trial_ending_"));
-    for (const auto of endingTriggers) {
-      const daysMap: Record<string, number> = { "3d": 3, "1d": 1, "0d": 0 };
-      const suffix = auto.trigger_type.split("_")[2];
-      const daysUntilEnd = daysMap[suffix] ?? -1;
-      if (daysUntilEnd === -1) continue;
-
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + daysUntilEnd);
-      const dateStr = targetDate.toISOString().split("T")[0];
-
-      const { data: orgs } = await supabase
-        .from("organizations")
-        .select("id, name, trial_ends_at")
-        .filter("trial_ends_at", "gte", `${dateStr}T00:00:00`)
-        .filter("trial_ends_at", "lte", `${dateStr}T23:59:59`);
-
-          // ── Resolve SHIELDED owner contact (STRICT: only owner role, no fallback) ──
-          const ownerContact = await resolveOwnerContact(supabase, org.id);
-
-          if (ownerContact.userId) {
-            const userEmail = ownerContact.email;
-            addCandidate({
-              user_id: ownerContact.userId,
-              org_id: org.id,
-              phone: ownerContact.aiEnabled ? ownerContact.phone : null,
-              user_email: userEmail,
-              name: ownerContact.fullName?.split(" ")[0] || "amigo(a)",
-              trigger_type: auto.trigger_type,
-              automation_id: auto.id,
-              priority: TRIGGER_PRIORITY[auto.trigger_type] || 0,
-            });
-          } else {
-            console.log(`[AUTOMATION-ENGINE] Shielded block for org ${org.id}: ${ownerContact.blockedReason}`);
-            await logShieldBlocked(supabase, org.id, ownerContact, "automation_engine", `Trial ending alert: ${auto.trigger_type}`);
-          }
-
-    }
-
-    // ── 2c. Signup Recovery ──
+    // ── 2b. Signup Recovery ──
     const signupRecovery = automationsByType.get("signup_recovery");
     if (signupRecovery) {
       const delay = signupRecovery.delay_minutes || 30;
@@ -348,7 +348,7 @@ Deno.serve(async (req) => {
       if (events) {
         for (const event of events) {
           const eventEmail = event.metadata?.email;
-          const phone = event.metadata?.phone;
+          const eventPhone = event.metadata?.phone;
           const name = event.metadata?.fullName || "amigo(a)";
           if (!eventEmail) continue;
 
@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
             addCandidate({
               user_id: `signup_${eventEmail}`,
               org_id: "",
-              phone,
+              phone: eventPhone,
               user_email: eventEmail,
               name: name.split(" ")[0],
               trigger_type: "signup_recovery",
@@ -376,13 +376,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 2d. New User Activation ──
+    // ── 2c. New User Activation ──
     const activationAuto = automationsByType.get("new_user_activation");
     if (activationAuto) {
       const delay = activationAuto.delay_minutes || 1440;
       const targetDate = new Date(now.getTime() - delay * 60000);
-
-      // Use a wider 24-hour window to not miss users due to cron timing
       const startTime = new Date(targetDate.getTime() - 12 * 3600000).toISOString();
       const endTime = new Date(targetDate.getTime() + 12 * 3600000).toISOString();
 
@@ -416,7 +414,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 2e. Inactivity Detection (3d, 7d, 15d) + Churn Recovery ──
+    // ── 2d. Inactivity Detection (3d, 7d, 15d) + Churn Recovery ──
     const INACTIVITY_MAP: Record<string, number> = {
       inactive_3d: 3,
       inactive_7d: 7,
@@ -427,28 +425,34 @@ Deno.serve(async (req) => {
     const churnAuto = automationsByType.get("churn_recovery");
 
     if (inactivityTriggers.length > 0 || churnAuto) {
-      // Get all users who have logged in at some point (use auth.users last_sign_in_at)
-      // ── Resolve ONLY owners for inactivity alerts (STRICT rule) ──
+      // Get owner user_ids (reuse if available, otherwise fetch)
+      let ownerUserIdsForInactivity: Set<string>;
+      if (activationTriggers.length > 0 || freeRecoveryTriggers.length > 0) {
+        // Already fetched above — but scope is different, fetch again
+        const { data: ownerRoles2 } = await supabase.from("user_roles").select("user_id").eq("role", "owner");
+        ownerUserIdsForInactivity = new Set((ownerRoles2 || []).map((r: any) => r.user_id));
+      } else {
+        const { data: ownerRoles2 } = await supabase.from("user_roles").select("user_id").eq("role", "owner");
+        ownerUserIdsForInactivity = new Set((ownerRoles2 || []).map((r: any) => r.user_id));
+      }
+
       const { data: allProfiles } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan, trial_ends_at), user_roles!inner(role)")
-        .eq("user_roles.role", "owner")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan)")
         .not("organization_id", "is", null);
 
       if (allProfiles && allProfiles.length > 0) {
         for (const profile of allProfiles) {
+          if (!ownerUserIdsForInactivity.has(profile.user_id)) continue;
           const org = profile.organizations as any;
 
-          // Skip users in active trial (they get trial automations instead)
-          const trialEndsAt = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
-          const trialActive = trialEndsAt && trialEndsAt > now;
-          if (trialActive) continue;
+          // Only send inactivity alerts to paying users or recently signed-up free users
+          const signupDate = new Date(profile.created_at);
+          const daysSinceSignup = daysBetween(signupDate, now);
 
-          // Skip users who expired less than 7 days ago (they get post_trial automations)
-          const daysSinceExpiry = trialEndsAt ? daysBetween(trialEndsAt, now) : 999;
-          if (daysSinceExpiry <= 7 && daysSinceExpiry >= 0) continue;
+          // Skip brand new users (they get activation automations)
+          if (daysSinceSignup <= 14) continue;
 
-          // Use auth admin to get last_sign_in_at
           let lastSignIn: Date | null = null;
           try {
             const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
@@ -460,21 +464,18 @@ Deno.serve(async (req) => {
           if (!lastSignIn) continue;
 
           const daysSinceAccess = daysBetween(lastSignIn, now);
-          if (daysSinceAccess < 3) continue; // Active user, skip
+          if (daysSinceAccess < 3) continue;
 
           const phone = profile.whatsapp_ai_enabled ? profile.phone : null;
           const firstName = profile.full_name?.split(" ")[0] || "amigo(a)";
 
-          // Cache email
           if (!emailCache.has(profile.user_id)) {
             emailCache.set(profile.user_id, await getUserEmail(profile.user_id));
           }
           const userEmail = emailCache.get(profile.user_id) || null;
 
-          // Match to inactivity automations
           for (const auto of inactivityTriggers) {
             const targetDays = INACTIVITY_MAP[auto.trigger_type];
-            // Use range: target ± 1 day to handle cron timing
             if (daysSinceAccess >= targetDays && daysSinceAccess <= targetDays + 1) {
               addCandidate({
                 user_id: profile.id,
@@ -489,7 +490,6 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Churn recovery: 30+ days inactive
           if (churnAuto && daysSinceAccess >= 30 && daysSinceAccess <= 31) {
             addCandidate({
               user_id: profile.id,
@@ -506,7 +506,7 @@ Deno.serve(async (req) => {
       }
     }
 
-
+    // ──────────────────────────────────────────────
     // 3. DEDUP & SEND
     // ──────────────────────────────────────────────
     const results: any[] = [];
@@ -517,8 +517,6 @@ Deno.serve(async (req) => {
 
       console.log(`[AUTOMATION-ENGINE] User ${userId}: ${candidates.length} eligible, best=${best.trigger_type} (pri=${best.priority})`);
 
-      // Check if already SUCCESSFULLY sent THIS automation to this user
-      // Failed sends should be retried
       const { count: alreadySentThis } = await supabase
         .from("analytics_automation_logs")
         .select("*", { count: "exact", head: true })
@@ -531,7 +529,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Check 1/day limit (only count successful sends)
       const { count: sentToday } = await supabase
         .from("analytics_automation_logs")
         .select("*", { count: "exact", head: true })
@@ -558,7 +555,7 @@ Deno.serve(async (req) => {
       const waMessage = automation.message_template.replace("{{name}}", best.name);
       const emailBody = automation.email_template || waMessage;
 
-      // ── SEND VIA WHATSAPP (if phone available) ──
+      // ── SEND VIA WHATSAPP ──
       let waStatus = "skipped";
       let waError: string | null = null;
 
@@ -590,11 +587,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── SEND VIA EMAIL (if email available AND (no phone OR wa failed)) ──
+      // ── SEND VIA EMAIL ──
       let emailStatus = "skipped";
       let emailError: string | null = null;
 
-      // Send email alongside WhatsApp (both channels), not just as fallback
       const shouldSendEmail = hasEmail && !!automation.email_template;
 
       if (shouldSendEmail && contactEmail) {
@@ -615,7 +611,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Determine overall status
       const overallStatus = waStatus === "sent" || emailStatus === "sent" ? "sent" : "error";
       const channelUsed = waStatus === "sent" && emailStatus === "sent"
         ? "whatsapp+email"
@@ -625,7 +620,6 @@ Deno.serve(async (req) => {
         ? "email"
         : waStatus === "error" ? "whatsapp" : "email";
 
-      // 5. Log the result
       await supabase.from("analytics_automation_logs").insert({
         automation_id: best.automation_id,
         user_id: best.email ? null : userId,
@@ -648,15 +642,19 @@ Deno.serve(async (req) => {
         },
       });
 
-      // 6. Update journey state (for ALL users, not just those with phone)
+      // Update journey state
       if (!best.email) {
+        const journeyType = best.trigger_type.startsWith("free_recovery") || best.trigger_type.startsWith("post_trial")
+          ? "recovery"
+          : "activation";
+
         await supabase
           .from("user_journey_state")
           .upsert(
             {
               user_id: userId,
               organization_id: best.org_id || null,
-              journey_type: best.trigger_type.startsWith("post_trial") ? "post_trial" : "trial",
+              journey_type: journeyType,
               current_step: best.trigger_type,
               last_automation_id: best.automation_id,
               last_sent_at: new Date().toISOString(),
