@@ -673,6 +673,32 @@ export default function OrdensServico() {
                     <Send className="mr-2 h-4 w-4" />
                     Enviar OS via WhatsApp
                   </DropdownMenuItem>
+                  {service.status === "completed" && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => handleGenerateReceipt(service)}
+                        disabled={receiptAction?.serviceId === service.id}
+                      >
+                        {receiptAction?.serviceId === service.id && receiptAction.type === "generate" ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileText className="mr-2 h-4 w-4" />
+                        )}
+                        Gerar Recibo
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => guardAction(() => void handleDownloadReceipt(service))}
+                        disabled={receiptAction?.serviceId === service.id}
+                      >
+                        {receiptAction?.serviceId === service.id && receiptAction.type === "download" ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="mr-2 h-4 w-4" />
+                        )}
+                        Baixar Recibo PDF
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuItem onClick={() => navigate(`/laudos/novo?service_id=${service.id}`)}>
                     <FileText className="mr-2 h-4 w-4" />
                     Criar Laudo Técnico

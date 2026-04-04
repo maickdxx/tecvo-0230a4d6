@@ -561,6 +561,32 @@ export default function OrdemServicoDetalhes() {
                   {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Baixar PDF
                 </DropdownMenuItem>
+                {service.status === "completed" && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => void handleGenerateReceipt()}
+                      disabled={!!receiptAction}
+                    >
+                      {receiptAction === "generate" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileText className="mr-2 h-4 w-4" />
+                      )}
+                      Gerar Recibo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => guardAction(() => void handleDownloadReceipt())}
+                      disabled={!!receiptAction}
+                    >
+                      {receiptAction === "download" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="mr-2 h-4 w-4" />
+                      )}
+                      Baixar Recibo PDF
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 {laudoCount > 0 && (
                   <DropdownMenuItem onClick={() => {

@@ -52,6 +52,31 @@ interface ReceiptServicePaymentRow {
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
+function toReceiptPaymentArray(snapshot: unknown): ReceiptPaymentSnapshot[] {
+  if (!Array.isArray(snapshot)) return [];
+
+  return snapshot
+    .map((payment: any) => ({
+      method: String(payment?.method || "Não informado"),
+      amount: Number(payment?.amount || 0),
+    }))
+    .filter((payment) => payment.amount > 0);
+}
+
+function normalizeServiceReceiptRecord(data: any): ServiceReceiptRecord {
+  return {
+    ...data,
+    client_phone: data.client_phone ?? null,
+    quote_number: data.quote_number ?? null,
+    service_description: data.service_description ?? null,
+    payments_snapshot: toReceiptPaymentArray(data.payments_snapshot),
+    message: data.message || "",
+    sent_via: data.sent_via ?? null,
+    sent_at: data.sent_at ?? null,
+    status: data.status || "draft",
+  };
+}
+
 export function buildReceiptMessage(
   organizationName: string,
   clientName: string,
@@ -118,15 +143,7 @@ export function resolveReceiptPayments(params: {
     return paymentsFromService;
   }
 
-  const paymentsFromSnapshot = Array.isArray(params.existingSnapshot)
-    ? params.existingSnapshot
-        .map((payment: any) => ({
-          method: String(payment?.method || "Não informado"),
-          amount: Number(payment?.amount || 0),
-        }))
-        .filter((payment) => payment.amount > 0)
-    : [];
-
+  const paymentsFromSnapshot = toReceiptPaymentArray(params.existingSnapshot);
   if (paymentsFromSnapshot.length > 0) {
     return paymentsFromSnapshot;
   }
@@ -162,7 +179,7 @@ export async function fetchLatestServiceReceipt(serviceId: string, organizationI
     throw error;
   }
 
-  return data as ServiceReceiptRecord | null;
+  return data ? normalizeServiceReceiptRecord(data) : null;
 }
 
 export async function fetchServicePayments(serviceId: string) {
@@ -226,7 +243,7 @@ export async function ensureReceiptDraft(params: {
     throw error;
   }
 
-  return { receipt: data as ServiceReceiptRecord, created: true };
+  return { receipt: normalizeServiceReceiptRecord(data), created: true };
 }
 
 export async function downloadReceiptPdf(params: {
