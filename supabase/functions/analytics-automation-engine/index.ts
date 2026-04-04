@@ -443,6 +443,7 @@ Deno.serve(async (req) => {
 
       if (allProfiles && allProfiles.length > 0) {
         for (const profile of allProfiles) {
+          if (!ownerUserIdsForInactivity.has(profile.user_id)) continue;
           const org = profile.organizations as any;
 
           // Only send inactivity alerts to paying users or recently signed-up free users
