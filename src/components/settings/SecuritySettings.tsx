@@ -45,6 +45,7 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
