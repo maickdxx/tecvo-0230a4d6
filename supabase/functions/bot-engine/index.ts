@@ -597,7 +597,7 @@ async function executeStep(
             body: JSON.stringify({
               number: resolved.recipientJid,
               title: "",
-              description: config.question,
+              description: await resolveMessageVariables(supabase, config.question, contactId, orgId),
               footer: config.footer || "",
               buttons: buttonsPayload,
             }),
