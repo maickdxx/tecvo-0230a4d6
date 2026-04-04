@@ -94,7 +94,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
       { text: "Clientes", included: true },
       { text: "OS + PDF", included: true },
       { text: "Orçamentos", included: true },
-      { text: "Financeiro básico", included: true },
+      { text: "Financeiro", included: true },
       { text: "Portal do cliente", included: true },
       { text: "1 usuário", included: true },
       { text: "WhatsApp completo", included: false },
