@@ -162,6 +162,27 @@ export function SendReceiptDialog({
         return;
       }
 
+      // Save receipt to database
+      if (organizationId && serviceId) {
+        await supabase.from("service_receipts").insert({
+          organization_id: organizationId,
+          service_id: serviceId,
+          client_name: clientName,
+          client_phone: clientPhone || null,
+          quote_number: quoteNumber,
+          service_description: serviceDescription,
+          service_value: serviceValue,
+          payments_snapshot: payments.map(p => ({
+            method: paymentMethodNames[p.payment_method] || p.payment_method,
+            amount: p.amount,
+          })),
+          message,
+          sent_via: "whatsapp",
+          sent_at: new Date().toISOString(),
+          status: "sent",
+        } as any);
+      }
+
       setSent(true);
       setSentChannel(data?.channel_name || "");
       toast.success("Recibo enviado com sucesso! 🧾");

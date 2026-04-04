@@ -313,6 +313,7 @@ export default function ExecutarServico() {
         serviceDescription={service?.description || ""}
         quoteNumber={service?.quote_number ? String(service.quote_number) : null}
         serviceValue={serviceValue}
+        serviceId={service?.id || ""}
         payments={lastPayments}
         paymentMethodNames={Object.fromEntries(
           paymentMethods.map((m) => [m.slug, m.name])
