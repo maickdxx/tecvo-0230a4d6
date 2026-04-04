@@ -37,11 +37,8 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary/[0.08] border border-primary/20 text-primary text-xs font-semibold mb-7 animate-fade-in backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-              </span>
-              Usado por mais de 500 empresas de climatização
+              <span className="text-base">🐣</span>
+              Promoção de Páscoa — 60% OFF com <code className="bg-primary/15 px-1 rounded font-bold">PASCOA60</code>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-black tracking-[-0.03em] text-foreground leading-[1.08] mb-5 animate-fade-in">
