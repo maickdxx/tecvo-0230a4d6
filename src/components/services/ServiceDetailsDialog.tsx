@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useServicePDFSend } from "@/hooks/useServicePDFSend";
 import { useQuery } from "@tanstack/react-query";
@@ -32,6 +32,7 @@ import {
   Link2,
   Share2,
   Send,
+  Download,
 } from "lucide-react";
 import { formatDateTimeInTz, formatDateInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
@@ -57,6 +58,8 @@ import {
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { generateReceiptPDF } from "@/lib/generateReceiptPDF";
+import { toast as sonnerToast } from "sonner";
 
 interface ServiceDetailsDialogProps {
   open: boolean;
@@ -158,6 +161,7 @@ export function ServiceDetailsDialog({
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showWhatsappConfirm, setShowWhatsappConfirm] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const { sendOSViaWhatsApp, sending: sendingPDF } = useServicePDFSend();
   const { typeLabels } = useServiceTypes();
   const { user } = useAuth();
@@ -165,6 +169,66 @@ export function ServiceDetailsDialog({
   const { paymentMethods, isLoading: isLoadingPaymentMethods, formatFee } = usePaymentMethods();
   const { signature, createSignatureLink, isCreatingLink } = useServiceSignatures(service?.id);
   const { organization } = useOrganization();
+
+  // Fetch payments for completed services (for receipt)
+  const { data: servicePayments = [] } = useQuery({
+    queryKey: ["service-payments-receipt", service?.id],
+    queryFn: async () => {
+      if (!service?.id) return [];
+      const { data } = await supabase
+        .from("service_payments")
+        .select("*")
+        .eq("service_id", service.id);
+      return data || [];
+    },
+    enabled: !!service?.id && service?.status === "completed" && open,
+  });
+
+  const handleDownloadReceipt = useCallback(async () => {
+    if (!service || !organization) return;
+    setDownloadingReceipt(true);
+    try {
+      const payments = servicePayments.map((sp: any) => {
+        const method = paymentMethods.find(m => m.slug === sp.payment_method);
+        return { method: method?.name || sp.payment_method, amount: sp.amount };
+      });
+
+      // Fallback if no split payments
+      if (payments.length === 0 && service.value) {
+        payments.push({ method: service.payment_method || "Não informado", amount: service.value });
+      }
+
+      const blob = await generateReceiptPDF({
+        organizationName: organization.name || "Empresa",
+        organizationCnpj: organization.cnpj_cpf || undefined,
+        organizationPhone: organization.phone || undefined,
+        organizationEmail: organization.email || undefined,
+        organizationAddress: organization.address || undefined,
+        organizationLogo: organization.logo_url || undefined,
+        clientName: service.client?.name || "Cliente",
+        quoteNumber: service.quote_number,
+        serviceDescription: service.description || undefined,
+        serviceValue: service.value || 0,
+        payments,
+        completedDate: service.completed_date || undefined,
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Recibo-OS-${String(service.quote_number || "0000").padStart(4, "0")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      sonnerToast.success("Recibo baixado com sucesso!");
+    } catch (err) {
+      console.error("Receipt PDF error:", err);
+      sonnerToast.error("Erro ao gerar recibo PDF.");
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  }, [service, organization, servicePayments, paymentMethods]);
 
   const { data: serviceItems = [] } = useQuery({
     queryKey: ["service-items-dialog", service?.id],
@@ -580,6 +644,22 @@ export function ServiceDetailsDialog({
                     <Send className="h-4 w-4 mr-2" />
                   )}
                   Enviar OS via WhatsApp
+                </Button>
+              )}
+
+              {service.status === "completed" && (
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl shadow-sm"
+                  onClick={handleDownloadReceipt}
+                  disabled={downloadingReceipt}
+                >
+                  {downloadingReceipt ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Baixar Recibo PDF
                 </Button>
               )}
               
