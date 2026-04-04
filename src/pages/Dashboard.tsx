@@ -83,8 +83,8 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="page-enter">
-        {/* Personalized Greeting */}
         <DashboardGreeting />
+        <TrialUrgencyBanner />
 
         {/* Money on Table Alert */}
         {canViewFinance && <MoneyOnTable />}

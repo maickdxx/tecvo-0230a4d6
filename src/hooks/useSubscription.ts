@@ -136,8 +136,8 @@ export function useSubscription() {
           plan = "free"; // Subscription exists but is not usable
         }
       } else if (isTrialActive) {
-        // No Stripe, active trial: use whatever plan was set (usually "essential")
-        plan = rawPlan !== "free" ? rawPlan : "essential";
+        // No Stripe, active trial: use whatever plan was set (usually "starter")
+        plan = rawPlan !== "free" ? rawPlan : "starter";
       } else {
         // No Stripe, no active trial: free
         plan = "free";
