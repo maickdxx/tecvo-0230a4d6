@@ -45,6 +45,7 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
@@ -59,6 +60,10 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
   const deviceType = getDeviceType(navigator.userAgent);
 
   const handleChangePassword = async () => {
+    if (!currentPassword) {
+      toast({ title: "Senha atual obrigatória", description: "Digite sua senha atual para continuar.", variant: "destructive" });
+      return;
+    }
     if (newPassword.length < 6) {
       toast({ title: "Senha muito curta", description: "Mínimo de 6 caracteres.", variant: "destructive" });
       return;
@@ -69,9 +74,19 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
     }
     setChangingPassword(true);
     try {
+      // Verify current password first
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast({ title: "Senha atual incorreta", description: "A senha atual informada está errada.", variant: "destructive" });
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       toast({ title: "Senha alterada", description: "Sua senha foi atualizada com sucesso." });
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
@@ -131,29 +146,41 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
           <CardDescription>Altere sua senha de acesso</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">Nova senha</Label>
+              <Label htmlFor="current-password">Senha atual</Label>
               <Input
-                id="new-password"
+                id="current-password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Digite sua senha atual"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirmar nova senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="Repita a nova senha"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nova senha</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar nova senha</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Repita a nova senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
             </div>
           </div>
-          <Button onClick={handleChangePassword} disabled={changingPassword || !newPassword}>
+          <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword}>
             {changingPassword ? "Alterando..." : "Alterar senha"}
           </Button>
         </CardContent>
