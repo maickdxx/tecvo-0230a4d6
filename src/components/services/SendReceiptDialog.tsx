@@ -87,6 +87,7 @@ export function SendReceiptDialog({
   serviceDescription,
   quoteNumber,
   serviceValue,
+  serviceId,
   payments,
   paymentMethodNames,
 }: SendReceiptDialogProps) {
