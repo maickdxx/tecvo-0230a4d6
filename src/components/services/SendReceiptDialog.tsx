@@ -26,6 +26,7 @@ interface SendReceiptDialogProps {
   serviceDescription: string;
   quoteNumber: string | null;
   serviceValue: number;
+  serviceId: string;
   payments: ServicePaymentInput[];
   paymentMethodNames: Record<string, string>;
 }
@@ -86,6 +87,7 @@ export function SendReceiptDialog({
   serviceDescription,
   quoteNumber,
   serviceValue,
+  serviceId,
   payments,
   paymentMethodNames,
 }: SendReceiptDialogProps) {
@@ -158,6 +160,27 @@ export function SendReceiptDialog({
         toast.error(errorMessages[data.error] || data.message || "Erro ao enviar recibo.");
         setSending(false);
         return;
+      }
+
+      // Save receipt to database
+      if (organizationId && serviceId) {
+        await supabase.from("service_receipts").insert({
+          organization_id: organizationId,
+          service_id: serviceId,
+          client_name: clientName,
+          client_phone: clientPhone || null,
+          quote_number: quoteNumber,
+          service_description: serviceDescription,
+          service_value: serviceValue,
+          payments_snapshot: payments.map(p => ({
+            method: paymentMethodNames[p.payment_method] || p.payment_method,
+            amount: p.amount,
+          })),
+          message,
+          sent_via: "whatsapp",
+          sent_at: new Date().toISOString(),
+          status: "sent",
+        } as any);
       }
 
       setSent(true);
