@@ -253,21 +253,33 @@ export function SendReminderDialog({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-muted-foreground">Mensagem:</p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 text-xs"
-                  onClick={() => setEditing(!editing)}
-                >
-                  {editing ? "Visualizar" : "Editar"}
-                </Button>
+                <div className="flex items-center gap-1">
+                  {editing && (
+                    <VariableInsertButton
+                      compact
+                      onInsert={(tag) => onMessageChange(message + tag)}
+                    />
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-xs"
+                    onClick={() => setEditing(!editing)}
+                  >
+                    {editing ? "Visualizar" : "Editar"}
+                  </Button>
+                </div>
               </div>
               {editing ? (
-                <Textarea
-                  value={message}
-                  onChange={(e) => onMessageChange(e.target.value)}
-                  className="text-xs min-h-[120px] resize-none"
-                />
+                <>
+                  <Textarea
+                    value={message}
+                    onChange={(e) => onMessageChange(e.target.value)}
+                    className="text-xs min-h-[120px] resize-none"
+                  />
+                  <VariableValidation message={message} />
+                  <MessagePreviewToggle message={message} />
+                </>
               ) : (
                 <div className="rounded-lg bg-muted/50 border border-border p-3">
                   <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">
