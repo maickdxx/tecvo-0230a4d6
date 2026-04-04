@@ -82,7 +82,7 @@ export default function ExecutarServico() {
     : null;
 
   // Finalize without payment (value = 0)
-  const handleFinalizeService = async (payments?: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string) => {
+  const handleFinalizeService = async (payments?: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string, skipNavigate?: boolean) => {
     if (!serviceId) return;
     try {
       // Finalize the technical report (draft → finalized)
@@ -104,7 +104,9 @@ export default function ExecutarServico() {
         await createSignature({ serviceId, blob: signatureBlob, signerName });
       }
       toast({ title: "Serviço finalizado com sucesso! 🚀" });
-      navigate("/meus-servicos");
+      if (!skipNavigate) {
+        navigate("/meus-servicos");
+      }
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erro", description: e.message });
     }
