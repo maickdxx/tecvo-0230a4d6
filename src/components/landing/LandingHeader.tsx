@@ -114,5 +114,6 @@ export function LandingHeader() {
         </nav>
       </div>
     </header>
+    </>
   );
 }
