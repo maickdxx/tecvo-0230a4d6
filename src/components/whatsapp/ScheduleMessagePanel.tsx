@@ -11,6 +11,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useScheduledMessages, ScheduledMessage } from "@/hooks/useScheduledMessages";
+import { useOrganization } from "@/hooks/useOrganization";
+import { formatDateTimeInTz } from "@/lib/timezone";
 import { cn } from "@/lib/utils";
 import {
   X, CalendarIcon, Clock, Send, Trash2, Pencil, Loader2,
@@ -36,6 +38,8 @@ const TEMPLATES = [
 ];
 
 export function ScheduleMessagePanel({ contact, channelId, onClose }: Props) {
+  const { organization } = useOrganization();
+  const tz = organization?.timezone || "America/Sao_Paulo";
   const { messages, create, update, cancel, loading } = useScheduledMessages(contact.id);
   const [content, setContent] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
@@ -206,7 +210,7 @@ export function ScheduleMessagePanel({ contact, channelId, onClose }: Props) {
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">
                         <Clock className="h-3 w-3 inline mr-1" />
-                        {format(new Date(msg.scheduled_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        {formatDateTimeInTz(msg.scheduled_at, tz)}
                       </span>
                       {msg.status === "scheduled" && (
                         <div className="flex gap-1">

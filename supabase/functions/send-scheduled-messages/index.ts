@@ -32,9 +32,18 @@ function getCurrentHourInTz(tz: string): number {
   return parseInt(timeStr, 10);
 }
 
-/** Default business hours */
+/** Default business hours (used if org has no config) */
 const DEFAULT_START_HOUR = 8;
 const DEFAULT_END_HOUR = 18;
+
+/** Cache for org business hours config */
+interface BusinessHoursConfig {
+  startHour: number;
+  startMin: number;
+  endHour: number;
+  endMin: number;
+  worksSaturday: boolean;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -77,8 +86,43 @@ Deno.serve(async (req) => {
     let errors = 0;
     let skippedHours = 0;
 
-    // Cache org timezones to avoid repeated queries
-    const orgTzCache: Record<string, string> = {};
+    // Cache org business hours
+    const orgBhCache: Record<string, BusinessHoursConfig> = {};
+
+    async function getBusinessHours(supabase: any, orgId: string): Promise<BusinessHoursConfig> {
+      if (orgBhCache[orgId]) return orgBhCache[orgId];
+      const { data: capConfig } = await supabase
+        .from("operational_capacity_config")
+        .select("start_time, end_time, works_saturday")
+        .eq("organization_id", orgId)
+        .maybeSingle();
+
+      const config: BusinessHoursConfig = {
+        startHour: DEFAULT_START_HOUR,
+        startMin: 0,
+        endHour: DEFAULT_END_HOUR,
+        endMin: 0,
+        worksSaturday: false,
+      };
+
+      if (capConfig) {
+        const cap = capConfig as any;
+        if (cap.start_time) {
+          const [sh, sm] = cap.start_time.split(":").map(Number);
+          config.startHour = sh;
+          config.startMin = sm || 0;
+        }
+        if (cap.end_time) {
+          const [eh, em] = cap.end_time.split(":").map(Number);
+          config.endHour = eh;
+          config.endMin = em || 0;
+        }
+        config.worksSaturday = cap.works_saturday ?? false;
+      }
+
+      orgBhCache[orgId] = config;
+      return config;
+    }
 
     for (const msg of dueMessages) {
       try {
@@ -95,17 +139,29 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Business hours check using org timezone
+        // Business hours check using org timezone and real config
         const orgId = contact.organization_id;
-        if (!orgTzCache[orgId]) {
-          orgTzCache[orgId] = await fetchOrgTimezone(supabase, orgId);
-        }
-        const orgTz = orgTzCache[orgId];
-        const currentHour = getCurrentHourInTz(orgTz);
+        const orgTz = await fetchOrgTimezone(supabase, orgId);
+        const bh = await getBusinessHours(supabase, orgId);
 
-        if (currentHour < DEFAULT_START_HOUR || currentHour >= DEFAULT_END_HOUR) {
-          // Outside business hours — skip, don't mark as error. Will retry next cycle.
-          console.log(`[SCHEDULED-SEND] Message ${msg.id} skipped: outside business hours (${currentHour}h in ${orgTz})`);
+        const now = new Date();
+        const nowStr = now.toLocaleTimeString("en-US", { timeZone: orgTz, hour12: false, hour: "2-digit", minute: "2-digit" });
+        const [currentH, currentM] = nowStr.split(":").map(Number);
+        const currentMinutes = currentH * 60 + currentM;
+        const startMinutes = bh.startHour * 60 + bh.startMin;
+        const endMinutes = bh.endHour * 60 + bh.endMin;
+
+        // Get day of week in org timezone
+        const localDateStr = now.toLocaleDateString("en-CA", { timeZone: orgTz });
+        const localDate = new Date(localDateStr + "T12:00:00Z"); // safe midday parse
+        const dayOfWeek = localDate.getUTCDay(); // 0=Sun, 6=Sat
+        const isSunday = dayOfWeek === 0;
+        const isSaturday = dayOfWeek === 6;
+        const isWorkday = !isSunday && (!isSaturday || bh.worksSaturday);
+        const isWithinHours = isWorkday && currentMinutes >= startMinutes && currentMinutes < endMinutes;
+
+        if (!isWithinHours) {
+          console.log(`[SCHEDULED-SEND] Message ${msg.id} skipped: outside business hours (${currentH}:${currentM} in ${orgTz}, hours: ${bh.startHour}:${bh.startMin}-${bh.endHour}:${bh.endMin})`);
           skippedHours++;
           continue;
         }

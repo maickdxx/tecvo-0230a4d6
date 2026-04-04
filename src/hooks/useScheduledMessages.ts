@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-
+import { buildTimestamp } from "@/lib/timezone";
+import { format } from "date-fns";
 export interface ScheduledMessage {
   id: string;
   contact_id: string;
@@ -43,15 +44,15 @@ export function useScheduledMessages(contactId: string | null) {
     scheduledAt: Date;
   }) => {
     if (!organization?.id) return null;
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("organization_id", organization.id)
-      .limit(1)
-      .single();
+    const tz = organization.timezone || "America/Sao_Paulo";
 
     const { data: session } = await supabase.auth.getSession();
     const userId = session?.session?.user?.id;
+
+    // Build timestamp with org timezone offset so UTC is correct
+    const dateStr = format(params.scheduledAt, "yyyy-MM-dd");
+    const timeStr = format(params.scheduledAt, "HH:mm:ss");
+    const scheduledAtWithTz = buildTimestamp(dateStr, timeStr, tz);
 
     const { data, error } = await supabase
       .from("whatsapp_scheduled_messages")
@@ -60,7 +61,7 @@ export function useScheduledMessages(contactId: string | null) {
         contact_id: params.contactId,
         channel_id: params.channelId,
         content: params.content,
-        scheduled_at: params.scheduledAt.toISOString(),
+        scheduled_at: scheduledAtWithTz,
         created_by: userId || "",
       })
       .select()
@@ -68,15 +69,20 @@ export function useScheduledMessages(contactId: string | null) {
     if (error) throw error;
     await fetch();
     return data;
-  }, [organization?.id, fetch]);
+  }, [organization?.id, organization?.timezone, fetch]);
 
   const update = useCallback(async (id: string, params: { content?: string; scheduledAt?: Date }) => {
+    const tz = organization?.timezone || "America/Sao_Paulo";
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
     if (params.content !== undefined) updates.content = params.content;
-    if (params.scheduledAt) updates.scheduled_at = params.scheduledAt.toISOString();
+    if (params.scheduledAt) {
+      const dateStr = format(params.scheduledAt, "yyyy-MM-dd");
+      const timeStr = format(params.scheduledAt, "HH:mm:ss");
+      updates.scheduled_at = buildTimestamp(dateStr, timeStr, tz);
+    }
     await supabase.from("whatsapp_scheduled_messages").update(updates).eq("id", id);
     await fetch();
-  }, [fetch]);
+  }, [organization?.timezone, fetch]);
 
   const cancel = useCallback(async (id: string) => {
     await supabase.from("whatsapp_scheduled_messages").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", id);
