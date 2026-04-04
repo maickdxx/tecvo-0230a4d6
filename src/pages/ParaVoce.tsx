@@ -228,7 +228,7 @@ export default function ParaVoce() {
                   Comece agora e veja<br /><span className="text-[#2547D0]">na prática</span>
                 </h2>
                 <p className="text-white/55 text-lg mb-10">
-                  Crie sua conta grátis em menos de 1 minuto.<br />Sem compromisso. Sem cartão.
+                  Comece por apenas R$1 no primeiro mês.<br />Sem compromisso. Cancele quando quiser.
                 </p>
                 <button
                   onClick={() => navigate("/cadastro")}
