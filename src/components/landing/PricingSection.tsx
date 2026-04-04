@@ -3,7 +3,7 @@ import { analytics } from "@/lib/analytics";
 import { Check, X, ArrowRight, Star, Crown, Zap, Sparkles, Egg } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PAID_PLANS } from "@/lib/planConfig";
+import { PAID_PLANS, PLAN_CONFIG } from "@/lib/planConfig";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const ICONS: Record<string, React.ReactNode> = {
