@@ -32,9 +32,18 @@ function getCurrentHourInTz(tz: string): number {
   return parseInt(timeStr, 10);
 }
 
-/** Default business hours */
+/** Default business hours (used if org has no config) */
 const DEFAULT_START_HOUR = 8;
 const DEFAULT_END_HOUR = 18;
+
+/** Cache for org business hours config */
+interface BusinessHoursConfig {
+  startHour: number;
+  startMin: number;
+  endHour: number;
+  endMin: number;
+  worksSaturday: boolean;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
