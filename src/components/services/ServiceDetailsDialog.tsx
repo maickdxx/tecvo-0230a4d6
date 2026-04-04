@@ -58,6 +58,8 @@ import {
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { generateReceiptPDF } from "@/lib/generateReceiptPDF";
+import { toast as sonnerToast } from "sonner";
 
 interface ServiceDetailsDialogProps {
   open: boolean;
