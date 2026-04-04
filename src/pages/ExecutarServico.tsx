@@ -13,7 +13,9 @@ import { toast } from "@/hooks/use-toast";
 import { SignatureCanvas } from "@/components/services/SignatureCanvas";
 import { useServiceSignatures } from "@/hooks/useServiceSignatures";
 import { ServiceCompleteDialog } from "@/components/services/ServiceCompleteDialog";
+import { SendReceiptDialog } from "@/components/services/SendReceiptDialog";
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
+import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import {
   AlertDialog,
   AlertDialogAction,
