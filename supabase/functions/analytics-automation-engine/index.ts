@@ -425,10 +425,20 @@ Deno.serve(async (req) => {
     const churnAuto = automationsByType.get("churn_recovery");
 
     if (inactivityTriggers.length > 0 || churnAuto) {
+      // Get owner user_ids (reuse if available, otherwise fetch)
+      let ownerUserIdsForInactivity: Set<string>;
+      if (activationTriggers.length > 0 || freeRecoveryTriggers.length > 0) {
+        // Already fetched above — but scope is different, fetch again
+        const { data: ownerRoles2 } = await supabase.from("user_roles").select("user_id").eq("role", "owner");
+        ownerUserIdsForInactivity = new Set((ownerRoles2 || []).map((r: any) => r.user_id));
+      } else {
+        const { data: ownerRoles2 } = await supabase.from("user_roles").select("user_id").eq("role", "owner");
+        ownerUserIdsForInactivity = new Set((ownerRoles2 || []).map((r: any) => r.user_id));
+      }
+
       const { data: allProfiles } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan), user_roles!inner(role)")
-        .eq("user_roles.role", "owner")
+        .select("id, user_id, full_name, organization_id, phone, whatsapp_ai_enabled, created_at, organizations!inner(subscription_status, plan)")
         .not("organization_id", "is", null);
 
       if (allProfiles && allProfiles.length > 0) {
