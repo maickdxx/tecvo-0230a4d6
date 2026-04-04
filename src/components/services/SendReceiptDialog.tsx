@@ -26,6 +26,7 @@ interface SendReceiptDialogProps {
   serviceDescription: string;
   quoteNumber: string | null;
   serviceValue: number;
+  serviceId: string;
   payments: ServicePaymentInput[];
   paymentMethodNames: Record<string, string>;
 }
