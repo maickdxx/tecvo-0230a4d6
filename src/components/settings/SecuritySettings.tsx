@@ -268,58 +268,6 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Zona de perigo */}
-      <Card className="border-destructive/50 bg-destructive/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg text-destructive">
-            <Trash2 className="h-5 w-5" />
-            Zona de perigo
-          </CardTitle>
-          <CardDescription>Ações irreversíveis para sua conta</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Ao excluir sua conta, todos os seus dados serão removidos permanentemente, incluindo serviços, clientes, financeiro e configurações. Seu email ficará disponível para novo cadastro.
-          </p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={deletingAccount}>
-                {deletingAccount ? "Excluindo..." : "Excluir minha conta"}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Tem certeza que deseja excluir sua conta?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação é <strong>irreversível</strong>. Todos os seus dados serão excluídos permanentemente:
-                  serviços, clientes, orçamentos, financeiro e configurações. Seu email será liberado para novo cadastro.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  onClick={async () => {
-                    setDeletingAccount(true);
-                    try {
-                      const { data, error } = await supabase.functions.invoke("delete-account");
-                      if (error || data?.error) throw new Error(data?.error || error?.message);
-                      await supabase.auth.signOut();
-                      toast({ title: "Conta excluída", description: "Sua conta foi removida com sucesso." });
-                      navigate("/login");
-                    } catch (err: any) {
-                      toast({ title: "Erro ao excluir conta", description: err.message || "Tente novamente.", variant: "destructive" });
-                      setDeletingAccount(false);
-                    }
-                  }}
-                >
-                  Sim, excluir minha conta
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
 
       {/* Proteção futura */}
       <Card className="opacity-70">
