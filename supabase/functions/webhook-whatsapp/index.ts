@@ -1685,10 +1685,46 @@ Deno.serve(async (req) => {
         if (mode === "admin_empresa") {
           const orgContext = await fetchOrgContext(supabase, targetOrganizationId);
           systemPrompt = buildSystemPrompt(orgContext);
+
+          // Add instruction about financial tools
+          systemPrompt += `\n\n══════════ FERRAMENTAS DISPONÍVEIS ══════════
+Você tem acesso à ferramenta 'register_transaction' para registrar despesas e receitas.
+Quando o usuário pedir para registrar um gasto/despesa/receita:
+1. Extraia os dados da mensagem (valor, descrição, categoria, data)
+2. Se faltar algum dado essencial, pergunte antes de registrar
+3. Use a ferramenta para registrar
+4. Confirme o registro ao usuário
+
+Categorias comuns de despesa: material, combustível, alimentação, aluguel, fornecedor, manutenção, salário, outro
+Categorias comuns de receita: serviço, manutenção, instalação, venda, outro`;
+
+          // Fetch conversation history for context
+          const conversationHistory = await fetchConversationHistory(supabase, contactId);
+
           const startTime = Date.now();
-          const aiResult = await callAI(systemPrompt, [{ role: "user", content }]);
+          let aiResult = await callAI(systemPrompt, conversationHistory, FINANCIAL_TOOLS);
+          let aiDuration = Date.now() - startTime;
+
+          // Handle tool calls (one round)
+          if (aiResult.toolCalls && aiResult.toolCalls.length > 0) {
+            console.log("[WEBHOOK-WHATSAPP] AI requested tool calls:", aiResult.toolCalls.length);
+            const toolMessages: any[] = [...conversationHistory];
+            // Add assistant message with tool_calls
+            toolMessages.push({ role: "assistant", content: aiResult.content || "", tool_calls: aiResult.toolCalls });
+
+            for (const tc of aiResult.toolCalls) {
+              const toolResult = await executeFinancialTool(supabase, targetOrganizationId, tc);
+              console.log("[WEBHOOK-WHATSAPP] Tool result:", toolResult);
+              toolMessages.push({ role: "tool", tool_call_id: tc.id, content: toolResult });
+            }
+
+            // Second AI call with tool results (no tools this time to force text response)
+            const startTime2 = Date.now();
+            aiResult = await callAI(systemPrompt, toolMessages);
+            aiDuration += Date.now() - startTime2;
+          }
+
           const aiResponse = aiResult.content;
-          const aiDuration = Date.now() - startTime;
 
           // Log AI usage
           const aiUsage = extractUsageFromResponse({ usage: aiResult.usage });
