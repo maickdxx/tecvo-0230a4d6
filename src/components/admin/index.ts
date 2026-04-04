@@ -11,3 +11,4 @@ export { AdminWhatsAppStatus } from "./AdminWhatsAppStatus";
 export { ExecutiveDashboard } from "./ExecutiveDashboard";
 export { AuditLogs } from "./AuditLogs";
 export { FinancialDashboard } from "./FinancialDashboard";
+export { AdminCoupons } from "./AdminCoupons";

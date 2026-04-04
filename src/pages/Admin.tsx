@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText, BarChart3 } from "lucide-react";
+import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText, BarChart3, Ticket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,7 @@ import { ExecutiveDashboard } from "@/components/admin/ExecutiveDashboard";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { FinancialDashboard } from "@/components/admin/FinancialDashboard";
 import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
+import { AdminCoupons } from "@/components/admin/AdminCoupons";
 
 import { useAdminOrganizations } from "@/hooks/useAdminOrganizations";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
@@ -115,6 +116,11 @@ export default function Admin() {
               </TabsTrigger>
               <TabsTrigger value="ai-credits" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">IA</TabsTrigger>
               <TabsTrigger value="backups" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Backups</TabsTrigger>
+              <TabsTrigger value="coupons" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <Ticket className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Cupons</span>
+                <span className="sm:hidden">Cup</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -188,6 +194,10 @@ export default function Admin() {
 
           <TabsContent value="whatsapp-tecvo">
             <AdminWhatsAppTecvo />
+          </TabsContent>
+
+          <TabsContent value="coupons">
+            <AdminCoupons />
           </TabsContent>
         </Tabs>
       </div>

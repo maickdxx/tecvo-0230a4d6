@@ -7,6 +7,7 @@ import {
   Sparkles,
   Shield,
   Database,
+  Ticket,
 } from "lucide-react";
 
 interface AdminQuickActionsProps {
@@ -23,6 +24,7 @@ export function AdminQuickActions({ onNavigate }: AdminQuickActionsProps) {
     { label: "Admins", icon: Shield, tab: "superadmins", color: "text-red-600" },
     { label: "Auditoria", icon: Database, tab: "logs", color: "text-purple-600" },
     { label: "Backups", icon: Database, tab: "backups", color: "text-slate-600" },
+    { label: "Cupons", icon: Ticket, tab: "coupons", color: "text-orange-600" },
   ];
 
   return (
