@@ -251,7 +251,7 @@ export default function Pricing() {
                       "w-full",
                       buttonVariant === "default" && "bg-primary hover:bg-primary/90"
                     )}
-                    onClick={() => handleSelectPlan(p.slug, false)}
+                    onClick={() => handleSelectPlan(p.slug)}
                     disabled={!!loadingPlan || buttonDisabled}
                   >
                     {loadingPlan === p.slug ? (
