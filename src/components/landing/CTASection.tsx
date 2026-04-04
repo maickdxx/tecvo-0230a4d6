@@ -114,7 +114,7 @@ export function CTASection() {
 
 
               <div className="flex flex-wrap items-center justify-center gap-6 mt-7 text-sm text-muted-foreground">
-                {["7 dias grátis", "Sem cartão de crédito", "Cancele quando quiser"].map((text) => (
+                {["R$1 no primeiro mês", "Sem compromisso", "Cancele quando quiser"].map((text) => (
                   <span key={text} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary" />
                     {text}
