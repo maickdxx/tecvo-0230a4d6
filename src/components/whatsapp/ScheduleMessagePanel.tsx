@@ -210,7 +210,7 @@ export function ScheduleMessagePanel({ contact, channelId, onClose }: Props) {
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">
                         <Clock className="h-3 w-3 inline mr-1" />
-                        {format(new Date(msg.scheduled_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        {formatDateTimeInTz(msg.scheduled_at, tz)}
                       </span>
                       {msg.status === "scheduled" && (
                         <div className="flex gap-1">
