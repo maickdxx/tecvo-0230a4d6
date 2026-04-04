@@ -40,7 +40,44 @@ export default function Pricing() {
     }
   }
 
-  const handleSelectPlan = async (planId: string, useStripe = false) => {
+  const validateCoupon = async () => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    setValidatingCoupon(true);
+    setCouponError("");
+    setCouponData(null);
+    try {
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("stripe_coupon_id, discount_percent, code, is_active, valid_until, coupon_type, ai_credits_amount")
+        .eq("code", code)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        setCouponError("Cupom não encontrado ou expirado.");
+        return;
+      }
+      if (data.valid_until && new Date(data.valid_until) < new Date()) {
+        setCouponError("Este cupom expirou.");
+        return;
+      }
+      setCouponData({ stripe_coupon_id: data.stripe_coupon_id, discount_percent: data.discount_percent, code: data.code });
+      toast({ title: "Cupom aplicado!", description: `${data.discount_percent}% de desconto no primeiro mês` });
+    } catch {
+      setCouponError("Erro ao validar cupom.");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponData(null);
+    setCouponCode("");
+    setCouponError("");
+  };
+
+  const handleSelectPlan = async (planId: string) => {
     setLoadingPlan(planId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -51,9 +88,13 @@ export default function Pricing() {
       }
 
       const fnName = "stripe-create-checkout";
-      const { data, error } = await supabase.functions.invoke(fnName, {
-        body: { plan: planId },
-      });
+      const body: any = { plan: planId };
+      if (couponData?.stripe_coupon_id) {
+        body.coupon_id = couponData.stripe_coupon_id;
+        body.coupon_code = couponData.code;
+      }
+
+      const { data, error } = await supabase.functions.invoke(fnName, { body });
 
       if (error) throw error;
 
