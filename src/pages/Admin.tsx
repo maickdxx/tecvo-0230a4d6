@@ -195,6 +195,10 @@ export default function Admin() {
           <TabsContent value="whatsapp-tecvo">
             <AdminWhatsAppTecvo />
           </TabsContent>
+
+          <TabsContent value="coupons">
+            <AdminCoupons />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
