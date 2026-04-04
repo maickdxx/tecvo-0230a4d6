@@ -262,11 +262,14 @@ export async function downloadReceiptPdf(params: {
     organizationAddress: params.organization?.address || undefined,
     organizationLogo: params.organization?.logo_url || undefined,
     clientName: params.service.client_name,
+    clientDocument: params.service.client_document || undefined,
     quoteNumber: params.service.quote_number,
     serviceDescription: params.service.description || undefined,
     serviceValue: params.service.value || 0,
     payments: params.payments,
     completedDate: params.service.completed_date || undefined,
+    scheduledDate: params.service.scheduled_date || undefined,
+    technicianName: params.service.technician_name || undefined,
   });
 
   const url = URL.createObjectURL(blob);
