@@ -105,9 +105,36 @@ export default function Auth() {
   };
 
   const handleGoogleAuth = async () => {
-    await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+
+      if (result.error) {
+        console.error("Google OAuth error:", result.error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao entrar com Google",
+          description: result.error.message || "Tente novamente em alguns instantes.",
+        });
+        return;
+      }
+
+      if (result.redirected) {
+        return;
+      }
+
+      // Session set successfully, navigate
+      const destination = getRedirectPath();
+      navigate(destination, { replace: true });
+    } catch (err) {
+      console.error("Google OAuth unexpected error:", err);
+      toast({
+        variant: "destructive",
+        title: "Erro ao entrar com Google",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+      });
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
