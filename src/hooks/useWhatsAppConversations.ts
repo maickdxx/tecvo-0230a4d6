@@ -417,6 +417,8 @@ export function useWhatsAppConversations() {
         ...contact,
         last_message_at: new Date().toISOString(),
         last_message_is_from_me: true,
+        is_unread: false,
+        unread_count: 0,
         ...(lastMessageContent ? { last_message_content: lastMessageContent.substring(0, 200) } : {}),
       };
       
