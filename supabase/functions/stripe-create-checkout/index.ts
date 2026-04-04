@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
 
     console.log("[STRIPE-CHECKOUT] Return URLs", { origin, successUrl, cancelUrl });
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
       line_items: [{ price: planInfo.priceId, quantity: 1 }],
@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
         organization_id: profile.organization_id,
         plan,
         user_id: userId,
+        coupon_code: coupon_code || null,
       },
       subscription_data: {
         metadata: {
@@ -158,7 +159,69 @@ Deno.serve(async (req) => {
           plan,
         },
       },
-    });
+    };
+
+    // Apply Stripe coupon if provided
+    if (coupon_id) {
+      sessionParams.discounts = [{ coupon: coupon_id }];
+      console.log("[STRIPE-CHECKOUT] Applying coupon:", coupon_id);
+    }
+
+    // If coupon grants AI credits, record it after checkout
+    if (coupon_code) {
+      // Increment coupon usage
+      await supabase.rpc("increment_coupon_usage", { coupon_code_param: coupon_code });
+
+      // Record redemption
+      const { data: couponData } = await supabase
+        .from("coupons")
+        .select("id, ai_credits_amount, discount_percent, coupon_type")
+        .eq("code", coupon_code)
+        .single();
+
+      if (couponData) {
+        await supabase.from("coupon_redemptions").insert({
+          coupon_id: couponData.id,
+          organization_id: profile.organization_id,
+          user_id: userId,
+          applied_discount_percent: couponData.discount_percent || 0,
+          applied_ai_credits: couponData.ai_credits_amount || 0,
+        });
+
+        // Grant AI credits immediately if applicable
+        if (couponData.ai_credits_amount > 0) {
+          const { data: existingCredits } = await supabase
+            .from("ai_credits")
+            .select("id, balance")
+            .eq("organization_id", profile.organization_id)
+            .single();
+
+          if (existingCredits) {
+            await supabase
+              .from("ai_credits")
+              .update({ balance: existingCredits.balance + couponData.ai_credits_amount })
+              .eq("id", existingCredits.id);
+          } else {
+            await supabase
+              .from("ai_credits")
+              .insert({ organization_id: profile.organization_id, balance: couponData.ai_credits_amount });
+          }
+
+          // Log the transaction
+          await supabase.from("ai_credit_transactions").insert({
+            organization_id: profile.organization_id,
+            user_id: userId,
+            action_type: "coupon_bonus",
+            amount: couponData.ai_credits_amount,
+            description: `Cupom ${coupon_code}: +${couponData.ai_credits_amount} créditos IA`,
+          });
+
+          console.log("[STRIPE-CHECKOUT] Granted", couponData.ai_credits_amount, "AI credits via coupon");
+        }
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     console.log("[STRIPE-CHECKOUT] Session created:", session.id, "org:", profile.organization_id);
 
