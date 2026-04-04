@@ -7,10 +7,11 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { buildCheckoutSuccessPath, saveCheckoutContext } from "@/lib/checkoutReturn";
 import { trackFBEvent } from "@/lib/fbPixel";
-import { Check, X, Crown, Star, Zap, Gift, LogOut, Loader2 } from "lucide-react";
+import { Check, X, Crown, Star, Zap, Gift, LogOut, Loader2, Ticket, Egg } from "lucide-react";
 import { PAID_PLANS, PLAN_CONFIG } from "@/lib/planConfig";
 import type { PlanSlug } from "@/lib/planConfig";
 
