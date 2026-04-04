@@ -292,6 +292,14 @@ const App = () => (
               }
             />
             <Route
+              path="/financeiro/recibos"
+              element={
+                <ProtectedRoute>
+                  <Recibos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/servicos"
               element={
                 <ProtectedRoute>
