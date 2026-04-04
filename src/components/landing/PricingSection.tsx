@@ -47,6 +47,15 @@ export function PricingSection() {
           <p className="text-muted-foreground text-base md:text-lg max-w-lg mx-auto">
             Menos que um serviço de manutenção por mês. Teste 7 dias grátis, sem cartão de crédito.
           </p>
+
+          {/* Easter Promotion */}
+          <div className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/[0.08] border border-primary/20">
+            <Egg className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">
+              Páscoa: <span className="text-primary">60% OFF</span> com o cupom <code className="bg-primary/10 px-1.5 py-0.5 rounded text-primary font-bold text-xs">PASCOA60</code>
+            </span>
+            <span className="text-lg">🐣</span>
+          </div>
         </div>
 
         {/* Plans grid */}
