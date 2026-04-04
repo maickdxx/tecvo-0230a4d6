@@ -37,11 +37,14 @@ export interface ReceiptServiceData {
   organization_id?: string | null;
   client_name: string;
   client_phone?: string | null;
+  client_document?: string | null;
   quote_number?: string | number | null;
   description?: string | null;
   value?: number | null;
   payment_method?: string | null;
   completed_date?: string | null;
+  scheduled_date?: string | null;
+  technician_name?: string | null;
 }
 
 interface ReceiptServicePaymentRow {
@@ -259,11 +262,14 @@ export async function downloadReceiptPdf(params: {
     organizationAddress: params.organization?.address || undefined,
     organizationLogo: params.organization?.logo_url || undefined,
     clientName: params.service.client_name,
+    clientDocument: params.service.client_document || undefined,
     quoteNumber: params.service.quote_number,
     serviceDescription: params.service.description || undefined,
     serviceValue: params.service.value || 0,
     payments: params.payments,
     completedDate: params.service.completed_date || undefined,
+    scheduledDate: params.service.scheduled_date || undefined,
+    technicianName: params.service.technician_name || undefined,
   });
 
   const url = URL.createObjectURL(blob);
