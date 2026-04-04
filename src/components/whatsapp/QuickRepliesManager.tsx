@@ -319,8 +319,16 @@ export function QuickRepliesManager({ open, onOpenChange, embedded }: QuickRepli
               <Input value={formShortcut} onChange={(e) => setFormShortcut(e.target.value)} placeholder="Ex: orcamento" className="mt-1 h-10" />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Mensagem</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Mensagem</Label>
+                <VariableInsertButton
+                  compact
+                  onInsert={(tag) => setFormContent((prev) => prev + tag)}
+                />
+              </div>
               <Textarea value={formContent} onChange={(e) => setFormContent(e.target.value)} className="mt-1 min-h-[100px]" />
+              <VariableValidation message={formContent} />
+              <MessagePreviewToggle message={formContent} />
             </div>
             <Button className="w-full gap-1.5" onClick={handleEdit} disabled={!formTitle.trim() || !formContent.trim()}>
               <Check className="h-4 w-4" /> Salvar alterações
