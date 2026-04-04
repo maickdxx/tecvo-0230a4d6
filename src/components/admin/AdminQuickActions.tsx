@@ -7,6 +7,7 @@ import {
   Sparkles,
   Shield,
   Database,
+  Ticket,
 } from "lucide-react";
 
 interface AdminQuickActionsProps {
