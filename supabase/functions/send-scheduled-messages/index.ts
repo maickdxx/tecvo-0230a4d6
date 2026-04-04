@@ -151,10 +151,10 @@ Deno.serve(async (req) => {
         const startMinutes = bh.startHour * 60 + bh.startMin;
         const endMinutes = bh.endHour * 60 + bh.endMin;
 
-        const dayOfWeek = parseInt(now.toLocaleDateString("en-US", { timeZone: orgTz, weekday: "narrow" }).charAt(0) === "S" ? 
-          (now.toLocaleDateString("en-US", { timeZone: orgTz, weekday: "long" }).startsWith("Sun") ? "0" : "6") :
-          new Date(now.toLocaleDateString("en-CA", { timeZone: orgTz })).getDay().toString()
-        );
+        // Get day of week in org timezone
+        const localDateStr = now.toLocaleDateString("en-CA", { timeZone: orgTz });
+        const localDate = new Date(localDateStr + "T12:00:00Z"); // safe midday parse
+        const dayOfWeek = localDate.getUTCDay(); // 0=Sun, 6=Sat
         const isSunday = dayOfWeek === 0;
         const isSaturday = dayOfWeek === 6;
         const isWorkday = !isSunday && (!isSaturday || bh.worksSaturday);
