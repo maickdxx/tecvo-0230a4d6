@@ -65,6 +65,7 @@ export function ServiceCompleteDialog({
   const [clientDidNotPay, setClientDidNotPay] = useState(false);
   const [step, setStep] = useState<"payment" | "signature">("payment");
   const [signerName, setSignerName] = useState("");
+  const [sendReceipt, setSendReceipt] = useState(showReceiptOption);
   const [hasSignatureDrawn, setHasSignatureDrawn] = useState(false);
   const signatureRef = useRef<SignatureCanvasRef>(null);
 
