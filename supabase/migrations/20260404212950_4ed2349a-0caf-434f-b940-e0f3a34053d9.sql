@@ -1,0 +1,2 @@
+INSERT INTO public.coupons (code, description, coupon_type, discount_percent, stripe_coupon_id, is_active, valid_from, valid_until, applicable_plans)
+VALUES ('PASCOA60', 'Promoção de Páscoa – 60% de desconto no primeiro mês', 'discount', 60, 'dMSQG31p', true, now(), '2026-04-30T23:59:59Z', ARRAY['starter','essential','pro']);

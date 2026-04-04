@@ -7,10 +7,11 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { buildCheckoutSuccessPath, saveCheckoutContext } from "@/lib/checkoutReturn";
 import { trackFBEvent } from "@/lib/fbPixel";
-import { Check, X, Crown, Star, Zap, Gift, LogOut, Loader2 } from "lucide-react";
+import { Check, X, Crown, Star, Zap, Gift, LogOut, Loader2, Ticket, Egg } from "lucide-react";
 import { PAID_PLANS, PLAN_CONFIG } from "@/lib/planConfig";
 import type { PlanSlug } from "@/lib/planConfig";
 
@@ -26,6 +27,10 @@ export default function Pricing() {
   const { user, signOut } = useAuth();
   const { plan, isFreePlan, isTrial, isTrialExpired, isLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponData, setCouponData] = useState<{ stripe_coupon_id: string | null; discount_percent: number | null; code: string } | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
 
   const hasPaidPlan = !isFreePlan && !isTrial && !isTrialExpired;
 
@@ -35,7 +40,44 @@ export default function Pricing() {
     }
   }
 
-  const handleSelectPlan = async (planId: string, useStripe = false) => {
+  const validateCoupon = async () => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    setValidatingCoupon(true);
+    setCouponError("");
+    setCouponData(null);
+    try {
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("stripe_coupon_id, discount_percent, code, is_active, valid_until, coupon_type, ai_credits_amount")
+        .eq("code", code)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        setCouponError("Cupom não encontrado ou expirado.");
+        return;
+      }
+      if (data.valid_until && new Date(data.valid_until) < new Date()) {
+        setCouponError("Este cupom expirou.");
+        return;
+      }
+      setCouponData({ stripe_coupon_id: data.stripe_coupon_id, discount_percent: data.discount_percent, code: data.code });
+      toast({ title: "Cupom aplicado!", description: `${data.discount_percent}% de desconto no primeiro mês` });
+    } catch {
+      setCouponError("Erro ao validar cupom.");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponData(null);
+    setCouponCode("");
+    setCouponError("");
+  };
+
+  const handleSelectPlan = async (planId: string) => {
     setLoadingPlan(planId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -46,9 +88,13 @@ export default function Pricing() {
       }
 
       const fnName = "stripe-create-checkout";
-      const { data, error } = await supabase.functions.invoke(fnName, {
-        body: { plan: planId },
-      });
+      const body: any = { plan: planId };
+      if (couponData?.stripe_coupon_id) {
+        body.coupon_id = couponData.stripe_coupon_id;
+        body.coupon_code = couponData.code;
+      }
+
+      const { data, error } = await supabase.functions.invoke(fnName, { body });
 
       if (error) throw error;
 
@@ -111,6 +157,48 @@ export default function Pricing() {
             </Badge>
           )}
         </div>
+
+        {/* Easter Promotion Banner */}
+        {!hasPaidPlan && (
+          <div className="max-w-2xl mx-auto mb-8 p-4 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Egg className="h-5 w-5 text-primary" />
+              <span className="text-lg font-bold text-foreground">Promoção de Páscoa 🐣</span>
+              <Egg className="h-5 w-5 text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Use o cupom <strong className="text-primary font-bold">PASCOA60</strong> e ganhe <strong className="text-primary">60% OFF</strong> no primeiro mês!
+            </p>
+
+            {/* Coupon Input */}
+            <div className="flex items-center gap-2 max-w-sm mx-auto">
+              {couponData ? (
+                <div className="flex items-center gap-2 w-full bg-primary/10 rounded-lg px-3 py-2 border border-primary/30">
+                  <Ticket className="h-4 w-4 text-primary shrink-0" />
+                  <span className="text-sm font-semibold text-primary flex-1 text-left">
+                    {couponData.code} — {couponData.discount_percent}% OFF
+                  </span>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={removeCoupon}>
+                    Remover
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Input
+                    placeholder="Código do cupom"
+                    value={couponCode}
+                    onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                    className="text-sm uppercase"
+                  />
+                  <Button size="sm" onClick={validateCoupon} disabled={validatingCoupon || !couponCode.trim()}>
+                    {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : "Aplicar"}
+                  </Button>
+                </>
+              )}
+            </div>
+            {couponError && <p className="text-xs text-destructive mt-1">{couponError}</p>}
+          </div>
+        )}
 
         {/* Plans Grid */}
         <div className="grid md:grid-cols-3 gap-6">
@@ -205,7 +293,7 @@ export default function Pricing() {
                       "w-full",
                       buttonVariant === "default" && "bg-primary hover:bg-primary/90"
                     )}
-                    onClick={() => handleSelectPlan(p.slug, false)}
+                    onClick={() => handleSelectPlan(p.slug)}
                     disabled={!!loadingPlan || buttonDisabled}
                   >
                     {loadingPlan === p.slug ? (
