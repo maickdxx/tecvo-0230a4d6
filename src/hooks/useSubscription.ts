@@ -107,22 +107,19 @@ export function useSubscription() {
       // ── STRIPE SUBSCRIPTION STATE ──
       const hasStripeSubscription = !!stripeSubId;
 
-      // ── TRIAL STATE (only valid if NO Stripe subscription) ──
-      const isTrial = !hasStripeSubscription && trialEndsAt !== null && trialStartedAt !== null;
-      const isTrialActive = isTrial && trialEndsAt > now;
-      const isTrialExpired = isTrial && trialEndsAt <= now;
-      const trialDaysLeft = isTrial && trialEndsAt
-        ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-        : 0;
+      // ── TRIAL STATE — legacy, kept for backward compatibility but no longer granted ──
+      const isTrial = false;
+      const isTrialActive = false;
+      const isTrialExpired = false;
+      const trialDaysLeft = 0;
 
       // ══════════════════════════════════════════════════════════
       // EFFECTIVE PLAN — single clear decision tree
-      // Priority: Stripe subscription > Trial > Free
+      // Priority: Stripe subscription > Free
       // ══════════════════════════════════════════════════════════
       let plan: PlanType;
 
       if (hasStripeSubscription) {
-        // Has Stripe: check if subscription is in a usable state
         const isStatusUsable =
           subscriptionStatus === "active" ||
           subscriptionStatus === "trialing" ||
@@ -131,15 +128,11 @@ export function useSubscription() {
         const isPlanNotExpired = !planExpiresAt || planExpiresAt > now;
 
         if (rawPlan !== "free" && isStatusUsable && isPlanNotExpired) {
-          plan = rawPlan; // Paid plan active
+          plan = rawPlan;
         } else {
-          plan = "free"; // Subscription exists but is not usable
+          plan = "free";
         }
-      } else if (isTrialActive) {
-        // No Stripe, active trial: use whatever plan was set (usually "starter")
-        plan = rawPlan !== "free" ? rawPlan : "starter";
       } else {
-        // No Stripe, no active trial: free
         plan = "free";
       }
 
