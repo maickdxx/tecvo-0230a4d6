@@ -110,6 +110,7 @@ const LaudoDetalhes = lazy(() => import("./pages/LaudoDetalhes"));
 const SecretariaIA = lazy(() => import("./pages/SecretariaIA"));
 const ExecutarServico = lazy(() => import("./pages/ExecutarServico"));
 const ParaVoce = lazy(() => import("./pages/ParaVoce"));
+const Recibos = lazy(() => import("./pages/Recibos"));
 
 // Portal do Cliente
 const PortalLogin = lazy(() => import("./pages/portal/PortalLogin"));
