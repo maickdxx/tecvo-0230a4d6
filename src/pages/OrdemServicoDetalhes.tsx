@@ -413,14 +413,14 @@ export default function OrdemServicoDetalhes() {
     organization_id: service.organization_id,
     client_name: service.client?.name || "Cliente",
     client_phone: service.client?.phone || null,
-    client_document: (service.client as any)?.document || null,
+    client_document: service.client?.document || null,
     quote_number: service.quote_number,
     description: service.description,
     value: service.value || 0,
     payment_method: service.payment_method,
     completed_date: service.completed_date,
     scheduled_date: service.scheduled_date || null,
-    technician_name: (service as any).assigned_profile?.full_name || null,
+    technician_name: service.assigned_profile?.full_name || null,
   });
 
   const handleGenerateReceipt = async () => {
