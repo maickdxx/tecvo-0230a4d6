@@ -60,6 +60,10 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
   const deviceType = getDeviceType(navigator.userAgent);
 
   const handleChangePassword = async () => {
+    if (!currentPassword) {
+      toast({ title: "Senha atual obrigatória", description: "Digite sua senha atual para continuar.", variant: "destructive" });
+      return;
+    }
     if (newPassword.length < 6) {
       toast({ title: "Senha muito curta", description: "Mínimo de 6 caracteres.", variant: "destructive" });
       return;
@@ -70,9 +74,19 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
     }
     setChangingPassword(true);
     try {
+      // Verify current password first
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast({ title: "Senha atual incorreta", description: "A senha atual informada está errada.", variant: "destructive" });
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       toast({ title: "Senha alterada", description: "Sua senha foi atualizada com sucesso." });
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
