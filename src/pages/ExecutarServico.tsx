@@ -67,7 +67,7 @@ export default function ExecutarServico() {
       if (!serviceId) return null;
       const { data } = await supabase
         .from("services")
-        .select("id, description, quote_number, status, value, payment_method, client:clients!client_id(name)")
+        .select("id, description, quote_number, status, value, payment_method, client:clients!client_id(name, phone)")
         .eq("id", serviceId)
         .single();
       return data;
