@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Bot, Play, Square, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +25,7 @@ export function BotExecutionPanel({ contactId, onBotStatusChange }: BotExecution
   const [executions, setExecutions] = useState<any[]>([]);
   const [starting, setStarting] = useState<string | null>(null);
   const [recentResult, setRecentResult] = useState<{ botName: string; status: "completed" | "error" } | null>(null);
+  const [confirmBot, setConfirmBot] = useState<WhatsAppBot | null>(null);
 
   const fetchExecutions = useCallback(async () => {
     if (!contactId) return;
@@ -35,7 +40,6 @@ export function BotExecutionPanel({ contactId, onBotStatusChange }: BotExecution
     onBotStatusChange?.(execs.length > 0);
   }, [contactId, onBotStatusChange]);
 
-  // Check for recently finished executions (completed/error in last 30s)
   const checkRecentResults = useCallback(async () => {
     if (!contactId) return;
     const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
@@ -54,14 +58,12 @@ export function BotExecutionPanel({ contactId, onBotStatusChange }: BotExecution
         botName: result.whatsapp_bots?.name || "Bot",
         status: result.status,
       });
-      // Clear after 5s
       setTimeout(() => setRecentResult(null), 5000);
     }
   }, [contactId]);
 
   useEffect(() => {
     fetchExecutions();
-    // Poll faster (3s) when bot is running, slower (10s) when idle
     const interval = setInterval(() => {
       fetchExecutions();
       checkRecentResults();
@@ -99,7 +101,7 @@ export function BotExecutionPanel({ contactId, onBotStatusChange }: BotExecution
     }
   };
 
-  const activeBots = bots.filter(b => b.is_active || b.trigger_type === "manual");
+  const activeBots = bots.filter(b => b.is_active);
   const hasActiveExecutions = executions.length > 0;
 
   return (
@@ -146,12 +148,12 @@ export function BotExecutionPanel({ contactId, onBotStatusChange }: BotExecution
           <div className="px-3 py-2 space-y-1">
             <p className="text-[10px] font-medium text-muted-foreground">Executar bot</p>
             {activeBots.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-2">Nenhum bot disponível</p>
+              <p className="text-xs text-muted-foreground py-2">Nenhum bot ativo disponível</p>
             ) : (
               activeBots.map(bot => (
                 <button
                   key={bot.id}
-                  onClick={() => handleStart(bot)}
+                  onClick={() => setConfirmBot(bot)}
                   disabled={starting === bot.id}
                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-muted/60 transition-colors text-left"
                 >
@@ -167,6 +169,31 @@ export function BotExecutionPanel({ contactId, onBotStatusChange }: BotExecution
           </div>
         </PopoverContent>
       </Popover>
+
+      {/* Confirmation dialog */}
+      <AlertDialog open={!!confirmBot} onOpenChange={(open) => !open && setConfirmBot(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Executar bot?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja iniciar o bot <strong>"{confirmBot?.name}"</strong> para este contato? As mensagens serão enviadas automaticamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmBot) {
+                  handleStart(confirmBot);
+                  setConfirmBot(null);
+                }
+              }}
+            >
+              Iniciar bot
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
