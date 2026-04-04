@@ -4,7 +4,7 @@ import { CheckCircle } from "lucide-react";
 
 const notifications = [
   { name: "João", city: "SP", action: "acabou de alavancar a empresa dele assinando a Tecvo" },
-  { name: "Carlos", city: "BH", action: "começou seu teste grátis e já organizou a agenda" },
+  { name: "Carlos", city: "BH", action: "assinou por R$1 e já organizou a agenda" },
   { name: "Fernanda", city: "RJ", action: "assinou a Tecvo e parou de perder cliente" },
   { name: "Rafael", city: "Curitiba", action: "acabou de criar a conta e já cadastrou 12 clientes" },
   { name: "Ana", city: "Campinas", action: "assinou o plano Pro e dobrou o faturamento" },
