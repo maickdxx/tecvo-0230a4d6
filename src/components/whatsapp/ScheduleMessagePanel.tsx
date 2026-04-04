@@ -38,6 +38,8 @@ const TEMPLATES = [
 ];
 
 export function ScheduleMessagePanel({ contact, channelId, onClose }: Props) {
+  const { organization } = useOrganization();
+  const tz = organization?.timezone || "America/Sao_Paulo";
   const { messages, create, update, cancel, loading } = useScheduledMessages(contact.id);
   const [content, setContent] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
