@@ -312,6 +312,51 @@ Deno.serve(async (req) => {
   }
 });
 
+/** Resolve {{variable}} placeholders using contact + org data */
+async function resolveMessageVariables(
+  supabase: any,
+  template: string,
+  contactId: string,
+  orgId: string,
+): Promise<string> {
+  if (!template || !template.includes("{{")) return template;
+
+  // Fetch contact data
+  const { data: contact } = await supabase
+    .from("whatsapp_contacts")
+    .select("name, phone, email, whatsapp_id")
+    .eq("id", contactId)
+    .single();
+
+  // Fetch org data
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("name, phone, email, website, whatsapp_owner")
+    .eq("id", orgId)
+    .single();
+
+  const c = contact as any;
+  const o = org as any;
+
+  const firstName = (c?.name || "").split(" ")[0] || "";
+
+  const values: Record<string, string> = {
+    primeiro_nome: firstName,
+    nome_completo: c?.name || "",
+    telefone: c?.phone || "",
+    email: c?.email || "",
+    empresa_cliente: "",
+    nome_empresa: o?.name || "",
+    telefone_empresa: o?.phone || "",
+    whatsapp_empresa: o?.whatsapp_owner || "",
+    site_empresa: o?.website || "",
+  };
+
+  return template.replace(/\{\{(\w+)\}\}/g, (_match, key) => {
+    return values[key] ?? "";
+  });
+}
+
 async function executeStep(
   supabase: any,
   executionId: string,
@@ -359,14 +404,15 @@ async function executeStep(
           const resolved = await resolveChannelAndPhone(supabase, orgId, contactId);
           if (!resolved) throw new Error("Canal ou contato não encontrado para envio");
 
-          await sendTextMessage(resolved.instanceName, resolved.recipientJid, config.message, supabase, orgId, contactId);
+          const resolvedMsg = await resolveMessageVariables(supabase, config.message, contactId, orgId);
+          await sendTextMessage(resolved.instanceName, resolved.recipientJid, resolvedMsg, supabase, orgId, contactId);
 
           await supabase.from("whatsapp_messages").insert({
             contact_id: contactId,
             channel_id: resolved.channelId,
             organization_id: orgId,
             message_id: `out_${crypto.randomUUID()}`,
-            content: config.message,
+            content: resolvedMsg,
             is_from_me: true,
             status: "sent",
           });
@@ -551,7 +597,7 @@ async function executeStep(
             body: JSON.stringify({
               number: resolved.recipientJid,
               title: "",
-              description: config.question,
+              description: await resolveMessageVariables(supabase, config.question, contactId, orgId),
               footer: config.footer || "",
               buttons: buttonsPayload,
             }),
@@ -584,14 +630,15 @@ async function executeStep(
           const resolved = await resolveChannelAndPhone(supabase, orgId, contactId);
           if (!resolved) throw new Error("Canal ou contato não encontrado para envio");
 
-          await sendTextMessage(resolved.instanceName, resolved.recipientJid, config.prompt_message, supabase, orgId, contactId);
+          const resolvedPrompt = await resolveMessageVariables(supabase, config.prompt_message, contactId, orgId);
+          await sendTextMessage(resolved.instanceName, resolved.recipientJid, resolvedPrompt, supabase, orgId, contactId);
 
           await supabase.from("whatsapp_messages").insert({
             contact_id: contactId,
             channel_id: resolved.channelId,
             organization_id: orgId,
             message_id: `out_${crypto.randomUUID()}`,
-            content: config.prompt_message,
+            content: resolvedPrompt,
             is_from_me: true,
             status: "sent",
           });
@@ -620,14 +667,15 @@ async function executeStep(
           const resolved = await resolveChannelAndPhone(supabase, orgId, contactId);
           if (!resolved) throw new Error("Canal ou contato não encontrado para envio");
 
-          await sendTextMessage(resolved.instanceName, resolved.recipientJid, config.message, supabase, orgId, contactId);
+          const resolvedTransferMsg = await resolveMessageVariables(supabase, config.message, contactId, orgId);
+          await sendTextMessage(resolved.instanceName, resolved.recipientJid, resolvedTransferMsg, supabase, orgId, contactId);
 
           await supabase.from("whatsapp_messages").insert({
             contact_id: contactId,
             channel_id: resolved.channelId,
             organization_id: orgId,
             message_id: `out_${crypto.randomUUID()}`,
-            content: config.message,
+            content: resolvedTransferMsg,
             is_from_me: true,
             status: "sent",
           });
@@ -661,14 +709,15 @@ async function executeStep(
         if (config.message) {
           const resolved = await resolveChannelAndPhone(supabase, orgId, contactId);
           if (resolved) {
-            await sendTextMessage(resolved.instanceName, resolved.recipientJid, config.message, supabase, orgId, contactId);
+            const resolvedEndMsg = await resolveMessageVariables(supabase, config.message, contactId, orgId);
+            await sendTextMessage(resolved.instanceName, resolved.recipientJid, resolvedEndMsg, supabase, orgId, contactId);
 
             await supabase.from("whatsapp_messages").insert({
               contact_id: contactId,
               channel_id: resolved.channelId,
               organization_id: orgId,
               message_id: `out_${crypto.randomUUID()}`,
-              content: config.message,
+              content: resolvedEndMsg,
               is_from_me: true,
               status: "sent",
             });
