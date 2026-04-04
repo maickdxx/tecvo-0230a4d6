@@ -26,6 +26,10 @@ export function PricingSection() {
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-background" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_30%,hsl(var(--primary)/0.06),transparent)]" />
+      {/* Easter decorative */}
+      <div className="absolute top-12 right-[6%] text-4xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '3s' }}>🐰</div>
+      <div className="absolute top-24 left-[4%] text-3xl opacity-10 animate-bounce hidden md:block" style={{ animationDuration: '4s', animationDelay: '1s' }}>🥚</div>
+      <div className="absolute bottom-16 right-[10%] text-3xl opacity-10 animate-bounce hidden md:block" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🌷</div>
 
       <div ref={ref} className="container mx-auto px-4 relative z-10">
         {/* Header */}
