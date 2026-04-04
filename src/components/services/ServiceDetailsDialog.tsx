@@ -646,6 +646,22 @@ export function ServiceDetailsDialog({
                   Enviar OS via WhatsApp
                 </Button>
               )}
+
+              {service.status === "completed" && (
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl shadow-sm"
+                  onClick={handleDownloadReceipt}
+                  disabled={downloadingReceipt}
+                >
+                  {downloadingReceipt ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Baixar Recibo PDF
+                </Button>
+              )}
               
               <div className="flex gap-2">
                 {address && (
