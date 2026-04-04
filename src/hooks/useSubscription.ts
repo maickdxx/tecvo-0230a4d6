@@ -107,22 +107,19 @@ export function useSubscription() {
       // ── STRIPE SUBSCRIPTION STATE ──
       const hasStripeSubscription = !!stripeSubId;
 
-      // ── TRIAL STATE (only valid if NO Stripe subscription) ──
-      const isTrial = !hasStripeSubscription && trialEndsAt !== null && trialStartedAt !== null;
-      const isTrialActive = isTrial && trialEndsAt > now;
-      const isTrialExpired = isTrial && trialEndsAt <= now;
-      const trialDaysLeft = isTrial && trialEndsAt
-        ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-        : 0;
+      // ── TRIAL STATE — legacy, kept for backward compatibility but no longer granted ──
+      const isTrial = false;
+      const isTrialActive = false;
+      const isTrialExpired = false;
+      const trialDaysLeft = 0;
 
       // ══════════════════════════════════════════════════════════
       // EFFECTIVE PLAN — single clear decision tree
-      // Priority: Stripe subscription > Trial > Free
+      // Priority: Stripe subscription > Free
       // ══════════════════════════════════════════════════════════
       let plan: PlanType;
 
       if (hasStripeSubscription) {
-        // Has Stripe: check if subscription is in a usable state
         const isStatusUsable =
           subscriptionStatus === "active" ||
           subscriptionStatus === "trialing" ||
@@ -131,15 +128,11 @@ export function useSubscription() {
         const isPlanNotExpired = !planExpiresAt || planExpiresAt > now;
 
         if (rawPlan !== "free" && isStatusUsable && isPlanNotExpired) {
-          plan = rawPlan; // Paid plan active
+          plan = rawPlan;
         } else {
-          plan = "free"; // Subscription exists but is not usable
+          plan = "free";
         }
-      } else if (isTrialActive) {
-        // No Stripe, active trial: use whatever plan was set (usually "starter")
-        plan = rawPlan !== "free" ? rawPlan : "starter";
       } else {
-        // No Stripe, no active trial: free
         plan = "free";
       }
 
@@ -183,14 +176,14 @@ export function useSubscription() {
         canAccessFinance: plan !== "free" || isTrialActive,
         canAccessCatalog: plan !== "free" || isTrialActive,
         canAccessAgenda: plan !== "free" || isTrialActive,
-        hasWhatsAppFull: isTrialActive ? true : (planConfig?.hasWhatsAppFull ?? false),
-        hasRecurrence: isTrialActive ? true : (planConfig?.hasRecurrence ?? false),
-        hasDigitalSignature: isTrialActive ? true : (planConfig?.hasDigitalSignature ?? false),
-        hasAdvancedFinance: isTrialActive ? true : (planConfig?.hasAdvancedFinance ?? false),
-        hasPermissions: isTrialActive ? true : (planConfig?.hasPermissions ?? false),
-        hasTeamManagement: isTrialActive ? true : (planConfig?.hasTeamManagement ?? false),
-        hasTimeClock: isTrialActive ? true : (planConfig?.hasTimeClock ?? false),
-        hasClientPortal: isTrialActive ? true : (planConfig?.hasClientPortal ?? false),
+        hasWhatsAppFull: planConfig?.hasWhatsAppFull ?? false,
+        hasRecurrence: planConfig?.hasRecurrence ?? false,
+        hasDigitalSignature: planConfig?.hasDigitalSignature ?? false,
+        hasAdvancedFinance: planConfig?.hasAdvancedFinance ?? false,
+        hasPermissions: planConfig?.hasPermissions ?? false,
+        hasTeamManagement: planConfig?.hasTeamManagement ?? false,
+        hasTimeClock: planConfig?.hasTimeClock ?? false,
+        hasClientPortal: planConfig?.hasClientPortal ?? false,
         maxUsers: planConfig?.maxUsers ?? 1,
         maxWhatsAppChannels: planConfig?.maxWhatsAppChannels ?? 0,
         isTrial: isTrialActive,

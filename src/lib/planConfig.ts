@@ -88,7 +88,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     maxUsers: 1,
     maxWhatsAppChannels: 0,
     featured: false,
-    cta: "Começar agora",
+    cta: "Começar por R$1",
     features: [
       { text: "Agenda de serviços", included: true },
       { text: "Clientes", included: true },
@@ -128,7 +128,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     maxUsers: 3,
     maxWhatsAppChannels: 2,
     featured: true,
-    cta: "Começar agora",
+    cta: "Começar por R$1",
     features: [
       { text: "Tudo do plano Start", included: true },
       { text: "WhatsApp completo (Inbox)", included: true },
@@ -168,7 +168,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     maxUsers: Infinity,
     maxWhatsAppChannels: 5,
     featured: false,
-    cta: "Escalar minha empresa",
+    cta: "Começar por R$1",
     features: [
       { text: "Tudo do plano Pro", included: true },
       { text: "Usuários ilimitados", included: true },

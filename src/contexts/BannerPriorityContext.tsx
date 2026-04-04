@@ -97,11 +97,11 @@ export function BannerPriorityProvider({ children }: { children: ReactNode }) {
     // BLOCKING: demo tour overlay active
     if (showTour) return "blocking";
 
-    // CRITICAL: trial expired or past-due grace expired
-    if (isTrialExpired || isPastDueGraceExpired) return "critical";
+    // CRITICAL: past-due grace expired
+    if (isPastDueGraceExpired) return "critical";
 
-    // URGENT: active trial, past-due, or cancelling
-    if (isTrial || isPastDue || isCancelledAtPeriodEnd) return "urgent";
+    // URGENT: past-due or cancelling
+    if (isPastDue || isCancelledAtPeriodEnd) return "urgent";
 
     // ACTIVATION: onboarding checklist visible (real mode, not completed)
     if (!isDemoMode && showGuide && !checklistDone) return "activation";

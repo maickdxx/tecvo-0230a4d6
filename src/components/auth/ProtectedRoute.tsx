@@ -50,13 +50,13 @@ export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRou
   // WhatsApp pessoal é opcional — não bloqueia acesso ao sistema.
   // Coleta posterior via WhatsAppPromptCard no dashboard.
 
-  // Welcome page: show once after plan activation (not during trial)
-  if (!isEmployee && !welcomeShown && !isFreePlan && !isTrial && location.pathname !== "/assinatura/parabens") {
+  // Welcome page: show once after plan activation
+  if (!isEmployee && !welcomeShown && !isFreePlan && location.pathname !== "/assinatura/parabens") {
     return <Navigate to="/assinatura/parabens" replace />;
   }
 
-  // Plan gate: redirect free users to /pricing ONLY if not on trial and trial is not expired
-  if (!isEmployee && isFreePlan && !isTrial && !isTrialExpired) {
+  // Plan gate: redirect free users to /pricing
+  if (!isEmployee && isFreePlan) {
     if (!matchAnyRoute(location.pathname, PLAN_EXEMPT_ROUTES)) {
       return <Navigate to="/planos" replace />;
     }
