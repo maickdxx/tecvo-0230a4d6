@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { plan } = body;
+    const { plan, coupon_id, coupon_code } = body;
     console.log("[STRIPE-CHECKOUT] Request - plan:", plan, "user:", userId, "email:", userEmail);
 
     const planInfo = STRIPE_PRICES[plan];
