@@ -125,7 +125,7 @@ export default function Auth() {
       }
 
       // Session set successfully, navigate
-      const destination = getRedirectDestination();
+      const destination = getRedirectPath();
       navigate(destination, { replace: true });
     } catch (err) {
       console.error("Google OAuth unexpected error:", err);
