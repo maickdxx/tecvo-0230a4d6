@@ -13,6 +13,8 @@ const corsHeaders = {
 };
 
 const MAX_EXECUTION_STEPS = 40;
+const CONTACT_SEND_COOLDOWN_MS = 3200;
+const MAX_SEND_GUARD_RETRIES = 4;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -312,6 +314,31 @@ Deno.serve(async (req) => {
   }
 });
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getFirstNonEmptyString(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === "string") {
+      const normalized = value.trim();
+      if (normalized) return normalized;
+    }
+  }
+  return "";
+}
+
+function getFirstName(value: unknown): string {
+  const normalized = getFirstNonEmptyString(value).replace(/\s+/g, " ");
+  return normalized ? normalized.split(" ")[0] : "";
+}
+
+function asRecord(value: unknown): Record<string, any> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, any>)
+    : {};
+}
+
 /** Resolve {{variable}} placeholders using contact + org data */
 async function resolveMessageVariables(
   supabase: any,
@@ -321,31 +348,94 @@ async function resolveMessageVariables(
 ): Promise<string> {
   if (!template || !template.includes("{{")) return template;
 
-  // Fetch contact data
-  const { data: contact } = await supabase
+  const { data: contact, error: contactError } = await supabase
     .from("whatsapp_contacts")
-    .select("name, phone, email, whatsapp_id")
+    .select("name, phone, whatsapp_id, linked_client_id, linked_service_id, assigned_to, visitor_metadata")
     .eq("id", contactId)
     .single();
 
-  // Fetch org data
-  const { data: org } = await supabase
+  const { data: org, error: orgError } = await supabase
     .from("organizations")
-    .select("name, phone, email, website, whatsapp_owner")
+    .select("name, phone, website, whatsapp_owner")
     .eq("id", orgId)
     .single();
 
+  if (contactError) {
+    console.warn(`[BOT-ENGINE] Falha ao carregar contato ${contactId} para resolver variáveis: ${contactError.message}`);
+  }
+
+  if (orgError) {
+    console.warn(`[BOT-ENGINE] Falha ao carregar organização ${orgId} para resolver variáveis: ${orgError.message}`);
+  }
+
   const c = contact as any;
   const o = org as any;
+  const visitorMetadata = asRecord(c?.visitor_metadata);
 
-  const firstName = (c?.name || "").split(" ")[0] || "";
+  let client: any = null;
+  if (c?.linked_client_id) {
+    const { data, error } = await supabase
+      .from("clients")
+      .select("name, email, phone, company_name, trade_name, contact_name")
+      .eq("id", c.linked_client_id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`[BOT-ENGINE] Falha ao carregar cliente ${c.linked_client_id}: ${error.message}`);
+    }
+
+    client = data;
+  }
+
+  let service: any = null;
+  if (c?.linked_service_id) {
+    const { data, error } = await supabase
+      .from("services")
+      .select("assigned_to")
+      .eq("id", c.linked_service_id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`[BOT-ENGINE] Falha ao carregar serviço ${c.linked_service_id}: ${error.message}`);
+    }
+
+    service = data;
+  }
+
+  const assignedUserId = c?.assigned_to || service?.assigned_to || null;
+  let assignedProfile: any = null;
+
+  if (assignedUserId) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", assignedUserId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`[BOT-ENGINE] Falha ao carregar atendente ${assignedUserId}: ${error.message}`);
+    }
+
+    assignedProfile = data;
+  }
+
+  const fullClientName = getFirstNonEmptyString(
+    c?.name,
+    client?.contact_name,
+    client?.name,
+    visitorMetadata.name,
+    visitorMetadata.first_name,
+  );
+  const attendantFullName = getFirstNonEmptyString(assignedProfile?.full_name);
 
   const values: Record<string, string> = {
-    primeiro_nome: firstName,
-    nome_completo: c?.name || "",
-    telefone: c?.phone || "",
-    email: c?.email || "",
-    empresa_cliente: "",
+    primeiro_nome: getFirstName(fullClientName),
+    nome_completo: fullClientName,
+    telefone: getFirstNonEmptyString(c?.phone, client?.phone, c?.whatsapp_id),
+    email: getFirstNonEmptyString(visitorMetadata.email, client?.email),
+    empresa_cliente: getFirstNonEmptyString(visitorMetadata.company, client?.company_name, client?.trade_name),
+    primeiro_nome_atendente: getFirstName(attendantFullName),
+    atendente_nome: getFirstName(attendantFullName),
     nome_empresa: o?.name || "",
     telefone_empresa: o?.phone || "",
     whatsapp_empresa: o?.whatsapp_owner || "",
@@ -440,13 +530,16 @@ async function executeStep(
           : s.step_type === "send_video"
           ? "video"
           : "document";
+        const resolvedCaption = config.caption
+          ? await resolveMessageVariables(supabase, config.caption, contactId, orgId)
+          : undefined;
 
         await sendMediaMessage(
           resolved.instanceName,
           resolved.recipientJid,
           mediaType,
           config.media_url,
-          config.caption,
+          resolvedCaption,
           config.file_name,
           supabase,
           orgId,
@@ -458,7 +551,7 @@ async function executeStep(
           channel_id: resolved.channelId,
           organization_id: orgId,
           message_id: `out_${crypto.randomUUID()}`,
-          content: config.caption || "",
+          content: resolvedCaption || "",
           media_url: config.media_url,
           media_type: mediaType,
           is_from_me: true,
@@ -580,43 +673,27 @@ async function executeStep(
         if (config.question && config.buttons?.length > 0) {
           const resolved = await resolveChannelAndPhone(supabase, orgId, contactId);
           if (!resolved) throw new Error("Canal ou contato não encontrado para envio");
-
-          // Send as list/buttons via Evolution API
-          const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
-          const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-          if (!vpsUrl || !apiKey) throw new Error("WhatsApp bridge não configurado");
-
-          const buttonsPayload = (config.buttons as string[]).map((text: string, i: number) => ({
-            buttonId: `btn_${i}`,
-            buttonText: { displayText: text },
-          }));
-
-          const res = await fetch(`${vpsUrl}/message/sendButtons/${resolved.instanceName}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", apikey: apiKey },
-            body: JSON.stringify({
-              number: resolved.recipientJid,
-              title: "",
-              description: await resolveMessageVariables(supabase, config.question, contactId, orgId),
-              footer: config.footer || "",
-              buttons: buttonsPayload,
-            }),
-          });
-
-          // Fallback: if buttons API fails, send as numbered text
-          if (!res.ok) {
-            console.warn("Buttons API failed, falling back to text:", await res.text());
-            const numberedOptions = (config.buttons as string[]).map((b: string, i: number) => `${i + 1}. ${b}`).join("\n");
-            const fallbackText = `${config.question}\n\n${numberedOptions}${config.footer ? `\n\n_${config.footer}_` : ""}`;
-            await sendTextMessage(resolved.instanceName, resolved.recipientJid, fallbackText, supabase, orgId, contactId);
-          }
+          const resolvedQuestion = await resolveMessageVariables(supabase, config.question, contactId, orgId);
+          const resolvedFooter = config.footer
+            ? await resolveMessageVariables(supabase, config.footer, contactId, orgId)
+            : "";
+          const { sentContent } = await sendButtonsMessage(
+            resolved.instanceName,
+            resolved.recipientJid,
+            resolvedQuestion,
+            config.buttons as string[],
+            resolvedFooter,
+            supabase,
+            orgId,
+            contactId,
+          );
 
           await supabase.from("whatsapp_messages").insert({
             contact_id: contactId,
             channel_id: resolved.channelId,
             organization_id: orgId,
             message_id: `out_${crypto.randomUUID()}`,
-            content: config.question,
+            content: sentContent,
             is_from_me: true,
             status: "sent",
           });
@@ -853,22 +930,49 @@ async function resolveChannelAndPhone(
   };
 }
 
-async function sendTextMessage(instanceName: string, recipientJid: string, message: string, supabase?: any, orgId?: string, contactId?: string) {
-  // Send guard check if supabase context is available
-  if (supabase && orgId) {
-    const guard = await checkSendLimit(supabase, orgId, contactId || null, "bot");
-    if (!guard.allowed) {
-      console.warn(`[BOT-ENGINE] Send blocked by guard: ${guard.reason} — ${guard.detail}`);
-      throw new Error(`Envio bloqueado: ${guard.detail}`);
+async function ensureSendAllowedWithRetry(
+  supabase: any,
+  orgId: string,
+  contactId: string | null,
+  source: string,
+) {
+  if (!supabase || !orgId) return;
+
+  let lastDetail = "limite de segurança";
+
+  for (let attempt = 0; attempt < MAX_SEND_GUARD_RETRIES; attempt++) {
+    const guard = await checkSendLimit(supabase, orgId, contactId, source);
+
+    if (guard.allowed) return;
+
+    lastDetail = guard.detail || lastDetail;
+
+    if (guard.reason === "cooldown" && contactId && attempt < MAX_SEND_GUARD_RETRIES - 1) {
+      console.info(`[BOT-ENGINE] Cooldown do contato ${contactId}; aguardando ${CONTACT_SEND_COOLDOWN_MS}ms para reenviar (${attempt + 1}/${MAX_SEND_GUARD_RETRIES})`);
+      await sleep(CONTACT_SEND_COOLDOWN_MS);
+      continue;
     }
+
+    console.warn(`[BOT-ENGINE] Send blocked by guard: ${guard.reason} — ${guard.detail}`);
+    throw new Error(`Envio bloqueado: ${lastDetail}`);
   }
 
+  throw new Error(`Envio bloqueado: ${lastDetail}`);
+}
+
+function getWhatsAppBridgeConfig() {
   const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
   const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
 
   if (!vpsUrl || !apiKey) {
     throw new Error("WhatsApp bridge não configurado");
   }
+
+  return { vpsUrl, apiKey };
+}
+
+async function postTextMessage(instanceName: string, recipientJid: string, message: string) {
+  const { vpsUrl, apiKey } = getWhatsAppBridgeConfig();
 
   const res = await fetch(`${vpsUrl}/message/sendText/${instanceName}`, {
     method: "POST",
@@ -884,31 +988,15 @@ async function sendTextMessage(instanceName: string, recipientJid: string, messa
   await res.text();
 }
 
-async function sendMediaMessage(
+async function postMediaMessage(
   instanceName: string,
   recipientJid: string,
   mediaType: "image" | "video" | "document",
   mediaUrl: string,
   caption?: string,
   fileName?: string,
-  supabase?: any,
-  orgId?: string,
-  contactId?: string,
 ) {
-  // Send guard check
-  if (supabase && orgId) {
-    const guard = await checkSendLimit(supabase, orgId, contactId || null, "bot");
-    if (!guard.allowed) {
-      console.warn(`[BOT-ENGINE] Media send blocked by guard: ${guard.reason}`);
-      throw new Error(`Envio bloqueado: ${guard.detail}`);
-    }
-  }
-  const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
-  const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-
-  if (!vpsUrl || !apiKey) {
-    throw new Error("WhatsApp bridge não configurado");
-  }
+  const { vpsUrl, apiKey } = getWhatsAppBridgeConfig();
 
   const res = await fetch(`${vpsUrl}/message/sendMedia/${instanceName}`, {
     method: "POST",
@@ -928,6 +1016,77 @@ async function sendMediaMessage(
   }
 
   await res.text();
+}
+
+async function sendButtonsMessage(
+  instanceName: string,
+  recipientJid: string,
+  question: string,
+  buttons: string[],
+  footer = "",
+  supabase?: any,
+  orgId?: string,
+  contactId?: string,
+): Promise<{ sentContent: string }> {
+  if (supabase && orgId) {
+    await ensureSendAllowedWithRetry(supabase, orgId, contactId || null, "bot");
+  }
+
+  const { vpsUrl, apiKey } = getWhatsAppBridgeConfig();
+  const buttonsPayload = buttons.map((text, i) => ({
+    buttonId: `btn_${i}`,
+    buttonText: { displayText: text },
+  }));
+
+  const res = await fetch(`${vpsUrl}/message/sendButtons/${instanceName}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: apiKey },
+    body: JSON.stringify({
+      number: recipientJid,
+      title: "",
+      description: question,
+      footer,
+      buttons: buttonsPayload,
+    }),
+  });
+
+  if (res.ok) {
+    await res.text();
+    return { sentContent: question };
+  }
+
+  console.warn("Buttons API failed, falling back to text:", await res.text());
+  const numberedOptions = buttons.map((button, index) => `${index + 1}. ${button}`).join("\n");
+  const fallbackText = `${question}\n\n${numberedOptions}${footer ? `\n\n_${footer}_` : ""}`;
+  await postTextMessage(instanceName, recipientJid, fallbackText);
+
+  return { sentContent: fallbackText };
+}
+
+async function sendTextMessage(instanceName: string, recipientJid: string, message: string, supabase?: any, orgId?: string, contactId?: string) {
+  if (supabase && orgId) {
+    await ensureSendAllowedWithRetry(supabase, orgId, contactId || null, "bot");
+  }
+
+  await postTextMessage(instanceName, recipientJid, message);
+}
+
+async function sendMediaMessage(
+  instanceName: string,
+  recipientJid: string,
+  mediaType: "image" | "video" | "document",
+  mediaUrl: string,
+  caption?: string,
+  fileName?: string,
+  supabase?: any,
+  orgId?: string,
+  contactId?: string,
+) {
+  if (supabase && orgId) {
+    await ensureSendAllowedWithRetry(supabase, orgId, contactId || null, "bot");
+  }
+
+  await postMediaMessage(instanceName, recipientJid, mediaType, mediaUrl, caption, fileName);
 }
 
 function calculateWaitUntil(config: any): Date {
