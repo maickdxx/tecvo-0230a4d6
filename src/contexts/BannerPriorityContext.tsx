@@ -8,8 +8,8 @@ import { useGuidedOnboarding } from "@/hooks/useGuidedOnboarding";
  * Global banner priority tiers (highest → lowest):
  *
  *  BLOCKING   — full-screen overlays (DemoTour, PaymentPending)
- *  CRITICAL   — billing emergencies (expired trial, past-due grace expired)
- *  URGENT     — billing warnings (active trial countdown, cancelling, past-due)
+ *  CRITICAL   — billing emergencies (past-due grace expired)
+ *  URGENT     — billing warnings (cancelling, past-due)
  *  ACTIVATION — onboarding / demo conversion
  *  PROMPT     — config nudges (WhatsApp)
  *  INFO       — tips, milestones, install banner
