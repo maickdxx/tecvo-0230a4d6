@@ -51,7 +51,7 @@ export function SecuritySettings({ onBack }: SecuritySettingsProps) {
   const [changingPassword, setChangingPassword] = useState(false);
   const [resending, setResending] = useState(false);
   const [endingSessions, setEndingSessions] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
+  
   const emailVerified = !!user?.email_confirmed_at;
   const lastSignIn = user?.last_sign_in_at
     ? new Date(user.last_sign_in_at).toLocaleString("pt-BR")
