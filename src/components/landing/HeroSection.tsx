@@ -20,7 +20,7 @@ export function HeroSection() {
   const cta = variant?.config?.hero_cta || "Testar grátis por 7 dias";
 
   return (
-    <section className="relative pt-28 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+    <section className="relative pt-36 pb-20 md:pt-48 md:pb-28 overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.12),transparent)]" />
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
       <div className="absolute top-20 left-[10%] w-72 h-72 bg-primary/[0.06] rounded-full blur-[100px]" />
