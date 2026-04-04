@@ -63,6 +63,9 @@ export function CTASection() {
 
       <section className="py-20 md:py-28 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,hsl(var(--primary)/0.06),transparent)]" />
+        {/* Easter decorative */}
+        <div className="absolute top-10 left-[8%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '4s' }}>🥚</div>
+        <div className="absolute bottom-10 right-[8%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '3.5s' }}>🐰</div>
 
         <div className="container mx-auto px-4 relative z-10">
           <div
