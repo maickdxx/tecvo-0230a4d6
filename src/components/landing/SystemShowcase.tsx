@@ -58,7 +58,7 @@ function ShowcaseItem({ item, index }: { item: (typeof showcases)[0]; index: num
         <p className="text-muted-foreground leading-relaxed mb-6 text-base">{item.description}</p>
         <Button size="lg" variant="outline" asChild className="hover:scale-[1.02] transition-all duration-200">
           <Link to="/cadastro">
-            Testar grátis
+            Começar por R$1
             <ArrowRight className="ml-1.5 h-4 w-4" />
           </Link>
         </Button>

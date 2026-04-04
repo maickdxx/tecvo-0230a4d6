@@ -234,7 +234,7 @@ export default function ParaVoce() {
                   onClick={() => navigate("/cadastro")}
                   className="px-10 py-5 bg-[#2547D0] hover:bg-[#1d3bb0] text-white font-bold rounded-xl transition-all duration-200 shadow-[0_0_40px_rgba(37,71,208,0.35)] hover:shadow-[0_0_50px_rgba(37,71,208,0.5)] text-lg group"
                 >
-                  Criar minha conta grátis
+                  Começar por R$1
                   <ArrowRight className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </motion.div>
