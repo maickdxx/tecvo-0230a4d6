@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { CONDITION_TYPES, DELAY_TYPES, CAPTURE_FIELDS } from "@/hooks/useWhatsAppBots";
 import { X, Upload, FileText, Loader2, Plus, Trash2, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { VariableInsertButton, VariableValidation, MessagePreviewToggle } from "@/components/shared/VariableInsertButton";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useOperationalCapacityConfig } from "@/hooks/useOperationalCapacityConfig";
 import { toast } from "sonner";
