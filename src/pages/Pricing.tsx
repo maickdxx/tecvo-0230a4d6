@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { buildCheckoutSuccessPath, saveCheckoutContext } from "@/lib/checkoutReturn";
 import { trackFBEvent } from "@/lib/fbPixel";
-import { Check, X, Crown, Star, Zap, Gift, LogOut, Loader2, Ticket, Egg } from "lucide-react";
+import { Check, X, Crown, Star, Zap, LogOut, Loader2, Ticket, Sparkles } from "lucide-react";
 import { PAID_PLANS, PLAN_CONFIG } from "@/lib/planConfig";
 import type { PlanSlug } from "@/lib/planConfig";
 
@@ -25,16 +25,16 @@ const PLAN_ORDER: Record<PlanSlug, number> = { free: 0, teste: 0, starter: 1, es
 
 export default function Pricing() {
   const { user, signOut } = useAuth();
-  const { plan, isFreePlan, isTrial, isTrialExpired, isLoading } = useSubscription();
+  const { plan, isFreePlan, isLoading, hasActiveStripeSubscription } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponData, setCouponData] = useState<{ stripe_coupon_id: string | null; discount_percent: number | null; code: string } | null>(null);
   const [couponError, setCouponError] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
-  const hasPaidPlan = !isFreePlan && !isTrial && !isTrialExpired;
+  const hasPaidPlan = hasActiveStripeSubscription;
 
-  if (!isLoading && !isFreePlan && !isTrial && !isTrialExpired) {
+  if (!isLoading && hasPaidPlan) {
     if (plan === "pro") {
       return <Navigate to="/dashboard" replace />;
     }
@@ -63,7 +63,7 @@ export default function Pricing() {
         return;
       }
       setCouponData({ stripe_coupon_id: data.stripe_coupon_id, discount_percent: data.discount_percent, code: data.code });
-      toast({ title: "Cupom aplicado!", description: `${data.discount_percent}% de desconto no primeiro mês` });
+      toast({ title: "Cupom aplicado!", description: `${data.discount_percent}% de desconto aplicado` });
     } catch {
       setCouponError("Erro ao validar cupom.");
     } finally {
@@ -148,29 +148,22 @@ export default function Pricing() {
           <p className="text-lg text-muted-foreground">
             {hasPaidPlan
               ? "Você pode fazer upgrade para ter acesso a mais recursos."
-              : "Teste grátis por 7 dias. Sem cobrança imediata. Cancele a qualquer momento."}
+              : "Comece por apenas R$1 no primeiro mês. Cancele a qualquer momento."}
           </p>
           {!hasPaidPlan && (
             <Badge variant="secondary" className="mt-4">
-              <Gift className="h-3 w-3 mr-1" />
-              7 dias de teste grátis em todos os planos
+              <Sparkles className="h-3 w-3 mr-1" />
+              Primeiro mês por apenas R$ 1 em todos os planos
             </Badge>
           )}
         </div>
 
-        {/* Easter Promotion Banner */}
+        {/* Coupon Section */}
         {!hasPaidPlan && (
           <div className="max-w-2xl mx-auto mb-8 p-4 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Egg className="h-5 w-5 text-primary" />
-              <span className="text-lg font-bold text-foreground">Promoção de Páscoa 🐣</span>
-              <Egg className="h-5 w-5 text-primary" />
-            </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Use o cupom <strong className="text-primary font-bold">PASCOA60</strong> e ganhe <strong className="text-primary">60% OFF</strong> no primeiro mês!
+              Tem um cupom de desconto? Aplique aqui:
             </p>
-
-            {/* Coupon Input */}
             <div className="flex items-center gap-2 max-w-sm mx-auto">
               {couponData ? (
                 <div className="flex items-center gap-2 w-full bg-primary/10 rounded-lg px-3 py-2 border border-primary/30">
@@ -263,7 +256,18 @@ export default function Pricing() {
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">{p.description}</p>
                   <div className="mt-4">
-                    <span className="text-3xl font-bold text-foreground">{p.price}</span>
+                    {!hasPaidPlan && (
+                      <div className="mb-1">
+                        <span className="text-2xl font-bold text-primary">R$ 1</span>
+                        <span className="text-muted-foreground text-xs ml-1">no 1º mês</span>
+                      </div>
+                    )}
+                    <span className={cn(
+                      "font-bold text-foreground",
+                      !hasPaidPlan ? "text-lg text-muted-foreground" : "text-3xl"
+                    )}>
+                      {!hasPaidPlan ? `Depois ${p.price}` : p.price}
+                    </span>
                     <span className="text-muted-foreground text-sm">{p.period}</span>
                   </div>
                 </CardHeader>
@@ -314,7 +318,7 @@ export default function Pricing() {
         <p className="text-center text-sm text-muted-foreground mt-8">
           {hasPaidPlan
             ? "Cancele a qualquer momento."
-            : "Sem cobrança nos primeiros 7 dias. Cancele a qualquer momento."}
+            : "R$1 no primeiro mês, depois o valor normal. Cancele a qualquer momento."}
         </p>
 
         <div className="flex justify-center gap-4 mt-4 flex-wrap">

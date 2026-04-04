@@ -14,6 +14,14 @@ const STRIPE_PRICES: Record<string, { priceId: string; name: string }> = {
   teste: { priceId: "price_1TC7KMDojFnaEswE0yDh1r5e", name: "Tecvo Teste Interno" },
 };
 
+// Stripe coupon IDs for "R$1 first month" per plan
+// These coupons discount (price - R$1) so the first invoice = R$1
+const FIRST_MONTH_COUPONS: Record<string, string> = {
+  starter: "mvC57R4h",   // R$49 - R$48 = R$1
+  essential: "xoKiaRsZ", // R$119 - R$118 = R$1
+  pro: "F2cH8DXa",       // R$229 - R$228 = R$1
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -97,7 +105,6 @@ Deno.serve(async (req) => {
       try {
         const existingSub = await stripe.subscriptions.retrieve(org.stripe_subscription_id);
         if (existingSub.status === "active" || existingSub.status === "trialing") {
-          // If same plan, block duplicate
           const existingPriceId = existingSub.items.data[0]?.price?.id;
           if (existingPriceId === planInfo.priceId) {
             console.log("[STRIPE-CHECKOUT] Duplicate subscription blocked — org:", profile.organization_id);
@@ -109,24 +116,20 @@ Deno.serve(async (req) => {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
-          // Different plan — cancel old subscription at period end and create new checkout
-          // This handles upgrade scenarios
           console.log("[STRIPE-CHECKOUT] Upgrading — will cancel old sub at period end");
         }
       } catch (e) {
-        // Subscription doesn't exist in Stripe anymore, proceed normally
         console.warn("[STRIPE-CHECKOUT] Could not retrieve existing subscription:", (e as Error).message);
       }
     }
 
-    // Check for existing Stripe customer — prefer stored ID, fallback to email
+    // Check for existing Stripe customer
     let customerId: string | undefined = org?.stripe_customer_id || undefined;
 
     if (!customerId) {
       const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
-        // Persist for future lookups
         await supabase
           .from("organizations")
           .update({ stripe_customer_id: customerId })
@@ -139,6 +142,20 @@ Deno.serve(async (req) => {
     const cancelUrl = `${origin}/pricing?subscription=cancelled`;
 
     console.log("[STRIPE-CHECKOUT] Return URLs", { origin, successUrl, cancelUrl });
+
+    // ============ DETERMINE DISCOUNT ============
+    // Priority: explicit coupon_id from user > automatic R$1 first month
+    let discountCouponId: string | undefined;
+
+    if (coupon_id) {
+      // User applied a specific coupon (e.g. PASCOA60)
+      discountCouponId = coupon_id;
+      console.log("[STRIPE-CHECKOUT] Applying user coupon:", coupon_id);
+    } else if (FIRST_MONTH_COUPONS[plan]) {
+      // No user coupon — apply automatic "R$1 first month" coupon
+      discountCouponId = FIRST_MONTH_COUPONS[plan];
+      console.log("[STRIPE-CHECKOUT] Applying automatic R$1 first month coupon for plan:", plan);
+    }
 
     const sessionParams: any = {
       customer: customerId,
@@ -161,18 +178,15 @@ Deno.serve(async (req) => {
       },
     };
 
-    // Apply Stripe coupon if provided
-    if (coupon_id) {
-      sessionParams.discounts = [{ coupon: coupon_id }];
-      console.log("[STRIPE-CHECKOUT] Applying coupon:", coupon_id);
+    // Apply discount
+    if (discountCouponId) {
+      sessionParams.discounts = [{ coupon: discountCouponId }];
     }
 
     // If coupon grants AI credits, record it after checkout
     if (coupon_code) {
-      // Increment coupon usage
       await supabase.rpc("increment_coupon_usage", { coupon_code_param: coupon_code });
 
-      // Record redemption
       const { data: couponData } = await supabase
         .from("coupons")
         .select("id, ai_credits_amount, discount_percent, coupon_type")
@@ -188,7 +202,6 @@ Deno.serve(async (req) => {
           applied_ai_credits: couponData.ai_credits_amount || 0,
         });
 
-        // Grant AI credits immediately if applicable
         if (couponData.ai_credits_amount > 0) {
           const { data: existingCredits } = await supabase
             .from("ai_credits")
@@ -207,7 +220,6 @@ Deno.serve(async (req) => {
               .insert({ organization_id: profile.organization_id, balance: couponData.ai_credits_amount });
           }
 
-          // Log the transaction
           await supabase.from("ai_credit_transactions").insert({
             organization_id: profile.organization_id,
             user_id: userId,
