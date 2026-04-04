@@ -92,8 +92,11 @@ export function CTASection() {
                   )
                 ))}
               </h2>
-              <p className="text-muted-foreground text-base md:text-lg mb-8 max-w-xl mx-auto">
+              <p className="text-muted-foreground text-base md:text-lg mb-4 max-w-xl mx-auto">
                 Comece agora, sem pagar nada. Em 2 minutos sua empresa já está rodando no Tecvo.
+              </p>
+              <p className="text-sm font-semibold text-primary mb-8">
+                🐣 Use o cupom <code className="bg-primary/10 px-1.5 py-0.5 rounded font-bold">PASCOA60</code> e ganhe 60% OFF no primeiro mês!
               </p>
 
               <Button

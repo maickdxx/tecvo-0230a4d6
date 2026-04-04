@@ -117,6 +117,15 @@ export function PricingSection() {
                       <span className="text-sm text-muted-foreground font-medium">{plan.period}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1.5">Cobrado mensalmente • Cancele quando quiser</p>
+                    {plan.slug && (
+                      <p className="text-xs font-semibold text-primary mt-1.5 flex items-center gap-1">
+                        🐣 Com PASCOA60: <span className="line-through text-muted-foreground mr-1">{plan.price}</span>
+                        <span className="text-primary font-bold">
+                          R$ {Math.round((PLAN_CONFIG[plan.slug]?.pricePerMonth ?? 0) * 0.4)}
+                        </span>
+                        /mês
+                      </p>
+                    )}
                   </div>
 
                   {/* Features */}

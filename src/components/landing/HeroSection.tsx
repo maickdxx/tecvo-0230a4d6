@@ -25,6 +25,11 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
       <div className="absolute top-20 left-[10%] w-72 h-72 bg-primary/[0.06] rounded-full blur-[100px]" />
       <div className="absolute bottom-0 right-[5%] w-96 h-96 bg-primary/[0.04] rounded-full blur-[120px]" />
+      {/* Easter decorative elements */}
+      <div className="absolute top-16 right-[8%] text-4xl opacity-20 animate-bounce hidden md:block" style={{ animationDuration: '3s' }}>🥚</div>
+      <div className="absolute top-32 left-[5%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '4s', animationDelay: '1s' }}>🐰</div>
+      <div className="absolute bottom-20 left-[15%] text-2xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🌸</div>
+      <div className="absolute bottom-32 right-[12%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '4.5s', animationDelay: '1.5s' }}>🐣</div>
       <div
         className="absolute inset-0 opacity-[0.025]"
         style={{
