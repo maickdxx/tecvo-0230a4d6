@@ -72,12 +72,17 @@ export function useScheduledMessages(contactId: string | null) {
   }, [organization?.id, organization?.timezone, fetch]);
 
   const update = useCallback(async (id: string, params: { content?: string; scheduledAt?: Date }) => {
+    const tz = organization?.timezone || "America/Sao_Paulo";
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
     if (params.content !== undefined) updates.content = params.content;
-    if (params.scheduledAt) updates.scheduled_at = params.scheduledAt.toISOString();
+    if (params.scheduledAt) {
+      const dateStr = format(params.scheduledAt, "yyyy-MM-dd");
+      const timeStr = format(params.scheduledAt, "HH:mm:ss");
+      updates.scheduled_at = buildTimestamp(dateStr, timeStr, tz);
+    }
     await supabase.from("whatsapp_scheduled_messages").update(updates).eq("id", id);
     await fetch();
-  }, [fetch]);
+  }, [organization?.timezone, fetch]);
 
   const cancel = useCallback(async (id: string) => {
     await supabase.from("whatsapp_scheduled_messages").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", id);
