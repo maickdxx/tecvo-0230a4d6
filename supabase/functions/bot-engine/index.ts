@@ -667,14 +667,15 @@ async function executeStep(
           const resolved = await resolveChannelAndPhone(supabase, orgId, contactId);
           if (!resolved) throw new Error("Canal ou contato não encontrado para envio");
 
-          await sendTextMessage(resolved.instanceName, resolved.recipientJid, config.message, supabase, orgId, contactId);
+          const resolvedTransferMsg = await resolveMessageVariables(supabase, config.message, contactId, orgId);
+          await sendTextMessage(resolved.instanceName, resolved.recipientJid, resolvedTransferMsg, supabase, orgId, contactId);
 
           await supabase.from("whatsapp_messages").insert({
             contact_id: contactId,
             channel_id: resolved.channelId,
             organization_id: orgId,
             message_id: `out_${crypto.randomUUID()}`,
-            content: config.message,
+            content: resolvedTransferMsg,
             is_from_me: true,
             status: "sent",
           });
