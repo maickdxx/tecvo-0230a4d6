@@ -158,7 +158,7 @@ export function ServiceCompleteDialog({
             amount: parseFloat(l.amount),
             financial_account_id: l.financial_account_id,
           }));
-      await onConfirm(payments, signatureBlob, signerName || undefined);
+      await onConfirm(payments, signatureBlob, signerName || undefined, sendReceipt);
       onOpenChange(false);
       setStep("payment");
       setSignerName("");
