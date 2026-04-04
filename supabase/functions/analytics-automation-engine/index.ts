@@ -277,6 +277,8 @@ Deno.serve(async (req) => {
         console.log(`[AUTOMATION-ENGINE] Found ${profiles.length} recent profiles to evaluate`);
 
         for (const profile of profiles) {
+          // Only process owners
+          if (!ownerUserIds.has(profile.user_id)) continue;
           const org = profile.organizations as any;
           const signupDate = new Date(profile.created_at);
           const daysSinceSignup = daysBetween(signupDate, now);
