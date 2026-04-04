@@ -355,6 +355,110 @@ export default function OrdensServico() {
     await updateStatus({ id: serviceId, status: newStatus });
   };
 
+  const handleGenerateReceipt = async (service: typeof services[0]) => {
+    setReceiptAction({ serviceId: service.id, type: "generate" });
+    try {
+      const client = clients.find((item) => item.id === service.client_id);
+      const payments = resolveReceiptPayments({
+        servicePayments: await fetchServicePayments(service.id),
+        paymentMethodNames,
+        fallbackPaymentMethod: service.payment_method,
+        serviceValue: service.value || 0,
+      });
+
+      const { created } = await ensureReceiptDraft({
+        organization,
+        service: {
+          id: service.id,
+          organization_id: service.organization_id,
+          client_name: client?.name || "Cliente",
+          client_phone: client?.phone || null,
+          quote_number: service.quote_number,
+          description: service.description,
+          value: service.value || 0,
+          payment_method: service.payment_method,
+          completed_date: service.completed_date,
+        },
+        payments,
+      });
+
+      toast({
+        title: created ? "Recibo gerado" : "Recibo já existente",
+        description: created
+          ? "Agora você já pode baixar o PDF do recibo."
+          : "Esta OS já possui um recibo gerado.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar recibo",
+        description: (error as Error).message,
+      });
+    } finally {
+      setReceiptAction(null);
+    }
+  };
+
+  const handleDownloadReceipt = async (service: typeof services[0]) => {
+    setReceiptAction({ serviceId: service.id, type: "download" });
+    try {
+      const client = clients.find((item) => item.id === service.client_id);
+      const payments = resolveReceiptPayments({
+        servicePayments: await fetchServicePayments(service.id),
+        paymentMethodNames,
+        fallbackPaymentMethod: service.payment_method,
+        serviceValue: service.value || 0,
+      });
+
+      const { created } = await ensureReceiptDraft({
+        organization,
+        service: {
+          id: service.id,
+          organization_id: service.organization_id,
+          client_name: client?.name || "Cliente",
+          client_phone: client?.phone || null,
+          quote_number: service.quote_number,
+          description: service.description,
+          value: service.value || 0,
+          payment_method: service.payment_method,
+          completed_date: service.completed_date,
+        },
+        payments,
+      });
+
+      await downloadReceiptPdf({
+        organization,
+        service: {
+          id: service.id,
+          organization_id: service.organization_id,
+          client_name: client?.name || "Cliente",
+          client_phone: client?.phone || null,
+          quote_number: service.quote_number,
+          description: service.description,
+          value: service.value || 0,
+          payment_method: service.payment_method,
+          completed_date: service.completed_date,
+        },
+        payments,
+      });
+
+      toast({
+        title: created ? "Recibo gerado e baixado" : "Recibo baixado",
+        description: created
+          ? "Criamos o recibo desta OS antes do download."
+          : "O PDF do recibo foi baixado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao baixar recibo",
+        description: (error as Error).message,
+      });
+    } finally {
+      setReceiptAction(null);
+    }
+  };
+
   const handleDirectDownload = async (service: typeof services[0]) => {
     try {
       const { data: org } = await supabase
