@@ -86,8 +86,43 @@ Deno.serve(async (req) => {
     let errors = 0;
     let skippedHours = 0;
 
-    // Cache org timezones to avoid repeated queries
-    const orgTzCache: Record<string, string> = {};
+    // Cache org business hours
+    const orgBhCache: Record<string, BusinessHoursConfig> = {};
+
+    async function getBusinessHours(supabase: any, orgId: string): Promise<BusinessHoursConfig> {
+      if (orgBhCache[orgId]) return orgBhCache[orgId];
+      const { data: capConfig } = await supabase
+        .from("operational_capacity_config")
+        .select("start_time, end_time, works_saturday")
+        .eq("organization_id", orgId)
+        .maybeSingle();
+
+      const config: BusinessHoursConfig = {
+        startHour: DEFAULT_START_HOUR,
+        startMin: 0,
+        endHour: DEFAULT_END_HOUR,
+        endMin: 0,
+        worksSaturday: false,
+      };
+
+      if (capConfig) {
+        const cap = capConfig as any;
+        if (cap.start_time) {
+          const [sh, sm] = cap.start_time.split(":").map(Number);
+          config.startHour = sh;
+          config.startMin = sm || 0;
+        }
+        if (cap.end_time) {
+          const [eh, em] = cap.end_time.split(":").map(Number);
+          config.endHour = eh;
+          config.endMin = em || 0;
+        }
+        config.worksSaturday = cap.works_saturday ?? false;
+      }
+
+      orgBhCache[orgId] = config;
+      return config;
+    }
 
     for (const msg of dueMessages) {
       try {
