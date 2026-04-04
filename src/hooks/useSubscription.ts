@@ -130,6 +130,9 @@ export function useSubscription() {
         } else {
           plan = "free";
         }
+      } else if (rawPlan !== "free" && (!planExpiresAt || planExpiresAt > now)) {
+        // Manual plan assignment (no Stripe subscription) — honour if not expired
+        plan = rawPlan;
       } else {
         plan = "free";
       }
