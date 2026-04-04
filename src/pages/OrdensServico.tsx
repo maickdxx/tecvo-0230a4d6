@@ -39,11 +39,19 @@ import { useServices, type ServiceStatus, SERVICE_STATUS_LABELS } from "@/hooks/
 import { usePaginatedServices } from "@/hooks/usePaginatedServices";
 import { useClients } from "@/hooks/useClients";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useOrganization } from "@/hooks/useOrganization";
+import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { ServiceOrderDialog } from "@/components/services/ServiceOrderDialog";
 import { UpgradeModal } from "@/components/subscription";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { generateServiceOrderPDF } from "@/lib/generateServiceOrderPDF";
+import {
+  downloadReceiptPdf,
+  ensureReceiptDraft,
+  fetchServicePayments,
+  resolveReceiptPayments,
+} from "@/lib/serviceReceipt";
 import { toast } from "@/hooks/use-toast";
 import { useServicePDFSend } from "@/hooks/useServicePDFSend";
 import { useDocumentGuard } from "@/hooks/useDocumentGuard";

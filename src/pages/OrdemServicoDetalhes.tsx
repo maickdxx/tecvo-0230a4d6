@@ -63,6 +63,7 @@ import { formatDateTimeInTz, formatDateInTz, formatTimeInTz } from "@/lib/timezo
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { useServices, SERVICE_STATUS_LABELS } from "@/hooks/useServices";
 import { useServiceTypes } from "@/hooks/useServiceTypes";
+import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import type { ServiceStatus } from "@/hooks/useServices";
 import { useServicePDFSend } from "@/hooks/useServicePDFSend";
 import { useServiceSignatures } from "@/hooks/useServiceSignatures";
@@ -73,6 +74,12 @@ import { useDocumentGuard } from "@/hooks/useDocumentGuard";
 import { CompanyDataCompletionModal } from "@/components/onboarding/CompanyDataCompletionModal";
 import { ServiceCompleteDialog } from "@/components/services/ServiceCompleteDialog";
 import type { ServicePaymentInput } from "@/hooks/useServicePayments";
+import {
+  downloadReceiptPdf,
+  ensureReceiptDraft,
+  fetchServicePayments,
+  resolveReceiptPayments,
+} from "@/lib/serviceReceipt";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
