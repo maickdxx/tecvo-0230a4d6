@@ -194,7 +194,9 @@ export function useWhatsAppConversations() {
             last_message_at: msgTs,
             last_message_content: previewContent,
             last_message_is_from_me: msg.is_from_me ?? false,
-            ...(msg.is_from_me ? {} : { is_unread: true, unread_count: ((current.unread_count as number) || 0) + 1 }),
+            ...(msg.is_from_me
+              ? { is_unread: false, unread_count: 0 }
+              : { is_unread: true, unread_count: ((current.unread_count as number) || 0) + 1 }),
           };
           const newList = [...prev];
           newList.splice(idx, 1);
@@ -415,6 +417,8 @@ export function useWhatsAppConversations() {
         ...contact,
         last_message_at: new Date().toISOString(),
         last_message_is_from_me: true,
+        is_unread: false,
+        unread_count: 0,
         ...(lastMessageContent ? { last_message_content: lastMessageContent.substring(0, 200) } : {}),
       };
       
