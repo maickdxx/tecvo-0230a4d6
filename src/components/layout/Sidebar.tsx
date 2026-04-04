@@ -66,6 +66,7 @@ const financeiroSubItems: NavItem[] = [
   { label: "Contas a Receber", href: "/contas-receber", icon: ArrowUpCircle },
   { label: "Transferências", href: "/financeiro/transferencias", icon: ArrowRightLeft },
   { label: "Recebimentos por Técnico", href: "/financeiro/recebimentos-tecnico", icon: Receipt },
+  { label: "Recibos", href: "/financeiro/recibos", icon: FileText },
 ];
 
 const pontoSubItems: NavItem[] = [
