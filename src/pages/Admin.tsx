@@ -15,6 +15,7 @@ import { ExecutiveDashboard } from "@/components/admin/ExecutiveDashboard";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { FinancialDashboard } from "@/components/admin/FinancialDashboard";
 import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
+import { AdminCoupons } from "@/components/admin/AdminCoupons";
 
 import { useAdminOrganizations } from "@/hooks/useAdminOrganizations";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
