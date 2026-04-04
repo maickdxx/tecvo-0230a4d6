@@ -12,6 +12,7 @@ import { CurrentSituationBlock } from "@/components/dashboard/CurrentSituationBl
 import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes";
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
+import { TrialUrgencyBanner } from "@/components/dashboard/TrialUrgencyBanner";
 
 import { MoneyOnTable } from "@/components/dashboard/MoneyOnTable";
 import { TomorrowServices } from "@/components/dashboard/TomorrowServices";
@@ -82,8 +83,8 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="page-enter">
-        {/* Personalized Greeting */}
         <DashboardGreeting />
+        <TrialUrgencyBanner />
 
         {/* Money on Table Alert */}
         {canViewFinance && <MoneyOnTable />}
