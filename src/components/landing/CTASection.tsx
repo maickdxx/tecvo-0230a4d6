@@ -63,9 +63,6 @@ export function CTASection() {
 
       <section className="py-20 md:py-28 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,hsl(var(--primary)/0.06),transparent)]" />
-        {/* Easter decorative */}
-        <div className="absolute top-10 left-[8%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '4s' }}>🥚</div>
-        <div className="absolute bottom-10 right-[8%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '3.5s' }}>🐰</div>
 
         <div className="container mx-auto px-4 relative z-10">
           <div
@@ -92,11 +89,8 @@ export function CTASection() {
                   )
                 ))}
               </h2>
-              <p className="text-muted-foreground text-base md:text-lg mb-4 max-w-xl mx-auto">
-                Comece agora, sem pagar nada. Em 2 minutos sua empresa já está rodando no Tecvo.
-              </p>
-              <p className="text-sm font-semibold text-primary mb-8">
-                🐣 Use o cupom <code className="bg-primary/10 px-1.5 py-0.5 rounded font-bold">PASCOA60</code> e ganhe 60% OFF no primeiro mês!
+              <p className="text-muted-foreground text-base md:text-lg mb-8 max-w-xl mx-auto">
+                Comece por apenas R$1 no primeiro mês. Em 2 minutos sua empresa já está rodando no Tecvo.
               </p>
 
               <Button

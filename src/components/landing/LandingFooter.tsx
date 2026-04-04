@@ -50,7 +50,7 @@ export function LandingFooter() {
 
         <div className="border-t pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">© {currentYear} Tecvo. Todos os direitos reservados.</p>
-          <p className="text-xs text-muted-foreground">Feito com ❄️ para climatização brasileira. 🐣 Feliz Páscoa!</p>
+          <p className="text-xs text-muted-foreground">Feito com ❄️ para climatização brasileira.</p>
         </div>
       </div>
     </footer>

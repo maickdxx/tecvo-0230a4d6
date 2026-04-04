@@ -28,9 +28,9 @@ export function LandingHeader() {
 
   return (
     <>
-      {/* Easter promo strip */}
+      {/* Promo strip */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-primary text-primary-foreground text-center text-xs font-semibold py-1.5">
-        🐣 Páscoa Tecvo — <strong>60% OFF</strong> no primeiro mês com o cupom <code className="bg-white/20 px-1 rounded">PASCOA60</code> 🥚
+        🚀 Comece por apenas <strong>R$1 no primeiro mês</strong> — todos os planos!
       </div>
       <header
         className={cn(
