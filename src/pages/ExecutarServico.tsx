@@ -114,9 +114,10 @@ export default function ExecutarServico() {
 
   // Called from ServiceCompleteDialog (has value)
   const handleCompleteWithPayments = async (payments: ServicePaymentInput[], signatureBlob?: Blob | null, signerName?: string, sendReceipt?: boolean) => {
-    await handleFinalizeService(payments, signatureBlob, signerName);
+    const willShowReceipt = sendReceipt && !!service?.client?.phone;
+    await handleFinalizeService(payments, signatureBlob, signerName, willShowReceipt);
     setShowCompleteDialog(false);
-    if (sendReceipt && service?.client?.phone) {
+    if (willShowReceipt) {
       setLastPayments(payments);
       setShowReceiptDialog(true);
     }
