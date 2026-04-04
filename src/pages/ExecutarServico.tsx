@@ -58,6 +58,7 @@ export default function ExecutarServico() {
 
   const { updateStatus } = useServices({ skipQuery: true });
   const { createSignature, isCreating: isSavingSignature } = useServiceSignatures(serviceId);
+  const { paymentMethods } = usePaymentMethods();
 
   // Fetch service details including value for payment flow
   const { data: service } = useQuery({
