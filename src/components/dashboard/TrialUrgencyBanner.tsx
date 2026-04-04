@@ -25,7 +25,7 @@ export function TrialUrgencyBanner() {
   if (!isTrial && !isTrialExpired) return null;
 
   const handleUpgrade = () => {
-    navigate("/pricing");
+    navigate("/planos");
   };
 
   const handleQuickCheckout = async (selectedPlan: string) => {
