@@ -56,6 +56,7 @@ export function ServiceCompleteDialog({
   onOpenChange,
   serviceValue,
   onConfirm,
+  showReceiptOption = false,
 }: ServiceCompleteDialogProps) {
   const [lines, setLines] = useState<PaymentLine[]>([
     { payment_method: "", amount: serviceValue > 0 ? String(serviceValue) : "", financial_account_id: "" },
