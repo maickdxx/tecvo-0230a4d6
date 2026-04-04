@@ -11,11 +11,11 @@ interface ServiceStatusBadgeProps {
 }
 
 const statusStyles: Record<EffectiveStatus, string> = {
-  scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  in_progress: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-  completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  cancelled: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  overdue: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  scheduled: "bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100",
+  in_progress: "bg-amber-200 text-amber-900 dark:bg-amber-800 dark:text-amber-100",
+  completed: "bg-green-200 text-green-900 dark:bg-green-800 dark:text-green-100",
+  cancelled: "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-100",
+  overdue: "bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100",
 };
 
 const STATUS_LABELS: Record<EffectiveStatus, string> = {
