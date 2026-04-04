@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { CONDITION_TYPES, DELAY_TYPES, CAPTURE_FIELDS } from "@/hooks/useWhatsAppBots";
 import { X, Upload, FileText, Loader2, Plus, Trash2, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { VariableInsertButton, VariableValidation, MessagePreviewToggle } from "@/components/shared/VariableInsertButton";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useOperationalCapacityConfig } from "@/hooks/useOperationalCapacityConfig";
 import { toast } from "sonner";
@@ -116,7 +117,13 @@ export function StepConfigPanel({ stepId, stepType, label: initialLabel, config:
         {/* ─── Send Message ─── */}
         {stepType === "send_message" && (
           <div>
-            <Label className="text-xs">Mensagem</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Mensagem</Label>
+              <VariableInsertButton
+                compact
+                onInsert={(tag) => updateConfig("message", (config.message || "") + tag)}
+              />
+            </div>
             <Textarea
               value={config.message || ""}
               onChange={e => updateConfig("message", e.target.value)}
@@ -124,7 +131,9 @@ export function StepConfigPanel({ stepId, stepType, label: initialLabel, config:
               rows={4}
               placeholder="Digite a mensagem do bot..."
             />
-            <p className="text-[10px] text-muted-foreground mt-1">Use *texto* para negrito</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Use *texto* para negrito e {"{{variavel}}"} para dados dinâmicos</p>
+            <VariableValidation message={config.message || ""} />
+            <MessagePreviewToggle message={config.message || ""} />
           </div>
         )}
 
