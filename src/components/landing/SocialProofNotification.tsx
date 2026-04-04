@@ -8,7 +8,7 @@ const notifications = [
   { name: "Fernanda", city: "RJ", action: "assinou a Tecvo e parou de perder cliente" },
   { name: "Rafael", city: "Curitiba", action: "acabou de criar a conta e já cadastrou 12 clientes" },
   { name: "Ana", city: "Campinas", action: "assinou o plano Pro e dobrou o faturamento" },
-  { name: "Marcos", city: "Goiânia", action: "começou o teste grátis agora mesmo" },
+  { name: "Marcos", city: "Goiânia", action: "assinou a Tecvo agora mesmo" },
   { name: "Lucas", city: "Fortaleza", action: "acabou de assinar e já enviou 5 ordens de serviço" },
   { name: "Patricia", city: "Salvador", action: "organizou toda a empresa com a Tecvo" },
   { name: "Roberto", city: "Manaus", action: "assinou a Tecvo e nunca mais esqueceu manutenção" },
