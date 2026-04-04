@@ -709,14 +709,15 @@ async function executeStep(
         if (config.message) {
           const resolved = await resolveChannelAndPhone(supabase, orgId, contactId);
           if (resolved) {
-            await sendTextMessage(resolved.instanceName, resolved.recipientJid, config.message, supabase, orgId, contactId);
+            const resolvedEndMsg = await resolveMessageVariables(supabase, config.message, contactId, orgId);
+            await sendTextMessage(resolved.instanceName, resolved.recipientJid, resolvedEndMsg, supabase, orgId, contactId);
 
             await supabase.from("whatsapp_messages").insert({
               contact_id: contactId,
               channel_id: resolved.channelId,
               organization_id: orgId,
               message_id: `out_${crypto.randomUUID()}`,
-              content: config.message,
+              content: resolvedEndMsg,
               is_from_me: true,
               status: "sent",
             });
