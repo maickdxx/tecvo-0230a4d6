@@ -69,7 +69,7 @@ export function LandingHeader() {
               <Link to="/login" onClick={() => analytics.track("interaction", null, null, { action: "login_click", location: "header", button_label: "Entrar", page_section: "header", interaction_type: "click" })}>Entrar</Link>
             </Button>
             <Button size="sm" asChild className="shadow-lg shadow-primary/20 px-5">
-              <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "header", page_section: "header", button_label: "Começar Grátis", interaction_type: "click" })}>Começar Grátis</Link>
+              <Link to="/cadastro" onClick={() => analytics.track("create_account_click", null, null, { location: "header", page_section: "header", button_label: "Começar por R$1", interaction_type: "click" })}>Começar por R$1</Link>
             </Button>
           </div>
 
