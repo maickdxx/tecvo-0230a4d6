@@ -27,6 +27,10 @@ export default function Pricing() {
   const { user, signOut } = useAuth();
   const { plan, isFreePlan, isTrial, isTrialExpired, isLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponData, setCouponData] = useState<{ stripe_coupon_id: string | null; discount_percent: number | null; code: string } | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
 
   const hasPaidPlan = !isFreePlan && !isTrial && !isTrialExpired;
 
