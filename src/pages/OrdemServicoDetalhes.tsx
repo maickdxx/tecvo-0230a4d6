@@ -404,6 +404,96 @@ export default function OrdemServicoDetalhes() {
     }
   };
 
+  const paymentMethodNames = Object.fromEntries(
+    paymentMethods.map((method) => [method.slug, method.name])
+  );
+
+  const buildReceiptService = () => ({
+    id: service.id,
+    organization_id: service.organization_id,
+    client_name: service.client?.name || "Cliente",
+    client_phone: service.client?.phone || null,
+    quote_number: service.quote_number,
+    description: service.description,
+    value: service.value || 0,
+    payment_method: service.payment_method,
+    completed_date: service.completed_date,
+  });
+
+  const handleGenerateReceipt = async () => {
+    setReceiptAction("generate");
+    try {
+      const receiptService = buildReceiptService();
+      const payments = resolveReceiptPayments({
+        servicePayments: await fetchServicePayments(service.id),
+        paymentMethodNames,
+        fallbackPaymentMethod: service.payment_method,
+        serviceValue: service.value || 0,
+      });
+
+      const { created } = await ensureReceiptDraft({
+        organization,
+        service: receiptService,
+        payments,
+      });
+
+      toast({
+        title: created ? "Recibo gerado" : "Recibo já existente",
+        description: created
+          ? "Agora você já pode baixar o PDF do recibo."
+          : "Esta OS já possui um recibo gerado.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar recibo",
+        description: (error as Error).message,
+      });
+    } finally {
+      setReceiptAction(null);
+    }
+  };
+
+  const handleDownloadReceipt = async () => {
+    setReceiptAction("download");
+    try {
+      const receiptService = buildReceiptService();
+      const payments = resolveReceiptPayments({
+        servicePayments: await fetchServicePayments(service.id),
+        paymentMethodNames,
+        fallbackPaymentMethod: service.payment_method,
+        serviceValue: service.value || 0,
+      });
+
+      const { created } = await ensureReceiptDraft({
+        organization,
+        service: receiptService,
+        payments,
+      });
+
+      await downloadReceiptPdf({
+        organization,
+        service: receiptService,
+        payments,
+      });
+
+      toast({
+        title: created ? "Recibo gerado e baixado" : "Recibo baixado",
+        description: created
+          ? "Criamos o recibo desta OS antes do download."
+          : "O PDF do recibo foi baixado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao baixar recibo",
+        description: (error as Error).message,
+      });
+    } finally {
+      setReceiptAction(null);
+    }
+  };
+
   const itemsTotal = serviceItems.reduce((sum, item) => sum + calculateItemSubtotal(item), 0);
 
   return (
