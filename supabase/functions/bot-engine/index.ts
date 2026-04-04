@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
         processed++;
       }
 
-      return new Response(JSON.stringify({ success: true, processed }), {
+      return new Response(JSON.stringify({ success: true, processed, zombies_cleaned: (zombies || []).length }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
