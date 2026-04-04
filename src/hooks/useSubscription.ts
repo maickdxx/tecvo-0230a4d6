@@ -76,7 +76,7 @@ export function useSubscription() {
 
       const { data: org, error: orgError } = await supabase
         .from("organizations")
-        .select("plan, plan_expires_at, trial_started_at, trial_ends_at, cancel_at_period_end, welcome_shown, subscription_status, stripe_subscription_id, past_due_since")
+        .select("plan, plan_expires_at, cancel_at_period_end, welcome_shown, subscription_status, stripe_subscription_id, past_due_since")
         .eq("id", organizationId)
         .single();
 
@@ -84,8 +84,6 @@ export function useSubscription() {
 
       const rawPlan = (org?.plan as PlanType) || "free";
       const planExpiresAt = org?.plan_expires_at ? new Date(org.plan_expires_at) : null;
-      const trialEndsAt = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
-      const trialStartedAt = org?.trial_started_at ? new Date(org.trial_started_at) : null;
       const cancelAtPeriodEnd = org?.cancel_at_period_end ?? false;
       const welcomeShown = org?.welcome_shown ?? true;
       const subscriptionStatus = (org as Record<string, unknown>)?.subscription_status as string || "inactive";
