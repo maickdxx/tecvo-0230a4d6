@@ -139,17 +139,29 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Business hours check using org timezone
+        // Business hours check using org timezone and real config
         const orgId = contact.organization_id;
-        if (!orgTzCache[orgId]) {
-          orgTzCache[orgId] = await fetchOrgTimezone(supabase, orgId);
-        }
-        const orgTz = orgTzCache[orgId];
-        const currentHour = getCurrentHourInTz(orgTz);
+        const orgTz = await fetchOrgTimezone(supabase, orgId);
+        const bh = await getBusinessHours(supabase, orgId);
 
-        if (currentHour < DEFAULT_START_HOUR || currentHour >= DEFAULT_END_HOUR) {
-          // Outside business hours — skip, don't mark as error. Will retry next cycle.
-          console.log(`[SCHEDULED-SEND] Message ${msg.id} skipped: outside business hours (${currentHour}h in ${orgTz})`);
+        const now = new Date();
+        const nowStr = now.toLocaleTimeString("en-US", { timeZone: orgTz, hour12: false, hour: "2-digit", minute: "2-digit" });
+        const [currentH, currentM] = nowStr.split(":").map(Number);
+        const currentMinutes = currentH * 60 + currentM;
+        const startMinutes = bh.startHour * 60 + bh.startMin;
+        const endMinutes = bh.endHour * 60 + bh.endMin;
+
+        const dayOfWeek = parseInt(now.toLocaleDateString("en-US", { timeZone: orgTz, weekday: "narrow" }).charAt(0) === "S" ? 
+          (now.toLocaleDateString("en-US", { timeZone: orgTz, weekday: "long" }).startsWith("Sun") ? "0" : "6") :
+          new Date(now.toLocaleDateString("en-CA", { timeZone: orgTz })).getDay().toString()
+        );
+        const isSunday = dayOfWeek === 0;
+        const isSaturday = dayOfWeek === 6;
+        const isWorkday = !isSunday && (!isSaturday || bh.worksSaturday);
+        const isWithinHours = isWorkday && currentMinutes >= startMinutes && currentMinutes < endMinutes;
+
+        if (!isWithinHours) {
+          console.log(`[SCHEDULED-SEND] Message ${msg.id} skipped: outside business hours (${currentH}:${currentM} in ${orgTz}, hours: ${bh.startHour}:${bh.startMin}-${bh.endHour}:${bh.endMin})`);
           skippedHours++;
           continue;
         }
