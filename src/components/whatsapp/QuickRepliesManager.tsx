@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Pencil, Copy, MessageSquareText, Zap, X, Search, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { VariableInsertButton, VariableValidation, MessagePreviewToggle } from "@/components/shared/VariableInsertButton";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
