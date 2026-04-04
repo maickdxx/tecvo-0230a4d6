@@ -37,6 +37,8 @@ export default function ExecutarServico() {
   const [showFinalizeDialog, setShowFinalizeDialog] = useState(false);
   const [showSignatureView, setShowSignatureView] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [lastPayments, setLastPayments] = useState<ServicePaymentInput[]>([]);
 
   const {
     equipmentList,
