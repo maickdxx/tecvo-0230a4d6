@@ -872,13 +872,45 @@ async function executeStep(
         .eq("id", executionId);
     }
   } catch (err: any) {
-    console.error("Step execution error:", err);
-    await supabase
-      .from("whatsapp_bot_executions")
-      .update({ status: "error", error_message: err.message })
-      .eq("id", executionId);
+    console.error(`[BOT-ENGINE] Step ${stepId} error:`, err.message);
+    await logExecution(supabase, executionId, stepId, "step_error", { message: err.message, step_type: s.step_type });
 
-    await logExecution(supabase, executionId, stepId, "execution_error", { message: err.message });
+    // Non-critical errors: log and try to continue to next step
+    // Critical errors (channel not found, bridge not configured): abort
+    const isCritical = err.message?.includes("Canal ou contato não encontrado") ||
+                       err.message?.includes("bridge não configurado") ||
+                       err.message?.includes("Envio bloqueado");
+
+    if (isCritical) {
+      console.error(`[BOT-ENGINE] Critical error — aborting execution ${executionId}`);
+      await supabase
+        .from("whatsapp_bot_executions")
+        .update({ status: "error", error_message: err.message })
+        .eq("id", executionId);
+      return;
+    }
+
+    // Non-critical: try to continue to next step
+    console.warn(`[BOT-ENGINE] Non-critical error on step ${stepId}, attempting to continue flow...`);
+    const { data: recoveryConns } = await supabase
+      .from("whatsapp_bot_connections")
+      .select("to_step_id")
+      .eq("from_step_id", stepId)
+      .eq("bot_id", botId)
+      .eq("condition_branch", "default");
+
+    const validRecovery = (recoveryConns || []).filter((c: any) => c.to_step_id && c.to_step_id !== stepId);
+
+    if (validRecovery.length > 0) {
+      const nextStepId = (validRecovery[0] as any).to_step_id;
+      await supabase.from("whatsapp_bot_executions").update({ current_step_id: nextStepId }).eq("id", executionId);
+      await executeStep(supabase, executionId, nextStepId, contactId, botId, orgId, depth + 1);
+    } else {
+      await supabase
+        .from("whatsapp_bot_executions")
+        .update({ status: "completed", completed_at: new Date().toISOString(), error_message: `Concluído com erro na etapa: ${err.message}` })
+        .eq("id", executionId);
+    }
   }
 }
 
