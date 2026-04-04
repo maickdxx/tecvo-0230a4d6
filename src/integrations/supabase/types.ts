@@ -1401,6 +1401,105 @@ export type Database = {
           },
         ]
       }
+      coupon_redemptions: {
+        Row: {
+          applied_ai_credits: number | null
+          applied_discount_percent: number | null
+          coupon_id: string
+          created_at: string
+          id: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          applied_ai_credits?: number | null
+          applied_discount_percent?: number | null
+          coupon_id: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          applied_ai_credits?: number | null
+          applied_discount_percent?: number | null
+          coupon_id?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          ai_credits_amount: number | null
+          applicable_plans: string[] | null
+          code: string
+          coupon_type: string
+          created_at: string
+          description: string | null
+          discount_percent: number | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          stripe_coupon_id: string | null
+          times_used: number
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          ai_credits_amount?: number | null
+          applicable_plans?: string[] | null
+          code: string
+          coupon_type?: string
+          created_at?: string
+          description?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          stripe_coupon_id?: string | null
+          times_used?: number
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          ai_credits_amount?: number | null
+          applicable_plans?: string[] | null
+          code?: string
+          coupon_type?: string
+          created_at?: string
+          description?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          stripe_coupon_id?: string | null
+          times_used?: number
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       data_audit_log: {
         Row: {
           created_at: string
