@@ -79,22 +79,22 @@ import { cn } from "@/lib/utils";
 const STATUS_CONFIG: Record<string, { label: string; className: string; icon: typeof Calendar }> = {
   scheduled: {
     label: "Agendado",
-    className: "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-700",
+    className: "bg-info text-info-foreground border-transparent",
     icon: Calendar,
   },
   in_progress: {
     label: "Em Andamento",
-    className: "bg-amber-500/10 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-700",
+    className: "bg-warning text-warning-foreground border-transparent",
     icon: Play,
   },
   completed: {
     label: "Concluído",
-    className: "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-700",
+    className: "bg-success text-success-foreground border-transparent",
     icon: CheckCircle,
   },
   cancelled: {
     label: "Cancelado",
-    className: "bg-destructive/10 text-destructive border-destructive/20",
+    className: "bg-muted text-muted-foreground border-border",
     icon: AlertTriangle,
   },
 };

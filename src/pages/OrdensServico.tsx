@@ -57,10 +57,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  scheduled: "bg-info/10 text-info-foreground dark:bg-info/20 dark:text-info-foreground",
-  in_progress: "bg-warning/10 text-warning-foreground dark:bg-warning/20 dark:text-warning-foreground",
-  completed: "bg-success/10 text-success-foreground dark:bg-success/20 dark:text-success-foreground",
-  cancelled: "bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground",
+  scheduled: "bg-info text-info-foreground",
+  in_progress: "bg-warning text-warning-foreground",
+  completed: "bg-success text-success-foreground",
+  cancelled: "bg-muted text-muted-foreground",
 };
 
 const STATUS_BORDER_COLORS: Record<string, string> = {
