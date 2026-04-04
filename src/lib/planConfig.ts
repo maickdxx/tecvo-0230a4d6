@@ -128,7 +128,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     maxUsers: 3,
     maxWhatsAppChannels: 2,
     featured: true,
-    cta: "Começar agora",
+    cta: "Começar por R$1",
     features: [
       { text: "Tudo do plano Start", included: true },
       { text: "WhatsApp completo (Inbox)", included: true },
