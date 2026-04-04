@@ -37,11 +37,14 @@ export interface ReceiptServiceData {
   organization_id?: string | null;
   client_name: string;
   client_phone?: string | null;
+  client_document?: string | null;
   quote_number?: string | number | null;
   description?: string | null;
   value?: number | null;
   payment_method?: string | null;
   completed_date?: string | null;
+  scheduled_date?: string | null;
+  technician_name?: string | null;
 }
 
 interface ReceiptServicePaymentRow {
