@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Key, Monitor, Mail, Shield, Smartphone, Globe, Lock, Trash2 } from "lucide-react";
+import { ArrowLeft, Key, Monitor, Mail, Shield, Smartphone, Globe, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
