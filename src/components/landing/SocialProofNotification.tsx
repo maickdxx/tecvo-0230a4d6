@@ -12,7 +12,7 @@ const notifications = [
   { name: "Lucas", city: "Fortaleza", action: "acabou de assinar e já enviou 5 ordens de serviço" },
   { name: "Patricia", city: "Salvador", action: "organizou toda a empresa com a Tecvo" },
   { name: "Roberto", city: "Manaus", action: "assinou a Tecvo e nunca mais esqueceu manutenção" },
-  { name: "Juliana", city: "Recife", action: "começou o teste grátis e já agendou a semana toda" },
+  { name: "Juliana", city: "Recife", action: "assinou por R$1 e já agendou a semana toda" },
   { name: "Diego", city: "Porto Alegre", action: "acabou de assinar e automatizou os lembretes" },
   { name: "Thiago", city: "Brasília", action: "criou a conta e já está faturando mais" },
 ];

@@ -185,7 +185,7 @@ export function PricingSection() {
           isVisible ? "opacity-100 translate-y-0 delay-500" : "opacity-0 translate-y-6"
         )}>
           <p className="text-sm text-muted-foreground">
-            Todos os planos incluem <strong className="text-foreground">7 dias grátis</strong> para testar sem compromisso.
+            Todos os planos começam por <strong className="text-foreground">R$1 no primeiro mês</strong>. Cancele a qualquer momento.
           </p>
           <p className="text-xs text-muted-foreground">
             Precisa de mais números de WhatsApp? Adicione por <strong className="text-foreground">R$ 25/mês</strong> cada.

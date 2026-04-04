@@ -107,7 +107,7 @@ export function BannerPriorityProvider({ children }: { children: ReactNode }) {
     if (isDemoMode) return "activation";
 
     return "none";
-  }, [showTour, isTrialExpired, isPastDueGraceExpired, isTrial, isPastDue, isCancelledAtPeriodEnd, isDemoMode, showGuide, checklistDone]);
+  }, [showTour, isPastDueGraceExpired, isPastDue, isCancelledAtPeriodEnd, isDemoMode, showGuide, checklistDone]);
 
   const value = useMemo<BannerPriorityState>(
     () => ({
