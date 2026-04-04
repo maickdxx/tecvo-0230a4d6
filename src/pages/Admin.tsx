@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText, BarChart3 } from "lucide-react";
+import { ArrowLeft, Shield, LayoutDashboard, DollarSign, FileText, BarChart3, Ticket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
