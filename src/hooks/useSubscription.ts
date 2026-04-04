@@ -37,10 +37,10 @@ export interface SubscriptionData {
   hasClientPortal: boolean;
   maxUsers: number;
   maxWhatsAppChannels: number;
-  // Trial fields
+  // Trial fields (legacy — always false/zero/null)
   isTrial: boolean;
-  trialEndsAt: Date | null;
-  trialDaysLeft: number;
+  trialEndsAt: null;
+  trialDaysLeft: 0;
   isTrialExpired: boolean;
   // Cancellation fields
   isCancelledAtPeriodEnd: boolean;
