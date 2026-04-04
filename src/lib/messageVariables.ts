@@ -33,6 +33,7 @@ export const MESSAGE_VARIABLES: MessageVariable[] = [
   { key: "telefone", label: "Telefone", category: "cliente", example: "(11) 98765-4321" },
   { key: "email", label: "E-mail", category: "cliente", example: "joao@email.com" },
   { key: "empresa_cliente", label: "Empresa do cliente", category: "cliente", example: "Empresa ABC" },
+  { key: "primeiro_nome_atendente", label: "Primeiro nome do atendente", category: "servico", example: "Carlos" },
 
   // Serviço
   { key: "tipo_servico", label: "Tipo de serviço", category: "servico", example: "Limpeza" },
