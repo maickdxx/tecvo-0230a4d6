@@ -17,7 +17,7 @@ export function HeroSection() {
   const { variant } = useABTest("Landing Page Headline & CTA");
 
   const headline = variant?.config?.hero_headline || "Sua empresa de ar-condicionado perde dinheiro todo mês e você nem percebe.";
-  const cta = variant?.config?.hero_cta || "Testar grátis por 7 dias";
+  const cta = variant?.config?.hero_cta || "Começar por R$1 no primeiro mês";
 
   return (
     <section className="relative pt-36 pb-20 md:pt-48 md:pb-28 overflow-hidden">
