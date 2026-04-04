@@ -58,7 +58,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -613,19 +613,25 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
 
               {/* Edit mode */}
               {editing && (
-                <div className="space-y-2">
-                  <Input
+                <div className="space-y-2 min-w-[200px]">
+                  <Textarea
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    className="text-sm bg-background text-foreground"
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleEdit(); } if (e.key === "Escape") setEditing(false); }}
+                    className="text-sm bg-background text-foreground min-h-[60px] max-h-[200px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleEdit(); }
+                      if (e.key === "Escape") setEditing(false);
+                    }}
                     autoFocus
+                    rows={Math.min(5, Math.max(2, (editText.match(/\n/g) || []).length + 1))}
                   />
-                  <div className="flex gap-1.5">
-                    <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditing(false)}>
+                  <div className="flex gap-2 justify-end">
+                    <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={() => setEditing(false)}>
+                      <X className="h-3 w-3 mr-1" />
                       Cancelar
                     </Button>
-                    <Button size="sm" className="h-6 text-[10px]" onClick={handleEdit}>
+                    <Button size="sm" className="h-7 text-xs px-3" onClick={handleEdit}>
+                      <Check className="h-3 w-3 mr-1" />
                       Salvar
                     </Button>
                   </div>
