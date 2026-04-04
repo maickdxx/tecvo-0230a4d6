@@ -338,6 +338,20 @@ export function ServiceCompleteDialog({
                   </div>
                 )}
               </div>
+
+              {/* Receipt option */}
+              {showReceiptOption && !clientDidNotPay && (
+                <div className="flex items-center space-x-2 mt-3 rounded-lg border border-border p-3 bg-muted/30">
+                  <Checkbox
+                    id="sendReceipt"
+                    checked={sendReceipt}
+                    onCheckedChange={(checked) => setSendReceipt(checked === true)}
+                  />
+                  <Label htmlFor="sendReceipt" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                    🧾 Enviar recibo via WhatsApp
+                  </Label>
+                </div>
+              )}
             </div>
 
             <DialogFooter>
