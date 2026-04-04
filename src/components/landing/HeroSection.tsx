@@ -25,11 +25,6 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
       <div className="absolute top-20 left-[10%] w-72 h-72 bg-primary/[0.06] rounded-full blur-[100px]" />
       <div className="absolute bottom-0 right-[5%] w-96 h-96 bg-primary/[0.04] rounded-full blur-[120px]" />
-      {/* Easter decorative elements */}
-      <div className="absolute top-16 right-[8%] text-4xl opacity-20 animate-bounce hidden md:block" style={{ animationDuration: '3s' }}>🥚</div>
-      <div className="absolute top-32 left-[5%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '4s', animationDelay: '1s' }}>🐰</div>
-      <div className="absolute bottom-20 left-[15%] text-2xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🌸</div>
-      <div className="absolute bottom-32 right-[12%] text-3xl opacity-15 animate-bounce hidden md:block" style={{ animationDuration: '4.5s', animationDelay: '1.5s' }}>🐣</div>
       <div
         className="absolute inset-0 opacity-[0.025]"
         style={{
@@ -42,8 +37,8 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary/[0.08] border border-primary/20 text-primary text-xs font-semibold mb-7 animate-fade-in backdrop-blur-sm">
-              <span className="text-base">🐣</span>
-              Promoção de Páscoa — 60% OFF com <code className="bg-primary/15 px-1 rounded font-bold">PASCOA60</code>
+              <span className="text-base">🚀</span>
+              Primeiro mês por apenas R$1 — todos os planos
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-black tracking-[-0.03em] text-foreground leading-[1.08] mb-5 animate-fade-in">
@@ -91,7 +86,7 @@ export function HeroSection() {
             </div>
 
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground animate-fade-in">
-              {["Sem cartão de crédito", "Funciona no celular", "Pronto em 2 minutos"].map((t) => (
+              {["R$1 no primeiro mês", "Funciona no celular", "Pronto em 2 minutos"].map((t) => (
                 <span key={t} className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                   {t}
