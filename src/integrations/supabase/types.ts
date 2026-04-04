@@ -7215,6 +7215,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_coupon_usage: {
+        Args: { coupon_code_param: string }
+        Returns: undefined
+      }
       is_employee: { Args: { _user_id: string }; Returns: boolean }
       is_org_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
       is_root_super_admin: { Args: { _user_id: string }; Returns: boolean }
