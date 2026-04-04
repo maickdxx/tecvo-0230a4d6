@@ -49,7 +49,7 @@ export function PricingSection() {
             </span>
           </h2>
           <p className="text-muted-foreground text-base md:text-lg max-w-lg mx-auto">
-            Menos que um serviço de manutenção por mês. Teste 7 dias grátis, sem cartão de crédito.
+            Menos que um serviço de manutenção por mês. Comece por apenas R$1 no primeiro mês.
           </p>
 
           {/* Easter Promotion */}
