@@ -312,6 +312,51 @@ Deno.serve(async (req) => {
   }
 });
 
+/** Resolve {{variable}} placeholders using contact + org data */
+async function resolveMessageVariables(
+  supabase: any,
+  template: string,
+  contactId: string,
+  orgId: string,
+): Promise<string> {
+  if (!template || !template.includes("{{")) return template;
+
+  // Fetch contact data
+  const { data: contact } = await supabase
+    .from("whatsapp_contacts")
+    .select("name, phone, email, whatsapp_id")
+    .eq("id", contactId)
+    .single();
+
+  // Fetch org data
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("name, phone, email, website, whatsapp_owner")
+    .eq("id", orgId)
+    .single();
+
+  const c = contact as any;
+  const o = org as any;
+
+  const firstName = (c?.name || "").split(" ")[0] || "";
+
+  const values: Record<string, string> = {
+    primeiro_nome: firstName,
+    nome_completo: c?.name || "",
+    telefone: c?.phone || "",
+    email: c?.email || "",
+    empresa_cliente: "",
+    nome_empresa: o?.name || "",
+    telefone_empresa: o?.phone || "",
+    whatsapp_empresa: o?.whatsapp_owner || "",
+    site_empresa: o?.website || "",
+  };
+
+  return template.replace(/\{\{(\w+)\}\}/g, (_match, key) => {
+    return values[key] ?? "";
+  });
+}
+
 async function executeStep(
   supabase: any,
   executionId: string,
