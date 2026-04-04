@@ -85,8 +85,6 @@ export function BannerPriorityProvider({ children }: { children: ReactNode }) {
   const { showTour } = useDemoTour();
   const { isDemoMode } = useDemoMode();
   const {
-    isTrial,
-    isTrialExpired,
     isPastDue,
     isPastDueGraceExpired,
     isCancelledAtPeriodEnd,
