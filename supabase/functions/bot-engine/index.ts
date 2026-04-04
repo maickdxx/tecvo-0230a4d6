@@ -111,8 +111,30 @@ Deno.serve(async (req) => {
 
     if (action === "process_waiting") {
       const now = new Date().toISOString();
+      const zombieThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // 10 minutes
 
-      // Process standard delay waits
+      // Clean up zombie executions stuck in "running" for too long
+      const { data: zombies } = await supabase
+        .from("whatsapp_bot_executions")
+        .select("id")
+        .eq("status", "running")
+        .lt("started_at", zombieThreshold)
+        .limit(50);
+
+      for (const z of zombies || []) {
+        await supabase
+          .from("whatsapp_bot_executions")
+          .update({
+            status: "error",
+            error_message: "Execução expirou (timeout de 10 minutos)",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", (z as any).id)
+          .eq("status", "running"); // extra safety
+
+        await logExecution(supabase, (z as any).id, null, "zombie_cleanup", { threshold: "10min" });
+        console.warn(`[BOT-ENGINE] Zombie execution cleaned: ${(z as any).id}`);
+      }
       const { data: waitingExecs } = await supabase
         .from("whatsapp_bot_executions")
         .select("*")
