@@ -3291,6 +3291,75 @@ export type Database = {
           },
         ]
       }
+      service_receipts: {
+        Row: {
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          id: string
+          message: string
+          organization_id: string
+          payments_snapshot: Json | null
+          quote_number: string | null
+          sent_at: string | null
+          sent_via: string | null
+          service_description: string | null
+          service_id: string
+          service_value: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          organization_id: string
+          payments_snapshot?: Json | null
+          quote_number?: string | null
+          sent_at?: string | null
+          sent_via?: string | null
+          service_description?: string | null
+          service_id: string
+          service_value?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          organization_id?: string
+          payments_snapshot?: Json | null
+          quote_number?: string | null
+          sent_at?: string | null
+          sent_via?: string | null
+          service_description?: string | null
+          service_id?: string
+          service_value?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_receipts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_receipts_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_signatures: {
         Row: {
           created_at: string
