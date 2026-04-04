@@ -135,6 +135,8 @@ Deno.serve(async (req) => {
         await logExecution(supabase, (z as any).id, null, "zombie_cleanup", { threshold: "10min" });
         console.warn(`[BOT-ENGINE] Zombie execution cleaned: ${(z as any).id}`);
       }
+
+      // Process standard delay waits
       const { data: waitingExecs } = await supabase
         .from("whatsapp_bot_executions")
         .select("*")
