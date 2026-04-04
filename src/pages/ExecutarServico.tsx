@@ -298,6 +298,25 @@ export default function ExecutarServico() {
         onOpenChange={setShowCompleteDialog}
         serviceValue={serviceValue}
         onConfirm={handleCompleteWithPayments}
+        showReceiptOption={!!service?.client?.phone}
+      />
+
+      {/* Receipt dialog */}
+      <SendReceiptDialog
+        open={showReceiptDialog}
+        onOpenChange={(open) => {
+          setShowReceiptDialog(open);
+          if (!open) navigate("/meus-servicos");
+        }}
+        clientName={service?.client?.name || ""}
+        clientPhone={service?.client?.phone || ""}
+        serviceDescription={service?.description || ""}
+        quoteNumber={service?.quote_number || null}
+        serviceValue={serviceValue}
+        payments={lastPayments}
+        paymentMethodNames={Object.fromEntries(
+          paymentMethods.map((m) => [m.slug, m.name])
+        )}
       />
     </AppLayout>
   );
