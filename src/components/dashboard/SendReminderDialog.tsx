@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MessageCircle, Send, User, Phone, Clock, Loader2, CheckCircle2, Radio, Wifi } from "lucide-react";
+import { VariableInsertButton, VariableValidation, MessagePreviewToggle } from "@/components/shared/VariableInsertButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
