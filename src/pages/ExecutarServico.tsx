@@ -311,7 +311,7 @@ export default function ExecutarServico() {
         clientName={service?.client?.name || ""}
         clientPhone={service?.client?.phone || ""}
         serviceDescription={service?.description || ""}
-        quoteNumber={service?.quote_number || null}
+        quoteNumber={service?.quote_number ? String(service.quote_number) : null}
         serviceValue={serviceValue}
         payments={lastPayments}
         paymentMethodNames={Object.fromEntries(
