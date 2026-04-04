@@ -49,7 +49,7 @@ export function PricingSection() {
             </span>
           </h2>
           <p className="text-muted-foreground text-base md:text-lg max-w-lg mx-auto">
-            Menos que um serviço de manutenção por mês. Teste 7 dias grátis, sem cartão de crédito.
+            Menos que um serviço de manutenção por mês. Comece por apenas R$1 no primeiro mês.
           </p>
 
           {/* Easter Promotion */}
@@ -185,7 +185,7 @@ export function PricingSection() {
           isVisible ? "opacity-100 translate-y-0 delay-500" : "opacity-0 translate-y-6"
         )}>
           <p className="text-sm text-muted-foreground">
-            Todos os planos incluem <strong className="text-foreground">7 dias grátis</strong> para testar sem compromisso.
+            Todos os planos começam por <strong className="text-foreground">R$1 no primeiro mês</strong>. Cancele a qualquer momento.
           </p>
           <p className="text-xs text-muted-foreground">
             Precisa de mais números de WhatsApp? Adicione por <strong className="text-foreground">R$ 25/mês</strong> cada.

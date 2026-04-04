@@ -37,10 +37,10 @@ export interface SubscriptionData {
   hasClientPortal: boolean;
   maxUsers: number;
   maxWhatsAppChannels: number;
-  // Trial fields
+  // Trial fields (legacy — always false/zero/null)
   isTrial: boolean;
-  trialEndsAt: Date | null;
-  trialDaysLeft: number;
+  trialEndsAt: null;
+  trialDaysLeft: 0;
   isTrialExpired: boolean;
   // Cancellation fields
   isCancelledAtPeriodEnd: boolean;
@@ -76,7 +76,7 @@ export function useSubscription() {
 
       const { data: org, error: orgError } = await supabase
         .from("organizations")
-        .select("plan, plan_expires_at, trial_started_at, trial_ends_at, cancel_at_period_end, welcome_shown, subscription_status, stripe_subscription_id, past_due_since")
+        .select("plan, plan_expires_at, cancel_at_period_end, welcome_shown, subscription_status, stripe_subscription_id, past_due_since")
         .eq("id", organizationId)
         .single();
 
@@ -84,8 +84,6 @@ export function useSubscription() {
 
       const rawPlan = (org?.plan as PlanType) || "free";
       const planExpiresAt = org?.plan_expires_at ? new Date(org.plan_expires_at) : null;
-      const trialEndsAt = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
-      const trialStartedAt = org?.trial_started_at ? new Date(org.trial_started_at) : null;
       const cancelAtPeriodEnd = org?.cancel_at_period_end ?? false;
       const welcomeShown = org?.welcome_shown ?? true;
       const subscriptionStatus = (org as Record<string, unknown>)?.subscription_status as string || "inactive";
@@ -147,7 +145,7 @@ export function useSubscription() {
 
       const servicesUsed = usage?.services_created || 0;
       const servicesLimit = PLAN_LIMITS[plan];
-      const canCreateService = isTrialExpired ? false : (plan === "pro" || servicesUsed < PLAN_LIMITS[plan]);
+      const canCreateService = plan === "pro" || servicesUsed < PLAN_LIMITS[plan];
       const usagePercentage = plan === "pro" ? 0 : (servicesUsed / PLAN_LIMITS[plan]) * 100;
       const isNearLimit = plan !== "pro" && servicesUsed >= PLAN_LIMITS[plan] * 0.8;
 
@@ -173,9 +171,9 @@ export function useSubscription() {
         isNearLimit,
         canInviteMembers: plan === "essential" || plan === "pro" || plan === "starter",
         canHaveEmployees: plan === "pro",
-        canAccessFinance: plan !== "free" || isTrialActive,
-        canAccessCatalog: plan !== "free" || isTrialActive,
-        canAccessAgenda: plan !== "free" || isTrialActive,
+        canAccessFinance: plan !== "free",
+        canAccessCatalog: plan !== "free",
+        canAccessAgenda: plan !== "free",
         hasWhatsAppFull: planConfig?.hasWhatsAppFull ?? false,
         hasRecurrence: planConfig?.hasRecurrence ?? false,
         hasDigitalSignature: planConfig?.hasDigitalSignature ?? false,
@@ -186,9 +184,9 @@ export function useSubscription() {
         hasClientPortal: planConfig?.hasClientPortal ?? false,
         maxUsers: planConfig?.maxUsers ?? 1,
         maxWhatsAppChannels: planConfig?.maxWhatsAppChannels ?? 0,
-        isTrial: isTrialActive,
-        trialEndsAt,
-        trialDaysLeft,
+        isTrial: false,
+        trialEndsAt: null,
+        trialDaysLeft: 0,
         isTrialExpired,
         isCancelledAtPeriodEnd,
         daysUntilExpiration,

@@ -8,8 +8,8 @@ import { useGuidedOnboarding } from "@/hooks/useGuidedOnboarding";
  * Global banner priority tiers (highest → lowest):
  *
  *  BLOCKING   — full-screen overlays (DemoTour, PaymentPending)
- *  CRITICAL   — billing emergencies (expired trial, past-due grace expired)
- *  URGENT     — billing warnings (active trial countdown, cancelling, past-due)
+ *  CRITICAL   — billing emergencies (past-due grace expired)
+ *  URGENT     — billing warnings (cancelling, past-due)
  *  ACTIVATION — onboarding / demo conversion
  *  PROMPT     — config nudges (WhatsApp)
  *  INFO       — tips, milestones, install banner
@@ -85,8 +85,6 @@ export function BannerPriorityProvider({ children }: { children: ReactNode }) {
   const { showTour } = useDemoTour();
   const { isDemoMode } = useDemoMode();
   const {
-    isTrial,
-    isTrialExpired,
     isPastDue,
     isPastDueGraceExpired,
     isCancelledAtPeriodEnd,
@@ -109,7 +107,7 @@ export function BannerPriorityProvider({ children }: { children: ReactNode }) {
     if (isDemoMode) return "activation";
 
     return "none";
-  }, [showTour, isTrialExpired, isPastDueGraceExpired, isTrial, isPastDue, isCancelledAtPeriodEnd, isDemoMode, showGuide, checklistDone]);
+  }, [showTour, isPastDueGraceExpired, isPastDue, isCancelledAtPeriodEnd, isDemoMode, showGuide, checklistDone]);
 
   const value = useMemo<BannerPriorityState>(
     () => ({

@@ -4,15 +4,15 @@ import { CheckCircle } from "lucide-react";
 
 const notifications = [
   { name: "João", city: "SP", action: "acabou de alavancar a empresa dele assinando a Tecvo" },
-  { name: "Carlos", city: "BH", action: "começou seu teste grátis e já organizou a agenda" },
+  { name: "Carlos", city: "BH", action: "assinou por R$1 e já organizou a agenda" },
   { name: "Fernanda", city: "RJ", action: "assinou a Tecvo e parou de perder cliente" },
   { name: "Rafael", city: "Curitiba", action: "acabou de criar a conta e já cadastrou 12 clientes" },
   { name: "Ana", city: "Campinas", action: "assinou o plano Pro e dobrou o faturamento" },
-  { name: "Marcos", city: "Goiânia", action: "começou o teste grátis agora mesmo" },
+  { name: "Marcos", city: "Goiânia", action: "assinou a Tecvo agora mesmo" },
   { name: "Lucas", city: "Fortaleza", action: "acabou de assinar e já enviou 5 ordens de serviço" },
   { name: "Patricia", city: "Salvador", action: "organizou toda a empresa com a Tecvo" },
   { name: "Roberto", city: "Manaus", action: "assinou a Tecvo e nunca mais esqueceu manutenção" },
-  { name: "Juliana", city: "Recife", action: "começou o teste grátis e já agendou a semana toda" },
+  { name: "Juliana", city: "Recife", action: "assinou por R$1 e já agendou a semana toda" },
   { name: "Diego", city: "Porto Alegre", action: "acabou de assinar e automatizou os lembretes" },
   { name: "Thiago", city: "Brasília", action: "criou a conta e já está faturando mais" },
 ];
