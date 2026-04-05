@@ -1986,6 +1986,51 @@ export type Database = {
           },
         ]
       }
+      lead_followups: {
+        Row: {
+          channel_id: string
+          completed_at: string | null
+          created_at: string
+          first_contact_at: string
+          id: string
+          last_followup_sent_at: string | null
+          next_followup_at: string | null
+          organization_id: string
+          phone: string
+          status: string
+          step: number
+          updated_at: string
+        }
+        Insert: {
+          channel_id: string
+          completed_at?: string | null
+          created_at?: string
+          first_contact_at?: string
+          id?: string
+          last_followup_sent_at?: string | null
+          next_followup_at?: string | null
+          organization_id: string
+          phone: string
+          status?: string
+          step?: number
+          updated_at?: string
+        }
+        Update: {
+          channel_id?: string
+          completed_at?: string | null
+          created_at?: string
+          first_contact_at?: string
+          id?: string
+          last_followup_sent_at?: string | null
+          next_followup_at?: string | null
+          organization_id?: string
+          phone?: string
+          status?: string
+          step?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       member_permissions: {
         Row: {
           created_at: string | null
