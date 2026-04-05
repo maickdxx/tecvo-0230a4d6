@@ -663,6 +663,38 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
     return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}.`;
   }
 
+  if (fnName === "create_financial_account") {
+    const { name, account_type } = args;
+    if (!name) return "Erro: nome da conta é obrigatório.";
+
+    const finalType = account_type || "checking";
+
+    const { data: newAccount, error } = await supabase
+      .from("financial_accounts")
+      .insert({
+        organization_id: organizationId,
+        name,
+        account_type: finalType,
+        balance: 0,
+        is_active: true,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("[WEBHOOK-WHATSAPP] Create account error:", error);
+      return `Erro ao criar conta: ${error.message}`;
+    }
+
+    // Set as default AI account
+    await supabase
+      .from("organizations")
+      .update({ default_ai_account_id: newAccount.id })
+      .eq("id", organizationId);
+
+    return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! A partir de agora, todas as transações que eu registrar serão vinculadas a essa conta.`;
+  }
+
   if (fnName === "create_service") {
     const { client_name, scheduled_date, service_type, description, value, assigned_to_name } = args;
     if (!client_name || !scheduled_date || !service_type || !description) {
