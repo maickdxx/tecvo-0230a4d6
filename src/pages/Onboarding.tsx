@@ -195,6 +195,7 @@ export default function Onboarding() {
   const handleCheckout = async (plan: string = "starter") => {
     setCheckoutLoading(true);
     try {
+      // Save company name before redirecting away
       if (extractedData.company_name && profile?.organization_id) {
         await supabase
           .from("organizations")
@@ -202,13 +203,19 @@ export default function Onboarding() {
           .eq("id", profile.organization_id);
       }
 
+      // Save extracted data so we can use it when user returns
+      if (extractedData.company_name || extractedData.main_service) {
+        localStorage.setItem("tecvo_onboarding_data", JSON.stringify(extractedData));
+      }
+
       const { data, error } = await supabase.functions.invoke("stripe-create-checkout", {
-        body: { plan },
+        body: { plan, return_path: "/onboarding" },
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
-        setStep("whatsapp");
+        // Redirect in same tab — do NOT advance step here
+        // Step will advance only when user returns with ?payment=success
+        window.location.href = data.url;
       }
     } catch (err: any) {
       console.error("Checkout error:", err);
@@ -217,9 +224,9 @@ export default function Onboarding() {
         title: "Erro",
         description: err.message || "Erro ao iniciar pagamento",
       });
-    } finally {
       setCheckoutLoading(false);
     }
+    // Don't setCheckoutLoading(false) on success — page is redirecting
   };
 
   const formatPhone = (value: string) => {
