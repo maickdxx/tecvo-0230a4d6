@@ -239,8 +239,15 @@ export default function Onboarding() {
 
   const handleActivate = async () => {
     setIsActivating(true);
-    // Go to transition step first
     setStep("transition");
+
+    // Restore extracted data from localStorage if lost (e.g. after Stripe redirect)
+    const savedData = localStorage.getItem("tecvo_onboarding_data");
+    const restoredData = savedData ? JSON.parse(savedData) : {};
+    const finalData = {
+      company_name: extractedData.company_name || restoredData.company_name,
+      main_service: extractedData.main_service || restoredData.main_service,
+    };
 
     try {
       if (whatsapp.replace(/\D/g, "").length >= 10 && user) {
@@ -254,7 +261,7 @@ export default function Onboarding() {
 
       if (profile?.organization_id) {
         const orgUpdate: any = {};
-        if (extractedData.company_name) orgUpdate.name = extractedData.company_name;
+        if (finalData.company_name) orgUpdate.name = finalData.company_name;
         if (Object.keys(orgUpdate).length > 0) {
           await supabase
             .from("organizations")
@@ -262,10 +269,10 @@ export default function Onboarding() {
             .eq("id", profile.organization_id);
         }
 
-        if (extractedData.main_service) {
+        if (finalData.main_service) {
           await supabase.from("catalog_services").insert({
             organization_id: profile.organization_id,
-            name: extractedData.main_service,
+            name: finalData.main_service,
             service_type: "manutencao",
             unit_price: 0,
           });
@@ -273,9 +280,9 @@ export default function Onboarding() {
       }
 
       localStorage.removeItem("tecvo_onboarding_step");
+      localStorage.removeItem("tecvo_onboarding_data");
       await completeOnboarding();
       localStorage.setItem("tecvo_first_dashboard", "true");
-      // TransitionScreen component handles the redirect
     } catch (err) {
       console.error("Activation error:", err);
       navigate("/dashboard");
