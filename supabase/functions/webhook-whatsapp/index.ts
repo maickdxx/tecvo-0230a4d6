@@ -4331,9 +4331,9 @@ Deno.serve(async (req) => {
     }
 
     // 4. AI Processing — only for TECVO_AI channel, incoming messages with text or audio
-    const isIncomingAudio = !fromMe && mediaType === "audio" && !isGroup &&
+    const isIncomingAudio = !fromMe && !isEchoDuplicate && mediaType === "audio" && !isGroup &&
       isTecvoAI;
-    const hasTextContent = !fromMe && content && !isGroup && isTecvoAI;
+    const hasTextContent = !fromMe && !isEchoDuplicate && content && !isGroup && isTecvoAI;
 
     // Transcribe audio if incoming audio message on TECVO_AI channel
     if (isIncomingAudio && !content && data?.key) {
@@ -4368,7 +4368,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!fromMe && content && !isGroup && isTecvoAI) {
+    if (!fromMe && !isEchoDuplicate && content && !isGroup && isTecvoAI) {
       try {
         let systemPrompt: string;
 
