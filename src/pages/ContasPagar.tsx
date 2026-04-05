@@ -292,7 +292,7 @@ export default function ContasPagar() {
 
         <TabsContent value={activeTab} className="mt-3">
           <AccountList
-            accounts={sortedAccounts}
+            accounts={filteredAccounts}
             accountType="payable"
             isLoading={isLoading}
             onEdit={handleEdit}
