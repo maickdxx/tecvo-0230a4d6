@@ -2129,6 +2129,11 @@ Quando o usuário pedir para criar uma conta bancária ou financeira:
         } else {
           // lead_comercial on TECVO_AI channel
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
+          // Safety net: ensure current message is in history for AI context
+          const lastHistoryMsgLead = conversationHistory[conversationHistory.length - 1];
+          if (content && (!lastHistoryMsgLead || lastHistoryMsgLead.role !== "user" || !lastHistoryMsgLead.content.includes(content.trim().substring(0, 30)))) {
+            conversationHistory.push({ role: "user", content: content.trim() });
+          }
           systemPrompt = `Você é a Laura, secretária inteligente da Tecvo. Esta pessoa NÃO é cliente — é um possível lead.
 
 ══════════ SUA MISSÃO ══════════
