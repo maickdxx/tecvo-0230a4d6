@@ -10,7 +10,7 @@ import {
   Shield, HelpCircle, BookOpen, Trash2, MessageSquare,
   Megaphone, Bot, Briefcase, Pencil, RefreshCw, Receipt,
   Tag, Zap, Users as UsersIcon, Radio, BarChart3,
-  PanelLeftClose, PanelLeftOpen, Download,
+  PanelLeftClose, PanelLeftOpen, Download, Home, DollarSign,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
