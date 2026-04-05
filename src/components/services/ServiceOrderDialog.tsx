@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatPaymentMethod } from "@/lib/formatPaymentMethod";
 import {
@@ -41,6 +41,7 @@ import { formatDateInTz, formatTimeInTz, formatDateTimeInTz } from "@/lib/timezo
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { useDocumentGuard } from "@/hooks/useDocumentGuard";
 import { CompanyDataCompletionModal } from "@/components/onboarding/CompanyDataCompletionModal";
+import { materializeServicePDF } from "@/lib/materializePDF";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
@@ -157,6 +158,11 @@ export function ServiceOrderDialog({ open, onOpenChange, service }: ServiceOrder
     },
     enabled: !!service.assigned_to && open,
   });
+
+  useEffect(() => {
+    if (!open || !service.id || !profile?.organization_id) return;
+    materializeServicePDF(service.id, profile.organization_id).catch(() => {});
+  }, [open, service.id, profile?.organization_id]);
 
   const handleDownload = async () => {
     setIsSaving(true);
