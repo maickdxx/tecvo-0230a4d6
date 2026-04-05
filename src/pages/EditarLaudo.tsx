@@ -52,9 +52,9 @@ export default function EditarLaudo() {
         measurements: eq.measurements || {},
       }]);
     }
-    // Materialize PDF in background
+    // Materialize PDF (awaited)
     if (organizationId) {
-      materializeReportPDF(id, organizationId).catch(() => {});
+      try { await materializeReportPDF(id, organizationId); } catch (e) { console.warn("[EditarLaudo] PDF materialization failed:", e); }
     }
 
     navigate(`/laudos/${id}`);

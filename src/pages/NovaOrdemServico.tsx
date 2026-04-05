@@ -274,11 +274,14 @@ export default function NovaOrdemServico() {
         description: `OS #${newService.quote_number} criada com sucesso.`,
       });
 
-      // Materialize PDF in background
+      // Materialize PDF (awaited)
       if (organization?.id) {
-        import("@/lib/materializePDF").then(({ materializeServicePDF }) =>
-          materializeServicePDF(newService.id, organization!.id).catch(() => {})
-        );
+        try {
+          const { materializeServicePDF } = await import("@/lib/materializePDF");
+          await materializeServicePDF(newService.id, organization.id);
+        } catch (e) {
+          console.warn("[NovaOS] PDF materialization failed:", e);
+        }
       }
 
       navigate("/ordens-servico");

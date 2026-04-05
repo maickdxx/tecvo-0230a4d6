@@ -78,9 +78,9 @@ export default function NovoOrcamento() {
         description: `Orçamento #${newService.quote_number} criado. Pronto para o próximo.`,
       });
 
-      // Materialize PDF in background
+      // Materialize PDF (awaited)
       if (organization?.id) {
-        materializeServicePDF(newService.id, organization.id).catch(() => {});
+        try { await materializeServicePDF(newService.id, organization.id); } catch (e) { console.warn("[NovoOrcamento] PDF materialization failed:", e); }
       }
 
       setFormKey(prev => prev + 1);
