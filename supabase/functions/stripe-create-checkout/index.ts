@@ -138,8 +138,14 @@ Deno.serve(async (req) => {
     }
 
     const origin = req.headers.get("origin") || "https://tecvo.com.br";
-    const successUrl = `${origin}/assinatura/sucesso?plan=${plan}&checkout_session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${origin}/pricing?subscription=cancelled`;
+    // Use return_path from body if provided (e.g. /onboarding), otherwise default
+    const returnPath = body.return_path || "/assinatura/sucesso";
+    const successUrl = returnPath === "/onboarding"
+      ? `${origin}/onboarding?payment=success&session_id={CHECKOUT_SESSION_ID}`
+      : `${origin}/assinatura/sucesso?plan=${plan}&checkout_session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = returnPath === "/onboarding"
+      ? `${origin}/onboarding?payment=cancelled`
+      : `${origin}/pricing?subscription=cancelled`;
 
     console.log("[STRIPE-CHECKOUT] Return URLs", { origin, successUrl, cancelUrl });
 

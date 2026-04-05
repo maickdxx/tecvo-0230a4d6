@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useOnboardingChat } from "@/hooks/useOnboardingChat";
@@ -58,6 +58,7 @@ export default function Onboarding() {
   const { user, profile, isLoading: authLoading } = useAuth();
   const { isOnboardingCompleted, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const userName = profile?.full_name || user?.user_metadata?.full_name || "";
   const {
@@ -89,6 +90,26 @@ export default function Onboarding() {
 
   const [whatsappMessages, setWhatsappMessages] = useState<Array<{role: "assistant" | "user"; content: string}>>([]);
   const whatsappInitRef = useRef(false);
+
+  // Handle return from Stripe checkout
+  const paymentReturnHandled = useRef(false);
+  useEffect(() => {
+    if (paymentReturnHandled.current) return;
+    const paymentStatus = searchParams.get("payment");
+    if (paymentStatus === "success") {
+      paymentReturnHandled.current = true;
+      // Payment confirmed by Stripe redirect — advance to whatsapp step
+      setStep("whatsapp");
+      // Clean URL params
+      setSearchParams({}, { replace: true });
+    } else if (paymentStatus === "cancelled") {
+      paymentReturnHandled.current = true;
+      // User cancelled — stay on payment step
+      setStep("payment");
+      setSearchParams({}, { replace: true });
+      toast({ variant: "destructive", title: "Pagamento cancelado", description: "Você pode tentar novamente quando quiser." });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     // Delay scroll to allow animations to settle
@@ -174,6 +195,7 @@ export default function Onboarding() {
   const handleCheckout = async (plan: string = "starter") => {
     setCheckoutLoading(true);
     try {
+      // Save company name before redirecting away
       if (extractedData.company_name && profile?.organization_id) {
         await supabase
           .from("organizations")
@@ -181,13 +203,19 @@ export default function Onboarding() {
           .eq("id", profile.organization_id);
       }
 
+      // Save extracted data so we can use it when user returns
+      if (extractedData.company_name || extractedData.main_service) {
+        localStorage.setItem("tecvo_onboarding_data", JSON.stringify(extractedData));
+      }
+
       const { data, error } = await supabase.functions.invoke("stripe-create-checkout", {
-        body: { plan },
+        body: { plan, return_path: "/onboarding" },
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
-        setStep("whatsapp");
+        // Redirect in same tab — do NOT advance step here
+        // Step will advance only when user returns with ?payment=success
+        window.location.href = data.url;
       }
     } catch (err: any) {
       console.error("Checkout error:", err);
@@ -196,9 +224,9 @@ export default function Onboarding() {
         title: "Erro",
         description: err.message || "Erro ao iniciar pagamento",
       });
-    } finally {
       setCheckoutLoading(false);
     }
+    // Don't setCheckoutLoading(false) on success — page is redirecting
   };
 
   const formatPhone = (value: string) => {
@@ -211,8 +239,15 @@ export default function Onboarding() {
 
   const handleActivate = async () => {
     setIsActivating(true);
-    // Go to transition step first
     setStep("transition");
+
+    // Restore extracted data from localStorage if lost (e.g. after Stripe redirect)
+    const savedData = localStorage.getItem("tecvo_onboarding_data");
+    const restoredData = savedData ? JSON.parse(savedData) : {};
+    const finalData = {
+      company_name: extractedData.company_name || restoredData.company_name,
+      main_service: extractedData.main_service || restoredData.main_service,
+    };
 
     try {
       if (whatsapp.replace(/\D/g, "").length >= 10 && user) {
@@ -226,7 +261,7 @@ export default function Onboarding() {
 
       if (profile?.organization_id) {
         const orgUpdate: any = {};
-        if (extractedData.company_name) orgUpdate.name = extractedData.company_name;
+        if (finalData.company_name) orgUpdate.name = finalData.company_name;
         if (Object.keys(orgUpdate).length > 0) {
           await supabase
             .from("organizations")
@@ -234,10 +269,10 @@ export default function Onboarding() {
             .eq("id", profile.organization_id);
         }
 
-        if (extractedData.main_service) {
+        if (finalData.main_service) {
           await supabase.from("catalog_services").insert({
             organization_id: profile.organization_id,
-            name: extractedData.main_service,
+            name: finalData.main_service,
             service_type: "manutencao",
             unit_price: 0,
           });
@@ -245,9 +280,9 @@ export default function Onboarding() {
       }
 
       localStorage.removeItem("tecvo_onboarding_step");
+      localStorage.removeItem("tecvo_onboarding_data");
       await completeOnboarding();
       localStorage.setItem("tecvo_first_dashboard", "true");
-      // TransitionScreen component handles the redirect
     } catch (err) {
       console.error("Activation error:", err);
       navigate("/dashboard");
