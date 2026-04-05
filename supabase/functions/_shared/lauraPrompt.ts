@@ -109,7 +109,7 @@ export function buildSystemPrompt(ctx: any) {
     monday.setDate(d.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    return { start: monday.toISOString().substring(0, 10), end: sunday.toISOString().substring(0, 10) };
+    return { start: monday.toLocaleDateString("en-CA", { timeZone: tz }), end: sunday.toLocaleDateString("en-CA", { timeZone: tz }) };
   };
 
   const thisWeek = getWeekBounds(now, 0);
