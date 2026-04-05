@@ -1250,14 +1250,15 @@ function buildSystemPrompt(ctx: any) {
     for (let i = 0; i < 7; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() + i);
-      const iso = d.toISOString().substring(0, 10);
+      const iso = d.toLocaleDateString("en-CA", { timeZone: tz });
       const dayName = d.toLocaleDateString("pt-BR", {
         weekday: "short",
         day: "2-digit",
         month: "2-digit",
+        timeZone: tz,
       });
       const daySvcs = osServices.filter((s: any) =>
-        s.scheduled_date?.substring(0, 10) === iso
+        getServiceDate(s) === iso
       );
       if (daySvcs.length === 0) {
         days.push(`  ${dayName}: livre`);
