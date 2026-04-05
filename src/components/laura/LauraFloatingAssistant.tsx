@@ -58,15 +58,15 @@ export function LauraFloatingAssistant() {
     }
   }, [isLoading, isCompleted, dismissed]);
 
-  // Re-nudge after 30s if dismissed but not completed
+  // Re-nudge after 30s if dismissed but not completed (only for welcome step)
   useEffect(() => {
-    if (dismissed && !isCompleted) {
+    if (dismissed && !isCompleted && step === "welcome") {
       const timer = setTimeout(() => {
         setPulse(true);
       }, 30_000);
       return () => clearTimeout(timer);
     }
-  }, [dismissed, isCompleted]);
+  }, [dismissed, isCompleted, step]);
 
   // Don't render at all if completed and closed
   if (isLoading || (isCompleted && !open)) return null;
@@ -82,10 +82,14 @@ export function LauraFloatingAssistant() {
     }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     setOpen(false);
     setDismissed(true);
     setPulse(false);
+    // If user clicks "Depois" on create_os step, mark activation as completed
+    if (step === "create_os") {
+      await advance("completed");
+    }
   };
 
   const handleFabClick = () => {
