@@ -18,7 +18,7 @@ export function LauraWelcomeModal() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  const userName = profile?.name?.split(" ")[0] || "";
+  const userName = profile?.full_name?.split(" ")[0] || "";
 
   useEffect(() => {
     const isFirst = localStorage.getItem("tecvo_first_dashboard");
