@@ -1174,9 +1174,9 @@ function buildSystemPrompt(ctx: any) {
   const lastMonth = `${lastMonthDate.getFullYear()}-${
     String(lastMonthDate.getMonth() + 1).padStart(2, "0")
   }`;
-  const lastMonthServices = osServices.filter((s: any) =>
-    s.scheduled_date?.substring(0, 7) === lastMonth
-  );
+  const lastMonthServices = osServices.filter((s: any) => {
+    const d = getServiceDate(s); return d && d.substring(0, 7) === lastMonth;
+  });
   const lastMonthCompleted = lastMonthServices.filter((s: any) =>
     s.status === "completed"
   );
