@@ -201,7 +201,7 @@ export function useServicePDFSend() {
     } finally {
       setSending(false);
     }
-  }, [buildPDFData, channels, getStoredOfficialPdf]);
+  }, [channels, getStoredOfficialPdf, retryMaterialization]);
 
   return { sendOSViaWhatsApp, sending };
 }
