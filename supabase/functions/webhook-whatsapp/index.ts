@@ -4188,7 +4188,7 @@ Você NÃO deve compartilhar:
                 supabase,
                 targetOrganizationId,
                 tc,
-                orgContext,
+                { ...orgContext, instance, remoteJid },
               );
               console.log(
                 "[WEBHOOK-WHATSAPP] Tool result (round",
