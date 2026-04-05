@@ -1727,6 +1727,16 @@ async function generateProfessionalPDF(data: {
   }>;
   items: Array<{ description: string; name?: string; quantity: number; unitPrice: number; discount?: number }>;
 }): Promise<Uint8Array> {
+  console.error(
+    "[WEBHOOK-WHATSAPP] BLOCKED alternate PDF generator invocation:",
+    JSON.stringify({
+      generator: "generateProfessionalPDF",
+      docType: data.docType,
+      osNumber: data.osNumber,
+    }),
+  );
+  throw new Error("blocked_non_official_pdf_generator");
+
   const { PDFDocument, rgb, StandardFonts } = await import("https://esm.sh/pdf-lib@1.17.1");
 
   const doc = await PDFDocument.create();
@@ -2829,12 +2839,41 @@ async function executeAdminTool(
       }
     }
 
+    if (markerData?.generator && markerData.generator !== "official-service-pdf-html") {
+      console.error(
+        "[WEBHOOK-WHATSAPP] Blocking non-official PDF generator marker:",
+        JSON.stringify({
+          serviceId: serviceData.id,
+          osNumber,
+          docLabel,
+          markerGenerator: markerData.generator,
+          markerData,
+        }),
+      );
+    }
+
+    const hasOfficialStructureMarker = Boolean(
+      markerData &&
+        markerData.validation?.hasOfficialHeader !== false &&
+        markerData.validation?.hasCompanyData !== false &&
+        markerData.validation?.hasClientData !== false &&
+        markerData.validation?.hasItemsTable !== false &&
+        markerData.validation?.hasTotal !== false &&
+        markerData.validation?.hasSignaturesSection !== false &&
+        markerData.sections?.header !== false &&
+        markerData.sections?.client !== false &&
+        markerData.sections?.items_table !== false &&
+        markerData.sections?.total !== false &&
+        markerData.sections?.signatures !== false,
+    );
+
     const hasVerifiedOfficialMarker = Boolean(
       markerData &&
         markerData.generator === "official-service-pdf-html" &&
         markerData.service_id === serviceData.id &&
         markerData.source !== "legacy_official" &&
-        !markerData.canonicalized_at,
+        !markerData.canonicalized_at &&
+        hasOfficialStructureMarker,
     );
 
     const { data: candidateFiles, error: listError } = await storage.list(folderPath, {

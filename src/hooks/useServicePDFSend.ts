@@ -15,6 +15,39 @@ export function useServicePDFSend() {
   const { channels } = useWhatsAppChannels();
   const tz = useOrgTimezone();
 
+  const getStoredOfficialPdf = useCallback(async (service: Service): Promise<Blob | null> => {
+    if (!service.organization_id) return null;
+
+    const storage = supabase.storage.from("whatsapp-media");
+    const storagePath = `os-pdfs/${service.organization_id}/${service.id}.pdf`;
+    const markerPath = `os-pdfs/${service.organization_id}/${service.id}.official.json`;
+
+    const [{ data: markerBlob }, { data: pdfBlob, error: pdfError }] = await Promise.all([
+      storage.download(markerPath),
+      storage.download(storagePath),
+    ]);
+
+    if (!markerBlob || !pdfBlob || pdfError) return null;
+
+    try {
+      const marker = JSON.parse(await markerBlob.text());
+      const isOfficial = marker?.generator === "official-service-pdf-html" &&
+        marker?.service_id === service.id &&
+        marker?.source !== "legacy_official" &&
+        !marker?.canonicalized_at;
+
+      if (!isOfficial) return null;
+
+      const bytes = new Uint8Array(await pdfBlob.arrayBuffer());
+      const header = new TextDecoder().decode(bytes.slice(0, 5));
+      if (!header.startsWith("%PDF-") || bytes.byteLength < 1024) return null;
+
+      return new Blob([bytes], { type: "application/pdf" });
+    } catch {
+      return null;
+    }
+  }, []);
+
   const buildPDFData = useCallback(async (service: Service) => {
     const org = organization;
 
@@ -85,7 +118,7 @@ export function useServicePDFSend() {
     channelId?: string,
   ) => {
     setSending(true);
-    const loadingToastId = toast.loading("Gerando e enviando OS via WhatsApp...");
+    const loadingToastId = toast.loading("Preparando e enviando OS oficial via WhatsApp...");
     try {
       // Fetch the full service with client
       const { data: service, error } = await supabase
@@ -96,8 +129,12 @@ export function useServicePDFSend() {
 
       if (error || !service) throw new Error("Serviço não encontrado");
 
-      const pdfData = await buildPDFData(service as Service);
-      const blob = await generateServiceOrderPDF({ ...pdfData, returnBlob: true } as any) as Blob;
+      let blob = await getStoredOfficialPdf(service as Service);
+
+      if (!blob) {
+        const pdfData = await buildPDFData(service as Service);
+        blob = await generateServiceOrderPDF({ ...pdfData, returnBlob: true } as any) as Blob;
+      }
 
       if (!blob) throw new Error("Falha ao gerar PDF");
 
@@ -216,7 +253,7 @@ export function useServicePDFSend() {
     } finally {
       setSending(false);
     }
-  }, [buildPDFData, channels]);
+  }, [buildPDFData, channels, getStoredOfficialPdf]);
 
   return { sendOSViaWhatsApp, sending };
 }
