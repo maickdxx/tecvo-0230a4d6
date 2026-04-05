@@ -4136,12 +4136,32 @@ Conduzir uma conversa estratégica e consultiva que qualifique o lead e apresent
                   channel_id: channel.id,
                   ai_generated: true,
                 });
-                const sent = await sendWhatsAppReply(
-                  instance,
-                  remoteJid,
-                  safeResponseLead,
-                );
-                console.log("[WEBHOOK-WHATSAPP] Lead reply sent:", sent);
+                // If incoming was audio, respond ONLY with audio (no text message)
+                if (isIncomingAudio && safeResponseLead.length <= 2000) {
+                  (async () => {
+                    try {
+                      const audioBase64 = await generateTTSAudio(safeResponseLead);
+                      if (audioBase64) {
+                        await sendWhatsAppAudio(
+                          instance,
+                          remoteJid,
+                          audioBase64,
+                          supabase,
+                        );
+                        console.log("[WEBHOOK-WHATSAPP] Lead audio-only reply sent");
+                      } else {
+                        await sendWhatsAppReply(instance, remoteJid, safeResponseLead);
+                        console.log("[WEBHOOK-WHATSAPP] Lead text fallback (TTS failed)");
+                      }
+                    } catch (ttsErr: any) {
+                      console.warn("[WEBHOOK-WHATSAPP] TTS failed, text fallback:", ttsErr.message);
+                      await sendWhatsAppReply(instance, remoteJid, safeResponseLead);
+                    }
+                  })();
+                } else {
+                  const sent = await sendWhatsAppReply(instance, remoteJid, safeResponseLead);
+                  console.log("[WEBHOOK-WHATSAPP] Lead reply sent:", sent);
+                }
 
                 // ── Create follow-up schedule for this lead (upsert to avoid duplicates) ──
                 try {
@@ -4170,31 +4190,6 @@ Conduzir uma conversa estratégica e consultiva que qualifique o lead e apresent
                     "[WEBHOOK-WHATSAPP] Failed to create lead follow-up:",
                     fuErr.message,
                   );
-                }
-
-                // If the incoming message was audio, also send audio response
-                if (isIncomingAudio && safeResponseLead.length <= 2000) {
-                  (async () => {
-                    try {
-                      const audioBase64 = await generateTTSAudio(
-                        safeResponseLead,
-                      );
-                      if (audioBase64) {
-                        await sendWhatsAppAudio(
-                          instance,
-                          remoteJid,
-                          audioBase64,
-                          supabase,
-                        );
-                        console.log("[WEBHOOK-WHATSAPP] Lead audio reply sent");
-                      }
-                    } catch (ttsErr: any) {
-                      console.warn(
-                        "[WEBHOOK-WHATSAPP] TTS audio reply failed:",
-                        ttsErr.message,
-                      );
-                    }
-                  })();
                 }
               }
             }
