@@ -375,7 +375,7 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
           const config = PLAN_CONFIG[slug];
           const btnProps = getButtonProps(slug);
           const isCurrentPlan = plan === slug;
-          const showTrialBadge = !hasPaidPlan && !isTrial;
+          const showTrialBadge = false;
 
           return (
             <Card
@@ -437,9 +437,7 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        {hasPaidPlan
-          ? "Cancele a qualquer momento."
-          : "Sem cobrança nos primeiros 7 dias. Cancele a qualquer momento."}
+        Todos os planos começam por R$1 no primeiro mês. Cancele a qualquer momento.
       </p>
 
       {/* Cancel Subscription Dialog */}

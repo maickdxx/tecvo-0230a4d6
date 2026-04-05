@@ -408,9 +408,9 @@ export const tutorialModules: TutorialModuleData[] = [
     steps: [
       {
         title: "Conhecer os planos disponíveis",
-        description: "O Tecvo oferece três planos:\n• Starter (R$ 29,90/mês): até 15 serviços/mês\n• Essencial (R$ 59,90/mês): até 50 serviços/mês + IA no atendimento\n• Profissional (R$ 99,90/mês): serviços ilimitados + todos os recursos",
+        description: "O Tecvo oferece três planos:\n• Start (R$ 49/mês): ideal para técnico autônomo\n• Pro (R$ 119/mês): para quem quer crescer com IA e WhatsApp\n• Empresa (R$ 229/mês): controle total para empresas com equipe",
         tips: [
-          "Você começa com um período de teste gratuito para experimentar o sistema."
+          "Todos os planos começam por R$1 no primeiro mês."
         ]
       },
       {
