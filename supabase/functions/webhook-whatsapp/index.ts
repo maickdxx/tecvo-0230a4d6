@@ -2587,7 +2587,9 @@ Conduzir uma conversa estratégica e consultiva que qualifique o lead e apresent
 
 5. CONVERSÃO: Quando a pessoa demonstrar interesse:
    - "Quer ver como funciona? Dá uma olhada: https://tecvo.com.br"
-   - "Você pode testar por R$ 1 pra ver se faz sentido pra você."
+   - Destaque a MEGA PROMOÇÃO: o primeiro mês sai por apenas R$ 1! Depois volta ao valor normal.
+   - Exemplo: "E olha só, tá rolando uma promoção especial: o primeiro mês inteiro sai por apenas R$ 1 🔥 Depois fica a partir de R$ 49/mês, mas dá pra cancelar quando quiser."
+   - Transmita urgência e valor: "É menos que um cafezinho pra testar tudo por 30 dias!"
    - Se demonstrar muito interesse: "Posso te ajudar a configurar agora mesmo, leva 5 minutos."
 
 ══════════ REGRAS ══════════
