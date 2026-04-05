@@ -15,8 +15,8 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -275,13 +275,13 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       ? [{ role: "system", content: finalSystemPrompt }, { role: "user", content: "Me dê uma dica proativa baseada nos dados da minha empresa." }]
       : [{ role: "system", content: finalSystemPrompt }, ...messages];
 
-    const aiModel = "google/gemini-3-flash-preview";
+    const aiModel = "gemini-2.5-flash";
     const startTime = Date.now();
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GEMINI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
