@@ -142,6 +142,7 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
     let toolMessages: any[] = [...chatMessages];
     let toolRound = 0;
     const maxToolRounds = 3;
+    let toolErrors: string[] = [];
 
     while (choice?.message?.tool_calls && choice.message.tool_calls.length > 0 && toolRound < maxToolRounds) {
       toolRound++;
@@ -154,12 +155,32 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       });
 
       for (const tc of choice.message.tool_calls) {
-        const toolResult = await executeAdminTool(
-          supabaseAdmin,
-          organizationId,
-          tc,
-          orgContext,
-        );
+        let toolResult: string;
+        try {
+          toolResult = await executeAdminTool(
+            supabaseAdmin,
+            organizationId,
+            tc,
+            orgContext,
+          );
+        } catch (toolErr: any) {
+          const errMsg = toolErr?.message || String(toolErr);
+          console.error("[TECVO-CHAT] Tool execution crash:", tc.function?.name, errMsg);
+          toolResult = `❌ Erro interno ao executar "${tc.function?.name || "ação"}". O sistema registrou o problema. Tente novamente ou faça a ação manualmente no sistema.`;
+          toolErrors.push(`${tc.function?.name}: ${errMsg}`);
+          
+          // Log the crash
+          await logAIUsage(supabaseAdmin, {
+            organizationId, userId, actionSlug: `tool_crash_${tc.function?.name || "unknown"}`, model: aiModel,
+            promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs: 0, status: "error",
+          }).catch(() => {});
+        }
+
+        // Validate tool result is never empty
+        if (!toolResult || toolResult.trim() === "") {
+          toolResult = `⚠️ A ação "${tc.function?.name || "solicitada"}" não retornou resultado. Isso pode indicar um problema temporário. Tente novamente.`;
+        }
+
         console.log("[TECVO-CHAT] Tool result:", toolResult.slice(0, 200));
 
         toolMessages.push({
@@ -171,29 +192,88 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
 
       // Next AI call
       const allowMoreTools = toolRound < maxToolRounds;
-      const nextResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: aiModel,
-          messages: toolMessages,
-          ...(allowMoreTools ? { tools: ADMIN_TOOLS } : {}),
-          stream: false,
-        }),
-      });
+      let nextResponse: Response;
+      try {
+        nextResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: aiModel,
+            messages: toolMessages,
+            ...(allowMoreTools ? { tools: ADMIN_TOOLS } : {}),
+            stream: false,
+          }),
+        });
+      } catch (fetchErr: any) {
+        console.error("[TECVO-CHAT] AI fetch error on tool round:", fetchErr?.message);
+        // Use last known content or generate fallback
+        if (!finalContent) {
+          finalContent = "Desculpe, tive um problema de conexão ao processar sua solicitação. Os dados das ações executadas foram salvos. Tente perguntar novamente.";
+        }
+        break;
+      }
 
       if (!nextResponse.ok) {
         const errText = await nextResponse.text();
         console.error("[TECVO-CHAT] AI error on tool round:", nextResponse.status, errText.slice(0, 300));
+        
+        await logAIUsage(supabaseAdmin, {
+          organizationId, userId, actionSlug: "tecvo_chat_tool_round_error", model: aiModel,
+          promptTokens: 0, completionTokens: 0, totalTokens: 0,
+          durationMs: Date.now() - startTime, status: "error",
+        }).catch(() => {});
+        
+        // Fallback: use whatever content we have
+        if (!finalContent) {
+          finalContent = "Executei as ações solicitadas, mas tive dificuldade em formatar a resposta. Verifique os dados no sistema para confirmar.";
+        }
         break;
       }
 
       result = await nextResponse.json();
       choice = result.choices?.[0];
       finalContent = choice?.message?.content || finalContent;
+    }
+
+    // CRITICAL: Never return empty response
+    if (!finalContent || finalContent.trim() === "") {
+      console.warn("[TECVO-CHAT] Empty final content, generating fallback");
+      
+      await logAIUsage(supabaseAdmin, {
+        organizationId, userId, actionSlug: "tecvo_chat_empty_response", model: aiModel,
+        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+        durationMs: Date.now() - startTime, status: "error",
+      }).catch(() => {});
+
+      // Retry once without tools
+      try {
+        const retryResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: aiModel,
+            messages: toolMessages.length > chatMessages.length ? toolMessages : chatMessages,
+            stream: false,
+          }),
+        });
+        if (retryResponse.ok) {
+          const retryResult = await retryResponse.json();
+          finalContent = retryResult.choices?.[0]?.message?.content || "";
+        }
+      } catch {
+        // ignore retry failure
+      }
+
+      // Ultimate fallback
+      if (!finalContent || finalContent.trim() === "") {
+        finalContent = "Desculpe, não consegui processar sua solicitação agora. Pode tentar novamente? Se o problema persistir, tente reformular a pergunta ou faça a ação diretamente no sistema.";
+      }
     }
 
     const durationMs = Date.now() - startTime;
@@ -205,7 +285,7 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       promptTokens: usage.prompt_tokens || 0,
       completionTokens: usage.completion_tokens || 0,
       totalTokens: usage.total_tokens || 0,
-      durationMs, status: "success",
+      durationMs, status: toolErrors.length > 0 ? "error" : "success",
     });
 
     // Return as SSE stream format for frontend compatibility
