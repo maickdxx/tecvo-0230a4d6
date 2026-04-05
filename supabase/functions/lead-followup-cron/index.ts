@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkSendLimit, logSend } from "../_shared/sendGuard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,6 +92,37 @@ serve(async (req) => {
       const message = FOLLOWUP_MESSAGES[nextStep];
       if (!message) continue;
 
+      // Find the contact for SendGuard
+      const { data: contact } = await supabase
+        .from("whatsapp_contacts")
+        .select("id")
+        .eq("phone", fu.phone)
+        .eq("channel_id", fu.channel_id)
+        .single();
+
+      // ── SEND GUARD: check rate limits before sending ──
+      const guardContactId = contact?.id || null;
+      const sendCheck = await checkSendLimit(
+        supabase,
+        fu.organization_id,
+        guardContactId,
+        "lead_followup",
+      );
+
+      if (!sendCheck.allowed) {
+        console.warn(`[LEAD-FOLLOWUP] BLOCKED by SendGuard for ${fu.phone}: ${sendCheck.reason}`);
+        await logSend(
+          supabase,
+          fu.organization_id,
+          guardContactId,
+          "lead_followup",
+          "blocked",
+          sendCheck.reason,
+          message.substring(0, 200),
+        );
+        continue;
+      }
+
       // Find the channel instance name
       const { data: channel } = await supabase
         .from("whatsapp_channels")
@@ -114,13 +146,6 @@ serve(async (req) => {
 
       if (sent) {
         // Save the message in whatsapp_messages
-        const { data: contact } = await supabase
-          .from("whatsapp_contacts")
-          .select("id")
-          .eq("phone", fu.phone)
-          .eq("channel_id", fu.channel_id)
-          .single();
-
         if (contact) {
           await supabase.from("whatsapp_messages").insert({
             organization_id: fu.organization_id,
@@ -134,16 +159,24 @@ serve(async (req) => {
           });
         }
 
+        // Log successful send
+        await logSend(
+          supabase,
+          fu.organization_id,
+          guardContactId,
+          "lead_followup",
+          "sent",
+          undefined,
+          message.substring(0, 200),
+        );
+
         // Calculate next follow-up time
         let nextFollowupAt: string | null = null;
         if (nextStep === 1) {
-          // Next: step 2 in ~4 hours
           nextFollowupAt = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
         } else if (nextStep === 2) {
-          // Next: step 3 next day (~20 hours)
           nextFollowupAt = new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString();
         } else if (nextStep === 3) {
-          // Next: step 4 in ~2 days
           nextFollowupAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
         }
 
@@ -160,6 +193,15 @@ serve(async (req) => {
         console.log(`[LEAD-FOLLOWUP] Sent step ${nextStep} to ${fu.phone}`);
       } else {
         console.warn(`[LEAD-FOLLOWUP] Failed to send step ${nextStep} to ${fu.phone}`);
+        await logSend(
+          supabase,
+          fu.organization_id,
+          guardContactId,
+          "lead_followup",
+          "error",
+          "send_failed",
+          message.substring(0, 200),
+        );
       }
 
       // Small delay between sends
