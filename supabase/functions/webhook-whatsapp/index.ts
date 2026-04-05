@@ -2537,6 +2537,16 @@ Você NÃO deve compartilhar:
           }
         } else {
           // lead_comercial on TECVO_AI channel
+          // ── Lead follow-up: cancel pending follow-ups when lead replies ──
+          try {
+            await supabase.from("lead_followups")
+              .update({ status: "responded", completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+              .eq("phone", normalizedSender)
+              .eq("organization_id", targetOrganizationId)
+              .eq("status", "pending");
+          } catch (fuErr: any) {
+            console.warn("[WEBHOOK-WHATSAPP] Failed to cancel lead follow-up:", fuErr.message);
+          }
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
           // Safety net: ensure current message is in history for AI context
           const lastHistoryMsgLead = conversationHistory[conversationHistory.length - 1];
@@ -2660,6 +2670,24 @@ Conduzir uma conversa estratégica e consultiva que qualifique o lead e apresent
                 });
                 const sent = await sendWhatsAppReply(instance, remoteJid, safeResponseLead);
                 console.log("[WEBHOOK-WHATSAPP] Lead reply sent:", sent);
+
+                // ── Create follow-up schedule for this lead (upsert to avoid duplicates) ──
+                try {
+                  const firstFollowupAt = new Date(Date.now() + (5 + Math.random() * 10) * 60 * 1000).toISOString(); // 5-15 min
+                  await supabase.from("lead_followups").upsert({
+                    phone: normalizedSender,
+                    organization_id: targetOrganizationId,
+                    channel_id: channel.id,
+                    step: 0,
+                    status: "pending",
+                    first_contact_at: new Date().toISOString(),
+                    next_followup_at: firstFollowupAt,
+                    updated_at: new Date().toISOString(),
+                  }, { onConflict: "phone,organization_id,channel_id", ignoreDuplicates: true });
+                  console.log("[WEBHOOK-WHATSAPP] Lead follow-up scheduled for:", normalizedSender);
+                } catch (fuErr: any) {
+                  console.warn("[WEBHOOK-WHATSAPP] Failed to create lead follow-up:", fuErr.message);
+                }
 
                 // If the incoming message was audio, also send audio response
                 if (isIncomingAudio && safeResponseLead.length <= 2000) {
