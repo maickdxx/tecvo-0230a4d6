@@ -4,6 +4,7 @@
  * Runs silently in the background — never blocks the UI.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { formatPaymentMethod } from "@/lib/formatPaymentMethod";
 
 /**
  * Materializes the OS/Quote PDF in storage after create/edit.
@@ -88,7 +89,7 @@ export async function materializeServicePDF(serviceId: string, organizationId: s
       equipmentBrand: service.equipment_brand || "",
       equipmentModel: service.equipment_model || "",
       solution: service.solution || service.description || "",
-      paymentMethod: service.payment_method || "",
+      paymentMethod: service.payment_method ? formatPaymentMethod(service.payment_method) : "",
       paymentDueDate: service.payment_due_date ? formatDateInTz(service.payment_due_date, tz) : "",
       paymentNotes: service.payment_notes || "",
     };
