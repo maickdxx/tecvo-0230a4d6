@@ -607,6 +607,31 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
     }
     if (amount <= 0) return "Erro: valor deve ser positivo.";
 
+    // Find default financial account for this org (prefer "Dinheiro"/cash)
+    const { data: defaultAccount } = await supabase
+      .from("financial_accounts")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .eq("account_type", "cash")
+      .limit(1)
+      .single();
+
+    const accountId = defaultAccount?.id || null;
+
+    // If we have an account, adjust its balance for expenses
+    if (accountId && type === "expense") {
+      await supabase.rpc("adjust_financial_account_balance", {
+        _account_id: accountId,
+        _delta: -amount,
+      });
+    } else if (accountId && type === "income") {
+      await supabase.rpc("adjust_financial_account_balance", {
+        _account_id: accountId,
+        _delta: amount,
+      });
+    }
+
     const { error } = await supabase.from("transactions").insert({
       organization_id: organizationId,
       type,
@@ -615,6 +640,7 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
       category,
       date,
       status: type === "expense" ? "paid" : "pending",
+      financial_account_id: accountId,
       ...(payment_method ? { payment_method } : {}),
     });
 
