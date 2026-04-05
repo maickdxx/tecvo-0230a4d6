@@ -836,7 +836,7 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
       .limit(5);
 
     if (!clientMatches || clientMatches.length === 0) {
-      return `Cliente "${client_name}" não encontrado no cadastro. Verifique o nome e tente novamente.`;
+      return `CLIENT_NOT_FOUND:${client_name}|Cliente "${client_name}" não encontrado no cadastro. Posso cadastrar agora para continuar a criação do orçamento. Preciso do nome completo e telefone do cliente.`;
     }
     if (clientMatches.length > 1) {
       const names = clientMatches.map((c: any) => c.name).join(", ");
