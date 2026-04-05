@@ -2054,6 +2054,188 @@ async function executeAdminTool(
     return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Agora pode continuar criando a OS ou orçamento usando o nome "${newClient.name}".`;
   }
 
+  if (fnName === "send_service_pdf") {
+    const { service_identifier } = args;
+    if (!service_identifier) return "Erro: identificador do serviço é obrigatório.";
+
+    // Try to find the service by quote_number, client name, or partial ID
+    const identifier = service_identifier.trim();
+    let serviceData: any = null;
+
+    // Try by quote_number first (numeric)
+    const numericId = parseInt(identifier, 10);
+    if (!isNaN(numericId)) {
+      const { data } = await supabase
+        .from("services")
+        .select("*, client:clients(name, phone, whatsapp)")
+        .eq("organization_id", organizationId)
+        .eq("quote_number", numericId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) serviceData = data[0];
+    }
+
+    // Try by client name
+    if (!serviceData) {
+      const { data } = await supabase
+        .from("services")
+        .select("*, client:clients!inner(name, phone, whatsapp)")
+        .eq("organization_id", organizationId)
+        .ilike("client.name", `%${identifier}%`)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) serviceData = data[0];
+    }
+
+    // Try by partial ID
+    if (!serviceData) {
+      const { data } = await supabase
+        .from("services")
+        .select("*, client:clients(name, phone, whatsapp)")
+        .eq("organization_id", organizationId)
+        .ilike("id", `${identifier}%`)
+        .limit(1);
+      if (data && data.length > 0) serviceData = data[0];
+    }
+
+    if (!serviceData) {
+      return `Não encontrei nenhuma OS ou orçamento com "${identifier}". Verifique o número ou nome do cliente.`;
+    }
+
+    // Fetch org data for the PDF
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("name, cnpj_cpf, phone, email, address, logo_url")
+      .eq("id", organizationId)
+      .single();
+
+    // Fetch service items
+    const { data: serviceItems } = await supabase
+      .from("service_items")
+      .select("*")
+      .eq("service_id", serviceData.id)
+      .order("created_at");
+
+    // Fetch equipment
+    const { data: equipment } = await supabase
+      .from("service_equipment")
+      .select("*")
+      .eq("service_id", serviceData.id)
+      .order("created_at");
+
+    // Generate a simple PDF using raw PDF syntax (no external libs needed)
+    const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
+    const docType = serviceData.document_type === "quote" ? "Orçamento" : "Ordem de Serviço";
+    const clientName = serviceData.client?.name || "Cliente";
+    const orgName = orgData?.name || "Empresa";
+    const scheduledDate = serviceData.scheduled_date
+      ? new Date(serviceData.scheduled_date).toLocaleDateString("pt-BR")
+      : "-";
+    const serviceType = serviceData.service_type || "-";
+    const description = serviceData.description || "-";
+    const value = serviceData.value || 0;
+    const status = serviceData.status || "-";
+
+    // Build text content for PDF
+    const lines: string[] = [
+      `${docType} #${osNumber}`,
+      ``,
+      `Empresa: ${orgName}`,
+      orgData?.cnpj_cpf ? `CNPJ/CPF: ${orgData.cnpj_cpf}` : "",
+      orgData?.phone ? `Telefone: ${orgData.phone}` : "",
+      orgData?.email ? `Email: ${orgData.email}` : "",
+      orgData?.address ? `Endereço: ${orgData.address}` : "",
+      ``,
+      `--- Dados do Cliente ---`,
+      `Nome: ${clientName}`,
+      ``,
+      `--- Detalhes do Serviço ---`,
+      `Data: ${scheduledDate}`,
+      `Tipo: ${serviceType}`,
+      `Descrição: ${description}`,
+      `Status: ${status}`,
+      `Valor: R$ ${value.toFixed(2)}`,
+    ].filter(Boolean);
+
+    if (equipment && equipment.length > 0) {
+      lines.push("", "--- Equipamentos ---");
+      for (const eq of equipment) {
+        lines.push(`• ${eq.equipment_type || ""} ${eq.brand || ""} ${eq.model || ""} ${eq.capacity || ""}`);
+      }
+    }
+
+    if (serviceItems && serviceItems.length > 0) {
+      lines.push("", "--- Itens ---");
+      let itemsTotal = 0;
+      for (const item of serviceItems) {
+        const itemTotal = (item.quantity || 1) * (item.unit_price || 0);
+        itemsTotal += itemTotal;
+        lines.push(`• ${item.description}: ${item.quantity}x R$ ${(item.unit_price || 0).toFixed(2)} = R$ ${itemTotal.toFixed(2)}`);
+      }
+      lines.push(`Total itens: R$ ${itemsTotal.toFixed(2)}`);
+    }
+
+    if (serviceData.notes) {
+      lines.push("", "--- Observações ---", serviceData.notes);
+    }
+
+    // Generate minimal valid PDF
+    const textContent = lines.join("\n");
+    const pdfBytes = generateMinimalPDF(textContent, `${docType} #${osNumber} - ${clientName}`);
+
+    // Upload PDF to storage
+    const storagePath = `os-pdfs/${organizationId}/${serviceData.id}_${Date.now()}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from("whatsapp-media")
+      .upload(storagePath, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+    if (uploadError) {
+      console.error("[WEBHOOK-WHATSAPP] PDF upload error:", uploadError);
+      return "Erro ao gerar o PDF. Tente novamente.";
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("whatsapp-media")
+      .getPublicUrl(storagePath);
+
+    // Send PDF via Evolution API
+    const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
+    const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+    const instance = ctx?.instance;
+    const remoteJid = ctx?.remoteJid;
+
+    if (!vpsUrl || !apiKey || !instance || !remoteJid) {
+      return `PDF gerado com sucesso! Mas não consegui enviar automaticamente. O PDF está disponível no sistema.`;
+    }
+
+    const fileName = `${docType.replace(/ /g, "_")}_${osNumber}.pdf`;
+    try {
+      const evoResp = await fetch(`${vpsUrl}/message/sendMedia/${instance}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: apiKey },
+        body: JSON.stringify({
+          number: remoteJid,
+          mediatype: "document",
+          media: publicUrl,
+          caption: `📋 ${docType} #${osNumber} - ${clientName}`,
+          fileName,
+        }),
+      });
+
+      if (!evoResp.ok) {
+        const errText = await evoResp.text();
+        console.error("[WEBHOOK-WHATSAPP] PDF send error:", evoResp.status, errText);
+        return `PDF gerado, mas houve erro ao enviar. Tente enviar pelo painel.`;
+      }
+
+      await evoResp.text();
+      return `SILENT_PDF_SENT:${docType} #${osNumber} de ${clientName} enviado com sucesso!`;
+    } catch (sendErr: any) {
+      console.error("[WEBHOOK-WHATSAPP] PDF send exception:", sendErr.message);
+      return `PDF gerado, mas houve erro ao enviar: ${sendErr.message}`;
+    }
+  }
+
   return "Ferramenta desconhecida.";
 }
 
