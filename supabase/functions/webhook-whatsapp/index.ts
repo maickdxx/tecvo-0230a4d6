@@ -2816,7 +2816,26 @@ async function executeAdminTool(
     let generatorLabel = "official-service-pdf-storage";
 
     const { data: markerBlob } = await storage.download(markerPath);
-    const hasOfficialMarker = Boolean(markerBlob);
+    let markerData: Record<string, any> | null = null;
+    if (markerBlob) {
+      try {
+        markerData = JSON.parse(await markerBlob.text());
+      } catch (markerError: any) {
+        console.warn(
+          "[WEBHOOK-WHATSAPP] Failed parsing official PDF marker:",
+          serviceData.id,
+          markerError?.message || markerError,
+        );
+      }
+    }
+
+    const hasVerifiedOfficialMarker = Boolean(
+      markerData &&
+        markerData.generator === "official-service-pdf-html" &&
+        markerData.service_id === serviceData.id &&
+        markerData.source !== "legacy_official" &&
+        !markerData.canonicalized_at,
+    );
 
     const { data: candidateFiles, error: listError } = await storage.list(folderPath, {
       limit: 100,
@@ -2846,70 +2865,43 @@ async function executeAdminTool(
     const { data: canonicalBlob, error: canonicalDownloadError } = await storage.download(canonicalPath);
     const hasCanonicalPdf = Boolean(canonicalBlob && !canonicalDownloadError);
 
-    if (hasOfficialMarker && hasCanonicalPdf) {
+    if (hasVerifiedOfficialMarker && hasCanonicalPdf) {
       resolvedPath = canonicalPath;
       pdfBlob = canonicalBlob;
       pdfSource = "canonical_verified";
-    } else if (legacyOfficialFile?.name) {
-      const legacyPath = `${folderPath}/${legacyOfficialFile.name}`;
-      const { data: legacyBlob, error: legacyDownloadError } = await storage.download(legacyPath);
-
-      if (legacyBlob && !legacyDownloadError) {
-        resolvedPath = legacyPath;
-        pdfBlob = legacyBlob;
-        pdfSource = "legacy_official";
-
-        const { error: copyError } = await storage.copy(legacyPath, canonicalPath);
-        if (!copyError) {
-          resolvedPath = canonicalPath;
-          pdfSource = "legacy_canonicalized";
-          const { data: copiedBlob } = await storage.download(canonicalPath);
-          if (copiedBlob) {
-            pdfBlob = copiedBlob;
-          }
-          const markerPayload = new Blob([
-            JSON.stringify({
-              generator: "official-service-pdf-html",
-              version: 1,
-              document_type: serviceData.document_type || "service_order",
-              service_id: serviceData.id,
-              quote_number: serviceData.quote_number || null,
-              source: "legacy_official",
-              canonicalized_at: new Date().toISOString(),
-            }),
-          ], { type: "application/json" });
-          const { error: markerUploadError } = await storage.upload(markerPath, markerPayload, {
-            contentType: "application/json",
-            upsert: true,
-          });
-          if (markerUploadError) {
-            console.warn(
-              "[WEBHOOK-WHATSAPP] Failed to write official PDF marker after canonicalization:",
-              serviceData.id,
-              markerUploadError.message,
-            );
-          }
-        } else {
-          console.warn(
-            "[WEBHOOK-WHATSAPP] Failed to canonicalize legacy official PDF:",
-            serviceData.id,
-            copyError.message,
-          );
-        }
-      }
-    } else if (hasCanonicalPdf) {
-      resolvedPath = canonicalPath;
-      pdfBlob = canonicalBlob;
-      pdfSource = "canonical_unverified";
-      generatorLabel = "official-service-pdf-storage-unverified";
+      generatorLabel = markerData?.generator || generatorLabel;
+    } else if (hasCanonicalPdf || legacyOfficialFile?.name || markerData) {
+      console.warn(
+        "[WEBHOOK-WHATSAPP] Rejecting legacy or unverified PDF candidate for send:",
+        JSON.stringify({
+          serviceId: serviceData.id,
+          osNumber,
+          docLabel,
+          hasCanonicalPdf,
+          hasLegacyCandidate: Boolean(legacyOfficialFile?.name),
+          markerData,
+        }),
+      );
     }
 
     if (!resolvedPath || !pdfBlob) {
+      const blockReason = hasCanonicalPdf || legacyOfficialFile?.name || markerData
+        ? "O arquivo salvo pertence a uma versão antiga ou não verificada do layout oficial"
+        : "Ainda não existe PDF oficial materializado para esse documento";
       console.warn(
         "[WEBHOOK-WHATSAPP] Blocking send because no official stored PDF was found:",
-        JSON.stringify({ serviceId: serviceData.id, osNumber, docLabel, canonicalPath }),
+        JSON.stringify({
+          serviceId: serviceData.id,
+          osNumber,
+          docLabel,
+          canonicalPath,
+          blockReason,
+          hasCanonicalPdf,
+          hasLegacyCandidate: Boolean(legacyOfficialFile?.name),
+          markerData,
+        }),
       );
-      return `Não encontrei o PDF oficial da ${docLabel} #${osNumber} salvo no sistema. Não vou enviar cópia alternativa nem template paralelo.`;
+      return `${blockReason}. Reabra a ${docLabel} #${osNumber} no painel para atualizar a versão oficial antes do envio.`;
     }
 
     const pdfBytes = new Uint8Array(await pdfBlob.arrayBuffer());
@@ -2955,7 +2947,9 @@ async function executeAdminTool(
         docLabel,
         source: pdfSource,
         generator: generatorLabel,
-        hasOfficialMarker,
+        hasOfficialMarker: hasVerifiedOfficialMarker,
+        markerSource: markerData?.source || null,
+        markerVersion: markerData?.version || null,
         path: resolvedPath,
         sizeBytes: pdfBytes.byteLength,
       }),
