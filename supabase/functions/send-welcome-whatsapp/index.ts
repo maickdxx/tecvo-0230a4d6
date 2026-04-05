@@ -142,8 +142,9 @@ Deno.serve(async (req) => {
         });
       }
 
-      const userName = profile.full_name || org.name || "empreendedor";
-      const welcomeText = `Oi, ${userName}! Já tô por aqui te ajudando 😊\nHoje tá mais corrido ou mais tranquilo?`;
+      const userName = profile.full_name?.split(" ")[0] || "empreendedor";
+      const msg1 = `Oi, tudo bem? 👋\n\nEu sou a Laura, sua secretária aqui na Tecvo.`;
+      const msg2 = `Pode ficar tranquilo — eu consigo te ajudar a organizar sua empresa, cuidar dos clientes, serviços e até do financeiro pra você.\n\nE o melhor: você não precisa mexer em nada complicado.`;
 
       let cleanNumber = phone.replace(/\D/g, "");
       if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
@@ -152,35 +153,36 @@ Deno.serve(async (req) => {
       const jid = `${cleanNumber}@s.whatsapp.net`;
 
       try {
+        // Send first message
         const res = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: apiKey },
-          body: JSON.stringify({ number: jid, text: welcomeText }),
+          body: JSON.stringify({ number: jid, text: msg1 }),
         });
 
         if (!res.ok) {
-          console.error("[WELCOME] Send failed:", res.status, await res.text());
-          // Revert flag on failure — allow retry
-          await adminClient
-            .from("organizations")
-            .update({ welcome_whatsapp_sent: false })
-            .eq("id", profile.organization_id);
-          return new Response(JSON.stringify({ error: "Send failed" }), {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          console.error("[WELCOME] Send msg1 failed:", res.status, await res.text());
+          await adminClient.from("organizations").update({ welcome_whatsapp_sent: false }).eq("id", profile.organization_id);
+          return new Response(JSON.stringify({ error: "Send failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        // Small delay between messages for natural feel
+        await new Promise(r => setTimeout(r, 1500));
+
+        // Send second message
+        const res2 = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ number: jid, text: msg2 }),
+        });
+
+        if (!res2.ok) {
+          console.error("[WELCOME] Send msg2 failed:", res2.status, await res2.text());
         }
       } catch (err) {
         console.error("[WELCOME] Send error:", err);
-        // Revert flag on error — allow retry
-        await adminClient
-          .from("organizations")
-          .update({ welcome_whatsapp_sent: false })
-          .eq("id", profile.organization_id);
-        return new Response(JSON.stringify({ error: "Send error" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        await adminClient.from("organizations").update({ welcome_whatsapp_sent: false }).eq("id", profile.organization_id);
+        return new Response(JSON.stringify({ error: "Send error" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
