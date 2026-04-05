@@ -1980,6 +1980,25 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
         }
       } catch (aiError) {
         console.error("[WEBHOOK-WHATSAPP] AI processing error:", aiError);
+        // Fallback: send a safe message so the user doesn't get silence
+        try {
+          const errorFallback = "Desculpe, tive um problema técnico ao processar sua mensagem. Tente novamente em instantes. 🙏";
+          const fbId = `ai_error_${crypto.randomUUID()}`;
+          await supabase.from("whatsapp_messages").insert({
+            organization_id: targetOrganizationId,
+            contact_id: contactId,
+            message_id: fbId,
+            content: errorFallback,
+            is_from_me: true,
+            status: "sent",
+            channel_id: channel.id,
+            ai_generated: true,
+          });
+          await sendWhatsAppReply(instance, remoteJid, errorFallback);
+          console.log("[WEBHOOK-WHATSAPP] Error fallback reply sent.");
+        } catch (fbErr) {
+          console.error("[WEBHOOK-WHATSAPP] Failed to send error fallback:", fbErr);
+        }
       }
     }
     // CUSTOMER_INBOX: no AI auto-reply — messages just land in the inbox for manual handling
