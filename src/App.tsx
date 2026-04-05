@@ -70,7 +70,7 @@ const MeuDia = lazy(() => import("./pages/MeuDia"));
 const NovoCliente = lazy(() => import("./pages/NovoCliente"));
 const EditarCliente = lazy(() => import("./pages/EditarCliente"));
 const AssinaturaSucesso = lazy(() => import("./pages/AssinaturaSucesso"));
-const AssinaturaParabens = lazy(() => import("./pages/AssinaturaParabens"));
+
 const Transferencias = lazy(() => import("./pages/Transferencias"));
 const Recorrencia = lazy(() => import("./pages/Recorrencia"));
 const RecebimentosTecnico = lazy(() => import("./pages/RecebimentosTecnico"));
@@ -546,14 +546,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AssinaturaSucesso />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/assinatura/parabens"
-              element={
-                <ProtectedRoute>
-                  <AssinaturaParabens />
                 </ProtectedRoute>
               }
             />

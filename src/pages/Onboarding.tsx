@@ -28,7 +28,7 @@ const LauraAvatar = ({ size = "md" }: { size?: "sm" | "md" | "lg" }) => {
 
 function TransitionScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 3000);
+    const t = setTimeout(onDone, 1500);
     return () => clearTimeout(t);
   }, [onDone]);
 
@@ -277,14 +277,12 @@ export default function Onboarding() {
       }
 
       if (profile?.organization_id) {
-        const orgUpdate: any = {};
+        const orgUpdate: any = { welcome_shown: true };
         if (finalData.company_name) orgUpdate.name = finalData.company_name;
-        if (Object.keys(orgUpdate).length > 0) {
-          await supabase
-            .from("organizations")
-            .update(orgUpdate)
-            .eq("id", profile.organization_id);
-        }
+        await supabase
+          .from("organizations")
+          .update(orgUpdate)
+          .eq("id", profile.organization_id);
 
         if (finalData.main_service) {
           await supabase.from("catalog_services").insert({
