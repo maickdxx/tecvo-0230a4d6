@@ -47,6 +47,12 @@ export function ProtectedRoute({ children, allowEmployee = false }: ProtectedRou
     return <Navigate to="/login" replace />;
   }
 
+  // Onboarding gate: new users must complete onboarding first
+  // (employees and invited members skip onboarding)
+  if (!isEmployee && !isOnboardingCompleted && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   // WhatsApp pessoal é opcional — não bloqueia acesso ao sistema.
   // Coleta posterior via WhatsAppPromptCard no dashboard.
 

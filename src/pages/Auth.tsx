@@ -106,10 +106,8 @@ export default function Auth() {
     if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
       return returnTo;
     }
-    if (selectedPlan === "starter" || selectedPlan === "essential" || selectedPlan === "pro") {
-      return `/dashboard?checkout=${selectedPlan}`;
-    }
-    return "/dashboard";
+    // Always go to /onboarding first — it will redirect to /dashboard if already completed
+    return "/onboarding";
   };
 
   const handleGoogleAuth = async () => {
