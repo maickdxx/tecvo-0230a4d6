@@ -1915,8 +1915,10 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
             totalTokens: aiUsageLead.totalTokens, durationMs: aiDurationLead, status: "success",
           });
 
+          if (!aiResponse) {
+            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for lead_comercial. No reply sent.");
+          }
           if (aiResponse) {
-            // Output validation filter
             const outputCheckLead = validateAIOutput(aiResponse);
             const safeResponseLead = outputCheckLead.safe ? aiResponse : (outputCheckLead.sanitizedContent || "");
             if (!outputCheckLead.safe) {
