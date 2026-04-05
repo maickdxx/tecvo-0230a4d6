@@ -25,6 +25,8 @@ export interface Organization {
   messaging_paused: boolean;
   messaging_paused_at: string | null;
   messaging_paused_reason: string | null;
+  primary_color: string;
+  theme_mode: string;
 }
 
 export type OrganizationUpdate = Partial<Omit<Organization, "id">>;

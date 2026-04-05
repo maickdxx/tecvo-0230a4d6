@@ -1,0 +1,4 @@
+
+ALTER TABLE public.organizations
+ADD COLUMN IF NOT EXISTS primary_color TEXT NOT NULL DEFAULT '210 100% 50%',
+ADD COLUMN IF NOT EXISTS theme_mode TEXT NOT NULL DEFAULT 'light';

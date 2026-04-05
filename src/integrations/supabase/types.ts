@@ -2258,6 +2258,7 @@ export type Database = {
           phone: string | null
           plan: string | null
           plan_expires_at: string | null
+          primary_color: string
           require_client_signature: boolean | null
           signature_url: string | null
           state: string | null
@@ -2265,6 +2266,7 @@ export type Database = {
           stripe_price_id: string | null
           stripe_subscription_id: string | null
           subscription_status: string | null
+          theme_mode: string
           time_clock_enabled: boolean
           timezone: string
           trial_ends_at: string | null
@@ -2300,6 +2302,7 @@ export type Database = {
           phone?: string | null
           plan?: string | null
           plan_expires_at?: string | null
+          primary_color?: string
           require_client_signature?: boolean | null
           signature_url?: string | null
           state?: string | null
@@ -2307,6 +2310,7 @@ export type Database = {
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          theme_mode?: string
           time_clock_enabled?: boolean
           timezone?: string
           trial_ends_at?: string | null
@@ -2342,6 +2346,7 @@ export type Database = {
           phone?: string | null
           plan?: string | null
           plan_expires_at?: string | null
+          primary_color?: string
           require_client_signature?: boolean | null
           signature_url?: string | null
           state?: string | null
@@ -2349,6 +2354,7 @@ export type Database = {
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          theme_mode?: string
           time_clock_enabled?: boolean
           timezone?: string
           trial_ends_at?: string | null
