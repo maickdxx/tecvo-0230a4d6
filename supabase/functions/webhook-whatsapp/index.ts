@@ -4635,9 +4635,9 @@ Você NÃO deve compartilhar:
           }
           if (aiResponse) {
             const outputCheck = validateAIOutput(aiResponse);
-            const safeResponse = outputCheck.safe
+            const safeResponse = markdownToWhatsApp(outputCheck.safe
               ? aiResponse
-              : (outputCheck.sanitizedContent || "");
+              : (outputCheck.sanitizedContent || ""));
             if (!outputCheck.safe) {
               await logOutputViolation(
                 supabase,
