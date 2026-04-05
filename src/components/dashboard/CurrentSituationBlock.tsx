@@ -113,7 +113,7 @@ export function CurrentSituationBlock() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_0.9fr_0.9fr_0.9fr] entrance-stagger">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 entrance-stagger">
           {/* Saldo Consolidado */}
           <div className="rounded-xl border p-3">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Saldo Consolidado</p>

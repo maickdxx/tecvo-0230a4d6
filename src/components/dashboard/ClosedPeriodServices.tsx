@@ -71,7 +71,7 @@ export function ClosedPeriodServices() {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).filter((s) => getDatePartInTz(s.created_at, DEFAULT_TIMEZONE) === currentDate);
+      return (data || []).filter((s) => getDatePartInTz(s.completed_date || "", DEFAULT_TIMEZONE) === currentDate);
     },
     enabled: !!organizationId,
   });
