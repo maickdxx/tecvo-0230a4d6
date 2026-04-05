@@ -2196,6 +2196,7 @@ export type Database = {
           city: string | null
           cnpj_cpf: string | null
           created_at: string
+          default_ai_account_id: string | null
           email: string | null
           guided_onboarding_dismissed: boolean
           id: string
@@ -2237,6 +2238,7 @@ export type Database = {
           city?: string | null
           cnpj_cpf?: string | null
           created_at?: string
+          default_ai_account_id?: string | null
           email?: string | null
           guided_onboarding_dismissed?: boolean
           id?: string
@@ -2278,6 +2280,7 @@ export type Database = {
           city?: string | null
           cnpj_cpf?: string | null
           created_at?: string
+          default_ai_account_id?: string | null
           email?: string | null
           guided_onboarding_dismissed?: boolean
           id?: string
@@ -2311,7 +2314,15 @@ export type Database = {
           whatsapp_owner?: string | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_default_ai_account_id_fkey"
+            columns: ["default_ai_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       password_reset_codes: {
         Row: {
