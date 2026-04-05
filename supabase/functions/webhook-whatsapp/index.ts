@@ -2537,6 +2537,16 @@ Você NÃO deve compartilhar:
           }
         } else {
           // lead_comercial on TECVO_AI channel
+          // ── Lead follow-up: cancel pending follow-ups when lead replies ──
+          try {
+            await supabase.from("lead_followups")
+              .update({ status: "responded", completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+              .eq("phone", normalizedSender)
+              .eq("organization_id", targetOrganizationId)
+              .eq("status", "pending");
+          } catch (fuErr: any) {
+            console.warn("[WEBHOOK-WHATSAPP] Failed to cancel lead follow-up:", fuErr.message);
+          }
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
           // Safety net: ensure current message is in history for AI context
           const lastHistoryMsgLead = conversationHistory[conversationHistory.length - 1];
