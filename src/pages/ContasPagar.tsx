@@ -34,11 +34,11 @@ import { useTransactionCategories } from "@/hooks/useTransactionCategories";
 import { cn } from "@/lib/utils";
 
 function getEffectiveStatus(account: Account, tz: string) {
+  if (account.status === "paid" || account.status === "cancelled") return account.status;
   if (account.status === "pending" && account.due_date) {
     const todayStr = getTodayInTz(tz);
-    const dueDate = new Date(account.due_date + "T12:00:00");
-    const todayDate = new Date(todayStr + "T12:00:00");
-    if (dueDate < todayDate) return "overdue";
+    const dueDateStr = account.due_date.substring(0, 10);
+    if (dueDateStr < todayStr) return "overdue";
   }
   return account.status;
 }
