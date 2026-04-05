@@ -532,20 +532,15 @@ Deno.serve(async (req) => {
       || req.headers.get("authorization")?.replace("Bearer ", "")
       || req.headers.get("x-apikey");
     
-    if (webhookApiKey && incomingKey !== webhookApiKey) {
-      // Log headers for debugging, then allow through if no key was sent at all
-      // (Evolution API may not send auth headers for webhooks — URL secrecy is the auth)
-      const headerNames = [...req.headers.keys()].join(", ");
-      if (incomingKey) {
-        // Key was sent but doesn't match — reject
-        console.warn(`[WEBHOOK-WHATSAPP] Rejected: wrong api key. Headers: ${headerNames}`);
+    if (webhookApiKey) {
+      if (!incomingKey || incomingKey !== webhookApiKey) {
+        const headerNames = [...req.headers.keys()].join(", ");
+        console.warn(`[WEBHOOK-WHATSAPP] Rejected: missing or wrong api key. Headers: ${headerNames}`);
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // No key sent at all — allow through (URL is the secret)
-      console.info(`[WEBHOOK-WHATSAPP] No api key in request, allowing (URL-based auth). Headers: ${headerNames}`);
     }
 
     const supabase = createClient(
@@ -1123,11 +1118,11 @@ Deno.serve(async (req) => {
     console.log("[WEBHOOK-WHATSAPP] Channel type:", channel.channel_type, "| instance:", instance);
 
     // ── Determine mode & target org BEFORE saving contact/message ──
-    const stripCountryCode = (p: string) => (p.startsWith("55") && p.length >= 12 ? p.substring(2) : p);
     const matchesOwner = (sender: string, owner: string | null | undefined) => {
       if (!owner) return false;
       const normalizedOwner = normalizePhone(owner);
-      return sender === normalizedOwner || stripCountryCode(sender) === stripCountryCode(normalizedOwner);
+      // Strict match: only exact normalized phone comparison — no stripCountryCode to avoid collisions
+      return sender === normalizedOwner;
     };
 
     const normalizedSender = normalizePhone(phoneNumber);
@@ -1683,17 +1678,143 @@ Deno.serve(async (req) => {
         let systemPrompt: string;
 
         if (mode === "admin_empresa") {
+          // ── SECURITY: Verify PIN session before granting access to org data ──
+          const { data: activeSession } = await supabase
+            .from("whatsapp_ai_sessions")
+            .select("id, expires_at")
+            .eq("organization_id", targetOrganizationId)
+            .eq("phone_number", normalizedSender)
+            .gt("expires_at", new Date().toISOString())
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!activeSession) {
+            // No active session — check if user is sending a PIN
+            const pinInput = content.trim();
+            
+            // Check if there's a PIN set for this org
+            const { data: pinRecord } = await supabase
+              .from("whatsapp_ai_pins")
+              .select("id, pin_hash, attempts, max_attempts, expires_at")
+              .eq("organization_id", targetOrganizationId)
+              .maybeSingle();
+
+            if (!pinRecord) {
+              // No PIN configured — auto-generate one and save it
+              const autoPin = String(Math.floor(1000 + Math.random() * 9000)); // 4-digit PIN
+              await supabase.from("whatsapp_ai_pins").upsert({
+                organization_id: targetOrganizationId,
+                pin_hash: autoPin, // In production, hash this
+                attempts: 0,
+                expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+              }, { onConflict: "organization_id" });
+
+              // Send PIN via the app notification (not via WhatsApp to prevent interception)
+              console.log("[WEBHOOK-WHATSAPP] Auto-generated PIN for org:", targetOrganizationId);
+
+              // Reply asking for PIN
+              const pinMsg = `🔐 Para acessar os dados da sua empresa via WhatsApp, você precisa verificar sua identidade.\n\nSeu PIN de acesso é: *${autoPin}*\n\nDigite este PIN para continuar. O PIN expira em 24h.`;
+              const pinMsgId = `ai_pin_${crypto.randomUUID()}`;
+              await supabase.from("whatsapp_messages").insert({
+                organization_id: targetOrganizationId,
+                contact_id: contactId,
+                message_id: pinMsgId,
+                content: pinMsg,
+                is_from_me: true,
+                status: "sent",
+                channel_id: channel.id,
+                ai_generated: true,
+              });
+              await sendWhatsAppReply(instance, remoteJid, pinMsg);
+
+              return new Response(JSON.stringify({ ok: true, action: "pin_requested" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+
+            // PIN exists — check if user sent the correct one
+            if (pinRecord.attempts >= pinRecord.max_attempts) {
+              const blockedMsg = "🚫 Número máximo de tentativas atingido. Aguarde 24h ou gere um novo PIN no app.";
+              const blockedMsgId = `ai_blocked_${crypto.randomUUID()}`;
+              await supabase.from("whatsapp_messages").insert({
+                organization_id: targetOrganizationId,
+                contact_id: contactId,
+                message_id: blockedMsgId,
+                content: blockedMsg,
+                is_from_me: true,
+                status: "sent",
+                channel_id: channel.id,
+                ai_generated: true,
+              });
+              await sendWhatsAppReply(instance, remoteJid, blockedMsg);
+              return new Response(JSON.stringify({ ok: true, action: "pin_blocked" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+
+            if (pinInput === pinRecord.pin_hash) {
+              // Correct PIN — create session
+              await supabase.from("whatsapp_ai_sessions").insert({
+                organization_id: targetOrganizationId,
+                phone_number: normalizedSender,
+                expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+              });
+              // Reset attempts
+              await supabase.from("whatsapp_ai_pins").update({ attempts: 0, is_verified: true, verified_at: new Date().toISOString() }).eq("id", pinRecord.id);
+
+              const successMsg = "✅ Identidade verificada! Agora você pode consultar os dados da sua empresa. A sessão expira em 24h.\n\nComo posso ajudar?";
+              const successMsgId = `ai_verified_${crypto.randomUUID()}`;
+              await supabase.from("whatsapp_messages").insert({
+                organization_id: targetOrganizationId,
+                contact_id: contactId,
+                message_id: successMsgId,
+                content: successMsg,
+                is_from_me: true,
+                status: "sent",
+                channel_id: channel.id,
+                ai_generated: true,
+              });
+              await sendWhatsAppReply(instance, remoteJid, successMsg);
+              return new Response(JSON.stringify({ ok: true, action: "pin_verified" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            } else {
+              // Wrong PIN — increment attempts
+              await supabase.from("whatsapp_ai_pins").update({ attempts: pinRecord.attempts + 1 }).eq("id", pinRecord.id);
+              const remaining = pinRecord.max_attempts - pinRecord.attempts - 1;
+              const wrongMsg = `❌ PIN incorreto. Você tem mais ${remaining} tentativa(s). Digite o PIN correto para acessar.`;
+              const wrongMsgId = `ai_wrongpin_${crypto.randomUUID()}`;
+              await supabase.from("whatsapp_messages").insert({
+                organization_id: targetOrganizationId,
+                contact_id: contactId,
+                message_id: wrongMsgId,
+                content: wrongMsg,
+                is_from_me: true,
+                status: "sent",
+                channel_id: channel.id,
+                ai_generated: true,
+              });
+              await sendWhatsAppReply(instance, remoteJid, wrongMsg);
+              return new Response(JSON.stringify({ ok: true, action: "pin_wrong" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+          }
+
+          // ── Session verified — proceed with org data access ──
           const orgContext = await fetchOrgContext(supabase, targetOrganizationId);
           systemPrompt = buildSystemPrompt(orgContext);
 
-          // Add instruction about financial tools
+          // Add instruction about financial tools WITH CONFIRMATION REQUIREMENT
           systemPrompt += `\n\n══════════ FERRAMENTAS DISPONÍVEIS ══════════
 Você tem acesso à ferramenta 'register_transaction' para registrar despesas e receitas.
 Quando o usuário pedir para registrar um gasto/despesa/receita:
 1. Extraia os dados da mensagem (valor, descrição, categoria, data)
 2. Se faltar algum dado essencial, pergunte antes de registrar
-3. Use a ferramenta para registrar
-4. Confirme o registro ao usuário
+3. OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação explícita ao usuário mostrando um resumo: "Vou registrar: [tipo] de R$ [valor] — [descrição] ([categoria]) em [data]. Confirma? (sim/não)"
+4. Só execute a ferramenta register_transaction DEPOIS que o usuário confirmar com "sim", "confirmo", "pode registrar" ou similar
+5. Se o usuário negar, cancele e pergunte o que deseja corrigir
 
 Categorias comuns de despesa: material, combustível, alimentação, aluguel, fornecedor, manutenção, salário, outro
 Categorias comuns de receita: serviço, manutenção, instalação, venda, outro`;
@@ -1751,6 +1872,7 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
                 is_from_me: true,
                 status: "sent",
                 channel_id: channel.id,
+                ai_generated: true,
               });
               const sent = await sendWhatsAppReply(instance, remoteJid, aiResponse);
               console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
@@ -1790,6 +1912,7 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
                 is_from_me: true,
                 status: "sent",
                 channel_id: channel.id,
+                ai_generated: true,
               });
               const sent = await sendWhatsAppReply(instance, remoteJid, aiResponse);
               console.log("[WEBHOOK-WHATSAPP] Lead reply sent:", sent);

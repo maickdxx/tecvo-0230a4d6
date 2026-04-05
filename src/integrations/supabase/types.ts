@@ -5282,6 +5282,88 @@ export type Database = {
           },
         ]
       }
+      whatsapp_ai_pins: {
+        Row: {
+          attempts: number
+          created_at: string
+          expires_at: string
+          id: string
+          is_verified: boolean
+          max_attempts: number
+          organization_id: string
+          pin_hash: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_verified?: boolean
+          max_attempts?: number
+          organization_id: string
+          pin_hash: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_verified?: boolean
+          max_attempts?: number
+          organization_id?: string
+          pin_hash?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_ai_pins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_ai_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          phone_number: string
+          verified_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id: string
+          phone_number: string
+          verified_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          phone_number?: string
+          verified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_ai_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_automations: {
         Row: {
           created_at: string
@@ -6220,6 +6302,7 @@ export type Database = {
       }
       whatsapp_messages: {
         Row: {
+          ai_generated: boolean | null
           channel_id: string | null
           contact_id: string
           content: string | null
@@ -6242,6 +6325,7 @@ export type Database = {
           timestamp: string
         }
         Insert: {
+          ai_generated?: boolean | null
           channel_id?: string | null
           contact_id: string
           content?: string | null
@@ -6264,6 +6348,7 @@ export type Database = {
           timestamp?: string
         }
         Update: {
+          ai_generated?: boolean | null
           channel_id?: string | null
           contact_id?: string
           content?: string | null
