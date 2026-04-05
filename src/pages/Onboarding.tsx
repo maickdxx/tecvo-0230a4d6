@@ -209,7 +209,7 @@ export default function Onboarding() {
     }
   };
 
-  const handleCheckout = async (plan: string = "starter") => {
+  const handleCheckout = async (plan: "starter" | "essential" | "pro") => {
     setCheckoutLoading(true);
     try {
       // Save company name before redirecting away
