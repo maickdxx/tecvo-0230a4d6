@@ -288,10 +288,10 @@ export default function ContasPagar() {
 
       {/* Summary cards */}
       <AccountSummary
-        pending={totals.pending}
-        paid={totals.paid}
-        overdue={totals.overdue}
-        total={totals.total}
+        pending={localTotals.pending}
+        paid={localTotals.paid}
+        overdue={localTotals.overdue}
+        total={localTotals.total}
         accountType="payable"
       />
 
