@@ -1608,138 +1608,397 @@ async function callAI(
 }
 
 /**
- * Generate a minimal valid PDF document from text content.
- * Uses raw PDF syntax — no external libraries needed.
+ * Generate a professional PDF matching the system's visual style.
+ * Uses pdf-lib for proper formatting with colors, sections, and layout.
  */
-function generateMinimalPDF(text: string, title: string): Uint8Array {
-  // Encode text as Latin-1 compatible (replace non-Latin chars)
-  const sanitize = (s: string) =>
-    s.replace(/[^\x20-\x7E\xA0-\xFF]/g, (c) => {
-      // Map common unicode to Latin-1 equivalents
-      const map: Record<string, string> = {
-        "\u2013": "-", "\u2014": "--", "\u2018": "'", "\u2019": "'",
-        "\u201C": '"', "\u201D": '"', "\u2022": "*", "\u2026": "...",
-        "\u00E7": "\\347", "\u00E3": "\\343", "\u00E1": "\\341",
-        "\u00E9": "\\351", "\u00ED": "\\355", "\u00F3": "\\363",
-        "\u00FA": "\\372", "\u00C7": "\\307", "\u00C3": "\\303",
-        "\u00C1": "\\301", "\u00C9": "\\311", "\u00CD": "\\315",
-        "\u00D3": "\\323", "\u00DA": "\\332", "\u00E2": "\\342",
-        "\u00EA": "\\352", "\u00F4": "\\364",
-      };
-      return map[c] || "?";
-    });
+async function generateProfessionalPDF(data: {
+  docType: string;
+  osNumber: string;
+  orgName: string;
+  orgCnpj?: string;
+  orgPhone?: string;
+  orgEmail?: string;
+  orgAddress?: string;
+  clientName: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  clientDocument?: string;
+  clientAddress?: string;
+  clientCity?: string;
+  clientState?: string;
+  clientZip?: string;
+  scheduledDate: string;
+  serviceType: string;
+  description: string;
+  value: number;
+  status: string;
+  notes?: string;
+  paymentMethod?: string;
+  equipment: Array<{ type?: string; brand?: string; model?: string; capacity?: string; serial?: string }>;
+  items: Array<{ description: string; quantity: number; unitPrice: number; discount?: number }>;
+}): Promise<Uint8Array> {
+  const { PDFDocument, rgb, StandardFonts } = await import("https://esm.sh/pdf-lib@1.17.1");
 
-  const pageWidth = 595; // A4
-  const pageHeight = 842;
-  const margin = 50;
-  const lineHeight = 14;
-  const maxCharsPerLine = 80;
-  const usableHeight = pageHeight - 2 * margin;
-  const linesPerPage = Math.floor(usableHeight / lineHeight);
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  // Word-wrap text into lines
-  const rawLines = text.split("\n");
-  const wrappedLines: string[] = [];
-  for (const raw of rawLines) {
-    if (raw.length <= maxCharsPerLine) {
-      wrappedLines.push(raw);
-    } else {
-      const words = raw.split(" ");
-      let current = "";
-      for (const word of words) {
-        if ((current + " " + word).length > maxCharsPerLine) {
-          wrappedLines.push(current);
-          current = word;
-        } else {
-          current = current ? current + " " + word : word;
-        }
-      }
-      if (current) wrappedLines.push(current);
+  const PAGE_W = 595.28; // A4
+  const PAGE_H = 841.89;
+  const M = 40; // margin
+  const CW = PAGE_W - 2 * M; // content width
+  const FOOTER_H = 30;
+
+  // Colors matching system
+  const primary = rgb(25 / 255, 95 / 255, 170 / 255);
+  const primaryDark = rgb(18 / 255, 70 / 255, 130 / 255);
+  const primaryLight = rgb(235 / 255, 244 / 255, 255 / 255);
+  const textDark = rgb(30 / 255, 34 / 255, 38 / 255);
+  const textMuted = rgb(100 / 255, 110 / 255, 120 / 255);
+  const borderLight = rgb(215 / 255, 220 / 255, 228 / 255);
+  const rowEven = rgb(248 / 255, 249 / 255, 252 / 255);
+  const white = rgb(1, 1, 1);
+  const totalBg = rgb(20 / 255, 80 / 255, 150 / 255);
+
+  const formatBRL = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
+
+  let page = doc.addPage([PAGE_W, PAGE_H]);
+  let y = PAGE_H - M;
+  let pageCount = 1;
+
+  const ensureSpace = (needed: number) => {
+    if (y - needed < M + FOOTER_H) {
+      page = doc.addPage([PAGE_W, PAGE_H]);
+      pageCount++;
+      y = PAGE_H - M;
     }
-  }
-
-  // Split into pages
-  const pages: string[][] = [];
-  for (let i = 0; i < wrappedLines.length; i += linesPerPage) {
-    pages.push(wrappedLines.slice(i, i + linesPerPage));
-  }
-  if (pages.length === 0) pages.push([""]);
-
-  // Build PDF objects
-  const objects: string[] = [];
-  const offsets: number[] = [];
-  let currentOffset = 0;
-
-  const addObj = (content: string) => {
-    offsets.push(currentOffset);
-    const obj = content;
-    objects.push(obj);
-    currentOffset += new TextEncoder().encode(obj).length;
   };
 
-  // Header
-  const header = "%PDF-1.4\n";
-  currentOffset = header.length;
-
-  // Object 1: Catalog
-  addObj("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
-
-  // Object 2: Pages (will reference page objects starting at obj 4)
-  const pageRefs = pages.map((_, i) => `${4 + i * 2} 0 R`).join(" ");
-  addObj(`2 0 obj\n<< /Type /Pages /Kids [${pageRefs}] /Count ${pages.length} >>\nendobj\n`);
-
-  // Object 3: Font
-  addObj("3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n");
-
-  // Pages and content streams
-  for (let p = 0; p < pages.length; p++) {
-    const pageLines = pages[p];
-    let streamContent = "BT\n/F1 10 Tf\n";
-
-    // Title on first page
-    if (p === 0) {
-      streamContent += `${margin} ${pageHeight - margin + 5} Td\n/F1 14 Tf\n(${sanitize(title)}) Tj\n`;
-      streamContent += `0 -${lineHeight * 2} Td\n/F1 10 Tf\n`;
-    } else {
-      streamContent += `${margin} ${pageHeight - margin} Td\n`;
-    }
-
-    for (let l = 0; l < pageLines.length; l++) {
-      const line = sanitize(pageLines[l]);
-      // Escape PDF special chars
-      const escaped = line.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-      if (l === 0 && p === 0) {
-        streamContent += `(${escaped}) Tj\n`;
-      } else {
-        streamContent += `0 -${lineHeight} Td\n(${escaped}) Tj\n`;
+  const drawText = (text: string, x: number, yp: number, options: { font?: any; size?: number; color?: any; maxWidth?: number } = {}) => {
+    const f = options.font || font;
+    const s = options.size || 8;
+    const c = options.color || textDark;
+    let t = text || "";
+    if (options.maxWidth) {
+      while (f.widthOfTextAtSize(t, s) > options.maxWidth && t.length > 3) {
+        t = t.substring(0, t.length - 4) + "...";
       }
     }
-    streamContent += "ET\n";
+    page.drawText(t, { x, y: yp, size: s, font: f, color: c });
+  };
 
-    const streamBytes = new TextEncoder().encode(streamContent);
-    const contentObjNum = 4 + p * 2 + 1;
-    const pageObjNum = 4 + p * 2;
+  const drawRect = (x: number, yp: number, w: number, h: number, options: { fill?: any; border?: any; borderWidth?: number } = {}) => {
+    if (options.fill) page.drawRectangle({ x, y: yp, width: w, height: h, color: options.fill });
+    if (options.border) page.drawRectangle({ x, y: yp, width: w, height: h, borderColor: options.border, borderWidth: options.borderWidth || 0.5 });
+  };
 
-    // Content stream object
-    addObj(`${contentObjNum} 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n${streamContent}endstream\nendobj\n`);
+  const drawLine = (x1: number, y1: number, x2: number, y2: number, color = borderLight, width = 0.3) => {
+    page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, color, thickness: width });
+  };
 
-    // Page object
-    addObj(`${pageObjNum} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Contents ${contentObjNum} 0 R /Resources << /Font << /F1 3 0 R >> >> >>\nendobj\n`);
+  // ═══ HEADER — Top accent + company info ═══
+  drawRect(M, y - 2.5, CW, 2.5, { fill: primary });
+  y -= 2.5;
+
+  const headerH = 32;
+  drawRect(M, y - headerH, CW, headerH, { fill: white, border: borderLight });
+
+  // Company name
+  drawText(data.orgName, M + 8, y - 12, { font: fontBold, size: 14, color: textDark });
+
+  // Company details
+  const line1Parts: string[] = [];
+  if (data.orgCnpj) line1Parts.push(`CNPJ: ${data.orgCnpj}`);
+  if (data.orgPhone) line1Parts.push(data.orgPhone);
+  if (data.orgEmail) line1Parts.push(data.orgEmail);
+  if (line1Parts.length) drawText(line1Parts.join("  ·  "), M + 8, y - 20, { size: 7.5, color: textMuted });
+
+  if (data.orgAddress) drawText(data.orgAddress, M + 8, y - 27, { size: 7.5, color: textMuted, maxWidth: CW - 16 });
+
+  y -= headerH + 5;
+
+  // ═══ DOCUMENT TITLE ═══
+  const titleH = 16;
+  drawRect(M, y - titleH, CW, titleH, { fill: primary });
+  drawRect(M, y - titleH, CW, 2, { fill: primaryDark });
+
+  drawText(`${data.docType}  Nº ${data.osNumber}`, M + 8, y - 11.5, { font: fontBold, size: 15, color: white });
+  drawText(data.scheduledDate, M + CW - 8 - font.widthOfTextAtSize(data.scheduledDate, 9), y - 11.5, { size: 9, color: white });
+
+  y -= titleH + 6;
+
+  // ═══ SECTION TITLE helper ═══
+  const drawSectionTitle = (title: string) => {
+    ensureSpace(14);
+    y -= 3;
+    drawRect(M, y - 8, 3, 8, { fill: primary });
+    drawRect(M + 3, y - 8, CW - 3, 8, { fill: primaryLight });
+    drawRect(M, y - 8, CW, 8, { border: borderLight });
+    drawText(title, M + 7, y - 6, { font: fontBold, size: 9, color: primary });
+    y -= 10;
+  };
+
+  // ═══ CLIENT DATA ═══
+  drawSectionTitle("DADOS DO CLIENTE");
+
+  const fieldRows = [
+    [["Cliente:", data.clientName], ["CNPJ/CPF:", data.clientDocument || "—"]],
+    [["Endereço:", data.clientAddress || "—"], ["CEP:", data.clientZip || "—"]],
+    [["Cidade:", data.clientCity || "—"], ["Estado:", data.clientState || "—"]],
+    [["Telefone:", data.clientPhone || "—"], ["E-mail:", data.clientEmail || "—"]],
+  ];
+
+  const rowH = 10;
+  const boxH = fieldRows.length * rowH;
+  ensureSpace(boxH + 4);
+
+  drawRect(M, y - boxH, CW, boxH, { border: borderLight });
+  drawLine(M + CW / 2, y, M + CW / 2, y - boxH);
+
+  fieldRows.forEach((row, i) => {
+    if (i > 0) drawLine(M, y - i * rowH, M + CW, y - i * rowH);
+    const ty = y - i * rowH - 7;
+
+    // Left field
+    const [lLabel, lVal] = row[0];
+    drawText(lLabel, M + 4, ty, { font: fontBold, size: 7.5, color: textMuted });
+    const lw = fontBold.widthOfTextAtSize(lLabel, 7.5);
+    drawText(lVal, M + 4 + lw + 3, ty, { size: 8, color: textDark, maxWidth: CW / 2 - lw - 12 });
+
+    // Right field
+    const [rLabel, rVal] = row[1];
+    const rx = M + CW / 2 + 4;
+    drawText(rLabel, rx, ty, { font: fontBold, size: 7.5, color: textMuted });
+    const rw = fontBold.widthOfTextAtSize(rLabel, 7.5);
+    drawText(rVal, rx + rw + 3, ty, { size: 8, color: textDark, maxWidth: CW / 2 - rw - 12 });
+  });
+
+  y -= boxH + 5;
+
+  // ═══ EQUIPMENT ═══
+  if (data.equipment.length > 0) {
+    drawSectionTitle("EQUIPAMENTOS");
+
+    const eqHeaderH = 13;
+    const cols = [CW * 0.35, CW * 0.25, CW * 0.25, CW * 0.15];
+    const colHeaders = ["EQUIPAMENTO", "MARCA", "MODELO", "SÉRIE"];
+
+    for (const eq of data.equipment) {
+      ensureSpace(eqHeaderH + 4);
+
+      drawRect(M, y - eqHeaderH, CW, eqHeaderH, { fill: rowEven, border: borderLight });
+
+      // Column headers
+      let cx = M;
+      colHeaders.forEach((h, i) => {
+        drawText(h, cx + 3, y - 4, { font: fontBold, size: 6.5, color: textMuted });
+        cx += cols[i];
+      });
+
+      // Column values
+      cx = M;
+      const vals = [eq.type || "—", eq.brand || "—", eq.model || "—", eq.serial || "—"];
+      vals.forEach((v, i) => {
+        drawText(v, cx + 3, y - 10, { size: 8, color: textDark, maxWidth: cols[i] - 6 });
+        cx += cols[i];
+      });
+
+      // Vertical lines
+      let lx = M;
+      for (let i = 0; i < cols.length - 1; i++) {
+        lx += cols[i];
+        drawLine(lx, y, lx, y - eqHeaderH);
+      }
+
+      y -= eqHeaderH + 3;
+    }
+    y -= 2;
   }
 
-  const totalObjects = objects.length;
-  const xrefOffset = currentOffset + header.length;
+  // ═══ DESCRIPTION ═══
+  if (data.description && data.description !== "-") {
+    drawSectionTitle("DESCRIÇÃO DO SERVIÇO");
+    const descLines = wrapText(data.description, font, 8, CW - 10);
+    const descH = Math.max(descLines.length * 12 + 8, 18);
+    ensureSpace(descH + 2);
 
-  // Build xref
-  let xref = `xref\n0 ${totalObjects + 1}\n0000000000 65535 f \n`;
-  for (const off of offsets) {
-    xref += `${String(off + header.length).padStart(10, "0")} 00000 n \n`;
+    drawRect(M, y - descH, CW, descH, { fill: rowEven, border: borderLight });
+    descLines.forEach((line, i) => {
+      drawText(line, M + 5, y - 8 - i * 12, { size: 8, color: textDark });
+    });
+    y -= descH + 4;
   }
 
-  const trailer = `trailer\n<< /Size ${totalObjects + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  // ═══ SERVICES TABLE ═══
+  drawSectionTitle("SERVIÇOS E PEÇAS");
 
-  const fullPdf = header + objects.join("") + xref + trailer;
-  return new TextEncoder().encode(fullPdf);
+  // Table header
+  const tColW = [30, CW * 0.38, 40, 65, 50, CW - 30 - CW * 0.38 - 40 - 65 - 50];
+  const tHeaders = ["#", "DESCRIÇÃO", "QTD", "VR. UNIT.", "DESC.", "SUBTOTAL"];
+  const thH = 10;
+
+  const drawTableHeader = () => {
+    drawRect(M, y - thH, CW, thH, { fill: primary });
+    let tx = M;
+    tHeaders.forEach((h, i) => {
+      drawText(h, tx + 3, y - 7, { font: fontBold, size: 7, color: white });
+      tx += tColW[i];
+    });
+    y -= thH;
+  };
+
+  drawTableHeader();
+
+  let grandTotal = 0;
+  let totalDiscount = 0;
+
+  if (data.items.length > 0) {
+    data.items.forEach((item, idx) => {
+      const disc = item.discount || 0;
+      const itemTotal = item.quantity * item.unitPrice - disc;
+      grandTotal += itemTotal;
+      totalDiscount += disc;
+
+      const trH = 10;
+      ensureSpace(trH);
+
+      if (idx % 2 === 0) drawRect(M, y - trH, CW, trH, { fill: rowEven });
+      drawLine(M, y - trH, M + CW, y - trH, borderLight, 0.1);
+
+      const midY = y - 7;
+      let tx = M;
+
+      drawText(String(idx + 1), tx + 3, midY, { size: 7.5, color: textDark });
+      tx += tColW[0];
+
+      drawText(item.description, tx + 3, midY, { font: fontBold, size: 7.5, color: textDark, maxWidth: tColW[1] - 6 });
+      tx += tColW[1];
+
+      drawText(item.quantity.toFixed(2).replace(".", ","), tx + 3, midY, { size: 7.5, color: textDark });
+      tx += tColW[2];
+
+      drawText(formatBRL(item.unitPrice), tx + 3, midY, { size: 7.5, color: textDark });
+      tx += tColW[3];
+
+      drawText(disc > 0 ? formatBRL(disc) : "—", tx + 3, midY, { size: 7.5, color: textDark });
+      tx += tColW[4];
+
+      drawText(formatBRL(itemTotal), tx + 3, midY, { font: fontBold, size: 7.5, color: textDark });
+
+      y -= trH;
+    });
+  } else {
+    const trH = 10;
+    drawRect(M, y - trH, CW, trH, { fill: rowEven });
+    drawText("Nenhum item cadastrado", M + 5, y - 7, { size: 7.5, color: textMuted });
+    y -= trH;
+    grandTotal = data.value || 0;
+  }
+
+  // Total box
+  ensureSpace(20);
+  y -= 4;
+  const totalW = 140;
+  const totalX = M + CW - totalW;
+  const totalBoxH = 16;
+  drawRect(totalX, y - totalBoxH, totalW, totalBoxH, { fill: totalBg });
+  drawText("TOTAL", totalX + 8, y - 11, { font: fontBold, size: 13, color: white });
+  const totalStr = formatBRL(grandTotal);
+  const totalStrW = fontBold.widthOfTextAtSize(totalStr, 13);
+  drawText(totalStr, totalX + totalW - 8 - totalStrW, y - 11, { font: fontBold, size: 13, color: white });
+  y -= totalBoxH + 6;
+
+  // ═══ PAYMENT ═══
+  if (data.paymentMethod) {
+    drawSectionTitle("DADOS DO PAGAMENTO");
+    const payH = 14;
+    ensureSpace(payH);
+    drawRect(M, y - payH, CW, payH, { fill: primaryLight, border: primary });
+    drawRect(M, y - payH, 3, payH, { fill: primary });
+
+    drawText("Forma de pagamento:", M + 8, y - 9, { font: fontBold, size: 7.5, color: textMuted });
+    const pmLabelW = fontBold.widthOfTextAtSize("Forma de pagamento:", 7.5);
+    drawText(data.paymentMethod, M + 8 + pmLabelW + 3, y - 9, { size: 8, color: textDark });
+
+    y -= payH + 4;
+  }
+
+  // ═══ NOTES ═══
+  if (data.notes) {
+    drawSectionTitle("OBSERVAÇÕES");
+    const noteLines = wrapText(data.notes, font, 8, CW - 14);
+    const noteH = Math.max(noteLines.length * 12 + 8, 18);
+    ensureSpace(noteH);
+
+    drawRect(M, y - noteH, CW, noteH, { fill: rgb(1, 252 / 255, 240 / 255), border: rgb(230 / 255, 200 / 255, 100 / 255) });
+    drawRect(M, y - noteH, 3, noteH, { fill: rgb(230 / 255, 180 / 255, 50 / 255) });
+
+    noteLines.forEach((line, i) => {
+      drawText(line, M + 7, y - 8 - i * 12, { size: 8, color: textDark });
+    });
+    y -= noteH + 4;
+  }
+
+  // ═══ SIGNATURES ═══
+  ensureSpace(40);
+  y -= 10;
+  const sigW = 140;
+  const leftSigX = M + 30;
+  const rightSigX = PAGE_W - M - sigW - 30;
+
+  drawText("ASSINATURA DO CLIENTE", leftSigX + sigW / 2 - fontBold.widthOfTextAtSize("ASSINATURA DO CLIENTE", 7) / 2, y, { font: fontBold, size: 7, color: textMuted });
+  drawText("ASSINATURA DA EMPRESA", rightSigX + sigW / 2 - fontBold.widthOfTextAtSize("ASSINATURA DA EMPRESA", 7) / 2, y, { font: fontBold, size: 7, color: textMuted });
+
+  y -= 20;
+  drawLine(leftSigX, y, leftSigX + sigW, y, textMuted, 0.4);
+  drawLine(rightSigX, y, rightSigX + sigW, y, textMuted, 0.4);
+
+  y -= 5;
+  const cNameW = font.widthOfTextAtSize(data.clientName, 8);
+  drawText(data.clientName, leftSigX + sigW / 2 - cNameW / 2, y, { size: 8, color: textMuted });
+  const oNameW = font.widthOfTextAtSize(data.orgName, 8);
+  drawText(data.orgName, rightSigX + sigW / 2 - oNameW / 2, y, { size: 8, color: textMuted });
+
+  // ═══ FOOTER (all pages) ═══
+  const pages = doc.getPages();
+  const footerText = "Documento gerado pela Tecvo · tecvo.com.br";
+  for (let i = 0; i < pages.length; i++) {
+    const p = pages[i];
+    const fy = 20;
+    p.drawLine({ start: { x: M, y: fy + 8 }, end: { x: PAGE_W - M, y: fy + 8 }, color: primary, thickness: 0.4 });
+    p.drawText(footerText, { x: M, y: fy, size: 6.5, font, color: textMuted });
+    const pageLabel = `Página ${i + 1} de ${pages.length}`;
+    const plW = font.widthOfTextAtSize(pageLabel, 6.5);
+    p.drawText(pageLabel, { x: PAGE_W - M - plW, y: fy, size: 6.5, font, color: textMuted });
+  }
+
+  return await doc.save();
+}
+
+/** Word-wrap helper for pdf-lib */
+function wrapText(text: string, pdfFont: any, fontSize: number, maxWidth: number): string[] {
+  const result: string[] = [];
+  const rawLines = text.split("\n");
+  for (const raw of rawLines) {
+    if (!raw.trim()) { result.push(""); continue; }
+    const words = raw.split(" ");
+    let current = "";
+    for (const word of words) {
+      const test = current ? current + " " + word : word;
+      try {
+        if (pdfFont.widthOfTextAtSize(test, fontSize) > maxWidth) {
+          if (current) result.push(current);
+          current = word;
+        } else {
+          current = test;
+        }
+      } catch {
+        current = test;
+      }
+    }
+    if (current) result.push(current);
+  }
+  return result;
 }
 
 // Tools for admin_empresa mode
