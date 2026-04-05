@@ -31,6 +31,27 @@ const corsHeaders = {
 
 // Removed legacy getBrasiliaDate / formatDateISO — now using _shared/timezone.ts
 
+/**
+ * Convert markdown formatting to WhatsApp formatting.
+ * - **bold** → *bold*
+ * - __italic__ or _italic_ stays as _italic_ (WhatsApp uses _ for italic)
+ * - Remove ### headers markers
+ * - Keep emoji and plain text intact
+ */
+function markdownToWhatsApp(text: string): string {
+  return text
+    // Convert **bold** to *bold* (WhatsApp bold)
+    .replace(/\*\*(.+?)\*\*/g, "*$1*")
+    // Convert __text__ to _text_ (WhatsApp italic)
+    .replace(/__(.+?)__/g, "_$1_")
+    // Remove markdown headers (### Header → Header)
+    .replace(/^#{1,6}\s+/gm, "")
+    // Remove markdown horizontal rules
+    .replace(/^---+$/gm, "")
+    // Clean up any triple backticks (code blocks)
+    .replace(/```[\s\S]*?```/g, (match) => match.replace(/```/g, "").trim());
+}
+
 function formatBRL(value: number) {
   return `R$ ${
     value.toLocaleString("pt-BR", {
@@ -4614,9 +4635,9 @@ Você NÃO deve compartilhar:
           }
           if (aiResponse) {
             const outputCheck = validateAIOutput(aiResponse);
-            const safeResponse = outputCheck.safe
+            const safeResponse = markdownToWhatsApp(outputCheck.safe
               ? aiResponse
-              : (outputCheck.sanitizedContent || "");
+              : (outputCheck.sanitizedContent || ""));
             if (!outputCheck.safe) {
               await logOutputViolation(
                 supabase,
@@ -4920,9 +4941,9 @@ Cada "sim" aproxima o lead da decisão final.
           }
           if (aiResponse) {
             const outputCheckLead = validateAIOutput(aiResponse);
-            const safeResponseLead = outputCheckLead.safe
+            const safeResponseLead = markdownToWhatsApp(outputCheckLead.safe
               ? aiResponse
-              : (outputCheckLead.sanitizedContent || "");
+              : (outputCheckLead.sanitizedContent || ""));
             if (!outputCheckLead.safe) {
               await logOutputViolation(
                 supabase,
