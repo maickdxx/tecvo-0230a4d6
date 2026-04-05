@@ -21,6 +21,7 @@ import { type ServiceEquipmentLocal } from "@/hooks/useServiceEquipment";
 import { UpgradeModal } from "@/components/subscription";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useActivationStep } from "@/hooks/useActivationStep";
 
 function getSmartScheduledDate(tz: string): string {
   const todayStr = getTodayInTz(tz);
