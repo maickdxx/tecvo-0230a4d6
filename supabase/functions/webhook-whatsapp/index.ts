@@ -1118,11 +1118,11 @@ Deno.serve(async (req) => {
     console.log("[WEBHOOK-WHATSAPP] Channel type:", channel.channel_type, "| instance:", instance);
 
     // ── Determine mode & target org BEFORE saving contact/message ──
-    const stripCountryCode = (p: string) => (p.startsWith("55") && p.length >= 12 ? p.substring(2) : p);
     const matchesOwner = (sender: string, owner: string | null | undefined) => {
       if (!owner) return false;
       const normalizedOwner = normalizePhone(owner);
-      return sender === normalizedOwner || stripCountryCode(sender) === stripCountryCode(normalizedOwner);
+      // Strict match: only exact normalized phone comparison — no stripCountryCode to avoid collisions
+      return sender === normalizedOwner;
     };
 
     const normalizedSender = normalizePhone(phoneNumber);
