@@ -2034,6 +2034,12 @@ Quando o usuário pedir para criar uma conta bancária ou financeira:
 
           // Fetch conversation history for context
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
+          // Safety net: if the current user message is not in history (race condition / just inserted),
+          // append it so the AI always has the user's latest message as context.
+          const lastHistoryMsg = conversationHistory[conversationHistory.length - 1];
+          if (content && (!lastHistoryMsg || lastHistoryMsg.role !== "user" || !lastHistoryMsg.content.includes(content.trim().substring(0, 30)))) {
+            conversationHistory.push({ role: "user", content: content.trim() });
+          }
           console.log("[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:", conversationHistory.length, "messages. System prompt length:", systemPrompt.length, "chars. Calling AI...");
 
           const startTime = Date.now();
