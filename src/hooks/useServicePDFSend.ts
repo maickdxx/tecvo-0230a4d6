@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useWhatsAppChannels } from "@/hooks/useWhatsAppChannels";
 import { generateServiceOrderPDF } from "@/lib/generateServiceOrderPDF";
+import { formatPaymentMethod } from "@/lib/formatPaymentMethod";
 import { formatDateInTz, formatTimeInTz } from "@/lib/timezone";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { toast } from "sonner";
@@ -38,7 +39,7 @@ export function useServicePDFSend() {
       equipmentBrand: service.equipment_brand || "",
       equipmentModel: service.equipment_model || "",
       solution: service.solution || service.description || "",
-      paymentMethod: service.payment_method || "",
+      paymentMethod: service.payment_method ? formatPaymentMethod(service.payment_method) : "",
       paymentDueDate: service.payment_due_date ? formatDateInTz(service.payment_due_date, tz) : "",
       paymentNotes: service.payment_notes || "",
     };

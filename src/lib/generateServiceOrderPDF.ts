@@ -326,9 +326,27 @@ export async function generateServiceOrderPDF({
     const orgId = service.organization_id;
     if (orgId) {
       const storagePath = `os-pdfs/${orgId}/${service.id}.pdf`;
+      const markerPath = `os-pdfs/${orgId}/${service.id}.official.json`;
       await supabase.storage
         .from("whatsapp-media")
         .upload(storagePath, blob, { contentType: "application/pdf", upsert: true });
+
+      await supabase.storage
+        .from("whatsapp-media")
+        .upload(
+          markerPath,
+          new Blob([
+            JSON.stringify({
+              generator: "official-service-pdf-html",
+              version: 1,
+              document_type: service.document_type || "service_order",
+              service_id: service.id,
+              quote_number: service.quote_number || null,
+              generated_at: new Date().toISOString(),
+            }),
+          ], { type: "application/json" }),
+          { contentType: "application/json", upsert: true }
+        );
     }
   } catch (e) {
     console.warn("[PDF] Failed to upload PDF to storage:", e);

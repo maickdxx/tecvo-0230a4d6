@@ -2759,168 +2759,206 @@ async function executeAdminTool(
     const clientName = serviceData.client?.name || "Cliente";
     const docLabel = serviceData.document_type === "quote" ? "orçamento" : "OS";
 
-    // Use only the official PDF already saved by the system.
-    // Support both the current canonical path and older legacy paths with timestamp suffixes.
+    const { data: itemsData, error: itemsError } = await supabase
+      .from("service_items")
+      .select("id, name, description, quantity, unit_price, discount, discount_type")
+      .eq("service_id", serviceData.id);
+
+    if (itemsError) {
+      console.warn(
+        "[WEBHOOK-WHATSAPP] Failed loading items for official PDF validation:",
+        serviceData.id,
+        itemsError.message,
+      );
+    }
+
+    const officialItems = itemsData || [];
+    const officialTotal = officialItems.reduce((sum: number, item: any) => {
+      const quantity = Number(item.quantity || 0);
+      const unitPrice = Number(item.unit_price || 0);
+      const discount = Number(item.discount || 0);
+      const lineTotal = quantity * unitPrice;
+      const discountAmount = item.discount_type === "percentage"
+        ? lineTotal * (discount / 100)
+        : discount;
+      return sum + Math.max(lineTotal - discountAmount, 0);
+    }, 0);
+
+    const validationState = {
+      hasClient: Boolean(serviceData.client?.name?.trim()),
+      hasQuoteNumber: Number.isFinite(Number(serviceData.quote_number)) && Number(serviceData.quote_number) > 0,
+      hasCoreContent: officialItems.length > 0 || Boolean(String(serviceData.solution || serviceData.description || "").trim()),
+      hasCommercialValue: officialTotal > 0 || Number(serviceData.value || 0) > 0,
+      itemsCount: officialItems.length,
+      officialTotal,
+    };
+
+    if (!validationState.hasClient || !validationState.hasQuoteNumber || !validationState.hasCoreContent || !validationState.hasCommercialValue) {
+      console.warn(
+        "[WEBHOOK-WHATSAPP] Blocking official PDF send due to invalid service data:",
+        JSON.stringify({
+          serviceId: serviceData.id,
+          osNumber,
+          docLabel,
+          validationState,
+        }),
+      );
+      return `Bloqueei o envio da ${docLabel} #${osNumber} porque os dados principais da versão oficial estão incompletos.`;
+    }
+
     const storage = supabase.storage.from("whatsapp-media");
-    const canonicalPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
-    let resolvedPath = canonicalPath;
-    let mediaUrl: string | null = null;
+    const folderPath = `os-pdfs/${organizationId}`;
+    const canonicalPath = `${folderPath}/${serviceData.id}.pdf`;
+    const markerPath = `${folderPath}/${serviceData.id}.official.json`;
+    let resolvedPath: string | null = null;
+    let pdfBlob: Blob | null = null;
+    let pdfSource = "missing";
+    let generatorLabel = "official-service-pdf-storage";
 
-    const { data: canonicalFile, error: canonicalError } = await storage
-      .createSignedUrl(canonicalPath, 900);
+    const { data: markerBlob } = await storage.download(markerPath);
+    const hasOfficialMarker = Boolean(markerBlob);
 
-    if (canonicalFile?.signedUrl && !canonicalError) {
-      mediaUrl = canonicalFile.signedUrl;
-    } else {
-      const folderPath = `os-pdfs/${organizationId}`;
-      const { data: candidateFiles, error: listError } = await storage.list(folderPath, {
-        limit: 100,
-        search: serviceData.id,
-      });
+    const { data: candidateFiles, error: listError } = await storage.list(folderPath, {
+      limit: 100,
+      search: serviceData.id,
+    });
 
-      if (listError) {
-        console.warn(
-          "[WEBHOOK-WHATSAPP] Failed listing legacy PDF candidates for service:",
-          serviceData.id,
-          listError.message,
-        );
-      }
+    if (listError) {
+      console.warn(
+        "[WEBHOOK-WHATSAPP] Failed listing official PDF candidates for service:",
+        serviceData.id,
+        listError.message,
+      );
+    }
 
-      const legacyFile = (candidateFiles || [])
-        .filter((file: any) => typeof file?.name === "string")
-        .filter((file: any) => {
-          const name = String(file.name);
-          return (
-            name.endsWith(".pdf") &&
-            !name.endsWith("_fallback.pdf") &&
-            (name === `${serviceData.id}.pdf` || name.startsWith(`${serviceData.id}_`))
-          );
-        })
-        .sort((a: any, b: any) => {
-          const aTime = new Date(a.created_at || a.updated_at || 0).getTime();
-          const bTime = new Date(b.created_at || b.updated_at || 0).getTime();
-          return bTime - aTime;
-        })[0];
+    const legacyOfficialFile = (candidateFiles || [])
+      .filter((file: any) => typeof file?.name === "string")
+      .filter((file: any) => {
+        const name = String(file.name);
+        return name.endsWith(".pdf") && !name.endsWith("_fallback.pdf") && name.startsWith(`${serviceData.id}_`);
+      })
+      .sort((a: any, b: any) => {
+        const aTime = new Date(a.created_at || a.updated_at || 0).getTime();
+        const bTime = new Date(b.created_at || b.updated_at || 0).getTime();
+        return bTime - aTime;
+      })[0];
 
-      if (legacyFile?.name) {
-        resolvedPath = `${folderPath}/${legacyFile.name}`;
-        const { data: legacySigned, error: legacyError } = await storage
-          .createSignedUrl(resolvedPath, 900);
+    const { data: canonicalBlob, error: canonicalDownloadError } = await storage.download(canonicalPath);
+    const hasCanonicalPdf = Boolean(canonicalBlob && !canonicalDownloadError);
 
-        if (legacySigned?.signedUrl && !legacyError) {
-          mediaUrl = legacySigned.signedUrl;
+    if (hasOfficialMarker && hasCanonicalPdf) {
+      resolvedPath = canonicalPath;
+      pdfBlob = canonicalBlob;
+      pdfSource = "canonical_verified";
+    } else if (legacyOfficialFile?.name) {
+      const legacyPath = `${folderPath}/${legacyOfficialFile.name}`;
+      const { data: legacyBlob, error: legacyDownloadError } = await storage.download(legacyPath);
+
+      if (legacyBlob && !legacyDownloadError) {
+        resolvedPath = legacyPath;
+        pdfBlob = legacyBlob;
+        pdfSource = "legacy_official";
+
+        const { error: copyError } = await storage.copy(legacyPath, canonicalPath);
+        if (!copyError) {
+          resolvedPath = canonicalPath;
+          pdfSource = "legacy_canonicalized";
+          const { data: copiedBlob } = await storage.download(canonicalPath);
+          if (copiedBlob) {
+            pdfBlob = copiedBlob;
+          }
+          const markerPayload = new Blob([
+            JSON.stringify({
+              generator: "official-service-pdf-html",
+              version: 1,
+              document_type: serviceData.document_type || "service_order",
+              service_id: serviceData.id,
+              quote_number: serviceData.quote_number || null,
+              source: "legacy_official",
+              canonicalized_at: new Date().toISOString(),
+            }),
+          ], { type: "application/json" });
+          const { error: markerUploadError } = await storage.upload(markerPath, markerPayload, {
+            contentType: "application/json",
+            upsert: true,
+          });
+          if (markerUploadError) {
+            console.warn(
+              "[WEBHOOK-WHATSAPP] Failed to write official PDF marker after canonicalization:",
+              serviceData.id,
+              markerUploadError.message,
+            );
+          }
         } else {
           console.warn(
-            "[WEBHOOK-WHATSAPP] Failed signing legacy stored PDF for service:",
+            "[WEBHOOK-WHATSAPP] Failed to canonicalize legacy official PDF:",
             serviceData.id,
-            "path:",
-            resolvedPath,
-            "error:",
-            legacyError?.message || legacyError,
+            copyError.message,
           );
         }
       }
+    } else if (hasCanonicalPdf) {
+      resolvedPath = canonicalPath;
+      pdfBlob = canonicalBlob;
+      pdfSource = "canonical_unverified";
+      generatorLabel = "official-service-pdf-storage-unverified";
     }
 
-    if (!mediaUrl) {
-      console.log(
-        "[WEBHOOK-WHATSAPP] Official stored PDF not found, generating fallback for service:",
-        serviceData.id,
+    if (!resolvedPath || !pdfBlob) {
+      console.warn(
+        "[WEBHOOK-WHATSAPP] Blocking send because no official stored PDF was found:",
+        JSON.stringify({ serviceId: serviceData.id, osNumber, docLabel, canonicalPath }),
       );
-
-      // Fallback: generate PDF on-demand using pdf-lib
-      try {
-        // Fetch org info
-        const { data: orgData } = await supabase
-          .from("organizations")
-          .select("name, cnpj_cpf, phone, email, address, website, logo_url")
-          .eq("id", organizationId)
-          .single();
-
-        // Fetch items
-        const { data: itemsData } = await supabase
-          .from("service_items")
-          .select("*")
-          .eq("service_id", serviceData.id);
-
-        // Fetch equipment
-        const { data: eqData } = await supabase
-          .from("service_equipment")
-          .select("*")
-          .eq("service_id", serviceData.id);
-
-        const pdfBytes = await generateProfessionalPDF({
-          docType,
-          osNumber,
-          orgName: orgData?.name || "",
-          orgCnpj: orgData?.cnpj_cpf || undefined,
-          orgPhone: orgData?.phone || undefined,
-          orgEmail: orgData?.email || undefined,
-          orgAddress: orgData?.address || undefined,
-          orgWebsite: orgData?.website || undefined,
-          orgLogoUrl: orgData?.logo_url || undefined,
-          clientName,
-          clientPhone: serviceData.client?.phone || undefined,
-          clientEmail: serviceData.client?.email || undefined,
-          clientDocument: serviceData.client?.document || undefined,
-          clientAddress: [serviceData.client?.street, serviceData.client?.number, serviceData.client?.complement, serviceData.client?.neighborhood].filter(Boolean).join(", ") || undefined,
-          clientCity: serviceData.client?.city || undefined,
-          clientState: serviceData.client?.state || undefined,
-          clientZip: serviceData.client?.zip_code || undefined,
-          scheduledDate: serviceData.scheduled_date || "",
-          entryDate: serviceData.entry_date || undefined,
-          exitDate: serviceData.exit_date || undefined,
-          serviceType: serviceData.service_type || "",
-          description: serviceData.description || "",
-          value: serviceData.value || 0,
-          status: serviceData.status || "",
-          notes: serviceData.notes || undefined,
-          paymentMethod: serviceData.payment_method || undefined,
-          paymentDueDate: serviceData.payment_due_date || undefined,
-          paymentNotes: serviceData.payment_notes || undefined,
-          equipment: (eqData || []).map((e: any) => ({
-            type: e.name, brand: e.brand, model: e.model, serial: e.serial_number,
-            conditions: e.conditions, defects: e.defects, solution: e.solution,
-            technical_report: e.technical_report, warranty_terms: e.warranty_terms,
-          })),
-          items: (itemsData || []).map((i: any) => ({
-            name: i.name, description: i.description, quantity: i.quantity || 1,
-            unitPrice: i.unit_price || 0, discount: i.discount || 0,
-          })),
-        });
-
-        // Upload the fallback PDF to storage
-        const fallbackBlob = new Blob([pdfBytes], { type: "application/pdf" });
-        const { error: uploadErr } = await supabase.storage
-          .from("whatsapp-media")
-          .upload(canonicalPath, fallbackBlob, { contentType: "application/pdf", upsert: true });
-
-        if (uploadErr) {
-          console.error("[WEBHOOK-WHATSAPP] Fallback PDF upload error:", uploadErr.message);
-        } else {
-          console.log("[WEBHOOK-WHATSAPP] Fallback PDF uploaded to:", canonicalPath);
-        }
-
-        // Get signed URL for the just-uploaded file
-        const { data: fallbackSigned } = await storage.createSignedUrl(canonicalPath, 900);
-        if (fallbackSigned?.signedUrl) {
-          mediaUrl = fallbackSigned.signedUrl;
-          resolvedPath = canonicalPath;
-        }
-      } catch (fallbackErr: any) {
-        console.error("[WEBHOOK-WHATSAPP] Fallback PDF generation failed:", fallbackErr.message);
-      }
+      return `Não encontrei o PDF oficial da ${docLabel} #${osNumber} salvo no sistema. Não vou enviar cópia alternativa nem template paralelo.`;
     }
 
-    if (!mediaUrl) {
-      return `Não consegui gerar o PDF da ${docLabel} #${osNumber}. Tente abrir a ${docLabel} no painel para gerar o PDF primeiro.`;
+    const pdfBytes = new Uint8Array(await pdfBlob.arrayBuffer());
+    const pdfHeader = new TextDecoder().decode(pdfBytes.slice(0, 5));
+    if (!pdfHeader.startsWith("%PDF-") || pdfBytes.byteLength < 1024) {
+      console.warn(
+        "[WEBHOOK-WHATSAPP] Blocking send because official stored PDF failed integrity validation:",
+        JSON.stringify({
+          serviceId: serviceData.id,
+          osNumber,
+          docLabel,
+          resolvedPath,
+          pdfSource,
+          sizeBytes: pdfBytes.byteLength,
+          header: pdfHeader,
+        }),
+      );
+      return `Bloqueei o envio da ${docLabel} #${osNumber} porque o arquivo oficial salvo está corrompido ou incompleto.`;
+    }
+
+    const { data: signedFile, error: signedError } = await storage.createSignedUrl(resolvedPath, 900);
+    const mediaUrl = signedFile?.signedUrl || null;
+
+    if (!mediaUrl || signedError) {
+      console.warn(
+        "[WEBHOOK-WHATSAPP] Failed signing official stored PDF:",
+        JSON.stringify({
+          serviceId: serviceData.id,
+          osNumber,
+          docLabel,
+          resolvedPath,
+          error: signedError?.message || signedError,
+        }),
+      );
+      return `Encontrei o PDF oficial da ${docLabel} #${osNumber}, mas não consegui preparar o envio agora.`;
     }
 
     console.log(
-      "[WEBHOOK-WHATSAPP] Using stored official PDF for service:",
-      serviceData.id,
-      "path:",
-      resolvedPath,
+      "[WEBHOOK-WHATSAPP] Official PDF resolved for send:",
+      JSON.stringify({
+        serviceId: serviceData.id,
+        osNumber,
+        docLabel,
+        source: pdfSource,
+        generator: generatorLabel,
+        hasOfficialMarker,
+        path: resolvedPath,
+        sizeBytes: pdfBytes.byteLength,
+      }),
     );
 
     // Send PDF via Evolution API
