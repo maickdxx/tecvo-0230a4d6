@@ -51,11 +51,11 @@ export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote
     const parts = [
       service.service_street,
       service.service_number,
+      service.service_complement,
       service.service_neighborhood,
       service.service_city,
       service.service_state,
-    ].filter(Boolean);
-    return parts.join(", ");
+    ].filter(Boolean).join(", ");
   };
 
   const openInMaps = (e: React.MouseEvent) => {
