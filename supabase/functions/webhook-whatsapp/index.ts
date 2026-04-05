@@ -1863,7 +1863,21 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
           });
 
           if (!aiResponse) {
-            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for admin_empresa. No reply sent.");
+            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for admin_empresa. Sending fallback.");
+            const fallbackMsg = "Desculpe, não consegui processar sua mensagem no momento. Tente novamente em instantes. 🙏";
+            const fbMsgId = `ai_fallback_${crypto.randomUUID()}`;
+            await supabase.from("whatsapp_messages").insert({
+              organization_id: targetOrganizationId,
+              contact_id: contactId,
+              message_id: fbMsgId,
+              content: fallbackMsg,
+              is_from_me: true,
+              status: "sent",
+              channel_id: channel.id,
+              ai_generated: true,
+            });
+            await sendWhatsAppReply(instance, remoteJid, fallbackMsg);
+            console.log("[WEBHOOK-WHATSAPP] Fallback reply sent for admin_empresa.");
           }
           if (aiResponse) {
             // Output validation filter
