@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import type { Service } from "@/hooks/useServices";
 import type { ServiceItem } from "@/hooks/useServiceItems";
 import { trackFBCustomEvent } from "@/lib/fbPixel";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ServiceOrderData {
   entryDate: string;
@@ -714,6 +715,20 @@ export async function generateServiceOrderPDF({
 
   // ── Output ──
   const fileName = `OS-${osNumber}-${(service.client?.name || "cliente").replace(/\s+/g, "_")}.pdf`;
+
+  // Always upload a copy to storage so Laura can send the exact same PDF
+  try {
+    const blob = doc.output("blob");
+    const orgId = service.organization_id;
+    if (orgId) {
+      const storagePath = `os-pdfs/${orgId}/${service.id}.pdf`;
+      await supabase.storage
+        .from("whatsapp-media")
+        .upload(storagePath, blob, { contentType: "application/pdf", upsert: true });
+    }
+  } catch (e) {
+    console.warn("[PDF] Failed to upload PDF to storage:", e);
+  }
 
   if (returnBlob) {
     return doc.output("blob");
