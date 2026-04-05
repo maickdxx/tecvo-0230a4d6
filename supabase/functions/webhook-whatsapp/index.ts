@@ -2622,16 +2622,21 @@ async function executeAdminTool(
       return `Não encontrei nenhuma OS ou orçamento com "${identifier}". Verifique o número ou nome do cliente.`;
     }
 
-    // Fetch org data, service items, and equipment in parallel
-    const [orgResult, itemsResult, equipResult] = await Promise.all([
-      supabase.from("organizations").select("name, cnpj_cpf, phone, email, address, logo_url, city, state, zip_code").eq("id", organizationId).single(),
+    // Fetch org data, service items, equipment, and signature in parallel
+    const [orgResult, itemsResult, equipResult, sigResult] = await Promise.all([
+      supabase.from("organizations").select("name, cnpj_cpf, phone, email, address, logo_url, city, state, zip_code, website, signature_url, auto_signature_os").eq("id", organizationId).single(),
       supabase.from("service_items").select("*").eq("service_id", serviceData.id).order("created_at"),
       supabase.from("service_equipment").select("*").eq("service_id", serviceData.id).order("created_at"),
+      supabase.from("service_signatures").select("signature_url").eq("service_id", serviceData.id).maybeSingle(),
     ]);
 
     const orgData = orgResult.data;
     const serviceItems = itemsResult.data || [];
     const equipment = equipResult.data || [];
+
+    // Calculate real value from items (same logic as the app)
+    const itemsTotal = serviceItems.reduce((sum: number, item: any) => sum + ((item.quantity || 1) * (item.unit_price || 0)), 0);
+    const finalValue = itemsTotal > 0 ? itemsTotal : (serviceData.value || 0);
 
     const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
     const docType = serviceData.document_type === "quote" ? "ORÇAMENTO" : "ORDEM DE SERVIÇO";
@@ -2639,6 +2644,10 @@ async function executeAdminTool(
 
     // Build client address
     const cAddr = [serviceData.service_street || serviceData.client?.street, serviceData.service_number || serviceData.client?.number, serviceData.client?.complement, serviceData.client?.neighborhood].filter(Boolean).join(", ");
+
+    // Format dates
+    const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("pt-BR") : "-";
+    const fmtTime = (d: string | null) => d ? new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
 
     try {
       const pdfBytes = await generateProfessionalPDF({
@@ -2657,10 +2666,10 @@ async function executeAdminTool(
         clientCity: serviceData.service_city || serviceData.client?.city || undefined,
         clientState: serviceData.service_state || serviceData.client?.state || undefined,
         clientZip: serviceData.service_zip_code || serviceData.client?.zip_code || undefined,
-        scheduledDate: serviceData.scheduled_date ? new Date(serviceData.scheduled_date).toLocaleDateString("pt-BR") : "-",
+        scheduledDate: fmtDate(serviceData.scheduled_date),
         serviceType: serviceData.service_type || "-",
-        description: serviceData.description || "",
-        value: serviceData.value || 0,
+        description: serviceData.solution || serviceData.description || "",
+        value: finalValue,
         status: serviceData.status || "-",
         notes: serviceData.notes || undefined,
         paymentMethod: serviceData.payment_method || undefined,
