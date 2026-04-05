@@ -197,6 +197,14 @@ const App = () => (
               }
             />
             <Route
+              path="/real-estate-dashboard"
+              element={
+                <ProtectedRoute>
+                  <RealEstateDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/financeiro"
               element={
                 <ProtectedRoute>
