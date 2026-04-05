@@ -4842,6 +4842,7 @@ Você NÃO deve compartilhar:
             return null;
           };
 
+          const recentUserMessages = conversationHistory
             .filter((message: any) => message.role === "user")
             .slice(-6)
             .map((message: any) => message.content || "");
