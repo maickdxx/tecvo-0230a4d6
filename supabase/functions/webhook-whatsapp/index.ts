@@ -5044,13 +5044,54 @@ Você NÃO deve compartilhar:
           } else if (wantsPdfNow && pdfToolResult && !pdfToolSent) {
             aiResponse = pdfToolResult;
           } else if (
-            wantsPdfNow &&
             !pdfToolAttempted &&
             looksLikePdfSentConfirmation(aiResponse)
           ) {
-            aiResponse = fallbackPdfIdentifier
-              ? "Tive um problema ao concluir o envio do PDF. Me peça novamente que eu envio com o anexo certo."
-              : "Me passe o número da OS ou o nome do cliente para eu enviar o PDF certinho.";
+            // AI hallucinated sending a PDF without calling the tool
+            // Try to extract identifier from the AI response and force-send
+            const hallIdentifier = fallbackPdfIdentifier || extractServiceIdentifierFromAIResponse(aiResponse);
+            console.warn(
+              "[WEBHOOK-WHATSAPP] AI hallucinated PDF send! pdfToolAttempted:",
+              pdfToolAttempted,
+              "wantsPdfNow:",
+              wantsPdfNow,
+              "hallIdentifier:",
+              hallIdentifier,
+            );
+            if (hallIdentifier) {
+              try {
+                const hallToolResult = await executeAdminTool(
+                  supabase,
+                  targetOrganizationId,
+                  {
+                    id: `hall_pdf_${crypto.randomUUID()}`,
+                    type: "function",
+                    function: {
+                      name: "send_service_pdf",
+                      arguments: JSON.stringify({
+                        service_identifier: hallIdentifier,
+                      }),
+                    },
+                  },
+                  { ...orgContext, instance, remoteJid },
+                );
+                console.log("[WEBHOOK-WHATSAPP] Hallucination recovery result:", hallToolResult.slice(0, 200));
+                if (hallToolResult.startsWith("SILENT_PDF_SENT:")) {
+                  const sentLabel = hallToolResult
+                    .replace("SILENT_PDF_SENT:", "")
+                    .replace(/\s+enviado com sucesso!?$/i, "")
+                    .trim();
+                  aiResponse = `Pronto, enviei o PDF da ${sentLabel}.`;
+                } else {
+                  aiResponse = hallToolResult;
+                }
+              } catch (hallErr: any) {
+                console.error("[WEBHOOK-WHATSAPP] Hallucination recovery failed:", hallErr.message);
+                aiResponse = "Tive um problema ao enviar o PDF. Me peça novamente que eu envio.";
+              }
+            } else {
+              aiResponse = "Me passe o número da OS ou o nome do cliente para eu enviar o PDF certinho.";
+            }
           }
 
           // Log AI usage with CORRECT model name
