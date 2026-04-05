@@ -2218,23 +2218,29 @@ Você NÃO deve compartilhar:
           let aiDuration = Date.now() - startTime;
           console.log("[WEBHOOK-WHATSAPP] [DEBUG] AI returned in", aiDuration, "ms. Content length:", aiResult.content?.length, "toolCalls:", aiResult.toolCalls?.length || 0);
 
-          // Handle tool calls (one round)
-          if (aiResult.toolCalls && aiResult.toolCalls.length > 0) {
-            console.log("[WEBHOOK-WHATSAPP] AI requested tool calls:", aiResult.toolCalls.length);
-            const toolMessages: any[] = [...conversationHistory];
+          // Handle tool calls (up to 3 rounds to support client creation → OS creation flow)
+          let toolRound = 0;
+          const maxToolRounds = 3;
+          let toolMessages: any[] = [...conversationHistory];
+
+          while (aiResult.toolCalls && aiResult.toolCalls.length > 0 && toolRound < maxToolRounds) {
+            toolRound++;
+            console.log("[WEBHOOK-WHATSAPP] AI requested tool calls (round", toolRound, "):", aiResult.toolCalls.length);
             // Add assistant message with tool_calls
             toolMessages.push({ role: "assistant", content: aiResult.content || "", tool_calls: aiResult.toolCalls });
 
             for (const tc of aiResult.toolCalls) {
               const toolResult = await executeAdminTool(supabase, targetOrganizationId, tc, orgContext);
-              console.log("[WEBHOOK-WHATSAPP] Tool result:", toolResult);
+              console.log("[WEBHOOK-WHATSAPP] Tool result (round", toolRound, "):", toolResult.slice(0, 200));
               toolMessages.push({ role: "tool", tool_call_id: tc.id, content: toolResult });
             }
 
-            // Second AI call with tool results (no tools this time to force text response)
-            const startTime2 = Date.now();
-            aiResult = await callAI(systemPrompt, toolMessages);
-            aiDuration += Date.now() - startTime2;
+            // Next AI call — allow tools again if we haven't hit the limit, to enable chained operations
+            const allowMoreTools = toolRound < maxToolRounds;
+            const startTimeN = Date.now();
+            aiResult = await callAI(systemPrompt, toolMessages, allowMoreTools ? ADMIN_TOOLS : undefined);
+            aiDuration += Date.now() - startTimeN;
+            console.log("[WEBHOOK-WHATSAPP] AI round", toolRound, "returned. Content length:", aiResult.content?.length, "toolCalls:", aiResult.toolCalls?.length || 0);
           }
 
           const aiResponse = aiResult.content;
