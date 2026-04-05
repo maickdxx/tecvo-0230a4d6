@@ -138,8 +138,9 @@ export function AccountList({
 
   const getStatusWithOverdue = (account: Account): AccountStatus => {
     if (account.status === "pending" && account.due_date) {
-      const dueDate = new Date(account.due_date + "T12:00:00");
-      if (isPast(dueDate) && !isToday(dueDate)) {
+      const todayStr = getTodayInTz(tz);
+      const dueDateStr = account.due_date.substring(0, 10);
+      if (dueDateStr < todayStr) {
         return "overdue";
       }
     }
