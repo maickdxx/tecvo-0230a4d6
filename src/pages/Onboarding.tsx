@@ -298,6 +298,7 @@ export default function Onboarding() {
 
       localStorage.removeItem("tecvo_onboarding_step");
       localStorage.removeItem("tecvo_onboarding_data");
+      localStorage.removeItem("tecvo_onboarding_plan");
       await completeOnboarding();
       localStorage.setItem("tecvo_first_dashboard", "true");
     } catch (err) {
