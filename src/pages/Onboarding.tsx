@@ -29,7 +29,16 @@ export default function Onboarding() {
     startConversation,
   } = useOnboardingChat(userName);
 
-  const [step, setStep] = useState<OnboardingStep>("chat");
+  const [step, setStepRaw] = useState<OnboardingStep>(() => {
+    const saved = localStorage.getItem("tecvo_onboarding_step");
+    if (saved === "whatsapp" || saved === "payment" || saved === "activating") return saved;
+    return "chat";
+  });
+
+  const setStep = (s: OnboardingStep) => {
+    setStepRaw(s);
+    localStorage.setItem("tecvo_onboarding_step", s);
+  };
   const [input, setInput] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [isActivating, setIsActivating] = useState(false);
@@ -177,6 +186,7 @@ export default function Onboarding() {
         });
       }
 
+      localStorage.removeItem("tecvo_onboarding_step");
       await completeOnboarding();
       navigate("/dashboard");
     } catch (err) {
