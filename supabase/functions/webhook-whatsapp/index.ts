@@ -1270,7 +1270,7 @@ function buildSystemPrompt(ctx: any) {
         const details = daySvcs.slice(0, 5).map((s: any) => {
           const client = clients.find((c: any) => c.id === s.client_id);
           const tech = s.assigned_to ? techMap[s.assigned_to] : "—";
-          const time = s.scheduled_date?.substring(11, 16) || "—";
+          const time = s.scheduled_date ? formatTimeInTz(s.scheduled_date, tz) : "—";
           return `    ${time} | ${
             client?.name || "?"
           } | ${s.service_type} | ${tech} | ${
