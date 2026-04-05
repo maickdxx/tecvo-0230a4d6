@@ -157,7 +157,7 @@ async function transcribeAudio(
   try {
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
     const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
+    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY_1") || Deno.env.get("ELEVENLABS_API_KEY");
 
     if (!vpsUrl || !apiKey) {
       console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: missing VPS config");
@@ -239,7 +239,7 @@ async function transcribeAudio(
  */
 async function generateTTSAudio(text: string): Promise<string | null> {
   try {
-    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
+    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY_1") || Deno.env.get("ELEVENLABS_API_KEY");
     if (!elevenLabsKey) {
       console.warn("[WEBHOOK-WHATSAPP] generateTTSAudio: missing ELEVENLABS_API_KEY");
       return null;
