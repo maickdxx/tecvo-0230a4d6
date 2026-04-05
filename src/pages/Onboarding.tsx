@@ -242,14 +242,8 @@ export default function Onboarding() {
 
       localStorage.removeItem("tecvo_onboarding_step");
       await completeOnboarding();
-
-      // Mark first dashboard visit
       localStorage.setItem("tecvo_first_dashboard", "true");
-
-      // Wait 2.5s on transition screen then navigate
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2500);
+      // TransitionScreen component handles the redirect
     } catch (err) {
       console.error("Activation error:", err);
       navigate("/dashboard");
