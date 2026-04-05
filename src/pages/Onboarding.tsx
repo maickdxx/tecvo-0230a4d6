@@ -149,7 +149,7 @@ export default function Onboarding() {
         setWhatsappMessages([
           {
             role: "assistant",
-            content: `${greeting}seu plano já tá ativo! 🎉\n\nAgora me passa seu WhatsApp pra eu te acompanhar por lá também.`
+            content: `${greeting}agora sim, tá tudo ativado! 🎉\n\nMe passa seu WhatsApp pra eu te acompanhar por lá também e te ajudar no dia a dia.`
           }
         ]);
       }, 600);

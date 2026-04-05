@@ -227,7 +227,7 @@ function fallbackContent(messages: ChatMessage[], extractedData: ExtractedData):
 
   if (extractedData.main_service) {
     const companyPart = extractedData.company_name ? ` na ${extractedData.company_name}` : "";
-    return `Pronto! Já organizei ${extractedData.main_service} como seu serviço principal${companyPart}. Agora vamos ativar tudo pra você começar de verdade? 🚀`;
+    return `Boa! Com ${extractedData.main_service}${companyPart}, vou conseguir organizar tudo pra você 💪 Vamos ativar pra eu começar de verdade? 🚀`;
   }
 
   if (extractedData.company_name) {
