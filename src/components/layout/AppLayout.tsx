@@ -109,6 +109,7 @@ function AppLayoutInner({
       
       <DemoTourOverlay />
       {!isMobile && !isSuppressed("info") && <InstallBanner />}
+      <LauraFloatingAssistant />
     </div>
   );
 }
