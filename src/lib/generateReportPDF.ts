@@ -33,6 +33,7 @@ interface ReportPDFData {
     signed_at: string | null;
     ip_address: string | null;
   } | null;
+  returnBlob?: boolean;
 }
 
 async function loadImageAsBase64(url: string): Promise<string | null> {
