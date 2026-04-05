@@ -2783,15 +2783,18 @@ async function executeAdminTool(
 
     // Check if there's a stored PDF from the dashboard first
     const storedPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
-    const { data: storedFile } = await supabase.storage
+    const { data: storedFile, error: storedFileError } = await supabase.storage
       .from("whatsapp-media")
-      .createSignedUrl(storedPath, 300); // 5 min signed URL
+      .createSignedUrl(storedPath, 300);
 
     let publicUrl: string | null = null;
 
-    if (storedFile?.signedUrl) {
-      // Use the stored PDF from the dashboard (exact same PDF the user sees)
-      publicUrl = storedFile.signedUrl;
+    if (storedFile?.signedUrl && !storedFileError) {
+      // Bucket is public — use a stable public URL when the file exists
+      const { data: storedPublicFile } = supabase.storage
+        .from("whatsapp-media")
+        .getPublicUrl(storedPath);
+      publicUrl = storedPublicFile?.publicUrl || storedFile.signedUrl;
       console.log("[WEBHOOK-WHATSAPP] Using stored PDF from dashboard for service:", serviceData.id);
     } else {
       // No stored PDF — generate one as fallback
@@ -4642,6 +4645,9 @@ Quando o usuário pedir para enviar, mandar, ver ou receber o PDF de uma OS ou o
 - Se o resultado começar com "SILENT_PDF_SENT:", significa que o PDF já foi enviado com sucesso. Confirme ao usuário de forma natural: "Pronto, enviei o PDF!"
 - NÃO é necessário pedir confirmação para enviar PDF — envie direto quando solicitado
 - Após criar OS/orçamento e o usuário pedir o PDF, use esta ferramenta imediatamente
+- Se o usuário responder apenas com o número da OS (ex: "100") depois que você pedir identificação, trate isso como suficiente e use a ferramenta
+- NUNCA diga que enviou, mandou ou reenviou um PDF sem a ferramenta send_service_pdf retornar sucesso nesta mesma conversa
+- Se faltar identificador, peça o número da OS ou o nome do cliente. Nunca finja que enviou
 
 ══════════ FLUXO COMPLETO DE ATENDIMENTO ══════════
 
@@ -4684,6 +4690,148 @@ Você NÃO deve compartilhar:
           ) {
             conversationHistory.push({ role: "user", content: content.trim() });
           }
+
+          const currentUserText = content.trim();
+          const normalizeIntentText = (value: string) =>
+            value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+          const extractStrongServiceIdentifier = (value: string) => {
+            const trimmed = value.trim();
+            if (!trimmed) return null;
+            if (/^\d{1,6}$/.test(trimmed)) return trimmed;
+
+            const explicitNumberMatch = trimmed.match(
+              /(?:os|ordem de servi[cç]o|orcamento|orçamento|numero|n[uú]mero|#)\s*[:#-]?\s*(\d{1,6})\b/i,
+            );
+            if (explicitNumberMatch?.[1]) return explicitNumberMatch[1];
+
+            const idMatch = trimmed.match(/\b[a-f0-9]{8}(?:-[a-f0-9-]{4,})?\b/i);
+            if (idMatch?.[0]) return idMatch[0];
+
+            return null;
+          };
+
+          const extractServiceIdentifierFromRequest = (value: string) => {
+            const strongIdentifier = extractStrongServiceIdentifier(value);
+            if (strongIdentifier) return strongIdentifier;
+
+            const cleaned = value
+              .replace(
+                /\b(pdf|ordem de servi[cç]o|orcamento|orçamento|os|manda|mandar|envia|enviar|me|pra|para|favor|por favor|do|da|de|o|a|um|uma|receber|ver|reenvia|reenviar|reenvie|novamente)\b/gi,
+                " ",
+              )
+              .replace(/[#:,.!?-]+/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
+
+            return cleaned.length >= 3 ? cleaned : null;
+          };
+
+          const looksLikePdfRequest = (value: string) => {
+            const normalized = normalizeIntentText(value);
+            const hasDocument =
+              normalized.includes("pdf") ||
+              normalized.includes("ordem de servico") ||
+              normalized.includes("orcamento") ||
+              /(?:^|\s)os(?:\s|$|#)/.test(normalized);
+            const hasAction =
+              normalized.includes("envia") ||
+              normalized.includes("enviar") ||
+              normalized.includes("manda") ||
+              normalized.includes("mandar") ||
+              normalized.includes("receber") ||
+              normalized.includes("reenvia") ||
+              normalized.includes("reenvia") ||
+              normalized.includes("ver");
+
+            return hasDocument && hasAction;
+          };
+
+          const looksLikePdfSentConfirmation = (
+            value: string | null | undefined,
+          ) => {
+            const normalized = normalizeIntentText(value || "");
+            const mentionsDocument =
+              normalized.includes("pdf") ||
+              normalized.includes("ordem de servico") ||
+              normalized.includes("orcamento") ||
+              /(?:^|\s)os(?:\s|$|#)/.test(normalized);
+            const claimsSent =
+              normalized.includes("enviei") ||
+              normalized.includes("mandei") ||
+              normalized.includes("reenviei") ||
+              normalized.includes("foi enviado") ||
+              normalized.includes("ja foi enviado") ||
+              normalized.includes("pronto, enviei") ||
+              normalized.includes("acabei de enviar");
+
+            return mentionsDocument && claimsSent;
+          };
+
+          const recentUserMessages = conversationHistory
+            .filter((message: any) => message.role === "user")
+            .slice(-6)
+            .map((message: any) => message.content || "");
+          const previousUserContext = recentUserMessages.slice(0, -1).join("\n");
+          const previousPdfContext = looksLikePdfRequest(previousUserContext);
+          const lastAssistantMessage = [...conversationHistory]
+            .reverse()
+            .find((message: any) => message.role === "assistant")?.content || "";
+          const normalizedCurrentUserText = normalizeIntentText(currentUserText);
+          const ignoredIdentifierReplies = new Set([
+            "ok",
+            "okay",
+            "sim",
+            "pode",
+            "isso",
+            "essa",
+            "obrigado",
+            "obg",
+            "valeu",
+            "oi",
+            "ola",
+            "bom dia",
+            "boa tarde",
+            "boa noite",
+            "novamente",
+          ]);
+          const currentStrongIdentifier = extractStrongServiceIdentifier(
+            currentUserText,
+          );
+          const currentLooksLikeNameIdentifier =
+            /^[a-z\s]{3,}$/i.test(normalizedCurrentUserText) &&
+            !ignoredIdentifierReplies.has(normalizedCurrentUserText);
+          const assistantAskedForPdfIdentifier = (() => {
+            const normalized = normalizeIntentText(lastAssistantMessage);
+            const askedForIdentifier =
+              normalized.includes("numero da os") ||
+              normalized.includes("nome do cliente") ||
+              normalized.includes("identificador");
+            const mentionsDocument =
+              normalized.includes("pdf") ||
+              normalized.includes("ordem de servico") ||
+              normalized.includes("orcamento") ||
+              /(?:^|\s)os(?:\s|$|#)/.test(normalized);
+
+            return askedForIdentifier && mentionsDocument;
+          })();
+
+          const currentExplicitPdfRequest = looksLikePdfRequest(currentUserText);
+          const wantsPdfNow = currentExplicitPdfRequest ||
+            (
+              previousPdfContext &&
+              assistantAskedForPdfIdentifier &&
+              Boolean(currentStrongIdentifier || currentLooksLikeNameIdentifier)
+            );
+          const fallbackPdfIdentifier = currentExplicitPdfRequest
+            ? extractServiceIdentifierFromRequest(currentUserText)
+            : (
+              previousPdfContext &&
+                assistantAskedForPdfIdentifier
+            )
+            ? (currentStrongIdentifier ||
+              (currentLooksLikeNameIdentifier ? currentUserText : null))
+            : null;
           console.log(
             "[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:",
             conversationHistory.length,
@@ -4712,6 +4860,9 @@ Você NÃO deve compartilhar:
           let toolRound = 0;
           const maxToolRounds = 3;
           let toolMessages: any[] = [...conversationHistory];
+          let pdfToolAttempted = false;
+          let pdfToolSent = false;
+          let pdfToolResult: string | null = null;
 
           while (
             aiResult.toolCalls && aiResult.toolCalls.length > 0 &&
@@ -4732,6 +4883,10 @@ Você NÃO deve compartilhar:
             });
 
             for (const tc of aiResult.toolCalls) {
+              if (tc.function?.name === "send_service_pdf") {
+                pdfToolAttempted = true;
+              }
+
               const toolResult = await executeAdminTool(
                 supabase,
                 targetOrganizationId,
@@ -4744,6 +4899,14 @@ Você NÃO deve compartilhar:
                 "):",
                 toolResult.slice(0, 200),
               );
+
+              if (tc.function?.name === "send_service_pdf") {
+                pdfToolResult = toolResult;
+                if (toolResult.startsWith("SILENT_PDF_SENT:")) {
+                  pdfToolSent = true;
+                }
+              }
+
               toolMessages.push({
                 role: "tool",
                 tool_call_id: tc.id,
@@ -4771,6 +4934,53 @@ Você NÃO deve compartilhar:
           }
 
           let aiResponse = aiResult.content;
+
+          if (wantsPdfNow && !pdfToolAttempted && fallbackPdfIdentifier) {
+            console.warn(
+              "[WEBHOOK-WHATSAPP] AI skipped send_service_pdf; running fallback with identifier:",
+              fallbackPdfIdentifier,
+            );
+            const fallbackToolResult = await executeAdminTool(
+              supabase,
+              targetOrganizationId,
+              {
+                id: `fallback_pdf_${crypto.randomUUID()}`,
+                type: "function",
+                function: {
+                  name: "send_service_pdf",
+                  arguments: JSON.stringify({
+                    service_identifier: fallbackPdfIdentifier,
+                  }),
+                },
+              },
+              { ...orgContext, instance, remoteJid },
+            );
+            pdfToolAttempted = true;
+            pdfToolResult = fallbackToolResult;
+            if (fallbackToolResult.startsWith("SILENT_PDF_SENT:")) {
+              pdfToolSent = true;
+            }
+          }
+
+          if (pdfToolSent && pdfToolResult?.startsWith("SILENT_PDF_SENT:")) {
+            const sentLabel = pdfToolResult
+              .replace("SILENT_PDF_SENT:", "")
+              .replace(/\s+enviado com sucesso!?$/i, "")
+              .trim();
+            if (!aiResponse || !looksLikePdfSentConfirmation(aiResponse)) {
+              aiResponse = `Pronto, enviei o PDF da ${sentLabel}.`;
+            }
+          } else if (wantsPdfNow && pdfToolResult && !pdfToolSent) {
+            aiResponse = pdfToolResult;
+          } else if (
+            wantsPdfNow &&
+            !pdfToolAttempted &&
+            looksLikePdfSentConfirmation(aiResponse)
+          ) {
+            aiResponse = fallbackPdfIdentifier
+              ? "Tive um problema ao concluir o envio do PDF. Me peça novamente que eu envio com o anexo certo."
+              : "Me passe o número da OS ou o nome do cliente para eu enviar o PDF certinho.";
+          }
 
           // Log AI usage with CORRECT model name
           const aiUsage = extractUsageFromResponse({ usage: aiResult.usage });
