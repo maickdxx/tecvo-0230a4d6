@@ -28,7 +28,7 @@ const LauraAvatar = ({ size = "md" }: { size?: "sm" | "md" | "lg" }) => {
 
 function TransitionScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 3000);
+    const t = setTimeout(onDone, 1500);
     return () => clearTimeout(t);
   }, [onDone]);
 
