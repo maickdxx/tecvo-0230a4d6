@@ -145,6 +145,198 @@ async function persistMedia(
   }
 }
 
+/**
+ * Transcribe audio using ElevenLabs Speech-to-Text (Scribe v2).
+ * Downloads the audio from Evolution API first, then sends to ElevenLabs.
+ */
+async function transcribeAudio(
+  instance: string,
+  messageKey: any,
+  mimeType: string | null,
+): Promise<string | null> {
+  try {
+    const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
+    const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
+
+    if (!vpsUrl || !apiKey) {
+      console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: missing VPS config");
+      return null;
+    }
+    if (!elevenLabsKey) {
+      console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: missing ELEVENLABS_API_KEY");
+      return null;
+    }
+
+    // 1. Download audio base64 from Evolution API
+    const baseUrl = vpsUrl.replace(/\/+$/, "");
+    const resp = await fetch(`${baseUrl}/chat/getBase64FromMediaMessage/${instance}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: apiKey },
+      body: JSON.stringify({ message: { key: messageKey }, convertToMp4: false }),
+    });
+
+    if (!resp.ok) {
+      console.error("[WEBHOOK-WHATSAPP] transcribeAudio: getBase64 failed", resp.status);
+      return null;
+    }
+
+    const result = await resp.json();
+    const base64Data = result?.base64 || result?.data || null;
+    const returnedMime = result?.mimetype || result?.mimeType || mimeType || "audio/ogg";
+
+    if (!base64Data || typeof base64Data !== "string") {
+      console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: no base64 data");
+      return null;
+    }
+
+    // Clean base64
+    const cleanBase64 = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data;
+    const binaryString = atob(cleanBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // 2. Send to ElevenLabs STT
+    const baseMime = (returnedMime || "audio/ogg").split(";")[0].trim().toLowerCase();
+    const extMap: Record<string, string> = {
+      "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/wav": "wav", "audio/webm": "webm",
+    };
+    const ext = extMap[baseMime] || "ogg";
+
+    const formData = new FormData();
+    formData.append("file", new Blob([bytes], { type: baseMime }), `audio.${ext}`);
+    formData.append("model_id", "scribe_v2");
+    formData.append("language_code", "por"); // Portuguese
+
+    console.log("[WEBHOOK-WHATSAPP] transcribeAudio: sending to ElevenLabs STT, size:", bytes.length);
+
+    const sttResp = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+      method: "POST",
+      headers: { "xi-api-key": elevenLabsKey },
+      body: formData,
+    });
+
+    if (!sttResp.ok) {
+      const errText = await sttResp.text();
+      console.error("[WEBHOOK-WHATSAPP] transcribeAudio: ElevenLabs STT error", sttResp.status, errText.slice(0, 300));
+      return null;
+    }
+
+    const sttResult = await sttResp.json();
+    const transcription = sttResult?.text?.trim() || null;
+    console.log("[WEBHOOK-WHATSAPP] transcribeAudio: transcription:", transcription?.slice(0, 200));
+    return transcription;
+  } catch (err: any) {
+    console.error("[WEBHOOK-WHATSAPP] transcribeAudio: exception", err.message);
+    return null;
+  }
+}
+
+/**
+ * Generate TTS audio using ElevenLabs and return base64-encoded MP3.
+ */
+async function generateTTSAudio(text: string): Promise<string | null> {
+  try {
+    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
+    if (!elevenLabsKey) {
+      console.warn("[WEBHOOK-WHATSAPP] generateTTSAudio: missing ELEVENLABS_API_KEY");
+      return null;
+    }
+
+    // Laura voice - using "Laura" voice ID from ElevenLabs
+    const voiceId = "FGY2WhTYpPnrIDTdsKH5";
+
+    console.log("[WEBHOOK-WHATSAPP] generateTTSAudio: generating TTS for text length:", text.length);
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": elevenLabsKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_multilingual_v2",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.3,
+            speed: 1.0,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[WEBHOOK-WHATSAPP] generateTTSAudio: ElevenLabs TTS error", response.status, errText.slice(0, 300));
+      return null;
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    // Convert to base64
+    const uint8 = new Uint8Array(audioBuffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8.length; i += chunkSize) {
+      const chunk = uint8.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64Audio = btoa(binary);
+
+    console.log("[WEBHOOK-WHATSAPP] generateTTSAudio: success, audio size:", uint8.length, "bytes");
+    return base64Audio;
+  } catch (err: any) {
+    console.error("[WEBHOOK-WHATSAPP] generateTTSAudio: exception", err.message);
+    return null;
+  }
+}
+
+/**
+ * Send audio message via Evolution API using base64.
+ */
+async function sendWhatsAppAudio(instance: string, remoteJid: string, base64Audio: string): Promise<boolean> {
+  const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
+  const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+
+  if (!vpsUrl || !apiKey) {
+    console.warn("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: missing VPS config");
+    return false;
+  }
+
+  try {
+    const baseUrl = vpsUrl.replace(/\/+$/, "");
+    const response = await fetch(`${baseUrl}/message/sendWhatsAppAudio/${instance}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: apiKey,
+      },
+      body: JSON.stringify({
+        number: remoteJid,
+        audio: `data:audio/mp3;base64,${base64Audio}`,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: error", response.status, errText.slice(0, 200));
+      return false;
+    }
+
+    await response.text();
+    console.log("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: sent successfully");
+    return true;
+  } catch (err: any) {
+    console.error("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: exception", err.message);
+    return false;
+  }
+}
+
 
 async function fetchOrgContext(supabase: any, organizationId: string) {
   const now = new Date();
@@ -2115,7 +2307,32 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4. AI Processing — only for TECVO_AI channel, incoming messages with text
+    // 4. AI Processing — only for TECVO_AI channel, incoming messages with text or audio
+    const isIncomingAudio = !fromMe && mediaType === "audio" && !isGroup && isTecvoAI;
+    const hasTextContent = !fromMe && content && !isGroup && isTecvoAI;
+
+    // Transcribe audio if incoming audio message on TECVO_AI channel
+    if (isIncomingAudio && !content && data?.key) {
+      console.log("[WEBHOOK-WHATSAPP] Incoming audio detected, attempting transcription...");
+      const msg = data.message || {};
+      const audioMime = msg.audioMessage?.mimetype || "audio/ogg";
+      const transcription = await transcribeAudio(instance, data.key, audioMime);
+      if (transcription) {
+        content = transcription;
+        // Update the saved message content with transcription
+        if (savedMsg?.id) {
+          await supabase
+            .from("whatsapp_messages")
+            .update({ content: `🎤 ${transcription}` })
+            .eq("id", savedMsg.id);
+        }
+        console.log("[WEBHOOK-WHATSAPP] Audio transcribed successfully:", transcription.slice(0, 100));
+      } else {
+        console.warn("[WEBHOOK-WHATSAPP] Audio transcription failed, sending text fallback");
+        content = "[Áudio recebido - não foi possível transcrever]";
+      }
+    }
+
     if (!fromMe && content && !isGroup && isTecvoAI) {
       try {
         let systemPrompt: string;
@@ -2300,6 +2517,21 @@ Você NÃO deve compartilhar:
                 });
                 const sent = await sendWhatsAppReply(instance, remoteJid, safeResponse);
                 console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
+
+                // If the incoming message was audio, also send audio response
+                if (isIncomingAudio && safeResponse.length <= 2000) {
+                  (async () => {
+                    try {
+                      const audioBase64 = await generateTTSAudio(safeResponse);
+                      if (audioBase64) {
+                        await sendWhatsAppAudio(instance, remoteJid, audioBase64);
+                        console.log("[WEBHOOK-WHATSAPP] Admin audio reply sent");
+                      }
+                    } catch (ttsErr: any) {
+                      console.warn("[WEBHOOK-WHATSAPP] TTS audio reply failed:", ttsErr.message);
+                    }
+                  })();
+                }
               }
             }
           }
@@ -2426,6 +2658,21 @@ Conduzir uma conversa estratégica e consultiva que qualifique o lead e apresent
                 });
                 const sent = await sendWhatsAppReply(instance, remoteJid, safeResponseLead);
                 console.log("[WEBHOOK-WHATSAPP] Lead reply sent:", sent);
+
+                // If the incoming message was audio, also send audio response
+                if (isIncomingAudio && safeResponseLead.length <= 2000) {
+                  (async () => {
+                    try {
+                      const audioBase64 = await generateTTSAudio(safeResponseLead);
+                      if (audioBase64) {
+                        await sendWhatsAppAudio(instance, remoteJid, audioBase64);
+                        console.log("[WEBHOOK-WHATSAPP] Lead audio reply sent");
+                      }
+                    } catch (ttsErr: any) {
+                      console.warn("[WEBHOOK-WHATSAPP] TTS audio reply failed:", ttsErr.message);
+                    }
+                  })();
+                }
               }
             }
           }
