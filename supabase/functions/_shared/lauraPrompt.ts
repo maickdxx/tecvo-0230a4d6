@@ -612,7 +612,33 @@ export const ADMIN_TOOLS = [
   },
 ];
 
-// ─────────────────── tool executor (shared) ───────────────────
+// ─────────────────── reliability layer ───────────────────
+
+// In-memory error tracking for degradation mode (per isolate)
+const recentToolErrors: { ts: number; tool: string; msg: string }[] = [];
+const MAX_ERROR_HISTORY = 20;
+const DEGRADATION_THRESHOLD = 3; // 3 errors in 10 min → degraded
+const DEGRADATION_WINDOW_MS = 10 * 60 * 1000;
+
+// Risk classification
+const ACTION_RISK: Record<string, "low" | "medium" | "high"> = {
+  register_transaction: "high",
+  create_service: "high",
+  create_quote: "medium",
+  create_client: "medium",
+  create_financial_account: "low",
+};
+
+function isDegradedMode(): boolean {
+  const cutoff = Date.now() - DEGRADATION_WINDOW_MS;
+  const recentErrors = recentToolErrors.filter((e) => e.ts > cutoff);
+  return recentErrors.length >= DEGRADATION_THRESHOLD;
+}
+
+function trackError(tool: string, msg: string) {
+  recentToolErrors.push({ ts: Date.now(), tool, msg });
+  if (recentToolErrors.length > MAX_ERROR_HISTORY) recentToolErrors.shift();
+}
 
 /**
  * Logs a tool execution error to ai_usage_logs for diagnostics.
@@ -624,6 +650,7 @@ async function logToolError(
   errorMessage: string,
   args?: any,
 ): Promise<void> {
+  trackError(toolName, errorMessage);
   try {
     await supabase.from("ai_usage_logs").insert({
       organization_id: organizationId,
@@ -639,6 +666,32 @@ async function logToolError(
     console.error(`[LAURA-TOOL-ERROR] ${toolName} | org=${organizationId} | error=${errorMessage} | args=${JSON.stringify(args || {}).slice(0, 300)}`);
   } catch (logErr) {
     console.error("[LAURA-TOOL-ERROR] Failed to log tool error:", logErr);
+  }
+}
+
+/**
+ * Verifies a record was actually created in the database after insert.
+ */
+async function verifyInsert(
+  supabase: any,
+  table: string,
+  id: string,
+  label: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from(table)
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (error || !data) {
+      console.error(`[LAURA-VERIFY] ${label} id=${id} NOT found after insert. error=${error?.message}`);
+      return `⚠️ A ação foi executada mas não foi possível confirmar o registro no sistema. Verifique manualmente.`;
+    }
+    return null; // OK
+  } catch (e) {
+    console.error(`[LAURA-VERIFY] Verification failed for ${label}:`, e);
+    return null; // Don't block on verification failure
   }
 }
 
@@ -658,6 +711,14 @@ export async function executeAdminTool(
   }
 
   try {
+
+  // Degradation mode check for high-risk actions
+  const risk = ACTION_RISK[fnName] || "medium";
+  if (isDegradedMode() && risk === "high") {
+    console.warn(`[LAURA-DEGRADED] Blocking high-risk action "${fnName}" due to repeated errors`);
+    await logToolError(supabase, organizationId, fnName, "blocked_degraded_mode", args);
+    return `⚠️ Detectei instabilidade recente no sistema. Por segurança, não vou executar "${fnName}" automaticamente agora. Por favor, faça essa ação diretamente no sistema ou tente novamente em alguns minutos.`;
+  }
 
   if (fnName === "register_transaction") {
     const { type, amount, description, category, date, payment_method } = args;
@@ -681,7 +742,7 @@ export async function executeAdminTool(
     const capitalizedDesc = description.charAt(0).toUpperCase() + description.slice(1);
     const taggedDesc = `${capitalizedDesc} (Secretária)`;
 
-    const { error } = await supabase.from("transactions").insert({
+    const { data: inserted, error } = await supabase.from("transactions").insert({
       organization_id: organizationId,
       type,
       amount,
@@ -692,15 +753,19 @@ export async function executeAdminTool(
       status: "pending",
       financial_account_id: accountId,
       ...(payment_method ? { payment_method } : {}),
-    });
+    }).select("id").single();
 
     if (error) {
       console.error("[LAURA] Transaction insert error:", error);
       return `Erro ao registrar: ${error.message}`;
     }
 
+    // Post-action verification
+    const verifyErr = await verifyInsert(supabase, "transactions", inserted.id, "Transaction");
+    if (verifyErr) return verifyErr;
+
     const typeLabel = type === "income" ? "Receita" : "Despesa";
-    return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}.`;
+    return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}. ✅ Confirmado no sistema.`;
   }
 
   if (fnName === "create_financial_account") {
@@ -731,7 +796,11 @@ export async function executeAdminTool(
       .update({ default_ai_account_id: newAccount.id })
       .eq("id", organizationId);
 
-    return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA!`;
+    // Post-action verification
+    const verifyAccErr = await verifyInsert(supabase, "financial_accounts", newAccount.id, "FinancialAccount");
+    if (verifyAccErr) return verifyAccErr;
+
+    return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! Confirmado no sistema.`;
   }
 
   if (fnName === "create_service") {
@@ -797,8 +866,12 @@ export async function executeAdminTool(
       return `Erro ao criar OS: ${error.message}`;
     }
 
+    // Post-action verification
+    const verifySvcErr = await verifyInsert(supabase, "services", newService.id, "Service");
+    if (verifySvcErr) return verifySvcErr;
+
     const dateFormatted = new Date(scheduled_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}`;
+    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}\n✅ Confirmado no sistema.`;
   }
 
   if (fnName === "create_quote") {
@@ -844,7 +917,11 @@ export async function executeAdminTool(
       return `Erro ao criar orçamento: ${error.message}`;
     }
 
-    return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• ID: ${newQuote.id.substring(0, 8)}`;
+    // Post-action verification
+    const verifyQuoteErr = await verifyInsert(supabase, "services", newQuote.id, "Quote");
+    if (verifyQuoteErr) return verifyQuoteErr;
+
+    return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• ID: ${newQuote.id.substring(0, 8)}\n✅ Confirmado no sistema.`;
   }
 
   if (fnName === "create_client") {
@@ -884,7 +961,11 @@ export async function executeAdminTool(
       return `Erro ao cadastrar cliente: ${error.message}`;
     }
 
-    return `✅ Cliente "${newClient.name}" cadastrado com sucesso!`;
+    // Post-action verification
+    const verifyClientErr = await verifyInsert(supabase, "clients", newClient.id, "Client");
+    if (verifyClientErr) return verifyClientErr;
+
+    return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Confirmado no sistema.`;
   }
 
     return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar OS, criar orçamento, criar conta financeira e cadastrar cliente.`;
