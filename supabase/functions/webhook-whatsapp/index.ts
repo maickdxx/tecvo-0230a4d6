@@ -2934,31 +2934,45 @@ async function executeAdminTool(
     }
 
     const fileName = `${docType.replace(/ /g, "_")}_${osNumber}.pdf`;
-    try {
-      const evoResp = await fetch(`${vpsUrl}/message/sendMedia/${instance}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: apiKey },
-        body: JSON.stringify({
-          number: remoteJid,
-          mediatype: "document",
-          media: mediaUrl,
-          caption: `📋 ${docType} #${osNumber} - ${clientName}`,
-          fileName,
-        }),
-      });
+    const MAX_RETRIES = 2;
 
-      if (!evoResp.ok) {
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[WEBHOOK-WHATSAPP] PDF send attempt ${attempt}/${MAX_RETRIES} for ${docLabel} #${osNumber}`);
+        const evoResp = await fetch(`${vpsUrl}/message/sendMedia/${instance}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({
+            number: remoteJid,
+            mediatype: "document",
+            media: mediaUrl,
+            caption: `📋 ${docType} #${osNumber} - ${clientName}`,
+            fileName,
+            mimetype: "application/pdf",
+          }),
+        });
+
+        if (evoResp.ok) {
+          await evoResp.text();
+          console.log(`[WEBHOOK-WHATSAPP] PDF sent successfully on attempt ${attempt}`);
+          return `SILENT_PDF_SENT:${docType} #${osNumber} de ${clientName} enviado com sucesso!`;
+        }
+
         const errText = await evoResp.text();
-        console.error("[WEBHOOK-WHATSAPP] PDF send error:", evoResp.status, errText);
-        return `PDF pronto, mas houve erro ao enviar. Tente enviar pelo painel.`;
-      }
+        console.error(`[WEBHOOK-WHATSAPP] PDF send error (attempt ${attempt}):`, evoResp.status, errText);
 
-      await evoResp.text();
-      return `SILENT_PDF_SENT:${docType} #${osNumber} de ${clientName} enviado com sucesso!`;
-    } catch (sendErr: any) {
-      console.error("[WEBHOOK-WHATSAPP] PDF send exception:", sendErr.message);
-      return `PDF pronto, mas houve erro ao enviar: ${sendErr.message}`;
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      } catch (sendErr: any) {
+        console.error(`[WEBHOOK-WHATSAPP] PDF send exception (attempt ${attempt}):`, sendErr.message);
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      }
     }
+
+    return `PDF pronto, mas houve erro ao enviar após ${MAX_RETRIES} tentativas. Tente enviar pelo painel.`;
   }
 
   return "Ferramenta desconhecida.";
