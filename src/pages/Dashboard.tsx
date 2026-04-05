@@ -13,7 +13,7 @@ import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes"
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
 import { TrialUrgencyBanner } from "@/components/dashboard/TrialUrgencyBanner";
-import { FirstTimeWelcome } from "@/components/dashboard/FirstTimeWelcome";
+import { LauraWelcomeModal } from "@/components/dashboard/LauraWelcomeModal";
 
 import { MoneyOnTable } from "@/components/dashboard/MoneyOnTable";
 import { TomorrowServices } from "@/components/dashboard/TomorrowServices";
