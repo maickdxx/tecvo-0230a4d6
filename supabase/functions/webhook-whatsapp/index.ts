@@ -3920,14 +3920,7 @@ Você NÃO deve compartilhar:
                   channel_id: channel.id,
                   ai_generated: true,
                 });
-                const sent = await sendWhatsAppReply(
-                  instance,
-                  remoteJid,
-                  safeResponse,
-                );
-                console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
-
-                // If the incoming message was audio, also send audio response
+                // If incoming was audio, respond ONLY with audio (no text message)
                 if (isIncomingAudio && safeResponse.length <= 2000) {
                   (async () => {
                     try {
@@ -3939,17 +3932,20 @@ Você NÃO deve compartilhar:
                           audioBase64,
                           supabase,
                         );
-                        console.log(
-                          "[WEBHOOK-WHATSAPP] Admin audio reply sent",
-                        );
+                        console.log("[WEBHOOK-WHATSAPP] Admin audio-only reply sent");
+                      } else {
+                        // TTS failed — fallback to text
+                        await sendWhatsAppReply(instance, remoteJid, safeResponse);
+                        console.log("[WEBHOOK-WHATSAPP] Admin text fallback (TTS failed)");
                       }
                     } catch (ttsErr: any) {
-                      console.warn(
-                        "[WEBHOOK-WHATSAPP] TTS audio reply failed:",
-                        ttsErr.message,
-                      );
+                      console.warn("[WEBHOOK-WHATSAPP] TTS failed, text fallback:", ttsErr.message);
+                      await sendWhatsAppReply(instance, remoteJid, safeResponse);
                     }
                   })();
+                } else {
+                  const sent = await sendWhatsAppReply(instance, remoteJid, safeResponse);
+                  console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
                 }
               }
             }
