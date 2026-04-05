@@ -10,7 +10,7 @@ import {
   Shield, HelpCircle, BookOpen, Trash2, MessageSquare,
   Megaphone, Bot, Briefcase, Pencil, RefreshCw, Receipt,
   Tag, Zap, Users as UsersIcon, Radio, BarChart3,
-  PanelLeftClose, PanelLeftOpen, Download,
+  PanelLeftClose, PanelLeftOpen, Download, Home, DollarSign,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -376,6 +376,15 @@ export function Sidebar() {
         ) : (
           <>
             {/* Admin / Owner full menu */}
+            <SectionLabel label="Real Estate" collapsed={collapsed} />
+            <div className="space-y-0.5">
+              <SidebarNavItem item={{ label: "Dashboard", href: "/real-estate-dashboard", icon: LayoutDashboard }} collapsed={collapsed} />
+              <SidebarNavItem item={{ label: "Listings", href: "#", icon: Home }} collapsed={collapsed} />
+              <SidebarNavItem item={{ label: "Sales", href: "#", icon: DollarSign }} collapsed={collapsed} />
+              <SidebarNavItem item={{ label: "Clients", href: "/clientes", icon: Users }} collapsed={collapsed} />
+              <SidebarNavItem item={{ label: "Settings", href: "/configuracoes", icon: Settings }} collapsed={collapsed} />
+            </div>
+
             <SectionLabel label="Operação" collapsed={collapsed} />
             <div className="space-y-0.5">
               <SidebarNavItem item={{ label: "Visão Geral", href: "/dashboard", icon: LayoutDashboard }} collapsed={collapsed} />
