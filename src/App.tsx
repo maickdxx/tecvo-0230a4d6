@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound";
 // Lazy-loaded pages (code-split chunks)
 // ============================
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const RealEstateDashboard = lazy(() => import("./pages/RealEstateDashboard"));
 const Financeiro = lazy(() => import("./pages/Financeiro"));
 const Servicos = lazy(() => import("./pages/Servicos"));
 const Clientes = lazy(() => import("./pages/Clientes"));
