@@ -1988,7 +1988,10 @@ Deno.serve(async (req) => {
           systemPrompt = buildSystemPrompt(orgContext);
 
           // Add instruction about tools WITH CONFIRMATION REQUIREMENT
+          const todayForTools = getTodayInTz(orgContext.timezone || "America/Sao_Paulo");
           systemPrompt += `\n\n══════════ FERRAMENTAS DISPONÍVEIS ══════════
+
+⚠️ DATA DE REFERÊNCIA: Hoje é ${todayForTools}. Use SEMPRE esta data como referência para "hoje". NÃO use o relógio interno do modelo.
 
 1. FERRAMENTA 'register_transaction' — registrar despesas e receitas.
 Quando o usuário pedir para registrar um gasto/despesa/receita:
@@ -1996,6 +1999,7 @@ Quando o usuário pedir para registrar um gasto/despesa/receita:
 - Se faltar algum dado essencial, pergunte antes de registrar
 - OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação explícita ao usuário mostrando um resumo
 - Só execute DEPOIS que o usuário confirmar com "sim", "confirmo", "pode registrar" ou similar
+- Para o campo date, use SEMPRE o formato YYYY-MM-DD. Se o usuário disser "hoje", use ${todayForTools}
 Categorias comuns de despesa: material, combustível, alimentação, aluguel, fornecedor, manutenção, salário, outro
 Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 
@@ -2006,8 +2010,13 @@ Quando o usuário pedir para criar/agendar um serviço ou OS:
 - OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação mostrando resumo da OS
 - Só execute DEPOIS que o usuário confirmar
 - Para o campo scheduled_date, use formato YYYY-MM-DDTHH:MM:SS (se não informar hora, use 08:00)
-- Use a data de HOJE se o usuário não especificar
-Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro`;
+- Se o usuário disser "hoje", use ${todayForTools}
+Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro
+
+3. FERRAMENTA 'create_financial_account' — criar conta financeira.
+Quando o usuário pedir para criar uma conta bancária ou financeira:
+- Extraia o nome da conta (ex: Itaú, Nubank, Bradesco)
+- Crie e defina como conta padrão da IA automaticamente`;
 
           // Fetch conversation history for context
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
