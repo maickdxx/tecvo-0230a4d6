@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage, extractUsageFromResponse } from "../_shared/aiUsageLogger.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
+import { createSanitizedStream, validateAIOutput, logOutputViolation } from "../_shared/outputValidator.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -260,8 +261,14 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
         promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: "success",
       });
 
-      // Stream response
-      return new Response(response.body, {
+      // Stream response with sanitization filter
+      const sanitizedStream = createSanitizedStream(response.body!, async (fullText, hadIssues) => {
+        if (hadIssues) {
+          await logOutputViolation(supabaseAdmin, organizationId, userId, "whatsapp-ai-copilot", ["stream_sanitized"], fullText);
+        }
+      });
+
+      return new Response(sanitizedStream, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     } else {
@@ -287,6 +294,17 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
       } catch (e) {
         console.error("Failed to parse suggestions:", e, content);
         suggestions = [{ label: "Sugestão", text: content }];
+      }
+
+      // Validate each suggestion text
+      for (const suggestion of suggestions) {
+        if (suggestion.text) {
+          const validation = validateAIOutput(suggestion.text);
+          if (!validation.safe) {
+            await logOutputViolation(supabaseAdmin, organizationId, userId, "whatsapp-ai-copilot-suggest", validation.reasons, suggestion.text);
+            suggestion.text = validation.sanitizedContent;
+          }
+        }
       }
 
       return new Response(JSON.stringify({ suggestions }), {

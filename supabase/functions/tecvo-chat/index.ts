@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage } from "../_shared/aiUsageLogger.ts";
 import { getTodayInTz, getFormattedDateTimeInTz, fetchOrgTimezone } from "../_shared/timezone.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
+import { createSanitizedStream, logOutputViolation } from "../_shared/outputValidator.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -332,7 +333,14 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: "success",
     });
 
-    return new Response(response.body, {
+    // Apply output sanitization filter on the stream
+    const sanitizedStream = createSanitizedStream(response.body!, async (fullText, hadIssues) => {
+      if (hadIssues) {
+        await logOutputViolation(supabaseAdmin, organizationId, userId, "tecvo-chat", ["stream_sanitized"], fullText);
+      }
+    });
+
+    return new Response(sanitizedStream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
