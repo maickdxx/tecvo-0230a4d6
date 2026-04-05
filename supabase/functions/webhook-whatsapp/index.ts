@@ -1915,18 +1915,27 @@ Deno.serve(async (req) => {
           const orgContext = await fetchOrgContext(supabase, targetOrganizationId);
           systemPrompt = buildSystemPrompt(orgContext);
 
-          // Add instruction about financial tools WITH CONFIRMATION REQUIREMENT
+          // Add instruction about tools WITH CONFIRMATION REQUIREMENT
           systemPrompt += `\n\n══════════ FERRAMENTAS DISPONÍVEIS ══════════
-Você tem acesso à ferramenta 'register_transaction' para registrar despesas e receitas.
-Quando o usuário pedir para registrar um gasto/despesa/receita:
-1. Extraia os dados da mensagem (valor, descrição, categoria, data)
-2. Se faltar algum dado essencial, pergunte antes de registrar
-3. OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação explícita ao usuário mostrando um resumo: "Vou registrar: [tipo] de R$ [valor] — [descrição] ([categoria]) em [data]. Confirma? (sim/não)"
-4. Só execute a ferramenta register_transaction DEPOIS que o usuário confirmar com "sim", "confirmo", "pode registrar" ou similar
-5. Se o usuário negar, cancele e pergunte o que deseja corrigir
 
+1. FERRAMENTA 'register_transaction' — registrar despesas e receitas.
+Quando o usuário pedir para registrar um gasto/despesa/receita:
+- Extraia os dados da mensagem (valor, descrição, categoria, data)
+- Se faltar algum dado essencial, pergunte antes de registrar
+- OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação explícita ao usuário mostrando um resumo
+- Só execute DEPOIS que o usuário confirmar com "sim", "confirmo", "pode registrar" ou similar
 Categorias comuns de despesa: material, combustível, alimentação, aluguel, fornecedor, manutenção, salário, outro
-Categorias comuns de receita: serviço, manutenção, instalação, venda, outro`;
+Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
+
+2. FERRAMENTA 'create_service' — criar Ordem de Serviço (OS).
+Quando o usuário pedir para criar/agendar um serviço ou OS:
+- Extraia: nome do cliente, data/hora, tipo de serviço, descrição, valor (opcional), técnico (opcional)
+- Se faltar cliente ou data, pergunte antes de criar
+- OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação mostrando resumo da OS
+- Só execute DEPOIS que o usuário confirmar
+- Para o campo scheduled_date, use formato YYYY-MM-DDTHH:MM:SS (se não informar hora, use 08:00)
+- Use a data de HOJE se o usuário não especificar
+Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro`;
 
           // Fetch conversation history for context
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
