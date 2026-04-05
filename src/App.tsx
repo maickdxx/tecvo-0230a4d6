@@ -550,14 +550,6 @@ const App = () => (
               }
             />
             <Route
-              path="/assinatura/parabens"
-              element={
-                <ProtectedRoute>
-                  <AssinaturaParabens />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/recorrencia"
               element={
                 <ProtectedRoute>
