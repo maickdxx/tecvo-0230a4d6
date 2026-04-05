@@ -2401,7 +2401,7 @@ const ADMIN_TOOLS = [
     function: {
       name: "send_service_pdf",
       description:
-        "Envia o PDF de uma Ordem de Serviço ou Orçamento para o usuário via WhatsApp. Use quando o técnico pedir para enviar, mandar ou ver o PDF de uma OS ou orçamento.",
+        "Envia via WhatsApp apenas o PDF oficial já salvo de uma Ordem de Serviço ou Orçamento. Use quando o técnico pedir para enviar, mandar ou ver o PDF de uma OS ou orçamento. Nunca gere um PDF novo.",
       parameters: {
         type: "object",
         properties: {
@@ -2754,127 +2754,31 @@ async function executeAdminTool(
       return `Não encontrei nenhuma OS ou orçamento com "${identifier}". Verifique o número ou nome do cliente.`;
     }
 
-    // Fetch org data, service items, equipment, and signature in parallel
-    const [orgResult, itemsResult, equipResult, sigResult] = await Promise.all([
-      supabase.from("organizations").select("name, cnpj_cpf, phone, email, address, logo_url, city, state, zip_code, website, signature_url, auto_signature_os").eq("id", organizationId).single(),
-      supabase.from("service_items").select("*").eq("service_id", serviceData.id).order("created_at"),
-      supabase.from("service_equipment").select("*").eq("service_id", serviceData.id).order("created_at"),
-      supabase.from("service_signatures").select("signature_url").eq("service_id", serviceData.id).maybeSingle(),
-    ]);
-
-    const orgData = orgResult.data;
-    const serviceItems = itemsResult.data || [];
-    const equipment = equipResult.data || [];
-
-    // Calculate real value from items (same logic as the app)
-    const itemsTotal = serviceItems.reduce((sum: number, item: any) => sum + ((item.quantity || 1) * (item.unit_price || 0)), 0);
-    const finalValue = itemsTotal > 0 ? itemsTotal : (serviceData.value || 0);
-
     const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
     const docType = serviceData.document_type === "quote" ? "ORÇAMENTO" : "ORDEM DE SERVIÇO";
     const clientName = serviceData.client?.name || "Cliente";
+    const docLabel = serviceData.document_type === "quote" ? "orçamento" : "OS";
 
-    // Build client address
-    const cAddr = [serviceData.service_street || serviceData.client?.street, serviceData.service_number || serviceData.client?.number, serviceData.client?.complement, serviceData.client?.neighborhood].filter(Boolean).join(", ");
-
-    // Format dates
-    const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("pt-BR") : "-";
-    const fmtTime = (d: string | null) => d ? new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
-
-    // Check if there's a stored PDF from the dashboard first
+    // Use only the official PDF already saved by the system
     const storedPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
     const { data: storedFile, error: storedFileError } = await supabase.storage
       .from("whatsapp-media")
       .createSignedUrl(storedPath, 300);
 
-    let publicUrl: string | null = null;
-
-    if (storedFile?.signedUrl && !storedFileError) {
-      // Bucket is public — use a stable public URL when the file exists
-      const { data: storedPublicFile } = supabase.storage
-        .from("whatsapp-media")
-        .getPublicUrl(storedPath);
-      publicUrl = storedPublicFile?.publicUrl || storedFile.signedUrl;
-      console.log("[WEBHOOK-WHATSAPP] Using stored PDF from dashboard for service:", serviceData.id);
-    } else {
-      // No stored PDF — generate one as fallback
-      console.log("[WEBHOOK-WHATSAPP] No stored PDF found, generating fallback for service:", serviceData.id);
-      try {
-        const pdfBytes = await generateProfessionalPDF({
-          docType,
-          osNumber,
-          orgName: orgData?.name || "Empresa",
-          orgCnpj: orgData?.cnpj_cpf || undefined,
-          orgPhone: orgData?.phone || undefined,
-          orgEmail: orgData?.email || undefined,
-          orgAddress: [orgData?.address, orgData?.city, orgData?.state].filter(Boolean).join(" – "),
-          orgWebsite: (orgData as any)?.website || undefined,
-          orgLogoUrl: orgData?.logo_url || undefined,
-          clientName,
-          clientPhone: serviceData.client?.phone || undefined,
-          clientEmail: serviceData.client?.email || undefined,
-          clientDocument: serviceData.client?.document || undefined,
-          clientAddress: cAddr || undefined,
-          clientCity: serviceData.service_city || serviceData.client?.city || undefined,
-          clientState: serviceData.service_state || serviceData.client?.state || undefined,
-          clientZip: serviceData.service_zip_code || serviceData.client?.zip_code || undefined,
-          scheduledDate: fmtDate(serviceData.scheduled_date),
-          entryDate: serviceData.entry_date ? fmtDate(serviceData.entry_date) : undefined,
-          entryTime: serviceData.entry_date ? fmtTime(serviceData.entry_date) : undefined,
-          exitDate: serviceData.exit_date ? fmtDate(serviceData.exit_date) : undefined,
-          exitTime: serviceData.exit_date ? fmtTime(serviceData.exit_date) : undefined,
-          serviceType: serviceData.service_type || "-",
-          description: serviceData.solution || serviceData.description || "",
-          value: finalValue,
-          status: serviceData.status || "-",
-          notes: serviceData.notes || undefined,
-          paymentMethod: serviceData.payment_method || undefined,
-          paymentDueDate: serviceData.payment_due_date ? fmtDate(serviceData.payment_due_date) : undefined,
-          paymentNotes: serviceData.payment_notes || undefined,
-          equipment: equipment.map((eq: any) => ({
-            type: eq.equipment_type || eq.name || "",
-            brand: eq.brand || "",
-            model: eq.model || "",
-            capacity: eq.capacity || "",
-            serial: eq.serial_number || "",
-            conditions: eq.conditions || "",
-            defects: eq.defects || "",
-            solution: eq.solution || "",
-            technical_report: eq.technical_report || "",
-            warranty_terms: eq.warranty_terms || "",
-          })),
-          items: serviceItems.map((item: any) => ({
-            description: item.description || "",
-            name: item.name || "",
-            quantity: item.quantity || 1,
-            unitPrice: item.unit_price || 0,
-            discount: item.discount_type === "percentage" ? ((item.quantity || 1) * (item.unit_price || 0) * (item.discount || 0) / 100) : (item.discount || 0),
-          })),
-        });
-
-        const fallbackPath = `os-pdfs/${organizationId}/${serviceData.id}_fallback.pdf`;
-        const { error: uploadError } = await supabase.storage
-          .from("whatsapp-media")
-          .upload(fallbackPath, pdfBytes, { contentType: "application/pdf", upsert: true });
-
-        if (uploadError) {
-          console.error("[WEBHOOK-WHATSAPP] PDF upload error:", uploadError);
-          return "Erro ao gerar o PDF. Tente novamente.";
-        }
-
-        const { data: fallbackUrl } = supabase.storage
-          .from("whatsapp-media")
-          .getPublicUrl(fallbackPath);
-        publicUrl = fallbackUrl?.publicUrl || null;
-      } catch (pdfErr: any) {
-        console.error("[WEBHOOK-WHATSAPP] PDF generation error:", pdfErr.message);
-        return `Erro ao gerar o PDF: ${pdfErr.message}`;
-      }
+    if (!storedFile?.signedUrl || storedFileError) {
+      console.warn(
+        "[WEBHOOK-WHATSAPP] Official stored PDF not found for service:",
+        serviceData.id,
+        "path:",
+        storedPath,
+        "error:",
+        storedFileError?.message || storedFileError,
+      );
+      return `Ainda não existe um PDF oficial salvo para a ${docLabel} #${osNumber}. Gere esse PDF no sistema primeiro; eu só posso enviar o arquivo oficial já salvo.`;
     }
 
-    if (!publicUrl) {
-      return "Erro ao obter o PDF. Tente novamente.";
-    }
+    const mediaUrl = storedFile.signedUrl;
+    console.log("[WEBHOOK-WHATSAPP] Using stored official PDF for service:", serviceData.id, "path:", storedPath);
 
     // Send PDF via Evolution API
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
@@ -2894,7 +2798,7 @@ async function executeAdminTool(
         body: JSON.stringify({
           number: remoteJid,
           mediatype: "document",
-          media: publicUrl,
+          media: mediaUrl,
           caption: `📋 ${docType} #${osNumber} - ${clientName}`,
           fileName,
         }),
@@ -4641,12 +4545,14 @@ Quando uma OS ou orçamento falhar porque o cliente não existe (resultado cont�
 6. FERRAMENTA 'send_service_pdf' — enviar PDF de OS ou Orçamento.
 Quando o usuário pedir para enviar, mandar, ver ou receber o PDF de uma OS ou orçamento:
 - Use o número da OS, nome do cliente ou ID informado
-- A ferramenta gera e envia o PDF diretamente via WhatsApp
+- A ferramenta busca e envia via WhatsApp apenas o PDF oficial já salvo no sistema
+- Ela NUNCA gera um PDF novo, alternativo ou de fallback
 - Se o resultado começar com "SILENT_PDF_SENT:", significa que o PDF já foi enviado com sucesso. Confirme ao usuário de forma natural: "Pronto, enviei o PDF!"
 - NÃO é necessário pedir confirmação para enviar PDF — envie direto quando solicitado
 - Após criar OS/orçamento e o usuário pedir o PDF, use esta ferramenta imediatamente
 - Se o usuário responder apenas com o número da OS (ex: "100") depois que você pedir identificação, trate isso como suficiente e use a ferramenta
 - NUNCA diga que enviou, mandou ou reenviou um PDF sem a ferramenta send_service_pdf retornar sucesso nesta mesma conversa
+- Se o PDF oficial ainda não existir, informe isso claramente ao usuário. Nunca ofereça cópia, versão nova ou PDF recriado
 - Se faltar identificador, peça o número da OS ou o nome do cliente. Nunca finja que enviou
 
 ══════════ FLUXO COMPLETO DE ATENDIMENTO ══════════
