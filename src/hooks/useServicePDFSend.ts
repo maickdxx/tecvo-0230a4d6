@@ -79,11 +79,13 @@ export function useServicePDFSend() {
       let blob = await getStoredOfficialPdf(service as Service);
 
       if (!blob) {
-        const pdfData = await buildPDFData(service as Service);
-        blob = await generateServiceOrderPDF({ ...pdfData, returnBlob: true } as any) as Blob;
+        console.log("[PDF-SEND] Official PDF not found in storage, attempting materialization retry...");
+        blob = await retryMaterialization(service as Service);
       }
 
-      if (!blob) throw new Error("Falha ao gerar PDF");
+      if (!blob) {
+        throw new Error("PDF oficial não encontrado. Abra a OS no painel para gerar o PDF antes de enviar.");
+      }
 
       // Determine channel & contact
       let finalChannelId = channelId;
