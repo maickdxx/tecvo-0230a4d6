@@ -591,7 +591,7 @@ const ADMIN_TOOLS = [
   },
 ];
 
-async function executeFinancialTool(supabase: any, organizationId: string, toolCall: any): Promise<string> {
+async function executeAdminTool(supabase: any, organizationId: string, toolCall: any, ctx?: any): Promise<string> {
   const fnName = toolCall.function?.name;
   let args: any;
   try {
@@ -625,6 +625,79 @@ async function executeFinancialTool(supabase: any, organizationId: string, toolC
 
     const typeLabel = type === "income" ? "Receita" : "Despesa";
     return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}.`;
+  }
+
+  if (fnName === "create_service") {
+    const { client_name, scheduled_date, service_type, description, value, assigned_to_name } = args;
+    if (!client_name || !scheduled_date || !service_type || !description) {
+      return "Erro: campos obrigatórios faltando (client_name, scheduled_date, service_type, description).";
+    }
+
+    // Find client by partial name match
+    const { data: clientMatches } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .ilike("name", `%${client_name}%`)
+      .limit(5);
+
+    if (!clientMatches || clientMatches.length === 0) {
+      return `Cliente "${client_name}" não encontrado no cadastro. Verifique o nome e tente novamente.`;
+    }
+    if (clientMatches.length > 1) {
+      const names = clientMatches.map((c: any) => c.name).join(", ");
+      return `Encontrei ${clientMatches.length} clientes: ${names}. Qual deles? Especifique melhor o nome.`;
+    }
+    const client = clientMatches[0];
+
+    // Find technician if specified
+    let assignedTo: string | null = null;
+    if (assigned_to_name) {
+      const profiles = ctx?.profiles || [];
+      const match = profiles.find((p: any) => 
+        p.full_name && p.full_name.toLowerCase().includes(assigned_to_name.toLowerCase())
+      );
+      if (match) {
+        assignedTo = match.user_id;
+      }
+    }
+
+    // Check service limit
+    const { data: canCreate } = await supabase.rpc("can_create_service", { org_id: organizationId });
+    if (canCreate === false) {
+      return "Limite de serviços do plano atingido neste mês. Faça upgrade para criar mais.";
+    }
+
+    // Validate service type exists
+    const { data: typeExists } = await supabase
+      .from("service_types")
+      .select("slug")
+      .eq("organization_id", organizationId)
+      .eq("slug", service_type)
+      .limit(1);
+
+    const finalServiceType = (typeExists && typeExists.length > 0) ? service_type : "outro";
+
+    const { data: newService, error } = await supabase.from("services").insert({
+      organization_id: organizationId,
+      client_id: client.id,
+      scheduled_date,
+      service_type: finalServiceType,
+      description,
+      value: value || 0,
+      assigned_to: assignedTo,
+      status: "scheduled",
+      document_type: "service_order",
+    }).select("id").single();
+
+    if (error) {
+      console.error("[WEBHOOK-WHATSAPP] Service insert error:", error);
+      return `Erro ao criar OS: ${error.message}`;
+    }
+
+    const dateFormatted = new Date(scheduled_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}`;
   }
 
   return "Ferramenta desconhecida.";
