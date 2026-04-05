@@ -293,7 +293,7 @@ export default function OrdensServico() {
 
   const formatAddress = (service: typeof services[0]) => {
     if (service.service_zip_code || service.service_street) {
-      const streetLine = [service.service_street, service.service_number, service.service_complement].filter(Boolean).join(", ");
+      const streetLine = [service.service_street, service.service_number].filter(Boolean).join(", ");
       const cityState = [service.service_city, service.service_state].filter(Boolean).join(" - ");
       return {
         cep: service.service_zip_code || "",

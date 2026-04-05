@@ -352,16 +352,6 @@ export function AnalyzeConversationModal({
           .eq("id", contact.id);
       }
 
-      // Materialize official PDF
-      if (organization?.id) {
-        try {
-          const { materializeServicePDF } = await import("@/lib/materializePDF");
-          await materializeServicePDF(newService.id, organization.id);
-        } catch (e) {
-          console.warn("[AnalyzeConversationModal] PDF materialization failed:", e);
-        }
-      }
-
       setCreatedService(newService);
       toast.success("OS criada com sucesso!");
     } catch (err: any) {

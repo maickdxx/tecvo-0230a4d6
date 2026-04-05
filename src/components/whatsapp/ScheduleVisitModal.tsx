@@ -172,16 +172,6 @@ export function ScheduleVisitModal({ open, onOpenChange, contact, linkedClient, 
           .eq("id", contact.id);
       }
 
-      // Materialize official PDF
-      if (newService.organization_id) {
-        try {
-          const { materializeServicePDF } = await import("@/lib/materializePDF");
-          await materializeServicePDF(newService.id, newService.organization_id);
-        } catch (e) {
-          console.warn("[ScheduleVisitModal] PDF materialization failed:", e);
-        }
-      }
-
       setCreatedServiceId(newService.id);
       setCreatedQuoteNumber(newService.quote_number);
     } catch (err: any) {

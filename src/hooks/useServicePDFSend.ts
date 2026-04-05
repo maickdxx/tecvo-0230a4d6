@@ -1,44 +1,81 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import { useWhatsAppChannels } from "@/hooks/useWhatsAppChannels";
-import { materializeServicePDF } from "@/lib/materializePDF";
-import {
-  readOfficialServicePdfStatus,
-  waitForOfficialServicePdf,
-} from "@/lib/officialPdfStorage";
+import { generateServiceOrderPDF } from "@/lib/generateServiceOrderPDF";
+import { formatDateInTz, formatTimeInTz } from "@/lib/timezone";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { toast } from "sonner";
 import type { Service } from "@/hooks/useServices";
 
 export function useServicePDFSend() {
   const [sending, setSending] = useState(false);
+  const { organization } = useOrganization();
   const { channels } = useWhatsAppChannels();
+  const tz = useOrgTimezone();
 
-  const getStoredOfficialPdf = useCallback(async (service: Service): Promise<Blob | null> => {
-    if (!service.organization_id) return null;
+  const buildPDFData = useCallback(async (service: Service) => {
+    const org = organization;
 
-    const status = await readOfficialServicePdfStatus(service.organization_id, service.id);
-    if (!status.ready || !status.blob) return null;
+    const { data: items } = await supabase
+      .from("service_items")
+      .select("*")
+      .eq("service_id", service.id)
+      .order("created_at");
 
-    const bytes = new Uint8Array(await status.blob.arrayBuffer());
-    return new Blob([bytes], { type: "application/pdf" });
-  }, []);
+    const { data: equipmentRaw } = await supabase
+      .from("service_equipment")
+      .select("*")
+      .eq("service_id", service.id)
+      .order("created_at");
 
-  const retryMaterialization = useCallback(async (service: Service): Promise<Blob | null> => {
-    if (!service.organization_id) return null;
-    console.log("[PDF-SEND] Attempting materialization retry for service:", service.id);
-    try {
-      await materializeServicePDF(service.id, service.organization_id);
+    const orderData = {
+      entryDate: service.entry_date ? formatDateInTz(service.entry_date, tz) : "",
+      entryTime: service.entry_date ? formatTimeInTz(service.entry_date, tz) : "",
+      exitDate: service.exit_date ? formatDateInTz(service.exit_date, tz) : "",
+      exitTime: service.exit_date ? formatTimeInTz(service.exit_date, tz) : "",
+      equipmentType: service.equipment_type || "",
+      equipmentBrand: service.equipment_brand || "",
+      equipmentModel: service.equipment_model || "",
+      solution: service.solution || service.description || "",
+      paymentMethod: service.payment_method || "",
+      paymentDueDate: service.payment_due_date ? formatDateInTz(service.payment_due_date, tz) : "",
+      paymentNotes: service.payment_notes || "",
+    };
 
-      const status = await waitForOfficialServicePdf(service.organization_id, service.id);
-      if (!status.ready || !status.blob) return null;
+    const itemsTotal = (items || []).reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
 
-      const bytes = new Uint8Array(await status.blob.arrayBuffer());
-      return new Blob([bytes], { type: "application/pdf" });
-    } catch (err) {
-      console.warn("[PDF-SEND] Materialization retry failed:", service.id, err);
-      return null;
-    }
-  }, [getStoredOfficialPdf]);
+    // Fetch client signature
+    const { data: sigData } = await supabase
+      .from("service_signatures")
+      .select("signature_url")
+      .eq("service_id", service.id)
+      .maybeSingle();
+
+    return {
+      service: {
+        ...service,
+        value: itemsTotal > 0 ? itemsTotal : service.value,
+      },
+      items: items || [],
+      equipmentList: equipmentRaw || [],
+      organizationName: org?.name || "Minha Empresa",
+      organizationCnpj: org?.cnpj_cpf || undefined,
+      organizationPhone: org?.phone || undefined,
+      organizationEmail: org?.email || undefined,
+      organizationAddress: org?.address || undefined,
+      organizationLogo: org?.logo_url || undefined,
+      organizationWebsite: org?.website || undefined,
+      organizationZipCode: org?.zip_code || undefined,
+      organizationCity: org?.city || undefined,
+      organizationState: org?.state || undefined,
+      organizationSignature: org?.signature_url || undefined,
+      autoSignatureOS: org?.auto_signature_os ?? false,
+      clientSignatureUrl: sigData?.signature_url || undefined,
+      orderData,
+      isFreePlan: false,
+    };
+  }, [organization, tz]);
 
   const sendOSViaWhatsApp = useCallback(async (
     serviceId: string,
@@ -47,7 +84,7 @@ export function useServicePDFSend() {
     channelId?: string,
   ) => {
     setSending(true);
-    const loadingToastId = toast.loading("Preparando e enviando OS oficial via WhatsApp...");
+    const loadingToastId = toast.loading("Gerando e enviando OS via WhatsApp...");
     try {
       // Fetch the full service with client
       const { data: service, error } = await supabase
@@ -58,16 +95,10 @@ export function useServicePDFSend() {
 
       if (error || !service) throw new Error("Serviço não encontrado");
 
-      let blob = await getStoredOfficialPdf(service as Service);
+      const pdfData = await buildPDFData(service as Service);
+      const blob = await generateServiceOrderPDF({ ...pdfData, returnBlob: true } as any) as Blob;
 
-      if (!blob) {
-        console.log("[PDF-SEND] Official PDF not found in storage, attempting materialization retry...");
-        blob = await retryMaterialization(service as Service);
-      }
-
-      if (!blob) {
-        throw new Error("PDF oficial não encontrado. Abra a OS no painel para gerar o PDF antes de enviar.");
-      }
+      if (!blob) throw new Error("Falha ao gerar PDF");
 
       // Determine channel & contact
       let finalChannelId = channelId;
@@ -184,7 +215,7 @@ export function useServicePDFSend() {
     } finally {
       setSending(false);
     }
-  }, [channels, getStoredOfficialPdf, retryMaterialization]);
+  }, [buildPDFData, channels]);
 
   return { sendOSViaWhatsApp, sending };
 }

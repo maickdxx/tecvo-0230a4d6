@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { type ServiceItemLocal } from "@/components/services/ServiceCatalogSelector";
 import { type ServiceEquipmentLocal } from "@/hooks/useServiceEquipment";
-import { materializeServicePDF } from "@/lib/materializePDF";
 
 export default function EditarOrdemServico() {
   const { id } = useParams<{ id: string }>();
@@ -82,15 +81,6 @@ export default function EditarOrdemServico() {
         title: "OS atualizada",
         description: "Os dados foram salvos com sucesso.",
       });
-
-      // Materialize PDF (awaited to ensure it's ready)
-      if (organization?.id) {
-        try {
-          await materializeServicePDF(id, organization.id);
-        } catch (e) {
-          console.warn("[EditarOS] PDF materialization failed:", e);
-        }
-      }
 
       navigate("/ordens-servico");
     } catch (error) {

@@ -132,16 +132,6 @@ export function CreateOSModal({ open, onOpenChange, contact, linkedClient, prefi
           })));
       }
 
-      // Materialize official PDF before allowing send
-      if (organization?.id) {
-        try {
-          const { materializeServicePDF } = await import("@/lib/materializePDF");
-          await materializeServicePDF(newService.id, organization.id);
-        } catch (e) {
-          console.warn("[CreateOSModal] PDF materialization failed, retry on send:", e);
-        }
-      }
-
       setCreatedServiceId(newService.id);
       setCreatedQuoteNumber(newService.quote_number);
     } catch (err: any) {

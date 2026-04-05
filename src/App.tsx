@@ -17,7 +17,6 @@ import { SessionTrackerProvider } from "@/components/SessionTrackerProvider";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { AdminProtectedRoute } from "@/components/admin";
 import { OwnerProtectedRoute } from "@/components/auth/OwnerProtectedRoute";
-import { OfficialPdfMaterializer } from "@/components/pdf/OfficialPdfMaterializer";
 import { CookieConsent } from "./components/CookieConsent";
 
 // ============================
@@ -174,7 +173,6 @@ const App = () => (
               <DemoTourProvider>
               <ViewModeProvider>
               <OfflineProvider>
-              <OfficialPdfMaterializer />
               <Suspense fallback={<PageLoader />}>
               <Routes>
             <Route path="/" element={<Home />} />
@@ -194,7 +192,7 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <RealEstateDashboard />
                 </ProtectedRoute>
               }
             />

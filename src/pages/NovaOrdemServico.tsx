@@ -273,17 +273,6 @@ export default function NovaOrdemServico() {
         title: "OS criada",
         description: `OS #${newService.quote_number} criada com sucesso.`,
       });
-
-      // Materialize PDF (awaited)
-      if (organization?.id) {
-        try {
-          const { materializeServicePDF } = await import("@/lib/materializePDF");
-          await materializeServicePDF(newService.id, organization.id);
-        } catch (e) {
-          console.warn("[NovaOS] PDF materialization failed:", e);
-        }
-      }
-
       navigate("/ordens-servico");
     } catch (error) {
       if ((error as Error).message === "LIMIT_REACHED") {

@@ -10,7 +10,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useReportEquipment } from "@/hooks/useReportEquipment";
 import { supabase } from "@/integrations/supabase/client";
 import type { LocalReportEquipment } from "@/components/laudos/ReportEquipmentEditor";
-import { materializeReportPDF } from "@/lib/materializePDF";
 
 export default function EditarLaudo() {
   const { id } = useParams<{ id: string }>();
@@ -51,10 +50,6 @@ export default function EditarLaudo() {
         final_status: eq.final_status || "operational",
         measurements: eq.measurements || {},
       }]);
-    }
-    // Materialize PDF (awaited)
-    if (organizationId) {
-      try { await materializeReportPDF(id, organizationId); } catch (e) { console.warn("[EditarLaudo] PDF materialization failed:", e); }
     }
 
     navigate(`/laudos/${id}`);

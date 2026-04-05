@@ -48,14 +48,14 @@ export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote
   const hasServiceAddress = service.service_street || service.service_city;
 
   const formatServiceAddress = () => {
-    return [
+    const parts = [
       service.service_street,
       service.service_number,
-      service.service_complement,
       service.service_neighborhood,
       service.service_city,
       service.service_state,
-    ].filter(Boolean).join(", ");
+    ].filter(Boolean);
+    return parts.join(", ");
   };
 
   const openInMaps = (e: React.MouseEvent) => {

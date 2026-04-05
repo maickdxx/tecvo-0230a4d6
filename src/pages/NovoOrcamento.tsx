@@ -13,7 +13,6 @@ import type { ServiceItemLocal } from "@/components/services/ServiceCatalogSelec
 import { type ServiceEquipmentLocal } from "@/hooks/useServiceEquipment";
 import { UpgradeModal } from "@/components/subscription";
 import { useState } from "react";
-import { materializeServicePDF } from "@/lib/materializePDF";
 
 export default function NovoOrcamento() {
   const navigate = useNavigate();
@@ -77,11 +76,6 @@ export default function NovoOrcamento() {
         title: "Orçamento criado",
         description: `Orçamento #${newService.quote_number} criado. Pronto para o próximo.`,
       });
-
-      // Materialize PDF (awaited)
-      if (organization?.id) {
-        try { await materializeServicePDF(newService.id, organization.id); } catch (e) { console.warn("[NovoOrcamento] PDF materialization failed:", e); }
-      }
 
       setFormKey(prev => prev + 1);
     } catch (error) {

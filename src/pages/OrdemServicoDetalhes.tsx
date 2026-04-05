@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,7 +82,6 @@ import {
 } from "@/lib/serviceReceipt";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { materializeServicePDF } from "@/lib/materializePDF";
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; icon: typeof Calendar }> = {
   scheduled: {
@@ -241,11 +240,6 @@ export default function OrdemServicoDetalhes() {
     },
     enabled: !!id,
   });
-
-  useEffect(() => {
-    if (!service?.id || !organization?.id) return;
-    materializeServicePDF(service.id, organization.id).catch(() => {});
-  }, [service?.id, service?.updated_at, organization?.id]);
 
   if (!service) {
     return (

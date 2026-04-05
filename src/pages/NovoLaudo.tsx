@@ -10,7 +10,6 @@ import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/hooks/useAuth";
 import { useReportEquipment } from "@/hooks/useReportEquipment";
 import type { LocalReportEquipment } from "@/components/laudos/ReportEquipmentEditor";
-import { materializeReportPDF } from "@/lib/materializePDF";
 
 export default function NovoLaudo() {
   const navigate = useNavigate();
@@ -69,10 +68,6 @@ export default function NovoLaudo() {
           measurements: eq.measurements || {},
         }]);
       }
-    }
-    // Materialize PDF (awaited)
-    if (organizationId) {
-      try { await materializeReportPDF(result.id, organizationId); } catch (e) { console.warn("[NovoLaudo] PDF materialization failed:", e); }
     }
 
     navigate(`/laudos/${result.id}`);
