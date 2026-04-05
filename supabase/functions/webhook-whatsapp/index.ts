@@ -616,6 +616,25 @@ const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_quote",
+      description: "Cria um Orçamento no sistema. Use quando o usuário pedir para criar, fazer ou registrar um orçamento para um cliente.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_name: { type: "string", description: "Nome do cliente (busca parcial no cadastro)" },
+          service_type: { type: "string", description: "Tipo de serviço: ex: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro" },
+          description: { type: "string", description: "Descrição detalhada do serviço/orçamento" },
+          value: { type: "number", description: "Valor estimado do orçamento em reais" },
+          scheduled_date: { type: "string", description: "Data prevista no formato YYYY-MM-DDTHH:MM:SS. Opcional." },
+        },
+        required: ["client_name", "service_type", "description", "value"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function executeAdminTool(supabase: any, organizationId: string, toolCall: any, ctx?: any): Promise<string> {
