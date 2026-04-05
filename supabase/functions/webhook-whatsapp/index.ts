@@ -676,7 +676,7 @@ async function generateTTSAudioWithGemini(
             speechConfig: {
               voiceConfig: {
                 prebuiltVoiceConfig: {
-                  voiceName: "Aoede",
+                  voiceName: "Leda",
                 },
               },
             },
@@ -760,7 +760,7 @@ async function generateTTSAudioWithElevenLabs(
     }
 
     // Laura voice - using "Laura" voice ID from ElevenLabs
-    const voiceId = "FGY2WhTYpPnrIDTdsKH5";
+    const voiceId = "EXAVITQu4vr4xnSDxMaL";
 
     console.log(
       "[WEBHOOK-WHATSAPP] generateTTSAudioWithElevenLabs: generating TTS for text length:",
