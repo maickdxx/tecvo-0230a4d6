@@ -634,7 +634,7 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
 
     // If no default AI account configured, block and warn the user
     if (!accountId) {
-      return "⚠️ Você ainda não tem uma conta financeira padrão configurada para a IA.\n\nPara eu registrar transações corretamente, você precisa definir uma conta padrão nas configurações do sistema.\n\n👉 Acesse: https://tecvo.lovable.app/configuracoes\n\nOu, se preferir, posso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: \"Crie uma conta do Itaú\".";
+      return "⚠️ Você ainda não tem uma conta financeira padrão configurada para a IA.\n\nPara eu registrar transações corretamente, você precisa definir uma conta padrão nas configurações do sistema.\n\n👉 Acesse: https://tecvo.com.br/configuracoes\n\nOu, se preferir, posso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: \"Crie uma conta do Itaú\".";
     }
 
     // Expenses go as pending (contas a pagar) — manager approves later
@@ -2100,7 +2100,7 @@ Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro`;
         } else {
           // lead_comercial on TECVO_AI channel
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
-          systemPrompt = `Você é a assistente comercial do Tecvo. Este número não está autorizado a acessar dados da empresa. Explique brevemente o que é o Tecvo e convide o usuário a conhecer a plataforma em https://tecvo.lovable.app. Responda em português brasileiro, de forma objetiva e com no máximo 500 caracteres.`;
+          systemPrompt = `Você é a assistente comercial do Tecvo. Este número não está autorizado a acessar dados da empresa. Explique brevemente o que é o Tecvo e convide o usuário a conhecer a plataforma em https://tecvo.com.br. Responda em português brasileiro, de forma objetiva e com no máximo 500 caracteres.`;
 
           const startTimeLead = Date.now();
           const aiResultLead = await callAI(systemPrompt, conversationHistory);
@@ -2117,7 +2117,7 @@ Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro`;
 
           if (!aiResponse) {
             console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for lead_comercial. Sending fallback.");
-            const fallbackMsg = "Olá! 👋 Sou a assistente do Tecvo. No momento não consegui processar sua mensagem, mas você pode conhecer nossa plataforma em https://tecvo.lovable.app";
+            const fallbackMsg = "Olá! 👋 Sou a assistente do Tecvo. No momento não consegui processar sua mensagem, mas você pode conhecer nossa plataforma em https://tecvo.com.br";
             const fbMsgId = `ai_fallback_${crypto.randomUUID()}`;
             await supabase.from("whatsapp_messages").insert({
               organization_id: targetOrganizationId,
