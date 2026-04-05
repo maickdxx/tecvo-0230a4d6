@@ -2587,6 +2587,7 @@ async function executeAdminTool(
         .select("*, client:clients(name, phone, whatsapp, email, document, street, number, complement, neighborhood, city, state, zip_code)")
         .eq("organization_id", organizationId)
         .eq("quote_number", numericId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(1);
       if (data && data.length > 0) serviceData = data[0];
@@ -2599,6 +2600,7 @@ async function executeAdminTool(
         .select("*, client:clients!inner(name, phone, whatsapp, email, document, street, number, complement, neighborhood, city, state, zip_code)")
         .eq("organization_id", organizationId)
         .ilike("client.name", `%${identifier}%`)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(1);
       if (data && data.length > 0) serviceData = data[0];
@@ -2611,6 +2613,7 @@ async function executeAdminTool(
         .select("*, client:clients(name, phone, whatsapp, email, document, street, number, complement, neighborhood, city, state, zip_code)")
         .eq("organization_id", organizationId)
         .ilike("id", `${identifier}%`)
+        .is("deleted_at", null)
         .limit(1);
       if (data && data.length > 0) serviceData = data[0];
     }
