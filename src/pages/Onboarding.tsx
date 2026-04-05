@@ -91,7 +91,11 @@ export default function Onboarding() {
   const whatsappInitRef = useRef(false);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Delay scroll to allow animations to settle
+    const t = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+    return () => clearTimeout(t);
   }, [messages, whatsappMessages]);
 
   useEffect(() => {
