@@ -171,9 +171,9 @@ async function fetchOrgContext(supabase: any, organizationId: string) {
       .select("id, type, amount, date, due_date, status, category, description, payment_date, payment_method")
       .eq("organization_id", organizationId)
       .is("deleted_at", null)
-      .gte("date", ninetyDaysAgo)
+      .gte("date", oneEightyDaysAgo)
       .order("date", { ascending: false })
-      .limit(500),
+      .limit(1000),
     supabase
       .from("profiles")
       .select("user_id, full_name, position")
