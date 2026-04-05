@@ -160,7 +160,7 @@ export async function materializeReportPDF(reportId: string, organizationId: str
 
     // Fetch photos
     const { data: photos } = await supabase
-      .from("report_photos")
+      .from("technical_report_photos")
       .select("*")
       .eq("report_id", reportId);
 
