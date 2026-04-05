@@ -235,6 +235,31 @@ function buildSystemPrompt(ctx: any) {
     techMap[p.user_id] = p.full_name || "Sem nome";
   }
 
+  // ── Helper: get week boundaries (Mon-Sun) ──
+  const getWeekBounds = (refDate: Date, offsetWeeks: number) => {
+    const d = new Date(refDate);
+    d.setDate(d.getDate() + offsetWeeks * 7);
+    const dayOfWeek = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return {
+      start: monday.toISOString().substring(0, 10),
+      end: sunday.toISOString().substring(0, 10),
+    };
+  };
+
+  const thisWeek = getWeekBounds(now, 0);
+  const lastWeek = getWeekBounds(now, -1);
+  const nextWeek = getWeekBounds(now, 1);
+
+  const filterByDateRange = (items: any[], dateField: string, start: string, end: string) =>
+    items.filter((item: any) => {
+      const d = item[dateField]?.substring(0, 10);
+      return d && d >= start && d <= end;
+    });
+
   // ── TODAY ──
   const todayServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === todayISO);
   const todayCompleted = todayServices.filter((s: any) => s.status === "completed");
@@ -247,11 +272,32 @@ function buildSystemPrompt(ctx: any) {
   // ── TOMORROW ──
   const tomorrowServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === tomorrowISO);
 
+  // ── WEEKLY ──
+  const thisWeekServices = filterByDateRange(osServices, "scheduled_date", thisWeek.start, thisWeek.end);
+  const thisWeekCompleted = thisWeekServices.filter((s: any) => s.status === "completed");
+  const thisWeekRevenue = thisWeekCompleted.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
+  const thisWeekTotalValue = thisWeekServices.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
+
+  const lastWeekServices = filterByDateRange(osServices, "scheduled_date", lastWeek.start, lastWeek.end);
+  const lastWeekCompleted = lastWeekServices.filter((s: any) => s.status === "completed");
+  const lastWeekRevenue = lastWeekCompleted.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
+  const lastWeekTotalValue = lastWeekServices.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
+
+  const nextWeekServices = filterByDateRange(osServices, "scheduled_date", nextWeek.start, nextWeek.end);
+  const nextWeekTotalValue = nextWeekServices.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
+
   // ── THIS MONTH ──
   const monthServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 7) === currentMonth);
   const monthCompleted = monthServices.filter((s: any) => s.status === "completed");
   const monthRevenue = monthCompleted.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
   const monthTotalValue = monthServices.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
+
+  // ── LAST MONTH ──
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+  const lastMonthServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 7) === lastMonth);
+  const lastMonthCompleted = lastMonthServices.filter((s: any) => s.status === "completed");
+  const lastMonthRevenue = lastMonthCompleted.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
 
   // ── FINANCIAL ──
   const monthTransactions = transactions.filter((t: any) => t.date?.substring(0, 7) === currentMonth);
@@ -259,11 +305,46 @@ function buildSystemPrompt(ctx: any) {
   const monthExpenses = monthTransactions.filter((t: any) => t.type === "expense");
   const monthIncomeTotal = monthIncome.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
   const monthExpenseTotal = monthExpenses.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+  const lastMonthTransactions = transactions.filter((t: any) => t.date?.substring(0, 7) === lastMonth);
+  const lastMonthIncomeTotal = lastMonthTransactions.filter((t: any) => t.type === "income").reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+  const lastMonthExpenseTotal = lastMonthTransactions.filter((t: any) => t.type === "expense").reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+  const thisWeekTransIncome = filterByDateRange(transactions.filter((t: any) => t.type === "income"), "date", thisWeek.start, thisWeek.end);
+  const thisWeekIncomeTotal = thisWeekTransIncome.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+  const lastWeekTransIncome = filterByDateRange(transactions.filter((t: any) => t.type === "income"), "date", lastWeek.start, lastWeek.end);
+  const lastWeekIncomeTotal = lastWeekTransIncome.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
   const overduePayments = transactions.filter(
     (t: any) => t.type === "income" && t.status === "pending" && t.due_date && new Date(t.due_date) < now
   );
   const todayTransIncome = monthIncome.filter((t: any) => t.date === todayISO);
   const todayIncomeTotal = todayTransIncome.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+  // ── DAILY AGENDA (next 7 days) ──
+  const buildDailyAgenda = () => {
+    const days: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + i);
+      const iso = d.toISOString().substring(0, 10);
+      const dayName = d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+      const daySvcs = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === iso);
+      if (daySvcs.length === 0) {
+        days.push(`  ${dayName}: livre`);
+      } else {
+        const val = daySvcs.reduce((s: number, sv: any) => s + (sv.value || 0), 0);
+        const details = daySvcs.slice(0, 5).map((s: any) => {
+          const client = clients.find((c: any) => c.id === s.client_id);
+          const tech = s.assigned_to ? techMap[s.assigned_to] : "—";
+          const time = s.scheduled_date?.substring(11, 16) || "—";
+          return `    ${time} | ${client?.name || "?"} | ${s.service_type} | ${tech} | ${formatBRL(s.value || 0)} | ${s.status}`;
+        }).join("\n");
+        days.push(`  ${dayName}: ${daySvcs.length} serviço(s) | ${formatBRL(val)}\n${details}`);
+      }
+    }
+    return days.join("\n");
+  };
 
   // Service list formatter
   const formatServiceList = (svcs: any[], maxItems = 10) => {
@@ -302,6 +383,35 @@ ${formatServiceList(todayServices)}
 • Lista:
 ${formatServiceList(tomorrowServices)}
 
+📆 AGENDA PRÓXIMOS 7 DIAS:
+${buildDailyAgenda()}
+
+══════════ FATURAMENTO SEMANAL ══════════
+
+📅 SEMANA PASSADA (${lastWeek.start} a ${lastWeek.end}):
+• Serviços: ${lastWeekServices.length} total | ${lastWeekCompleted.length} concluídos
+• Faturado (concluídos): ${formatBRL(lastWeekRevenue)}
+• Valor total: ${formatBRL(lastWeekTotalValue)}
+• Receitas (transações): ${formatBRL(lastWeekIncomeTotal)}
+
+📅 ESTA SEMANA (${thisWeek.start} a ${thisWeek.end}):
+• Serviços: ${thisWeekServices.length} total | ${thisWeekCompleted.length} concluídos
+• Faturado (concluídos): ${formatBRL(thisWeekRevenue)}
+• Valor total: ${formatBRL(thisWeekTotalValue)}
+• Receitas (transações): ${formatBRL(thisWeekIncomeTotal)}
+
+📅 PRÓXIMA SEMANA (${nextWeek.start} a ${nextWeek.end}):
+• Serviços agendados: ${nextWeekServices.length}
+• Valor previsto: ${formatBRL(nextWeekTotalValue)}
+
+══════════ FATURAMENTO MENSAL ══════════
+
+📆 MÊS PASSADO (${lastMonth}):
+• Serviços: ${lastMonthServices.length} total | ${lastMonthCompleted.length} concluídos
+• Faturado (concluídos): ${formatBRL(lastMonthRevenue)}
+• Receitas: ${formatBRL(lastMonthIncomeTotal)} | Despesas: ${formatBRL(lastMonthExpenseTotal)}
+• Lucro: ${formatBRL(lastMonthIncomeTotal - lastMonthExpenseTotal)}
+
 📆 ESTE MÊS (${currentMonth}):
 • Serviços: ${monthServices.length} total | ${monthCompleted.length} concluídos
 • Faturamento (concluídos): ${formatBRL(monthRevenue)}
@@ -329,11 +439,15 @@ Interprete a mensagem do usuário e identifique a INTENÇÃO. Exemplos:
 |---|---|---|
 | "quanto faturei hoje" | faturamento_do_dia | Faturamento hoje (concluídos) |
 | "faturamento do mês" | faturamento_do_mes | Faturamento mês (concluídos) |
+| "faturamento da semana" | faturamento_semana | Faturamento esta semana |
+| "semana passada" | faturamento_semana_passada | Dados semana passada |
+| "próxima semana" | previsao_proxima_semana | Agendamentos próxima semana |
 | "agenda de hoje" | agenda_de_hoje | Lista serviços hoje |
 | "agenda de amanhã" | agenda_de_amanha | Lista serviços amanhã |
+| "agenda da semana" | agenda_semana | Agenda próximos 7 dias |
+| "mês passado" | faturamento_mes_passado | Dados mês anterior |
+| "comparar meses" | comparacao | Compare este mês com anterior |
 | "quantos serviços hoje" | quantidade_servicos_hoje | Total serviços hoje |
-| "quantos serviços no mês" | quantidade_servicos_mes | Total serviços mês |
-| "clientes de hoje" | clientes_do_dia | Clientes atendidos hoje |
 | "meta do mês" | meta_mensal | Meta vs faturamento |
 | "pagamentos atrasados" | pagamentos_vencidos | Pendências |
 | "preço de instalação" | consulta_preco | Catálogo de preços |
@@ -350,7 +464,8 @@ Interprete a mensagem do usuário e identifique a INTENÇÃO. Exemplos:
 7. Se perguntar preço, consulte o CATÁLOGO acima.
 8. NÃO use markdown complexo (sem negrito, tabelas, etc). Apenas texto e emojis.
 9. Responda SEMPRE em português brasileiro.
-10. Você representa a empresa "${orgName}". Fale em primeira pessoa do plural ("nós faturamos", "temos agendado").`;
+10. Você representa a empresa "${orgName}". Fale em primeira pessoa do plural ("nós faturamos", "temos agendado").
+11. Ao comparar períodos, sempre mostre a variação percentual.`;
 }
 
 /**
