@@ -176,29 +176,13 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ number: jid, text: msg2 }),
         });
 
-        if (!res.ok) {
-          console.error("[WELCOME] Send failed:", res.status, await res.text());
-          // Revert flag on failure — allow retry
-          await adminClient
-            .from("organizations")
-            .update({ welcome_whatsapp_sent: false })
-            .eq("id", profile.organization_id);
-          return new Response(JSON.stringify({ error: "Send failed" }), {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+        if (!res2.ok) {
+          console.error("[WELCOME] Send msg2 failed:", res2.status, await res2.text());
         }
       } catch (err) {
         console.error("[WELCOME] Send error:", err);
-        // Revert flag on error — allow retry
-        await adminClient
-          .from("organizations")
-          .update({ welcome_whatsapp_sent: false })
-          .eq("id", profile.organization_id);
-        return new Response(JSON.stringify({ error: "Send error" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        await adminClient.from("organizations").update({ welcome_whatsapp_sent: false }).eq("id", profile.organization_id);
+        return new Response(JSON.stringify({ error: "Send error" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
