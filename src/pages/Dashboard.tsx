@@ -85,6 +85,7 @@ export default function Dashboard() {
     <AppLayout>
       <div className="page-enter">
         <DashboardGreeting />
+        <FirstTimeWelcome />
         <TrialUrgencyBanner />
 
         {/* Money on Table Alert */}
