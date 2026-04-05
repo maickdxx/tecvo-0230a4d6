@@ -215,6 +215,103 @@ function extractGeminiText(result: any): string | null {
   return text || null;
 }
 
+function extractGatewayMessageText(content: unknown): string | null {
+  if (typeof content === "string") {
+    const text = content.trim();
+    return text || null;
+  }
+
+  if (Array.isArray(content)) {
+    const text = content
+      .map((part: any) => (typeof part?.text === "string" ? part.text : ""))
+      .join("\n")
+      .trim();
+    return text || null;
+  }
+
+  return null;
+}
+
+function getAudioFormatFromMime(baseMime: string) {
+  const normalizedMime = baseMime.split(";")[0].trim().toLowerCase();
+  if (normalizedMime.includes("mpeg")) return "mp3";
+  if (normalizedMime.includes("ogg")) return "ogg";
+  if (normalizedMime.includes("wav")) return "wav";
+  if (normalizedMime.includes("webm")) return "webm";
+  if (normalizedMime.includes("mp4")) return "m4a";
+  return normalizedMime.split("/")[1] || "ogg";
+}
+
+async function transcribeAudioWithLovableAI(
+  cleanBase64: string,
+  baseMime: string,
+  byteLength: number,
+): Promise<string | null> {
+  try {
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!lovableApiKey) {
+      console.warn("[WEBHOOK-WHATSAPP] transcribeAudioWithLovableAI: missing LOVABLE_API_KEY");
+      return null;
+    }
+
+    if (byteLength > 20 * 1024 * 1024) {
+      console.warn("[WEBHOOK-WHATSAPP] transcribeAudioWithLovableAI: audio too large for request", byteLength);
+      return null;
+    }
+
+    const audioFormat = getAudioFormatFromMime(baseMime);
+    console.log("[WEBHOOK-WHATSAPP] transcribeAudioWithLovableAI: sending to Lovable AI, size:", byteLength, "mime:", baseMime, "format:", audioFormat);
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Transcreva este áudio em português brasileiro. Retorne apenas o texto transcrito, sem explicações, sem aspas e sem prefixos. Se não houver fala inteligível, retorne exatamente: [inaudível].",
+              },
+              {
+                type: "input_audio",
+                input_audio: {
+                  data: cleanBase64,
+                  format: audioFormat,
+                },
+              },
+            ],
+          },
+        ],
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[WEBHOOK-WHATSAPP] transcribeAudioWithLovableAI: gateway error", response.status, errText.slice(0, 300));
+      return null;
+    }
+
+    const result = await response.json();
+    const transcription = extractGatewayMessageText(result?.choices?.[0]?.message?.content);
+    if (!transcription || /^\[?inaud[ií]vel\]?$/i.test(transcription)) {
+      return null;
+    }
+
+    console.log("[WEBHOOK-WHATSAPP] transcribeAudioWithLovableAI: transcription:", transcription.slice(0, 200));
+    return transcription;
+  } catch (err: any) {
+    console.error("[WEBHOOK-WHATSAPP] transcribeAudioWithLovableAI: exception", err.message);
+    return null;
+  }
+}
+
 async function transcribeAudioWithGemini(
   cleanBase64: string,
   baseMime: string,
@@ -327,7 +424,7 @@ async function transcribeAudioWithElevenLabs(
 }
 
 /**
- * Transcribe audio using Gemini first, with ElevenLabs fallback.
+ * Transcribe audio using Lovable AI first, with provider fallbacks.
  * Downloads the audio from Evolution API first, then sends to the speech provider.
  */
 async function transcribeAudio(
@@ -368,6 +465,11 @@ async function transcribeAudio(
 
     const baseMime = (returnedMime || "audio/ogg").split(";")[0].trim().toLowerCase();
     const { cleanBase64, bytes } = decodeBase64ToBytes(base64Data);
+
+    const lovableTranscription = await transcribeAudioWithLovableAI(cleanBase64, baseMime, bytes.length);
+    if (lovableTranscription) {
+      return lovableTranscription;
+    }
 
     const geminiTranscription = await transcribeAudioWithGemini(cleanBase64, baseMime, bytes.length);
     if (geminiTranscription) {
