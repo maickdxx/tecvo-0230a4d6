@@ -1930,7 +1930,21 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
           });
 
           if (!aiResponse) {
-            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for lead_comercial. No reply sent.");
+            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for lead_comercial. Sending fallback.");
+            const fallbackMsg = "Olá! 👋 Sou a assistente do Tecvo. No momento não consegui processar sua mensagem, mas você pode conhecer nossa plataforma em https://tecvo.lovable.app";
+            const fbMsgId = `ai_fallback_${crypto.randomUUID()}`;
+            await supabase.from("whatsapp_messages").insert({
+              organization_id: targetOrganizationId,
+              contact_id: contactId,
+              message_id: fbMsgId,
+              content: fallbackMsg,
+              is_from_me: true,
+              status: "sent",
+              channel_id: channel.id,
+              ai_generated: true,
+            });
+            await sendWhatsAppReply(instance, remoteJid, fallbackMsg);
+            console.log("[WEBHOOK-WHATSAPP] Fallback reply sent for lead_comercial.");
           }
           if (aiResponse) {
             const outputCheckLead = validateAIOutput(aiResponse);
