@@ -4860,6 +4860,9 @@ Você NÃO deve compartilhar:
           let toolRound = 0;
           const maxToolRounds = 3;
           let toolMessages: any[] = [...conversationHistory];
+          let pdfToolAttempted = false;
+          let pdfToolSent = false;
+          let pdfToolResult: string | null = null;
 
           while (
             aiResult.toolCalls && aiResult.toolCalls.length > 0 &&
@@ -4880,6 +4883,10 @@ Você NÃO deve compartilhar:
             });
 
             for (const tc of aiResult.toolCalls) {
+              if (tc.function?.name === "send_service_pdf") {
+                pdfToolAttempted = true;
+              }
+
               const toolResult = await executeAdminTool(
                 supabase,
                 targetOrganizationId,
@@ -4892,6 +4899,14 @@ Você NÃO deve compartilhar:
                 "):",
                 toolResult.slice(0, 200),
               );
+
+              if (tc.function?.name === "send_service_pdf") {
+                pdfToolResult = toolResult;
+                if (toolResult.startsWith("SILENT_PDF_SENT:")) {
+                  pdfToolSent = true;
+                }
+              }
+
               toolMessages.push({
                 role: "tool",
                 tool_call_id: tc.id,
@@ -4919,6 +4934,53 @@ Você NÃO deve compartilhar:
           }
 
           let aiResponse = aiResult.content;
+
+          if (wantsPdfNow && !pdfToolAttempted && fallbackPdfIdentifier) {
+            console.warn(
+              "[WEBHOOK-WHATSAPP] AI skipped send_service_pdf; running fallback with identifier:",
+              fallbackPdfIdentifier,
+            );
+            const fallbackToolResult = await executeAdminTool(
+              supabase,
+              targetOrganizationId,
+              {
+                id: `fallback_pdf_${crypto.randomUUID()}`,
+                type: "function",
+                function: {
+                  name: "send_service_pdf",
+                  arguments: JSON.stringify({
+                    service_identifier: fallbackPdfIdentifier,
+                  }),
+                },
+              },
+              { ...orgContext, instance, remoteJid },
+            );
+            pdfToolAttempted = true;
+            pdfToolResult = fallbackToolResult;
+            if (fallbackToolResult.startsWith("SILENT_PDF_SENT:")) {
+              pdfToolSent = true;
+            }
+          }
+
+          if (pdfToolSent && pdfToolResult?.startsWith("SILENT_PDF_SENT:")) {
+            const sentLabel = pdfToolResult
+              .replace("SILENT_PDF_SENT:", "")
+              .replace(/\s+enviado com sucesso!?$/i, "")
+              .trim();
+            if (!aiResponse || !looksLikePdfSentConfirmation(aiResponse)) {
+              aiResponse = `Pronto, enviei o PDF da ${sentLabel}.`;
+            }
+          } else if (wantsPdfNow && pdfToolResult && !pdfToolSent) {
+            aiResponse = pdfToolResult;
+          } else if (
+            wantsPdfNow &&
+            !pdfToolAttempted &&
+            looksLikePdfSentConfirmation(aiResponse)
+          ) {
+            aiResponse = fallbackPdfIdentifier
+              ? "Tive um problema ao concluir o envio do PDF. Me peça novamente que eu envio com o anexo certo."
+              : "Me passe o número da OS ou o nome do cliente para eu enviar o PDF certinho.";
+          }
 
           // Log AI usage with CORRECT model name
           const aiUsage = extractUsageFromResponse({ usage: aiResult.usage });
