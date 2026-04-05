@@ -58,15 +58,15 @@ export function LauraFloatingAssistant() {
     }
   }, [isLoading, isCompleted, dismissed]);
 
-  // Re-nudge after 30s if dismissed but not completed
+  // Re-nudge after 30s if dismissed but not completed (only for welcome step)
   useEffect(() => {
-    if (dismissed && !isCompleted) {
+    if (dismissed && !isCompleted && step === "welcome") {
       const timer = setTimeout(() => {
         setPulse(true);
       }, 30_000);
       return () => clearTimeout(timer);
     }
-  }, [dismissed, isCompleted]);
+  }, [dismissed, isCompleted, step]);
 
   // Don't render at all if completed and closed
   if (isLoading || (isCompleted && !open)) return null;
