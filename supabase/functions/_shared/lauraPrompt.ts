@@ -887,5 +887,19 @@ export async function executeAdminTool(
     return `✅ Cliente "${newClient.name}" cadastrado com sucesso!`;
   }
 
-  return `Ferramenta "${fnName}" não reconhecida.`;
+    return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar OS, criar orçamento, criar conta financeira e cadastrar cliente.`;
+  } catch (err: any) {
+    const errorMsg = err?.message || String(err);
+    await logToolError(supabase, organizationId, fnName, errorMsg, args);
+    
+    const friendlyMessages: Record<string, string> = {
+      register_transaction: "Não consegui registrar a transação financeira. Verifique os dados (valor, data, categoria) e tente novamente.",
+      create_service: "Não consegui criar a Ordem de Serviço. Verifique os dados (cliente, data, tipo) e tente novamente.",
+      create_quote: "Não consegui criar o orçamento. Verifique os dados (cliente, tipo, valor) e tente novamente.",
+      create_financial_account: "Não consegui criar a conta financeira. Verifique o nome da conta e tente novamente.",
+      create_client: "Não consegui cadastrar o cliente. Verifique nome e telefone e tente novamente.",
+    };
+    
+    return `❌ ${friendlyMessages[fnName] || `Erro ao executar "${fnName}".`}\n\nDetalhes técnicos: ${errorMsg.slice(0, 150)}`;
+  }
 }
