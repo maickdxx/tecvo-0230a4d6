@@ -547,8 +547,8 @@ async function callAI(systemPrompt: string, conversationMessages: any[], tools?:
   };
 }
 
-// Financial tools for admin_empresa mode
-const FINANCIAL_TOOLS = [
+// Tools for admin_empresa mode
+const ADMIN_TOOLS = [
   {
     type: "function",
     function: {
@@ -569,9 +569,29 @@ const FINANCIAL_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_service",
+      description: "Cria uma Ordem de Serviço (OS) no sistema. Use quando o usuário pedir para criar, agendar ou registrar um serviço/OS.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_name: { type: "string", description: "Nome do cliente (busca parcial no cadastro)" },
+          scheduled_date: { type: "string", description: "Data e hora no formato YYYY-MM-DDTHH:MM:SS. Se só informar data, use 08:00 como padrão." },
+          service_type: { type: "string", description: "Tipo de serviço: ex: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro" },
+          description: { type: "string", description: "Descrição do serviço a ser realizado" },
+          value: { type: "number", description: "Valor do serviço em reais. Se não informado, pode ser 0." },
+          assigned_to_name: { type: "string", description: "Nome do técnico responsável (busca parcial na equipe). Opcional." },
+        },
+        required: ["client_name", "scheduled_date", "service_type", "description"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
-async function executeFinancialTool(supabase: any, organizationId: string, toolCall: any): Promise<string> {
+async function executeAdminTool(supabase: any, organizationId: string, toolCall: any, ctx?: any): Promise<string> {
   const fnName = toolCall.function?.name;
   let args: any;
   try {
@@ -605,6 +625,79 @@ async function executeFinancialTool(supabase: any, organizationId: string, toolC
 
     const typeLabel = type === "income" ? "Receita" : "Despesa";
     return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}.`;
+  }
+
+  if (fnName === "create_service") {
+    const { client_name, scheduled_date, service_type, description, value, assigned_to_name } = args;
+    if (!client_name || !scheduled_date || !service_type || !description) {
+      return "Erro: campos obrigatórios faltando (client_name, scheduled_date, service_type, description).";
+    }
+
+    // Find client by partial name match
+    const { data: clientMatches } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .ilike("name", `%${client_name}%`)
+      .limit(5);
+
+    if (!clientMatches || clientMatches.length === 0) {
+      return `Cliente "${client_name}" não encontrado no cadastro. Verifique o nome e tente novamente.`;
+    }
+    if (clientMatches.length > 1) {
+      const names = clientMatches.map((c: any) => c.name).join(", ");
+      return `Encontrei ${clientMatches.length} clientes: ${names}. Qual deles? Especifique melhor o nome.`;
+    }
+    const client = clientMatches[0];
+
+    // Find technician if specified
+    let assignedTo: string | null = null;
+    if (assigned_to_name) {
+      const profiles = ctx?.profiles || [];
+      const match = profiles.find((p: any) => 
+        p.full_name && p.full_name.toLowerCase().includes(assigned_to_name.toLowerCase())
+      );
+      if (match) {
+        assignedTo = match.user_id;
+      }
+    }
+
+    // Check service limit
+    const { data: canCreate } = await supabase.rpc("can_create_service", { org_id: organizationId });
+    if (canCreate === false) {
+      return "Limite de serviços do plano atingido neste mês. Faça upgrade para criar mais.";
+    }
+
+    // Validate service type exists
+    const { data: typeExists } = await supabase
+      .from("service_types")
+      .select("slug")
+      .eq("organization_id", organizationId)
+      .eq("slug", service_type)
+      .limit(1);
+
+    const finalServiceType = (typeExists && typeExists.length > 0) ? service_type : "outro";
+
+    const { data: newService, error } = await supabase.from("services").insert({
+      organization_id: organizationId,
+      client_id: client.id,
+      scheduled_date,
+      service_type: finalServiceType,
+      description,
+      value: value || 0,
+      assigned_to: assignedTo,
+      status: "scheduled",
+      document_type: "service_order",
+    }).select("id").single();
+
+    if (error) {
+      console.error("[WEBHOOK-WHATSAPP] Service insert error:", error);
+      return `Erro ao criar OS: ${error.message}`;
+    }
+
+    const dateFormatted = new Date(scheduled_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}`;
   }
 
   return "Ferramenta desconhecida.";
@@ -1822,25 +1915,34 @@ Deno.serve(async (req) => {
           const orgContext = await fetchOrgContext(supabase, targetOrganizationId);
           systemPrompt = buildSystemPrompt(orgContext);
 
-          // Add instruction about financial tools WITH CONFIRMATION REQUIREMENT
+          // Add instruction about tools WITH CONFIRMATION REQUIREMENT
           systemPrompt += `\n\n══════════ FERRAMENTAS DISPONÍVEIS ══════════
-Você tem acesso à ferramenta 'register_transaction' para registrar despesas e receitas.
-Quando o usuário pedir para registrar um gasto/despesa/receita:
-1. Extraia os dados da mensagem (valor, descrição, categoria, data)
-2. Se faltar algum dado essencial, pergunte antes de registrar
-3. OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação explícita ao usuário mostrando um resumo: "Vou registrar: [tipo] de R$ [valor] — [descrição] ([categoria]) em [data]. Confirma? (sim/não)"
-4. Só execute a ferramenta register_transaction DEPOIS que o usuário confirmar com "sim", "confirmo", "pode registrar" ou similar
-5. Se o usuário negar, cancele e pergunte o que deseja corrigir
 
+1. FERRAMENTA 'register_transaction' — registrar despesas e receitas.
+Quando o usuário pedir para registrar um gasto/despesa/receita:
+- Extraia os dados da mensagem (valor, descrição, categoria, data)
+- Se faltar algum dado essencial, pergunte antes de registrar
+- OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação explícita ao usuário mostrando um resumo
+- Só execute DEPOIS que o usuário confirmar com "sim", "confirmo", "pode registrar" ou similar
 Categorias comuns de despesa: material, combustível, alimentação, aluguel, fornecedor, manutenção, salário, outro
-Categorias comuns de receita: serviço, manutenção, instalação, venda, outro`;
+Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
+
+2. FERRAMENTA 'create_service' — criar Ordem de Serviço (OS).
+Quando o usuário pedir para criar/agendar um serviço ou OS:
+- Extraia: nome do cliente, data/hora, tipo de serviço, descrição, valor (opcional), técnico (opcional)
+- Se faltar cliente ou data, pergunte antes de criar
+- OBRIGATÓRIO: ANTES de usar a ferramenta, SEMPRE peça confirmação mostrando resumo da OS
+- Só execute DEPOIS que o usuário confirmar
+- Para o campo scheduled_date, use formato YYYY-MM-DDTHH:MM:SS (se não informar hora, use 08:00)
+- Use a data de HOJE se o usuário não especificar
+Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro`;
 
           // Fetch conversation history for context
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
           console.log("[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:", conversationHistory.length, "messages. System prompt length:", systemPrompt.length, "chars. Calling AI...");
 
           const startTime = Date.now();
-          let aiResult = await callAI(systemPrompt, conversationHistory, FINANCIAL_TOOLS);
+          let aiResult = await callAI(systemPrompt, conversationHistory, ADMIN_TOOLS);
           let aiDuration = Date.now() - startTime;
           console.log("[WEBHOOK-WHATSAPP] [DEBUG] AI returned in", aiDuration, "ms. Content length:", aiResult.content?.length, "toolCalls:", aiResult.toolCalls?.length || 0);
 
@@ -1852,7 +1954,7 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
             toolMessages.push({ role: "assistant", content: aiResult.content || "", tool_calls: aiResult.toolCalls });
 
             for (const tc of aiResult.toolCalls) {
-              const toolResult = await executeFinancialTool(supabase, targetOrganizationId, tc);
+              const toolResult = await executeAdminTool(supabase, targetOrganizationId, tc, orgContext);
               console.log("[WEBHOOK-WHATSAPP] Tool result:", toolResult);
               toolMessages.push({ role: "tool", tool_call_id: tc.id, content: toolResult });
             }
