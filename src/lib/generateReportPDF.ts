@@ -65,7 +65,8 @@ export async function generateReportPDF({
   organizationCity,
   organizationState,
   signature,
-}: ReportPDFData) {
+  returnBlob = false,
+}: ReportPDFData): Promise<Blob | void> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
