@@ -29,8 +29,8 @@ const PROMPT_LEAK_PATTERNS: RegExp[] = [
 
 // Cross-org mention patterns
 const CROSS_ORG_PATTERNS: RegExp[] = [
-  /(?:dados?\s+d[aeo]s?\s+(?:outr[ao]s?\s+)?(?:empresa|organização|cliente))/i,
-  /(?:informaç(?:ão|ões)\s+d[aeo]\s+(?:outr[ao]\s+)?(?:empresa|organização))/i,
+  /(?:dados?\s+d[aeo]s?\s+outr[ao]s?\s+(?:empresa|organização|cliente))/i,
+  /(?:informaç(?:ão|ões)\s+d[aeo]\s+outr[ao]\s+(?:empresa|organização))/i,
 ];
 
 export interface ValidationResult {
