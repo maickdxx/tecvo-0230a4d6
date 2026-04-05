@@ -203,12 +203,6 @@ export default function Onboarding() {
           });
         }
 
-        await supabase.from("clients").insert({
-          organization_id: profile.organization_id,
-          name: "Cliente Exemplo",
-          phone: "(00) 00000-0000",
-          is_demo_data: true,
-        });
       }
 
       localStorage.removeItem("tecvo_onboarding_step");
