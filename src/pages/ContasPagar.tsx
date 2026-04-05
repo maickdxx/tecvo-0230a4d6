@@ -103,6 +103,20 @@ export default function ContasPagar() {
     endDate,
   });
 
+  // Recalculate totals locally using effective status (timezone-aware)
+  const localTotals = useMemo(() => {
+    const result = { pending: 0, paid: 0, overdue: 0, total: 0 };
+    for (const acc of accounts) {
+      const status = getEffectiveStatus(acc, tz);
+      const amount = Number(acc.amount);
+      if (status === "pending") result.pending += amount;
+      else if (status === "overdue") result.overdue += amount;
+      else if (status === "paid") result.paid += amount;
+      result.total += amount;
+    }
+    return result;
+  }, [accounts, tz]);
+
   const { categoryLabels } = useTransactionCategories("expense");
 
   // Smart summary calculations
