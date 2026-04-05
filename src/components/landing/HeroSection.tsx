@@ -8,9 +8,9 @@ import screenshotWhatsapp from "@/assets/screenshot-whatsapp.jpg";
 
 const highlights = [
   { icon: MessageCircle, label: "WhatsApp integrado" },
+  { icon: Zap, label: "Secretária IA inclusa" },
   { icon: CalendarCheck, label: "Agenda de serviços" },
   { icon: Wallet, label: "Controle financeiro" },
-  { icon: Zap, label: "Recorrência automática" },
 ];
 
 export function HeroSection() {
@@ -57,7 +57,7 @@ export function HeroSection() {
             <p className="text-lg text-muted-foreground leading-relaxed mb-8 animate-fade-in">
               Orçamento que não mandou, serviço que esqueceu, cliente que foi pro concorrente.{" "}
               <strong className="text-foreground font-semibold">
-                O Tecvo coloca tudo no lugar — serviços, clientes, financeiro e WhatsApp — para você faturar mais com menos trabalho.
+                O Tecvo coloca tudo no lugar — serviços, clientes, financeiro e WhatsApp — e ainda tem uma secretária IA que atende e vende por você.
               </strong>
             </p>
 

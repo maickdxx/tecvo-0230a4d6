@@ -89,8 +89,7 @@ export default function TermosDeUso() {
             <p>A plataforma oferece planos de assinatura com diferentes funcionalidades e limites. Ao assinar um plano:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>A cobrança é realizada mensalmente de forma recorrente.</li>
-              <li>O período de teste gratuito, quando disponível, não gera cobrança.</li>
-              <li>Após o período de teste, a cobrança é iniciada automaticamente, salvo cancelamento prévio.</li>
+              <li>O primeiro mês possui valor promocional de R$1, com renovação automática ao valor integral no segundo mês.</li>
               <li>O usuário pode fazer upgrade ou downgrade de plano a qualquer momento.</li>
             </ul>
           </section>
