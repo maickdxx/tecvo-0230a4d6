@@ -2,10 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useWhatsAppChannels } from "@/hooks/useWhatsAppChannels";
-import { generateServiceOrderPDF } from "@/lib/generateServiceOrderPDF";
-import { formatPaymentMethod } from "@/lib/formatPaymentMethod";
-import { formatDateInTz, formatTimeInTz } from "@/lib/timezone";
-import { useOrgTimezone } from "@/hooks/useOrgTimezone";
+import { materializeServicePDF } from "@/lib/materializePDF";
 import { toast } from "sonner";
 import type { Service } from "@/hooks/useServices";
 
