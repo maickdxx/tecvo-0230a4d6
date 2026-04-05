@@ -866,8 +866,12 @@ export async function executeAdminTool(
       return `Erro ao criar OS: ${error.message}`;
     }
 
+    // Post-action verification
+    const verifySvcErr = await verifyInsert(supabase, "services", newService.id, "Service");
+    if (verifySvcErr) return verifySvcErr;
+
     const dateFormatted = new Date(scheduled_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}`;
+    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}\n✅ Confirmado no sistema.`;
   }
 
   if (fnName === "create_quote") {
