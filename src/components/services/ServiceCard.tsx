@@ -48,7 +48,7 @@ export function ServiceCard({ service, onEdit, onDelete, onStatusChange, onQuote
   const hasServiceAddress = service.service_street || service.service_city;
 
   const formatServiceAddress = () => {
-    const parts = [
+    return [
       service.service_street,
       service.service_number,
       service.service_complement,
