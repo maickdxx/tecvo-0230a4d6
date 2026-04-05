@@ -4902,6 +4902,14 @@ Você NÃO deve compartilhar:
             systemPrompt.length,
             "chars. Calling AI...",
           );
+          console.log(
+            "[WEBHOOK-WHATSAPP] [DEBUG] wantsPdfNow:",
+            wantsPdfNow,
+            "fallbackPdfIdentifier:",
+            fallbackPdfIdentifier,
+            "currentExplicitPdfRequest:",
+            currentExplicitPdfRequest,
+          );
 
           const startTime = Date.now();
           let aiResult = await callAI(
