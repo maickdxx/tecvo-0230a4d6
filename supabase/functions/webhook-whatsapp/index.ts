@@ -3832,15 +3832,15 @@ Você NÃO deve compartilhar:
             );
           }
 
-          const aiResponse = aiResult.content;
+          let aiResponse = aiResult.content;
 
-          // Log AI usage
+          // Log AI usage with CORRECT model name
           const aiUsage = extractUsageFromResponse({ usage: aiResult.usage });
           await logAIUsage(supabase, {
             organizationId: targetOrganizationId,
             userId: null,
             actionSlug: "bot_auto_reply",
-            model: "google/gemini-3-flash-preview",
+            model: "google/gemini-2.5-flash",
             promptTokens: aiUsage.promptTokens,
             completionTokens: aiUsage.completionTokens,
             totalTokens: aiUsage.totalTokens,
@@ -3848,12 +3848,20 @@ Você NÃO deve compartilhar:
             status: "success",
           });
 
+          // Retry once on empty response
           if (!aiResponse) {
-            console.warn(
-              "[WEBHOOK-WHATSAPP] AI returned empty response for admin_empresa. Sending fallback.",
-            );
-            const fallbackMsg =
-              "Desculpe, não consegui processar sua mensagem no momento. Tente novamente em instantes. 🙏";
+            console.warn("[WEBHOOK-WHATSAPP] AI returned empty — retrying once...");
+            try {
+              const retryResult = await callAI(systemPrompt, conversationHistory, ADMIN_TOOLS);
+              aiResponse = retryResult.content;
+            } catch (retryErr: any) {
+              console.error("[WEBHOOK-WHATSAPP] AI retry failed:", retryErr.message);
+            }
+          }
+
+          if (!aiResponse) {
+            console.warn("[WEBHOOK-WHATSAPP] AI empty after retry. Sending contextual fallback.");
+            const fallbackMsg = "Não consegui processar agora. Pode repetir de outra forma? Estou aqui pra ajudar 😊";
             const fbMsgId = `ai_fallback_${crypto.randomUUID()}`;
             await supabase.from("whatsapp_messages").insert({
               organization_id: targetOrganizationId,
@@ -3866,12 +3874,8 @@ Você NÃO deve compartilhar:
               ai_generated: true,
             });
             await sendWhatsAppReply(instance, remoteJid, fallbackMsg);
-            console.log(
-              "[WEBHOOK-WHATSAPP] Fallback reply sent for admin_empresa.",
-            );
           }
           if (aiResponse) {
-            // Output validation filter
             const outputCheck = validateAIOutput(aiResponse);
             const safeResponse = outputCheck.safe
               ? aiResponse
@@ -3885,14 +3889,10 @@ Você NÃO deve compartilhar:
                 outputCheck.reasons,
                 aiResponse,
               );
-              console.warn(
-                "[WEBHOOK-WHATSAPP] AI output blocked:",
-                outputCheck.reasons,
-              );
+              console.warn("[WEBHOOK-WHATSAPP] AI output blocked:", outputCheck.reasons);
             }
 
             if (safeResponse) {
-              // Send guard check for AI reply
               const aiGuard = await checkSendLimit(
                 supabase,
                 targetOrganizationId,
@@ -3900,50 +3900,60 @@ Você NÃO deve compartilhar:
                 "ai",
               );
               if (!aiGuard.allowed) {
-                console.warn(
-                  "[WEBHOOK-WHATSAPP] AI reply blocked by send guard:",
-                  aiGuard.reason,
-                );
+                console.warn("[WEBHOOK-WHATSAPP] AI reply blocked by send guard:", aiGuard.reason);
               } else {
-                console.log(
-                  "[WEBHOOK-WHATSAPP] AI admin response:",
-                  safeResponse.slice(0, 200),
-                );
+                console.log("[WEBHOOK-WHATSAPP] AI admin response:", safeResponse.slice(0, 200));
                 const aiMessageId = `ai_${crypto.randomUUID()}`;
-                await supabase.from("whatsapp_messages").insert({
-                  organization_id: targetOrganizationId,
-                  contact_id: contactId,
-                  message_id: aiMessageId,
-                  content: safeResponse,
-                  is_from_me: true,
-                  status: "sent",
-                  channel_id: channel.id,
-                  ai_generated: true,
-                });
-                // If incoming was audio, respond ONLY with audio (no text message)
+
+                // DECIDE FORMAT FIRST (audio vs text), then save & send
                 if (isIncomingAudio && safeResponse.length <= 2000) {
-                  (async () => {
-                    try {
-                      const audioBase64 = await generateTTSAudio(safeResponse);
-                      if (audioBase64) {
-                        await sendWhatsAppAudio(
-                          instance,
-                          remoteJid,
-                          audioBase64,
-                          supabase,
-                        );
-                        console.log("[WEBHOOK-WHATSAPP] Admin audio-only reply sent");
-                      } else {
-                        // TTS failed — fallback to text
-                        await sendWhatsAppReply(instance, remoteJid, safeResponse);
-                        console.log("[WEBHOOK-WHATSAPP] Admin text fallback (TTS failed)");
-                      }
-                    } catch (ttsErr: any) {
-                      console.warn("[WEBHOOK-WHATSAPP] TTS failed, text fallback:", ttsErr.message);
-                      await sendWhatsAppReply(instance, remoteJid, safeResponse);
+                  let audioSent = false;
+                  try {
+                    const audioBase64 = await generateTTSAudio(safeResponse);
+                    if (audioBase64) {
+                      await supabase.from("whatsapp_messages").insert({
+                        organization_id: targetOrganizationId,
+                        contact_id: contactId,
+                        message_id: aiMessageId,
+                        content: "🎤 Áudio",
+                        media_type: "audio",
+                        is_from_me: true,
+                        status: "sent",
+                        channel_id: channel.id,
+                        ai_generated: true,
+                      });
+                      await sendWhatsAppAudio(instance, remoteJid, audioBase64, supabase);
+                      audioSent = true;
+                      console.log("[WEBHOOK-WHATSAPP] Admin audio-only reply sent");
                     }
-                  })();
+                  } catch (ttsErr: any) {
+                    console.warn("[WEBHOOK-WHATSAPP] TTS failed:", ttsErr.message);
+                  }
+                  if (!audioSent) {
+                    await supabase.from("whatsapp_messages").insert({
+                      organization_id: targetOrganizationId,
+                      contact_id: contactId,
+                      message_id: aiMessageId,
+                      content: safeResponse,
+                      is_from_me: true,
+                      status: "sent",
+                      channel_id: channel.id,
+                      ai_generated: true,
+                    });
+                    await sendWhatsAppReply(instance, remoteJid, safeResponse);
+                    console.log("[WEBHOOK-WHATSAPP] Admin text fallback (TTS failed)");
+                  }
                 } else {
+                  await supabase.from("whatsapp_messages").insert({
+                    organization_id: targetOrganizationId,
+                    contact_id: contactId,
+                    message_id: aiMessageId,
+                    content: safeResponse,
+                    is_from_me: true,
+                    status: "sent",
+                    channel_id: channel.id,
+                    ai_generated: true,
+                  });
                   const sent = await sendWhatsAppReply(instance, remoteJid, safeResponse);
                   console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
                 }
