@@ -47,9 +47,13 @@ export default function Onboarding() {
   const startedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Laura's WhatsApp phase messages
+  const [whatsappMessages, setWhatsappMessages] = useState<Array<{role: "assistant" | "user"; content: string}>>([]);
+  const whatsappInitRef = useRef(false);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, whatsappMessages]);
 
   useEffect(() => {
     if (!authLoading && !onboardingLoading && isOnboardingCompleted) {
@@ -59,17 +63,38 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (!authLoading && !onboardingLoading && user && !isOnboardingCompleted && !startedRef.current) {
-      startedRef.current = true;
-      // Small delay to ensure component is fully mounted
-      setTimeout(() => startConversation(), 300);
+      // Only start conversation if we're on chat step (not returning from payment)
+      if (step === "chat") {
+        startedRef.current = true;
+        setTimeout(() => startConversation(), 300);
+      }
     }
-  }, [authLoading, onboardingLoading, user, isOnboardingCompleted, startConversation]);
+  }, [authLoading, onboardingLoading, user, isOnboardingCompleted, startConversation, step]);
 
   useEffect(() => {
     if (showActivate && step === "chat") {
       setStep("payment");
     }
   }, [showActivate, step]);
+
+  // When entering WhatsApp step, show Laura's message about WhatsApp
+  useEffect(() => {
+    if (step === "whatsapp" && !whatsappInitRef.current) {
+      whatsappInitRef.current = true;
+      const name = userName ? userName.split(" ")[0] : "";
+      const greeting = name ? `${name}, ` : "";
+      
+      // Simulate typing delay
+      setTimeout(() => {
+        setWhatsappMessages([
+          {
+            role: "assistant",
+            content: `${greeting}seu plano já tá ativo! 🎉\n\nAgora me passa seu WhatsApp pra eu te ajudar por lá também. Vou te enviar lembretes, alertas e você pode falar comigo direto pelo WhatsApp.`
+          }
+        ]);
+      }, 600);
+    }
+  }, [step, userName]);
 
   if (authLoading || onboardingLoading) {
     return (
@@ -195,25 +220,54 @@ export default function Onboarding() {
     }
   };
 
+  // Decide which messages to show based on step
+  const displayMessages = step === "whatsapp" ? whatsappMessages : messages;
+  const showTypingIndicator = step === "chat" && chatLoading && messages[messages.length - 1]?.role !== "assistant";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Elegant header */}
-      <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="max-w-lg mx-auto w-full px-4 py-3 flex items-center gap-3">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 flex flex-col">
+      {/* Header */}
+      <div className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-10">
+        <div className="max-w-lg mx-auto w-full px-4 py-3.5 flex items-center gap-3">
           <div className="relative">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shadow-sm">
               <Bot className="h-5 w-5 text-primary" />
             </div>
             <div
-              className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background"
+              className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card"
               style={{ backgroundColor: "hsl(var(--success))" }}
             />
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-foreground">Laura</h1>
-            <p className="text-[11px] text-muted-foreground">
-              {chatLoading ? "Digitando..." : "Sua secretária na Tecvo"}
+          <div className="flex-1">
+            <h1 className="text-sm font-semibold text-foreground leading-tight">Laura</h1>
+            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+              {chatLoading && step === "chat" ? (
+                <span className="flex items-center gap-1">
+                  <span className="inline-flex gap-0.5">
+                    <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </span>
+                  <span className="ml-1">digitando</span>
+                </span>
+              ) : "Sua secretária na Tecvo"}
             </p>
+          </div>
+          {/* Step indicator */}
+          <div className="flex items-center gap-1.5">
+            {["chat", "payment", "whatsapp"].map((s, i) => (
+              <div
+                key={s}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-500",
+                  step === s || (step === "activating" && s === "whatsapp")
+                    ? "w-6 bg-primary" 
+                    : ["chat"].indexOf(step) < i 
+                      ? "w-1.5 bg-muted-foreground/20" 
+                      : "w-1.5 bg-primary/40"
+                )}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -239,34 +293,34 @@ export default function Onboarding() {
         ) : (
           <>
             {/* Chat messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-3">
               <AnimatePresence mode="popLayout">
-                {messages.map((msg, i) => (
+                {displayMessages.map((msg, i) => (
                   <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    key={`${step}-${i}`}
+                    initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut", delay: step === "whatsapp" ? i * 0.15 : 0 }}
                     className={cn(
                       "flex gap-2.5",
                       msg.role === "user" ? "justify-end" : "justify-start"
                     )}
                   >
                     {msg.role === "assistant" && (
-                      <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
                         <Bot className="h-4 w-4 text-primary" />
                       </div>
                     )}
                     <div
                       className={cn(
-                        "max-w-[80%] px-4 py-3 text-sm leading-relaxed",
+                        "max-w-[82%] px-4 py-3 text-[14px] leading-relaxed",
                         msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-2xl rounded-br-lg shadow-sm"
-                          : "bg-muted/70 text-foreground rounded-2xl rounded-bl-lg border border-border/30"
+                          ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md shadow-md shadow-primary/10"
+                          : "bg-card text-foreground rounded-2xl rounded-bl-md border border-border/50 shadow-sm"
                       )}
                     >
                       {msg.role === "assistant" ? (
-                        <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&>p]:leading-relaxed">
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&>p]:leading-relaxed [&>p]:mb-1.5 last:[&>p]:mb-0">
                           <ReactMarkdown>{msg.content}</ReactMarkdown>
                         </div>
                       ) : (
@@ -278,20 +332,20 @@ export default function Onboarding() {
               </AnimatePresence>
 
               {/* Typing indicator */}
-              {chatLoading && messages[messages.length - 1]?.role !== "assistant" && (
+              {showTypingIndicator && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-2.5"
                 >
-                  <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <Bot className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="bg-muted/70 rounded-2xl rounded-bl-lg border border-border/30 px-4 py-3">
+                  <div className="bg-card rounded-2xl rounded-bl-md border border-border/50 shadow-sm px-5 py-3.5">
                     <div className="flex gap-1.5 items-center h-5">
-                      <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
                   </div>
                 </motion.div>
@@ -307,9 +361,9 @@ export default function Onboarding() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="px-4 pb-2"
+                  className="px-4 pb-3"
                 >
-                  <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-lg shadow-primary/5">
+                  <div className="bg-card border border-border/60 rounded-2xl p-5 space-y-4 shadow-lg shadow-primary/5">
                     <div className="text-center space-y-2">
                       <div className="flex justify-center">
                         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
@@ -344,29 +398,25 @@ export default function Onboarding() {
               )}
             </AnimatePresence>
 
-            {/* WhatsApp card */}
+            {/* WhatsApp input card - shown inside the chat flow */}
             <AnimatePresence>
-              {step === "whatsapp" && (
+              {step === "whatsapp" && whatsappMessages.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="px-4 pb-2"
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
+                  className="px-4 pb-3"
                 >
-                  <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-lg shadow-primary/5">
-                    <div className="text-center space-y-2">
-                      <div className="flex justify-center">
-                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                          <MessageCircle className="h-6 w-6 text-primary" />
-                        </div>
+                  <div className="bg-card border border-border/60 rounded-2xl p-5 space-y-4 shadow-lg shadow-primary/5">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
+                        <MessageCircle className="h-5 w-5 text-primary" />
                       </div>
-                      <h3 className="text-base font-semibold text-foreground">
-                        Quase lá! Qual seu WhatsApp?
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        Preciso dele pra te enviar alertas e te ajudar pelo WhatsApp 😊
-                      </p>
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground">Seu WhatsApp</h3>
+                        <p className="text-[11px] text-muted-foreground">Para receber alertas e falar comigo</p>
+                      </div>
                     </div>
 
                     <Input
@@ -375,7 +425,7 @@ export default function Onboarding() {
                       value={whatsapp}
                       onChange={(e) => setWhatsapp(formatPhone(e.target.value))}
                       placeholder="(11) 99999-9999"
-                      className="text-base h-12 text-center rounded-xl"
+                      className="text-base h-12 text-center rounded-xl bg-muted/30 border-border/50"
                       autoFocus
                     />
 
@@ -394,7 +444,7 @@ export default function Onboarding() {
                       </Button>
                       <button
                         onClick={() => handleActivate()}
-                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5"
                       >
                         Pular por agora
                       </button>
@@ -406,7 +456,7 @@ export default function Onboarding() {
 
             {/* Chat input */}
             {step === "chat" && !showActivate && (
-              <div className="border-t border-border/50 bg-card/30 backdrop-blur-sm px-4 py-3">
+              <div className="border-t border-border/40 bg-card/50 backdrop-blur-md px-4 py-3">
                 <div className="flex gap-2 items-center">
                   <Input
                     ref={inputRef}
@@ -414,7 +464,7 @@ export default function Onboarding() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Digite sua resposta..."
-                    className="h-11 text-sm rounded-xl bg-muted/50 border-border/50 focus-visible:ring-primary/30"
+                    className="h-11 text-sm rounded-xl bg-muted/30 border-border/40 focus-visible:ring-primary/30"
                     disabled={chatLoading}
                     autoFocus
                   />
@@ -422,7 +472,7 @@ export default function Onboarding() {
                     size="icon"
                     onClick={handleSend}
                     disabled={!input.trim() || chatLoading}
-                    className="h-11 w-11 flex-shrink-0 rounded-xl"
+                    className="h-11 w-11 flex-shrink-0 rounded-xl shadow-md shadow-primary/10"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
