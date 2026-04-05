@@ -3,6 +3,7 @@ import { logAIUsage, extractUsageFromResponse } from "../_shared/aiUsageLogger.t
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { getTodayInTz, getTomorrowInTz, getFormattedDateTimeInTz, getCurrentMonthInTz } from "../_shared/timezone.ts";
 import { normalizePhone, normalizeJid, normalizeDigits } from "../_shared/whatsapp-utils.ts";
+import { validateAIOutput, logOutputViolation } from "../_shared/outputValidator.ts";
 
 import { getCorsHeaders } from "../_shared/cors.ts";
 
