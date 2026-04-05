@@ -796,7 +796,11 @@ export async function executeAdminTool(
       .update({ default_ai_account_id: newAccount.id })
       .eq("id", organizationId);
 
-    return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA!`;
+    // Post-action verification
+    const verifyAccErr = await verifyInsert(supabase, "financial_accounts", newAccount.id, "FinancialAccount");
+    if (verifyAccErr) return verifyAccErr;
+
+    return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! Confirmado no sistema.`;
   }
 
   if (fnName === "create_service") {
