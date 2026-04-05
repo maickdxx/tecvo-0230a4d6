@@ -1863,7 +1863,21 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
           });
 
           if (!aiResponse) {
-            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for admin_empresa. No reply sent.");
+            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for admin_empresa. Sending fallback.");
+            const fallbackMsg = "Desculpe, não consegui processar sua mensagem no momento. Tente novamente em instantes. 🙏";
+            const fbMsgId = `ai_fallback_${crypto.randomUUID()}`;
+            await supabase.from("whatsapp_messages").insert({
+              organization_id: targetOrganizationId,
+              contact_id: contactId,
+              message_id: fbMsgId,
+              content: fallbackMsg,
+              is_from_me: true,
+              status: "sent",
+              channel_id: channel.id,
+              ai_generated: true,
+            });
+            await sendWhatsAppReply(instance, remoteJid, fallbackMsg);
+            console.log("[WEBHOOK-WHATSAPP] Fallback reply sent for admin_empresa.");
           }
           if (aiResponse) {
             // Output validation filter
@@ -1916,7 +1930,21 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
           });
 
           if (!aiResponse) {
-            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for lead_comercial. No reply sent.");
+            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for lead_comercial. Sending fallback.");
+            const fallbackMsg = "Olá! 👋 Sou a assistente do Tecvo. No momento não consegui processar sua mensagem, mas você pode conhecer nossa plataforma em https://tecvo.lovable.app";
+            const fbMsgId = `ai_fallback_${crypto.randomUUID()}`;
+            await supabase.from("whatsapp_messages").insert({
+              organization_id: targetOrganizationId,
+              contact_id: contactId,
+              message_id: fbMsgId,
+              content: fallbackMsg,
+              is_from_me: true,
+              status: "sent",
+              channel_id: channel.id,
+              ai_generated: true,
+            });
+            await sendWhatsAppReply(instance, remoteJid, fallbackMsg);
+            console.log("[WEBHOOK-WHATSAPP] Fallback reply sent for lead_comercial.");
           }
           if (aiResponse) {
             const outputCheckLead = validateAIOutput(aiResponse);
@@ -1952,6 +1980,25 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
         }
       } catch (aiError) {
         console.error("[WEBHOOK-WHATSAPP] AI processing error:", aiError);
+        // Fallback: send a safe message so the user doesn't get silence
+        try {
+          const errorFallback = "Desculpe, tive um problema técnico ao processar sua mensagem. Tente novamente em instantes. 🙏";
+          const fbId = `ai_error_${crypto.randomUUID()}`;
+          await supabase.from("whatsapp_messages").insert({
+            organization_id: targetOrganizationId,
+            contact_id: contactId,
+            message_id: fbId,
+            content: errorFallback,
+            is_from_me: true,
+            status: "sent",
+            channel_id: channel.id,
+            ai_generated: true,
+          });
+          await sendWhatsAppReply(instance, remoteJid, errorFallback);
+          console.log("[WEBHOOK-WHATSAPP] Error fallback reply sent.");
+        } catch (fbErr) {
+          console.error("[WEBHOOK-WHATSAPP] Failed to send error fallback:", fbErr);
+        }
       }
     }
     // CUSTOMER_INBOX: no AI auto-reply — messages just land in the inbox for manual handling
