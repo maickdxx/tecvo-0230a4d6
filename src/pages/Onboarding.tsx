@@ -186,6 +186,7 @@ export default function Onboarding() {
         });
       }
 
+      localStorage.removeItem("tecvo_onboarding_step");
       await completeOnboarding();
       navigate("/dashboard");
     } catch (err) {
