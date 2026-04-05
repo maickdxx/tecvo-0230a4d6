@@ -4,13 +4,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useOnboardingChat } from "@/hooks/useOnboardingChat";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, ArrowRight, Sparkles, Check, MessageCircle } from "lucide-react";
+import { Loader2, Send, ArrowRight, Sparkles, Check, MessageCircle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { PLAN_CONFIG, PAID_PLANS } from "@/lib/planConfig";
+import type { PlanSlug } from "@/lib/planConfig";
 
 type OnboardingStep = "chat" | "payment" | "whatsapp" | "activating" | "transition";
 
@@ -84,9 +86,24 @@ export default function Onboarding() {
   const [whatsapp, setWhatsapp] = useState("");
   const [isActivating, setIsActivating] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [showPlanSelector, setShowPlanSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Plan selection: from URL param (landing page), localStorage, or needs selection
+  const [selectedPlan, setSelectedPlanRaw] = useState<"starter" | "essential" | "pro" | null>(() => {
+    const urlPlan = searchParams.get("plan");
+    if (urlPlan === "starter" || urlPlan === "essential" || urlPlan === "pro") return urlPlan;
+    const saved = localStorage.getItem("tecvo_onboarding_plan");
+    if (saved === "starter" || saved === "essential" || saved === "pro") return saved;
+    return null;
+  });
+
+  const setSelectedPlan = (p: "starter" | "essential" | "pro") => {
+    setSelectedPlanRaw(p);
+    localStorage.setItem("tecvo_onboarding_plan", p);
+  };
 
   const [whatsappMessages, setWhatsappMessages] = useState<Array<{role: "assistant" | "user"; content: string}>>([]);
   const whatsappInitRef = useRef(false);
@@ -192,7 +209,7 @@ export default function Onboarding() {
     }
   };
 
-  const handleCheckout = async (plan: string = "starter") => {
+  const handleCheckout = async (plan: "starter" | "essential" | "pro") => {
     setCheckoutLoading(true);
     try {
       // Save company name before redirecting away
@@ -281,6 +298,7 @@ export default function Onboarding() {
 
       localStorage.removeItem("tecvo_onboarding_step");
       localStorage.removeItem("tecvo_onboarding_data");
+      localStorage.removeItem("tecvo_onboarding_plan");
       await completeOnboarding();
       localStorage.setItem("tecvo_first_dashboard", "true");
     } catch (err) {
@@ -430,24 +448,79 @@ export default function Onboarding() {
                   className="px-4 pb-4"
                 >
                   <div className="bg-gradient-to-b from-card to-card/80 border border-border/40 rounded-2xl p-6 space-y-5 shadow-xl shadow-black/5">
-                    <div className="text-center space-y-3">
-                      <div className="mx-auto h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                        <Sparkles className="h-6 w-6 text-white" />
+                    {/* Plan selector */}
+                    {(!selectedPlan || showPlanSelector) ? (
+                      <div className="space-y-3">
+                        <div className="text-center space-y-1">
+                          <h3 className="text-lg font-bold text-foreground">Escolha seu plano</h3>
+                          <p className="text-xs text-muted-foreground">Primeiro mês por R$ 1 em qualquer plano</p>
+                        </div>
+                        <div className="space-y-2">
+                          {PAID_PLANS.filter(p => p.slug !== "teste").map((plan) => (
+                            <button
+                              key={plan.slug}
+                              onClick={() => {
+                                setSelectedPlan(plan.slug as "starter" | "essential" | "pro");
+                                setShowPlanSelector(false);
+                              }}
+                              className={cn(
+                                "w-full text-left p-3.5 rounded-xl border-2 transition-all duration-200",
+                                selectedPlan === plan.slug
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border/40 hover:border-primary/40 bg-background/50"
+                              )}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-sm font-semibold text-foreground">{plan.name}</span>
+                                  {plan.featured && (
+                                    <span className="ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">Popular</span>
+                                  )}
+                                  <p className="text-[11px] text-muted-foreground mt-0.5">{plan.description}</p>
+                                </div>
+                                <div className="text-right flex-shrink-0 ml-3">
+                                  <span className="text-sm font-bold text-foreground">{plan.price}</span>
+                                  <span className="text-[10px] text-muted-foreground">/mês</span>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-foreground">Ative por R$ 1</h3>
-                        <p className="text-xs text-muted-foreground mt-1">Primeiro mês por R$ 1 · Cancele quando quiser</p>
+                    ) : (
+                      <div className="text-center space-y-3">
+                        <div className="mx-auto h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                          <Sparkles className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-foreground">Ative por R$ 1</h3>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Plano {PLAN_CONFIG[selectedPlan].name} · Primeiro mês por R$ 1 · Após: {PLAN_CONFIG[selectedPlan].price}/mês
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowPlanSelector(true)}
+                          className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors font-medium"
+                        >
+                          Trocar plano <ChevronDown className="h-3 w-3" />
+                        </button>
                       </div>
-                    </div>
-                    <Button
-                      onClick={() => handleCheckout("starter")}
-                      disabled={checkoutLoading}
-                      className="w-full h-12 text-[15px] font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/20"
-                    >
-                      {checkoutLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowRight className="h-4 w-4 mr-2" />}
-                      Ativar agora
-                    </Button>
-                    <p className="text-[10px] text-muted-foreground/70 text-center">Plano Start · Após o 1º mês: R$ 49/mês</p>
+                    )}
+
+                    {/* Checkout button — only if plan is selected */}
+                    {selectedPlan && !showPlanSelector && (
+                      <>
+                        <Button
+                          onClick={() => handleCheckout(selectedPlan)}
+                          disabled={checkoutLoading}
+                          className="w-full h-12 text-[15px] font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/20"
+                        >
+                          {checkoutLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowRight className="h-4 w-4 mr-2" />}
+                          Ativar agora
+                        </Button>
+                        <p className="text-[10px] text-muted-foreground/70 text-center">Cancele quando quiser</p>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               )}
