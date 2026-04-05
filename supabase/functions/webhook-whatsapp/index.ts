@@ -1954,7 +1954,7 @@ Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro`;
             toolMessages.push({ role: "assistant", content: aiResult.content || "", tool_calls: aiResult.toolCalls });
 
             for (const tc of aiResult.toolCalls) {
-              const toolResult = await executeFinancialTool(supabase, targetOrganizationId, tc);
+              const toolResult = await executeAdminTool(supabase, targetOrganizationId, tc, orgContext);
               console.log("[WEBHOOK-WHATSAPP] Tool result:", toolResult);
               toolMessages.push({ role: "tool", tool_call_id: tc.id, content: toolResult });
             }
