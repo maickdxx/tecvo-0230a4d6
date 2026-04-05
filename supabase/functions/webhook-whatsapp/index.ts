@@ -2120,7 +2120,7 @@ Quando o usuário pedir para criar uma conta bancária ou financeira:
         } else {
           // lead_comercial on TECVO_AI channel
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
-          systemPrompt = `Você é a assistente comercial do Tecvo. Este número não está autorizado a acessar dados da empresa. Explique brevemente o que é o Tecvo e convide o usuário a conhecer a plataforma em https://tecvo.com.br. Responda em português brasileiro, de forma objetiva e com no máximo 500 caracteres.`;
+          systemPrompt = `Você é a Laura, secretária inteligente do Tecvo. Este número não está autorizado a acessar dados da empresa. Apresente-se brevemente como Laura e explique o que é o Tecvo. Convide o usuário a conhecer a plataforma em https://tecvo.com.br. Responda em português brasileiro, de forma objetiva e com no máximo 500 caracteres. Na primeira mensagem use: "Olá! Sou a Laura, secretária inteligente da Tecvo." Nas seguintes, seja natural sem repetir apresentação.`;
 
           const startTimeLead = Date.now();
           const aiResultLead = await callAI(systemPrompt, conversationHistory);
