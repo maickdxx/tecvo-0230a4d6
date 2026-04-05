@@ -802,6 +802,53 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
     return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}`;
   }
 
+  if (fnName === "create_quote") {
+    const { client_name, service_type, description, value, scheduled_date } = args;
+    if (!client_name || !service_type || !description || !value) {
+      return "Erro: campos obrigatórios faltando (client_name, service_type, description, value).";
+    }
+
+    // Find client by partial name match
+    const { data: clientMatches } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .ilike("name", `%${client_name}%`)
+      .limit(5);
+
+    if (!clientMatches || clientMatches.length === 0) {
+      return `Cliente "${client_name}" não encontrado no cadastro. Verifique o nome e tente novamente.`;
+    }
+    if (clientMatches.length > 1) {
+      const names = clientMatches.map((c: any) => c.name).join(", ");
+      return `Encontrei ${clientMatches.length} clientes: ${names}. Qual deles? Especifique melhor o nome.`;
+    }
+    const client = clientMatches[0];
+
+    const tz = ctx?.timezone || "America/Sao_Paulo";
+    const todayForQuote = getTodayInTz(tz);
+    const finalDate = scheduled_date || `${todayForQuote}T08:00:00`;
+
+    const { data: newQuote, error } = await supabase.from("services").insert({
+      organization_id: organizationId,
+      client_id: client.id,
+      scheduled_date: finalDate,
+      service_type: service_type || "outro",
+      description,
+      value: value || 0,
+      status: "scheduled",
+      document_type: "quote",
+    }).select("id").single();
+
+    if (error) {
+      console.error("[WEBHOOK-WHATSAPP] Quote insert error:", error);
+      return `Erro ao criar orçamento: ${error.message}`;
+    }
+
+    return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• ID: ${newQuote.id.substring(0, 8)}\n\nO orçamento está disponível no sistema. O gestor pode visualizar e enviar o PDF ao cliente pelo painel.`;
+  }
+
   return "Ferramenta desconhecida.";
 }
 
