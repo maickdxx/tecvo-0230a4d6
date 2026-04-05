@@ -16,7 +16,7 @@ type OnboardingStep = "chat" | "payment" | "whatsapp" | "activating";
 
 export default function Onboarding() {
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
+  const { isOnboardingCompleted, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
   const navigate = useNavigate();
 
   const userName = profile?.full_name || user?.user_metadata?.full_name || "";
@@ -41,13 +41,20 @@ export default function Onboarding() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Redirect to dashboard if onboarding already completed
+  useEffect(() => {
+    if (!authLoading && !onboardingLoading && isOnboardingCompleted) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [authLoading, onboardingLoading, isOnboardingCompleted, navigate]);
+
   // Start conversation when page loads
   useEffect(() => {
-    if (!authLoading && user && !startedRef.current) {
+    if (!authLoading && !onboardingLoading && user && !isOnboardingCompleted && !startedRef.current) {
       startedRef.current = true;
       startConversation();
     }
-  }, [authLoading, user, startConversation]);
+  }, [authLoading, onboardingLoading, user, isOnboardingCompleted, startConversation]);
 
   // Transition to payment when Laura signals
   useEffect(() => {
