@@ -1054,8 +1054,8 @@ function buildSystemPrompt(ctx: any) {
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     return {
-      start: monday.toISOString().substring(0, 10),
-      end: sunday.toISOString().substring(0, 10),
+      start: monday.toLocaleDateString("en-CA", { timeZone: tz }),
+      end: sunday.toLocaleDateString("en-CA", { timeZone: tz }),
     };
   };
 
