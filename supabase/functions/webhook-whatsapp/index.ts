@@ -4831,6 +4831,17 @@ Você NÃO deve compartilhar:
             return mentionsDocument && claimsSent;
           };
 
+          // Extract OS/quote identifier from AI hallucinated response text
+          const extractServiceIdentifierFromAIResponse = (text: string | null | undefined): string | null => {
+            if (!text) return null;
+            // Match patterns like "#0099", "#100", "OS 100", "ORDEM DE SERVIÇO #0099"
+            const osMatch = text.match(/#\s*(\d{2,6})/);
+            if (osMatch) return osMatch[1];
+            const osNumMatch = text.match(/(?:os|ordem[^a-z]*servi[cç]o)\s*(?:#?\s*)(\d{2,6})/i);
+            if (osNumMatch) return osNumMatch[1];
+            return null;
+          };
+
           const recentUserMessages = conversationHistory
             .filter((message: any) => message.role === "user")
             .slice(-6)
@@ -4901,6 +4912,14 @@ Você NÃO deve compartilhar:
             "messages. System prompt length:",
             systemPrompt.length,
             "chars. Calling AI...",
+          );
+          console.log(
+            "[WEBHOOK-WHATSAPP] [DEBUG] wantsPdfNow:",
+            wantsPdfNow,
+            "fallbackPdfIdentifier:",
+            fallbackPdfIdentifier,
+            "currentExplicitPdfRequest:",
+            currentExplicitPdfRequest,
           );
 
           const startTime = Date.now();
@@ -5036,13 +5055,54 @@ Você NÃO deve compartilhar:
           } else if (wantsPdfNow && pdfToolResult && !pdfToolSent) {
             aiResponse = pdfToolResult;
           } else if (
-            wantsPdfNow &&
             !pdfToolAttempted &&
             looksLikePdfSentConfirmation(aiResponse)
           ) {
-            aiResponse = fallbackPdfIdentifier
-              ? "Tive um problema ao concluir o envio do PDF. Me peça novamente que eu envio com o anexo certo."
-              : "Me passe o número da OS ou o nome do cliente para eu enviar o PDF certinho.";
+            // AI hallucinated sending a PDF without calling the tool
+            // Try to extract identifier from the AI response and force-send
+            const hallIdentifier = fallbackPdfIdentifier || extractServiceIdentifierFromAIResponse(aiResponse);
+            console.warn(
+              "[WEBHOOK-WHATSAPP] AI hallucinated PDF send! pdfToolAttempted:",
+              pdfToolAttempted,
+              "wantsPdfNow:",
+              wantsPdfNow,
+              "hallIdentifier:",
+              hallIdentifier,
+            );
+            if (hallIdentifier) {
+              try {
+                const hallToolResult = await executeAdminTool(
+                  supabase,
+                  targetOrganizationId,
+                  {
+                    id: `hall_pdf_${crypto.randomUUID()}`,
+                    type: "function",
+                    function: {
+                      name: "send_service_pdf",
+                      arguments: JSON.stringify({
+                        service_identifier: hallIdentifier,
+                      }),
+                    },
+                  },
+                  { ...orgContext, instance, remoteJid },
+                );
+                console.log("[WEBHOOK-WHATSAPP] Hallucination recovery result:", hallToolResult.slice(0, 200));
+                if (hallToolResult.startsWith("SILENT_PDF_SENT:")) {
+                  const sentLabel = hallToolResult
+                    .replace("SILENT_PDF_SENT:", "")
+                    .replace(/\s+enviado com sucesso!?$/i, "")
+                    .trim();
+                  aiResponse = `Pronto, enviei o PDF da ${sentLabel}.`;
+                } else {
+                  aiResponse = hallToolResult;
+                }
+              } catch (hallErr: any) {
+                console.error("[WEBHOOK-WHATSAPP] Hallucination recovery failed:", hallErr.message);
+                aiResponse = "Tive um problema ao enviar o PDF. Me peça novamente que eu envio.";
+              }
+            } else {
+              aiResponse = "Me passe o número da OS ou o nome do cliente para eu enviar o PDF certinho.";
+            }
           }
 
           // Log AI usage with CORRECT model name
