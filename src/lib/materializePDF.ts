@@ -5,6 +5,10 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { formatPaymentMethod } from "@/lib/formatPaymentMethod";
+import {
+  waitForOfficialReportPdf,
+  waitForOfficialServicePdf,
+} from "@/lib/officialPdfStorage";
 
 /**
  * Materializes the OS/Quote PDF in storage after create/edit.
@@ -74,6 +78,19 @@ export async function materializeServicePDF(serviceId: string, organizationId: s
       return sum + (lineTotal - discountAmt);
     }, 0);
 
+    const validationState = {
+      hasOrganization: Boolean(org?.name?.trim()),
+      hasClient: Boolean(service.client?.name?.trim()),
+      hasQuoteNumber: Number.isFinite(Number(service.quote_number)) && Number(service.quote_number) > 0,
+      hasCoreContent: (items?.length || 0) > 0 || Boolean(String(service.solution || service.description || "").trim()),
+      hasCommercialContext: itemsTotal > 0 || service.value !== null,
+    };
+
+    if (!validationState.hasOrganization || !validationState.hasClient || !validationState.hasQuoteNumber || !validationState.hasCoreContent) {
+      console.warn("[MATERIALIZE] Service PDF validation failed:", serviceId, validationState);
+      throw new Error("Dados principais incompletos para materialização oficial da OS");
+    }
+
     const { generateServiceOrderPDF } = await import("@/lib/generateServiceOrderPDF");
     const { formatDateInTz, formatTimeInTz } = await import("@/lib/timezone");
 
@@ -121,7 +138,24 @@ export async function materializeServicePDF(serviceId: string, organizationId: s
       returnBlob: true, // Don't trigger download, just generate and upload
     });
 
-    console.log("[MATERIALIZE] Service PDF materialized successfully:", serviceId);
+    const storedPdf = await waitForOfficialServicePdf(organizationId, serviceId);
+    if (!storedPdf.ready) {
+      console.warn("[MATERIALIZE] Official service PDF not confirmed in storage:", {
+        serviceId,
+        organizationId,
+        blockReason: storedPdf.blockReason,
+        markerData: storedPdf.markerData,
+      });
+      throw new Error("PDF oficial não foi confirmado no storage após a geração");
+    }
+
+    console.log("[MATERIALIZE] Service PDF materialized successfully:", {
+      serviceId,
+      organizationId,
+      path: storedPdf.path,
+      sizeBytes: storedPdf.sizeBytes,
+      generator: storedPdf.generator,
+    });
   } catch (err) {
     console.warn("[MATERIALIZE] Failed to materialize service PDF:", serviceId, err);
   }
@@ -172,6 +206,18 @@ export async function materializeReportPDF(reportId: string, organizationId: str
       .eq("service_id", report.service_id || report.quote_service_id || "")
       .maybeSingle();
 
+    const validationState = {
+      hasOrganization: Boolean(org?.name?.trim()),
+      hasClient: Boolean(report.client?.name?.trim()),
+      hasReportNumber: Number.isFinite(Number(report.report_number)) && Number(report.report_number) > 0,
+      hasTechnicalContent: Boolean(String(report.conclusion || report.diagnosis || report.observations || "").trim()) || (equipment?.length || 0) > 0,
+    };
+
+    if (!validationState.hasOrganization || !validationState.hasClient || !validationState.hasReportNumber || !validationState.hasTechnicalContent) {
+      console.warn("[MATERIALIZE] Report PDF validation failed:", reportId, validationState);
+      throw new Error("Dados principais incompletos para materialização oficial do laudo");
+    }
+
     const { generateReportPDF } = await import("@/lib/generateReportPDF");
 
     await generateReportPDF({
@@ -190,7 +236,24 @@ export async function materializeReportPDF(reportId: string, organizationId: str
       returnBlob: true, // Don't trigger download, just generate and upload
     });
 
-    console.log("[MATERIALIZE] Report PDF materialized successfully:", reportId);
+    const storedPdf = await waitForOfficialReportPdf(organizationId, reportId);
+    if (!storedPdf.ready) {
+      console.warn("[MATERIALIZE] Official report PDF not confirmed in storage:", {
+        reportId,
+        organizationId,
+        blockReason: storedPdf.blockReason,
+        markerData: storedPdf.markerData,
+      });
+      throw new Error("PDF oficial do laudo não foi confirmado no storage após a geração");
+    }
+
+    console.log("[MATERIALIZE] Report PDF materialized successfully:", {
+      reportId,
+      organizationId,
+      path: storedPdf.path,
+      sizeBytes: storedPdf.sizeBytes,
+      generator: storedPdf.generator,
+    });
   } catch (err) {
     console.warn("[MATERIALIZE] Failed to materialize report PDF:", reportId, err);
   }

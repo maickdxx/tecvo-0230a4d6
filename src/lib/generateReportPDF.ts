@@ -14,6 +14,9 @@ import {
 } from "@/hooks/useTechnicalReports";
 import { renderHtmlToPdf, loadImageAsBase64, esc, PDF_CSS } from "@/lib/pdf/renderHtmlToPdf";
 
+export const OFFICIAL_REPORT_PDF_GENERATOR = "official-technical-report-pdf-html";
+export const OFFICIAL_REPORT_PDF_LAYOUT = "tecvo-technical-report-html-v1";
+
 interface ReportPDFData {
   report: TechnicalReport;
   equipment?: ReportEquipment[];
@@ -347,9 +350,44 @@ export async function generateReportPDF({
     if (orgId) {
       const { supabase } = await import("@/integrations/supabase/client");
       const storagePath = `os-pdfs/${orgId}/report_${report.id}.pdf`;
+      const markerPath = `os-pdfs/${orgId}/report_${report.id}.official.json`;
+      const markerPayload = {
+        generator: OFFICIAL_REPORT_PDF_GENERATOR,
+        layout: OFFICIAL_REPORT_PDF_LAYOUT,
+        version: 1,
+        report_id: report.id,
+        service_id: report.service_id || report.quote_service_id || null,
+        generated_at: new Date().toISOString(),
+        sections: {
+          header: true,
+          client: true,
+          conclusion: true,
+          equipment: equipment.length > 0 || Boolean(report.equipment_type),
+          photos: photos.length > 0,
+          signatures: true,
+        },
+        validation: {
+          hasCompanyData: Boolean(organizationName?.trim()),
+          hasClientData: Boolean(report.client?.name?.trim()),
+          hasConclusion: Boolean(report.conclusion || equipment.length > 0),
+          hasSignaturesSection: true,
+          photosCount: photos.length,
+          equipmentCount: equipment.length,
+        },
+      };
+
       await supabase.storage
         .from("whatsapp-media")
         .upload(storagePath, blob, { contentType: "application/pdf", upsert: true });
+
+      await supabase.storage
+        .from("whatsapp-media")
+        .upload(
+          markerPath,
+          new Blob([JSON.stringify(markerPayload)], { type: "application/json" }),
+          { contentType: "application/json", upsert: true },
+        );
+
       console.log("[PDF] Report PDF uploaded to storage:", storagePath);
     }
   } catch (e) {
