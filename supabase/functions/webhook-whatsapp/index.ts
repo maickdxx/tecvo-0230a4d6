@@ -2759,26 +2759,87 @@ async function executeAdminTool(
     const clientName = serviceData.client?.name || "Cliente";
     const docLabel = serviceData.document_type === "quote" ? "orçamento" : "OS";
 
-    // Use only the official PDF already saved by the system
-    const storedPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
-    const { data: storedFile, error: storedFileError } = await supabase.storage
-      .from("whatsapp-media")
-      .createSignedUrl(storedPath, 300);
+    // Use only the official PDF already saved by the system.
+    // Support both the current canonical path and older legacy paths with timestamp suffixes.
+    const storage = supabase.storage.from("whatsapp-media");
+    const canonicalPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
+    let resolvedPath = canonicalPath;
+    let mediaUrl: string | null = null;
 
-    if (!storedFile?.signedUrl || storedFileError) {
+    const { data: canonicalFile, error: canonicalError } = await storage
+      .createSignedUrl(canonicalPath, 900);
+
+    if (canonicalFile?.signedUrl && !canonicalError) {
+      mediaUrl = canonicalFile.signedUrl;
+    } else {
+      const folderPath = `os-pdfs/${organizationId}`;
+      const { data: candidateFiles, error: listError } = await storage.list(folderPath, {
+        limit: 100,
+        search: serviceData.id,
+      });
+
+      if (listError) {
+        console.warn(
+          "[WEBHOOK-WHATSAPP] Failed listing legacy PDF candidates for service:",
+          serviceData.id,
+          listError.message,
+        );
+      }
+
+      const legacyFile = (candidateFiles || [])
+        .filter((file: any) => typeof file?.name === "string")
+        .filter((file: any) => {
+          const name = String(file.name);
+          return (
+            name.endsWith(".pdf") &&
+            !name.endsWith("_fallback.pdf") &&
+            (name === `${serviceData.id}.pdf` || name.startsWith(`${serviceData.id}_`))
+          );
+        })
+        .sort((a: any, b: any) => {
+          const aTime = new Date(a.created_at || a.updated_at || 0).getTime();
+          const bTime = new Date(b.created_at || b.updated_at || 0).getTime();
+          return bTime - aTime;
+        })[0];
+
+      if (legacyFile?.name) {
+        resolvedPath = `${folderPath}/${legacyFile.name}`;
+        const { data: legacySigned, error: legacyError } = await storage
+          .createSignedUrl(resolvedPath, 900);
+
+        if (legacySigned?.signedUrl && !legacyError) {
+          mediaUrl = legacySigned.signedUrl;
+        } else {
+          console.warn(
+            "[WEBHOOK-WHATSAPP] Failed signing legacy stored PDF for service:",
+            serviceData.id,
+            "path:",
+            resolvedPath,
+            "error:",
+            legacyError?.message || legacyError,
+          );
+        }
+      }
+    }
+
+    if (!mediaUrl) {
       console.warn(
         "[WEBHOOK-WHATSAPP] Official stored PDF not found for service:",
         serviceData.id,
-        "path:",
-        storedPath,
-        "error:",
-        storedFileError?.message || storedFileError,
+        "canonicalPath:",
+        canonicalPath,
+        "canonicalError:",
+        canonicalError?.message || canonicalError,
       );
-      return `Ainda não existe um PDF oficial salvo para a ${docLabel} #${osNumber}. Gere esse PDF no sistema primeiro; eu só posso enviar o arquivo oficial já salvo.`;
+      return `Ainda não encontrei um PDF oficial salvo para a ${docLabel} #${osNumber}. Ela existe no sistema, mas o arquivo PDF salvo não foi localizado para envio.`;
     }
 
-    const mediaUrl = storedFile.signedUrl;
-    console.log("[WEBHOOK-WHATSAPP] Using stored official PDF for service:", serviceData.id, "path:", storedPath);
+    console.log(
+      "[WEBHOOK-WHATSAPP] Using stored official PDF for service:",
+      serviceData.id,
+      "path:",
+      resolvedPath,
+    );
 
     // Send PDF via Evolution API
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
