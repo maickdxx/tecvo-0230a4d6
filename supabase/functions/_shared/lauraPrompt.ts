@@ -742,7 +742,7 @@ export async function executeAdminTool(
     const capitalizedDesc = description.charAt(0).toUpperCase() + description.slice(1);
     const taggedDesc = `${capitalizedDesc} (Secretária)`;
 
-    const { error } = await supabase.from("transactions").insert({
+    const { data: inserted, error } = await supabase.from("transactions").insert({
       organization_id: organizationId,
       type,
       amount,
@@ -753,15 +753,19 @@ export async function executeAdminTool(
       status: "pending",
       financial_account_id: accountId,
       ...(payment_method ? { payment_method } : {}),
-    });
+    }).select("id").single();
 
     if (error) {
       console.error("[LAURA] Transaction insert error:", error);
       return `Erro ao registrar: ${error.message}`;
     }
 
+    // Post-action verification
+    const verifyErr = await verifyInsert(supabase, "transactions", inserted.id, "Transaction");
+    if (verifyErr) return verifyErr;
+
     const typeLabel = type === "income" ? "Receita" : "Despesa";
-    return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}.`;
+    return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}. ✅ Confirmado no sistema.`;
   }
 
   if (fnName === "create_financial_account") {
