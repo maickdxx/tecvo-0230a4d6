@@ -11,6 +11,7 @@ import { PaymentPendingOverlay } from "@/components/subscription/PaymentPendingO
 import { DemoTourOverlay } from "@/components/demo/DemoTourOverlay";
 import { OfflineIndicator } from "@/components/offline/OfflineIndicator";
 import { InstallBanner } from "./InstallBanner";
+import { LauraFloatingAssistant } from "@/components/laura/LauraFloatingAssistant";
 import { BannerPriorityProvider, useBannerPriority } from "@/contexts/BannerPriorityContext";
 
 interface AppLayoutProps {
