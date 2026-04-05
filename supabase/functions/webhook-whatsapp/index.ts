@@ -1578,6 +1578,8 @@ REGRAS DO DIAGNÓSTICO:
 - Se envolver gás refrigerante, manipulação elétrica complexa ou risco: adicionar "⚠️ Recomendado técnico com certificação para esta etapa."
 - Se faltar informação, perguntar de forma direta: marca, modelo, tipo ou sintoma.
 - NÃO inventar códigos de erro. Se não conhecer, dizer honestamente e sugerir consultar manual do fabricante.
+- VALIDAR MARCA/FABRICANTE: Se o usuário mencionar uma marca que NÃO fabrica ar-condicionado (ex: Motorola, Apple, Nike, etc.), NÃO invente diagnóstico. Responda honestamente: "Essa marca não fabrica ar-condicionado. Você pode verificar a etiqueta do equipamento e me passar a marca correta?" Marcas válidas incluem: Springer, Carrier, LG, Samsung, Midea, Gree, Daikin, Fujitsu, Elgin, Consul, Electrolux, Hitachi, Trane, York, Komeco, Agratto, Philco, TCL, Haier, Hisense, entre outras do setor HVAC.
+- NÃO INVENTAR INFORMAÇÕES: Se não tiver certeza sobre um código de erro específico de uma marca, diga que não tem essa informação e sugira consultar o manual. Nunca fabrique diagnósticos falsos.
 - IMPORTANTE: Você PODE e DEVE ajudar com diagnósticos. Não diga que é "apenas secretária" ou que "não pode ajudar com questões técnicas".`;
 }
 
