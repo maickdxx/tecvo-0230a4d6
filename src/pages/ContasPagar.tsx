@@ -144,6 +144,12 @@ export default function ContasPagar() {
 
   const sortedAccounts = useMemo(() => sortAccountsByPriority(accounts, tz), [accounts, tz]);
 
+  // Filter by active tab locally
+  const filteredAccounts = useMemo(() => {
+    if (activeTab === "all") return sortedAccounts;
+    return sortedAccounts.filter((acc) => getEffectiveStatus(acc, tz) === activeTab);
+  }, [sortedAccounts, activeTab, tz]);
+
   const handlePrev = () => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1));
   const handleNext = () => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1));
 
