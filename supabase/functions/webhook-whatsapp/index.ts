@@ -2517,6 +2517,21 @@ Você NÃO deve compartilhar:
                 });
                 const sent = await sendWhatsAppReply(instance, remoteJid, safeResponse);
                 console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
+
+                // If the incoming message was audio, also send audio response
+                if (isIncomingAudio && safeResponse.length <= 2000) {
+                  (async () => {
+                    try {
+                      const audioBase64 = await generateTTSAudio(safeResponse);
+                      if (audioBase64) {
+                        await sendWhatsAppAudio(instance, remoteJid, audioBase64);
+                        console.log("[WEBHOOK-WHATSAPP] Admin audio reply sent");
+                      }
+                    } catch (ttsErr: any) {
+                      console.warn("[WEBHOOK-WHATSAPP] TTS audio reply failed:", ttsErr.message);
+                    }
+                  })();
+                }
               }
             }
           }
