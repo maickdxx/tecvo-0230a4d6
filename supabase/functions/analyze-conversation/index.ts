@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage, extractUsageFromResponse } from "../_shared/aiUsageLogger.ts";
+import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,6 +49,12 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // CRITICAL: Validate user belongs to the requested organization
+    const hasAccess = await validateUserOrgAccess(supabaseAdmin, userId, organizationId, "analyze-conversation");
+    if (!hasAccess) {
+      return accessDeniedResponse(corsHeaders);
     }
 
     // Check and consume AI credits
