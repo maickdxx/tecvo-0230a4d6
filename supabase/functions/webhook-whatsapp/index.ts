@@ -676,7 +676,7 @@ async function generateTTSAudioWithGemini(
             speechConfig: {
               voiceConfig: {
                 prebuiltVoiceConfig: {
-                  voiceName: "Aoede",
+                  voiceName: "Puck",
                 },
               },
             },
