@@ -589,6 +589,22 @@ const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_financial_account",
+      description: "Cria uma nova conta financeira (ex: conta do Itaú, Nubank, Bradesco) e define como conta padrão da IA. Use quando o usuário pedir para criar uma conta bancária/financeira.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Nome da conta (ex: Itaú, Nubank, Bradesco, Caixa Econômica)" },
+          account_type: { type: "string", enum: ["checking", "savings", "cash", "digital"], description: "Tipo: checking (corrente), savings (poupança), cash (dinheiro), digital (carteira digital)" },
+        },
+        required: ["name"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function executeAdminTool(supabase: any, organizationId: string, toolCall: any, ctx?: any): Promise<string> {
@@ -616,23 +632,9 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
 
     let accountId: string | null = orgData?.default_ai_account_id || null;
 
-    // If no default AI account, try to find any active cash account as fallback
+    // If no default AI account configured, block and warn the user
     if (!accountId) {
-      const { data: defaultAccount } = await supabase
-        .from("financial_accounts")
-        .select("id")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .eq("account_type", "cash")
-        .limit(1)
-        .single();
-
-      accountId = defaultAccount?.id || null;
-    }
-
-    // If still no account, warn the user
-    if (!accountId) {
-      return "⚠️ Nenhuma conta financeira padrão configurada para a IA. Para organizar melhor o financeiro, vá em Configurações e defina uma conta padrão para que eu possa registrar as transações corretamente.";
+      return "⚠️ Você ainda não tem uma conta financeira padrão configurada para a IA.\n\nPara eu registrar transações corretamente, você precisa definir uma conta padrão nas configurações do sistema.\n\n👉 Acesse: https://tecvo.lovable.app/configuracoes\n\nOu, se preferir, posso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: \"Crie uma conta do Itaú\".";
     }
 
     // Expenses go as pending (contas a pagar) — manager approves later
@@ -659,6 +661,38 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
 
     const typeLabel = type === "income" ? "Receita" : "Despesa";
     return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}.`;
+  }
+
+  if (fnName === "create_financial_account") {
+    const { name, account_type } = args;
+    if (!name) return "Erro: nome da conta é obrigatório.";
+
+    const finalType = account_type || "checking";
+
+    const { data: newAccount, error } = await supabase
+      .from("financial_accounts")
+      .insert({
+        organization_id: organizationId,
+        name,
+        account_type: finalType,
+        balance: 0,
+        is_active: true,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("[WEBHOOK-WHATSAPP] Create account error:", error);
+      return `Erro ao criar conta: ${error.message}`;
+    }
+
+    // Set as default AI account
+    await supabase
+      .from("organizations")
+      .update({ default_ai_account_id: newAccount.id })
+      .eq("id", organizationId);
+
+    return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! A partir de agora, todas as transações que eu registrar serão vinculadas a essa conta.`;
   }
 
   if (fnName === "create_service") {
