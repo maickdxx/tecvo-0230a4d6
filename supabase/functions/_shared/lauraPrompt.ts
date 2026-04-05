@@ -149,7 +149,7 @@ export function buildSystemPrompt(ctx: any) {
   const nextWeekTotalValue = nextWeekServices.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
 
   // ── THIS MONTH ──
-  const monthServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 7) === currentMonth);
+  const monthServices = osServices.filter((s: any) => { const d = getServiceDate(s); return d && d.substring(0, 7) === currentMonth; });
   const monthCompleted = monthServices.filter((s: any) => s.status === "completed");
   const monthRevenue = monthCompleted.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
   const monthTotalValue = monthServices.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
