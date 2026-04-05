@@ -219,9 +219,17 @@ export default function AssinaturaSucesso() {
               <Button
                 size="lg"
                 className="w-full gap-2"
-                onClick={() => navigate("/dashboard", { replace: true })}
+                onClick={() => {
+                  // If onboarding not completed, go back to onboarding (WhatsApp step)
+                  const onboardingStep = localStorage.getItem("tecvo_onboarding_step");
+                  if (onboardingStep === "whatsapp" || onboardingStep === "payment") {
+                    navigate("/onboarding", { replace: true });
+                  } else {
+                    navigate("/dashboard", { replace: true });
+                  }
+                }}
               >
-                Ir para a plataforma
+                {localStorage.getItem("tecvo_onboarding_step") ? "Continuar configuração" : "Ir para a plataforma"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             )}
