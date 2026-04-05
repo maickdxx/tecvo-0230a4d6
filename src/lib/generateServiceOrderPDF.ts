@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import type { Service } from "@/hooks/useServices";
 import type { ServiceItem } from "@/hooks/useServiceItems";
 import { trackFBCustomEvent } from "@/lib/fbPixel";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ServiceOrderData {
   entryDate: string;
