@@ -1063,6 +1063,9 @@ function buildSystemPrompt(ctx: any) {
   const lastWeek = getWeekBounds(now, -1);
   const nextWeek = getWeekBounds(now, 1);
 
+  // Helper: get date part in org timezone
+  const getServiceDate = (s: any) => s.scheduled_date ? getDatePartInTz(s.scheduled_date, tz) : null;
+
   const filterByDateRange = (
     items: any[],
     dateField: string,
@@ -1070,13 +1073,13 @@ function buildSystemPrompt(ctx: any) {
     end: string,
   ) =>
     items.filter((item: any) => {
-      const d = item[dateField]?.substring(0, 10);
+      const d = item[dateField] ? getDatePartInTz(item[dateField], tz) : null;
       return d && d >= start && d <= end;
     });
 
   // ── TODAY ──
   const todayServices = osServices.filter((s: any) =>
-    s.scheduled_date?.substring(0, 10) === todayISO
+    getServiceDate(s) === todayISO
   );
   const todayCompleted = todayServices.filter((s: any) =>
     s.status === "completed"
@@ -1099,7 +1102,7 @@ function buildSystemPrompt(ctx: any) {
 
   // ── TOMORROW ──
   const tomorrowServices = osServices.filter((s: any) =>
-    s.scheduled_date?.substring(0, 10) === tomorrowISO
+    getServiceDate(s) === tomorrowISO
   );
 
   // ── WEEKLY ──
