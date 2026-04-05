@@ -58,6 +58,7 @@ export default function Onboarding() {
   const { user, profile, isLoading: authLoading } = useAuth();
   const { isOnboardingCompleted, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const userName = profile?.full_name || user?.user_metadata?.full_name || "";
   const {
