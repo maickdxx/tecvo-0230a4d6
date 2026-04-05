@@ -1825,7 +1825,7 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 
           // Fetch conversation history for context
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
-          console.log("[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:", conversationHistory.length, "messages. Calling AI...");
+          console.log("[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:", conversationHistory.length, "messages. System prompt length:", systemPrompt.length, "chars. Calling AI...");
 
           const startTime = Date.now();
           let aiResult = await callAI(systemPrompt, conversationHistory, FINANCIAL_TOOLS);
