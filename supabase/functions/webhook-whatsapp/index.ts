@@ -146,8 +146,189 @@ async function persistMedia(
 }
 
 /**
- * Transcribe audio using ElevenLabs Speech-to-Text (Scribe v2).
- * Downloads the audio from Evolution API first, then sends to ElevenLabs.
+ * Shared base64 / PCM helpers for audio processing.
+ */
+function decodeBase64ToBytes(base64Data: string) {
+  const cleanBase64 = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data;
+  const binaryString = atob(cleanBase64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return { cleanBase64, bytes };
+}
+
+function encodeBytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+function buildWavFromPcm(
+  pcmBytes: Uint8Array,
+  sampleRate = 24000,
+  channels = 1,
+  bitsPerSample = 16,
+) {
+  const headerSize = 44;
+  const buffer = new ArrayBuffer(headerSize + pcmBytes.length);
+  const view = new DataView(buffer);
+  const wavBytes = new Uint8Array(buffer);
+
+  const writeString = (offset: number, value: string) => {
+    for (let i = 0; i < value.length; i++) {
+      view.setUint8(offset + i, value.charCodeAt(i));
+    }
+  };
+
+  const byteRate = sampleRate * channels * bitsPerSample / 8;
+  const blockAlign = channels * bitsPerSample / 8;
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + pcmBytes.length, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(36, "data");
+  view.setUint32(40, pcmBytes.length, true);
+  wavBytes.set(pcmBytes, headerSize);
+
+  return wavBytes;
+}
+
+function extractGeminiText(result: any): string | null {
+  const parts = result?.candidates?.[0]?.content?.parts || [];
+  const text = parts
+    .map((part: any) => (typeof part?.text === "string" ? part.text : ""))
+    .join("\n")
+    .trim();
+  return text || null;
+}
+
+async function transcribeAudioWithGemini(
+  cleanBase64: string,
+  baseMime: string,
+  byteLength: number,
+): Promise<string | null> {
+  try {
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiKey) {
+      console.warn("[WEBHOOK-WHATSAPP] transcribeAudioWithGemini: missing GEMINI_API_KEY");
+      return null;
+    }
+
+    if (byteLength > 15 * 1024 * 1024) {
+      console.warn("[WEBHOOK-WHATSAPP] transcribeAudioWithGemini: audio too large for inline request", byteLength);
+      return null;
+    }
+
+    console.log("[WEBHOOK-WHATSAPP] transcribeAudioWithGemini: sending to Gemini, size:", byteLength, "mime:", baseMime);
+
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": geminiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              text: "Transcreva este áudio em português brasileiro. Retorne apenas o texto transcrito, sem explicações, sem aspas e sem prefixos. Se não houver fala inteligível, retorne exatamente: [inaudível].",
+            },
+            {
+              inline_data: {
+                mime_type: baseMime,
+                data: cleanBase64,
+              },
+            },
+          ],
+        }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[WEBHOOK-WHATSAPP] transcribeAudioWithGemini: Gemini error", response.status, errText.slice(0, 300));
+      return null;
+    }
+
+    const result = await response.json();
+    const transcription = extractGeminiText(result);
+    if (!transcription || /^\[?inaud[ií]vel\]?$/i.test(transcription)) {
+      return null;
+    }
+
+    console.log("[WEBHOOK-WHATSAPP] transcribeAudioWithGemini: transcription:", transcription.slice(0, 200));
+    return transcription;
+  } catch (err: any) {
+    console.error("[WEBHOOK-WHATSAPP] transcribeAudioWithGemini: exception", err.message);
+    return null;
+  }
+}
+
+async function transcribeAudioWithElevenLabs(
+  bytes: Uint8Array,
+  baseMime: string,
+): Promise<string | null> {
+  try {
+    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY_1") || Deno.env.get("ELEVENLABS_API_KEY");
+    if (!elevenLabsKey) {
+      console.warn("[WEBHOOK-WHATSAPP] transcribeAudioWithElevenLabs: missing ELEVENLABS_API_KEY");
+      return null;
+    }
+
+    const extMap: Record<string, string> = {
+      "audio/ogg": "ogg",
+      "audio/mpeg": "mp3",
+      "audio/mp4": "m4a",
+      "audio/wav": "wav",
+      "audio/webm": "webm",
+    };
+    const ext = extMap[baseMime] || "ogg";
+
+    const formData = new FormData();
+    formData.append("file", new Blob([bytes], { type: baseMime }), `audio.${ext}`);
+    formData.append("model_id", "scribe_v2");
+    formData.append("language_code", "por");
+
+    console.log("[WEBHOOK-WHATSAPP] transcribeAudioWithElevenLabs: sending to ElevenLabs STT, size:", bytes.length);
+
+    const sttResp = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+      method: "POST",
+      headers: { "xi-api-key": elevenLabsKey },
+      body: formData,
+    });
+
+    if (!sttResp.ok) {
+      const errText = await sttResp.text();
+      console.error("[WEBHOOK-WHATSAPP] transcribeAudioWithElevenLabs: ElevenLabs STT error", sttResp.status, errText.slice(0, 300));
+      return null;
+    }
+
+    const sttResult = await sttResp.json();
+    const transcription = sttResult?.text?.trim() || null;
+    console.log("[WEBHOOK-WHATSAPP] transcribeAudioWithElevenLabs: transcription:", transcription?.slice(0, 200));
+    return transcription;
+  } catch (err: any) {
+    console.error("[WEBHOOK-WHATSAPP] transcribeAudioWithElevenLabs: exception", err.message);
+    return null;
+  }
+}
+
+/**
+ * Transcribe audio using Gemini first, with ElevenLabs fallback.
+ * Downloads the audio from Evolution API first, then sends to the speech provider.
  */
 async function transcribeAudio(
   instance: string,
@@ -157,14 +338,9 @@ async function transcribeAudio(
   try {
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
     const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY_1") || Deno.env.get("ELEVENLABS_API_KEY");
 
     if (!vpsUrl || !apiKey) {
       console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: missing VPS config");
-      return null;
-    }
-    if (!elevenLabsKey) {
-      console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: missing ELEVENLABS_API_KEY");
       return null;
     }
 
@@ -190,44 +366,15 @@ async function transcribeAudio(
       return null;
     }
 
-    // Clean base64
-    const cleanBase64 = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data;
-    const binaryString = atob(cleanBase64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    // 2. Send to ElevenLabs STT
     const baseMime = (returnedMime || "audio/ogg").split(";")[0].trim().toLowerCase();
-    const extMap: Record<string, string> = {
-      "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/wav": "wav", "audio/webm": "webm",
-    };
-    const ext = extMap[baseMime] || "ogg";
+    const { cleanBase64, bytes } = decodeBase64ToBytes(base64Data);
 
-    const formData = new FormData();
-    formData.append("file", new Blob([bytes], { type: baseMime }), `audio.${ext}`);
-    formData.append("model_id", "scribe_v2");
-    formData.append("language_code", "por"); // Portuguese
-
-    console.log("[WEBHOOK-WHATSAPP] transcribeAudio: sending to ElevenLabs STT, size:", bytes.length);
-
-    const sttResp = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-      method: "POST",
-      headers: { "xi-api-key": elevenLabsKey },
-      body: formData,
-    });
-
-    if (!sttResp.ok) {
-      const errText = await sttResp.text();
-      console.error("[WEBHOOK-WHATSAPP] transcribeAudio: ElevenLabs STT error", sttResp.status, errText.slice(0, 300));
-      return null;
+    const geminiTranscription = await transcribeAudioWithGemini(cleanBase64, baseMime, bytes.length);
+    if (geminiTranscription) {
+      return geminiTranscription;
     }
 
-    const sttResult = await sttResp.json();
-    const transcription = sttResult?.text?.trim() || null;
-    console.log("[WEBHOOK-WHATSAPP] transcribeAudio: transcription:", transcription?.slice(0, 200));
-    return transcription;
+    return await transcribeAudioWithElevenLabs(bytes, baseMime);
   } catch (err: any) {
     console.error("[WEBHOOK-WHATSAPP] transcribeAudio: exception", err.message);
     return null;
@@ -235,20 +382,101 @@ async function transcribeAudio(
 }
 
 /**
- * Generate TTS audio using ElevenLabs and return base64-encoded MP3.
+ * Generate TTS audio using Gemini first, with ElevenLabs fallback.
  */
 async function generateTTSAudio(text: string): Promise<string | null> {
+  const geminiAudio = await generateTTSAudioWithGemini(text);
+  if (geminiAudio) {
+    return geminiAudio;
+  }
+  return await generateTTSAudioWithElevenLabs(text);
+}
+
+async function generateTTSAudioWithGemini(text: string): Promise<string | null> {
+  try {
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiKey) {
+      console.warn("[WEBHOOK-WHATSAPP] generateTTSAudioWithGemini: missing GEMINI_API_KEY");
+      return null;
+    }
+
+    console.log("[WEBHOOK-WHATSAPP] generateTTSAudioWithGemini: generating TTS for text length:", text.length);
+
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent", {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": geminiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text }],
+        }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: "Kore",
+              },
+            },
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[WEBHOOK-WHATSAPP] generateTTSAudioWithGemini: Gemini TTS error", response.status, errText.slice(0, 300));
+      return null;
+    }
+
+    const result = await response.json();
+    const audioPart = (result?.candidates?.[0]?.content?.parts || []).find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
+    const inlineData = audioPart?.inlineData || audioPart?.inline_data;
+    const base64Audio = inlineData?.data || null;
+    const mimeType = String(inlineData?.mimeType || inlineData?.mime_type || "").toLowerCase();
+
+    if (!base64Audio) {
+      console.warn("[WEBHOOK-WHATSAPP] generateTTSAudioWithGemini: no audio returned");
+      return null;
+    }
+
+    if (/audio\/l16|codec=pcm/i.test(mimeType)) {
+      const pcmBytes = decodeBase64ToBytes(base64Audio).bytes;
+      const sampleRateMatch = mimeType.match(/rate=(\d+)/i);
+      const sampleRate = sampleRateMatch ? Number(sampleRateMatch[1]) : 24000;
+      const wavBytes = buildWavFromPcm(pcmBytes, sampleRate);
+      const wavBase64 = encodeBytesToBase64(wavBytes);
+      console.log("[WEBHOOK-WHATSAPP] generateTTSAudioWithGemini: converted PCM to WAV, size:", wavBytes.length);
+      return `data:audio/wav;base64,${wavBase64}`;
+    }
+
+    if (mimeType.startsWith("audio/")) {
+      console.log("[WEBHOOK-WHATSAPP] generateTTSAudioWithGemini: audio generated with mime:", mimeType);
+      return `data:${mimeType};base64,${base64Audio}`;
+    }
+
+    console.warn("[WEBHOOK-WHATSAPP] generateTTSAudioWithGemini: unsupported mime type", mimeType);
+    return null;
+  } catch (err: any) {
+    console.error("[WEBHOOK-WHATSAPP] generateTTSAudioWithGemini: exception", err.message);
+    return null;
+  }
+}
+
+async function generateTTSAudioWithElevenLabs(text: string): Promise<string | null> {
   try {
     const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY_1") || Deno.env.get("ELEVENLABS_API_KEY");
     if (!elevenLabsKey) {
-      console.warn("[WEBHOOK-WHATSAPP] generateTTSAudio: missing ELEVENLABS_API_KEY");
+      console.warn("[WEBHOOK-WHATSAPP] generateTTSAudioWithElevenLabs: missing ELEVENLABS_API_KEY");
       return null;
     }
 
     // Laura voice - using "Laura" voice ID from ElevenLabs
     const voiceId = "FGY2WhTYpPnrIDTdsKH5";
 
-    console.log("[WEBHOOK-WHATSAPP] generateTTSAudio: generating TTS for text length:", text.length);
+    console.log("[WEBHOOK-WHATSAPP] generateTTSAudioWithElevenLabs: generating TTS for text length:", text.length);
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`,
@@ -273,25 +501,18 @@ async function generateTTSAudio(text: string): Promise<string | null> {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("[WEBHOOK-WHATSAPP] generateTTSAudio: ElevenLabs TTS error", response.status, errText.slice(0, 300));
+      console.error("[WEBHOOK-WHATSAPP] generateTTSAudioWithElevenLabs: ElevenLabs TTS error", response.status, errText.slice(0, 300));
       return null;
     }
 
     const audioBuffer = await response.arrayBuffer();
-    // Convert to base64
     const uint8 = new Uint8Array(audioBuffer);
-    let binary = "";
-    const chunkSize = 8192;
-    for (let i = 0; i < uint8.length; i += chunkSize) {
-      const chunk = uint8.subarray(i, i + chunkSize);
-      binary += String.fromCharCode(...chunk);
-    }
-    const base64Audio = btoa(binary);
+    const base64Audio = encodeBytesToBase64(uint8);
 
-    console.log("[WEBHOOK-WHATSAPP] generateTTSAudio: success, audio size:", uint8.length, "bytes");
-    return base64Audio;
+    console.log("[WEBHOOK-WHATSAPP] generateTTSAudioWithElevenLabs: success, audio size:", uint8.length, "bytes");
+    return `data:audio/mpeg;base64,${base64Audio}`;
   } catch (err: any) {
-    console.error("[WEBHOOK-WHATSAPP] generateTTSAudio: exception", err.message);
+    console.error("[WEBHOOK-WHATSAPP] generateTTSAudioWithElevenLabs: exception", err.message);
     return null;
   }
 }
@@ -299,7 +520,7 @@ async function generateTTSAudio(text: string): Promise<string | null> {
 /**
  * Send audio message via Evolution API using base64.
  */
-async function sendWhatsAppAudio(instance: string, remoteJid: string, base64Audio: string): Promise<boolean> {
+async function sendWhatsAppAudio(instance: string, remoteJid: string, audioPayload: string): Promise<boolean> {
   const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
   const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
 
@@ -318,7 +539,7 @@ async function sendWhatsAppAudio(instance: string, remoteJid: string, base64Audi
       },
       body: JSON.stringify({
         number: remoteJid,
-        audio: `data:audio/mp3;base64,${base64Audio}`,
+        audio: audioPayload.startsWith("data:") ? audioPayload : `data:audio/mpeg;base64,${audioPayload}`,
       }),
     });
 
