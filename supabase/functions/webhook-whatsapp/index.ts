@@ -1560,6 +1560,141 @@ async function callAI(
   };
 }
 
+/**
+ * Generate a minimal valid PDF document from text content.
+ * Uses raw PDF syntax — no external libraries needed.
+ */
+function generateMinimalPDF(text: string, title: string): Uint8Array {
+  // Encode text as Latin-1 compatible (replace non-Latin chars)
+  const sanitize = (s: string) =>
+    s.replace(/[^\x20-\x7E\xA0-\xFF]/g, (c) => {
+      // Map common unicode to Latin-1 equivalents
+      const map: Record<string, string> = {
+        "\u2013": "-", "\u2014": "--", "\u2018": "'", "\u2019": "'",
+        "\u201C": '"', "\u201D": '"', "\u2022": "*", "\u2026": "...",
+        "\u00E7": "\\347", "\u00E3": "\\343", "\u00E1": "\\341",
+        "\u00E9": "\\351", "\u00ED": "\\355", "\u00F3": "\\363",
+        "\u00FA": "\\372", "\u00C7": "\\307", "\u00C3": "\\303",
+        "\u00C1": "\\301", "\u00C9": "\\311", "\u00CD": "\\315",
+        "\u00D3": "\\323", "\u00DA": "\\332", "\u00E2": "\\342",
+        "\u00EA": "\\352", "\u00F4": "\\364",
+      };
+      return map[c] || "?";
+    });
+
+  const pageWidth = 595; // A4
+  const pageHeight = 842;
+  const margin = 50;
+  const lineHeight = 14;
+  const maxCharsPerLine = 80;
+  const usableHeight = pageHeight - 2 * margin;
+  const linesPerPage = Math.floor(usableHeight / lineHeight);
+
+  // Word-wrap text into lines
+  const rawLines = text.split("\n");
+  const wrappedLines: string[] = [];
+  for (const raw of rawLines) {
+    if (raw.length <= maxCharsPerLine) {
+      wrappedLines.push(raw);
+    } else {
+      const words = raw.split(" ");
+      let current = "";
+      for (const word of words) {
+        if ((current + " " + word).length > maxCharsPerLine) {
+          wrappedLines.push(current);
+          current = word;
+        } else {
+          current = current ? current + " " + word : word;
+        }
+      }
+      if (current) wrappedLines.push(current);
+    }
+  }
+
+  // Split into pages
+  const pages: string[][] = [];
+  for (let i = 0; i < wrappedLines.length; i += linesPerPage) {
+    pages.push(wrappedLines.slice(i, i + linesPerPage));
+  }
+  if (pages.length === 0) pages.push([""]);
+
+  // Build PDF objects
+  const objects: string[] = [];
+  const offsets: number[] = [];
+  let currentOffset = 0;
+
+  const addObj = (content: string) => {
+    offsets.push(currentOffset);
+    const obj = content;
+    objects.push(obj);
+    currentOffset += new TextEncoder().encode(obj).length;
+  };
+
+  // Header
+  const header = "%PDF-1.4\n";
+  currentOffset = header.length;
+
+  // Object 1: Catalog
+  addObj("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+
+  // Object 2: Pages (will reference page objects starting at obj 4)
+  const pageRefs = pages.map((_, i) => `${4 + i * 2} 0 R`).join(" ");
+  addObj(`2 0 obj\n<< /Type /Pages /Kids [${pageRefs}] /Count ${pages.length} >>\nendobj\n`);
+
+  // Object 3: Font
+  addObj("3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n");
+
+  // Pages and content streams
+  for (let p = 0; p < pages.length; p++) {
+    const pageLines = pages[p];
+    let streamContent = "BT\n/F1 10 Tf\n";
+
+    // Title on first page
+    if (p === 0) {
+      streamContent += `${margin} ${pageHeight - margin + 5} Td\n/F1 14 Tf\n(${sanitize(title)}) Tj\n`;
+      streamContent += `0 -${lineHeight * 2} Td\n/F1 10 Tf\n`;
+    } else {
+      streamContent += `${margin} ${pageHeight - margin} Td\n`;
+    }
+
+    for (let l = 0; l < pageLines.length; l++) {
+      const line = sanitize(pageLines[l]);
+      // Escape PDF special chars
+      const escaped = line.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+      if (l === 0 && p === 0) {
+        streamContent += `(${escaped}) Tj\n`;
+      } else {
+        streamContent += `0 -${lineHeight} Td\n(${escaped}) Tj\n`;
+      }
+    }
+    streamContent += "ET\n";
+
+    const streamBytes = new TextEncoder().encode(streamContent);
+    const contentObjNum = 4 + p * 2 + 1;
+    const pageObjNum = 4 + p * 2;
+
+    // Content stream object
+    addObj(`${contentObjNum} 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n${streamContent}endstream\nendobj\n`);
+
+    // Page object
+    addObj(`${pageObjNum} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Contents ${contentObjNum} 0 R /Resources << /Font << /F1 3 0 R >> >> >>\nendobj\n`);
+  }
+
+  const totalObjects = objects.length;
+  const xrefOffset = currentOffset + header.length;
+
+  // Build xref
+  let xref = `xref\n0 ${totalObjects + 1}\n0000000000 65535 f \n`;
+  for (const off of offsets) {
+    xref += `${String(off + header.length).padStart(10, "0")} 00000 n \n`;
+  }
+
+  const trailer = `trailer\n<< /Size ${totalObjects + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+
+  const fullPdf = header + objects.join("") + xref + trailer;
+  return new TextEncoder().encode(fullPdf);
+}
+
 // Tools for admin_empresa mode
 const ADMIN_TOOLS = [
   {
