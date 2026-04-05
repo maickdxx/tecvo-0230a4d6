@@ -82,10 +82,14 @@ export function LauraFloatingAssistant() {
     }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     setOpen(false);
     setDismissed(true);
     setPulse(false);
+    // If user clicks "Depois" on create_os step, mark activation as completed
+    if (step === "create_os") {
+      await advance("completed");
+    }
   };
 
   const handleFabClick = () => {
