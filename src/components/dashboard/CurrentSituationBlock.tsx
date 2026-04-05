@@ -19,7 +19,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useFinancialAccounts, type AccountType } from "@/hooks/useFinancialAccounts";
 import { useTransactions } from "@/hooks/useTransactions";
-import { format, addDays } from "date-fns";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
+import { getTodayInTz } from "@/lib/timezone";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -28,6 +29,15 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function addDaysToDateStr(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day + days);
+  const nextYear = date.getFullYear();
+  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
+  const nextDay = String(date.getDate()).padStart(2, "0");
+  return `${nextYear}-${nextMonth}-${nextDay}`;
 }
 
 const accountIcon: Record<AccountType, typeof Wallet> = {
@@ -46,10 +56,11 @@ const forecastConfig: Record<ForecastLevel, { label: string; icon: typeof Shield
 };
 
 export function CurrentSituationBlock() {
+  const tz = useOrgTimezone();
   const { totalBalance, activeAccounts, isLoading: isLoadingAccounts } = useFinancialAccounts();
 
-  const today = format(new Date(), "yyyy-MM-dd");
-  const in15Days = format(addDays(new Date(), 15), "yyyy-MM-dd");
+  const today = useMemo(() => getTodayInTz(tz), [tz]);
+  const in15Days = useMemo(() => addDaysToDateStr(today, 15), [today]);
 
   const { transactions: payables, isLoading: isLoadingPayables } = useTransactions({
     startDate: today,

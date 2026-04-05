@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { AppLayout } from "@/components/layout";
 import { useAutoSeedDemo } from "@/hooks/useAutoSeedDemo";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import {
   ExecutiveHeroBlock,
 } from "@/components/dashboard";
@@ -23,18 +25,27 @@ import {
   type Granularity,
   getPeriodoAtivo,
   getPeriodoAnterior,
-  getHojeBRT,
   navegarPeriodo,
   getLabelPeriodo,
 } from "@/lib/periodoGlobal";
+import { getTodayInTz } from "@/lib/timezone";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
+function parseDateOnly(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { isPreparing } = useAutoSeedDemo();
+  const { organizationId } = useAuth();
+  const tz = useOrgTimezone();
   const hasTrackedDashboard = useRef(false);
+  const todayInOrgTimezone = useMemo(() => parseDateOnly(getTodayInTz(tz)), [tz]);
 
   useEffect(() => {
     if (!hasTrackedDashboard.current) {
@@ -44,8 +55,30 @@ export default function Dashboard() {
       });
     }
   }, []);
+
+  useEffect(() => {
+    setReferenceDate(todayInOrgTimezone);
+  }, [todayInOrgTimezone]);
+
+  useEffect(() => {
+    if (!organizationId) return;
+
+    [
+      ["dashboard-metrics"],
+      ["money-on-table"],
+      ["closed-period-services"],
+      ["tomorrow-services"],
+      ["transactions"],
+      ["financial-accounts"],
+      ["services"],
+      ["clients"],
+    ].forEach((queryKey) => {
+      queryClient.invalidateQueries({ queryKey });
+    });
+  }, [organizationId, queryClient]);
+
   const [granularity, setGranularity] = useState<Granularity>("month");
-  const [referenceDate, setReferenceDate] = useState(() => getHojeBRT());
+  const [referenceDate, setReferenceDate] = useState(() => todayInOrgTimezone);
 
   const periodo = useMemo(() => getPeriodoAtivo(granularity, referenceDate), [granularity, referenceDate]);
   const periodoAnterior = useMemo(() => getPeriodoAnterior(granularity, referenceDate), [granularity, referenceDate]);
@@ -119,7 +152,7 @@ export default function Dashboard() {
                   value={granularity}
                   onValueChange={(v) => {
                     setGranularity(v as Granularity);
-                    setReferenceDate(getHojeBRT());
+                    setReferenceDate(todayInOrgTimezone);
                   }}
                   className="w-full sm:w-auto"
                 >

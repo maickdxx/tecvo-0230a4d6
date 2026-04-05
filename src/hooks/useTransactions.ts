@@ -132,6 +132,8 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
       let queryBuilder = supabase
         .from("transactions")
         .select("*")
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
         .order("date", { ascending: false });
 
       // Filter demo data based on demo mode
@@ -193,6 +195,9 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["money-on-table"] });
       toast({
         title: "Transação registrada",
         description: "A transação foi adicionada com sucesso",
@@ -230,6 +235,9 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["money-on-table"] });
       toast({
         title: "Transação atualizada",
         description: "Os dados foram salvos com sucesso",
@@ -252,6 +260,9 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["money-on-table"] });
       toast({
         title: "Transação excluída",
         description: "A transação foi removida com sucesso",

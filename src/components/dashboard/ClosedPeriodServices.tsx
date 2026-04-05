@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,16 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
-import { getDatePartInTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
-import { getHojeBRT } from "@/lib/periodoGlobal";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
+import { getDatePartInTz, getLocalDayBoundsUTC, getTodayInTz } from "@/lib/timezone";
 
-function toDateStr(d: Date): string {
-  return d.toLocaleDateString("sv-SE"); // yyyy-MM-dd
+function shiftDateStr(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day + days);
+  const nextYear = date.getFullYear();
+  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
+  const nextDay = String(date.getDate()).padStart(2, "0");
+  return `${nextYear}-${nextMonth}-${nextDay}`;
 }
 
 function formatCurrency(value: number): string {
@@ -23,46 +28,45 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatDayLabel(dateStr: string): string {
-  const today = toDateStr(getHojeBRT());
-  if (dateStr === today) return "Hoje";
-  const yesterday = new Date(today + "T12:00:00");
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().substring(0, 10);
+function formatDayLabel(dateStr: string, todayStr: string): string {
+  if (dateStr === todayStr) return "Hoje";
+  const yStr = shiftDateStr(todayStr, -1);
   if (dateStr === yStr) return "Ontem";
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
 export function ClosedPeriodServices() {
+  const tz = useOrgTimezone();
   const { organizationId } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [currentDate, setCurrentDate] = useState<string>(() => toDateStr(getHojeBRT()));
+  const todayStr = useMemo(() => getTodayInTz(tz), [tz]);
+  const [currentDate, setCurrentDate] = useState<string>(() => todayStr);
+
+  useEffect(() => {
+    setCurrentDate(todayStr);
+  }, [todayStr]);
 
   const navigate = (dir: -1 | 1) => {
-    setCurrentDate((prev) => {
-      const d = new Date(prev + "T12:00:00");
-      d.setDate(d.getDate() + dir);
-      return d.toISOString().substring(0, 10);
-    });
+    setCurrentDate((prev) => shiftDateStr(prev, dir));
   };
 
   const { data: closedServices = [], isLoading } = useQuery({
-    queryKey: ["closed-period-services", organizationId, currentDate, isDemoMode],
+    queryKey: ["closed-period-services", organizationId, currentDate, tz, isDemoMode],
     queryFn: async () => {
       if (!organizationId) return [];
 
-      const dayStart = `${currentDate}T00:00:00`;
-      const dayEnd = `${currentDate}T23:59:59`;
+      const dayBounds = getLocalDayBoundsUTC(currentDate, tz);
 
       let query = supabase
         .from("services")
         .select("id, value, service_type, status, completed_date, document_type")
+        .eq("organization_id", organizationId)
         .is("deleted_at", null)
         .eq("status", "completed")
         .neq("document_type", "quote")
-        .gte("completed_date", dayStart)
-        .lte("completed_date", dayEnd);
+        .gte("completed_date", dayBounds.start)
+        .lte("completed_date", dayBounds.end);
 
       if (!isDemoMode) {
         query = query.eq("is_demo_data", false);
@@ -71,7 +75,7 @@ export function ClosedPeriodServices() {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).filter((s) => getDatePartInTz(s.completed_date || "", DEFAULT_TIMEZONE) === currentDate);
+      return (data || []).filter((s) => getDatePartInTz(s.completed_date || "", tz) === currentDate);
     },
     enabled: !!organizationId,
   });
@@ -103,14 +107,14 @@ export function ClosedPeriodServices() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-xs font-medium min-w-[70px] text-center capitalize">
-              {formatDayLabel(currentDate)}
+              {formatDayLabel(currentDate, todayStr)}
             </span>
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7"
               onClick={() => navigate(1)}
-              disabled={currentDate >= toDateStr(getHojeBRT())}
+              disabled={currentDate >= todayStr}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
