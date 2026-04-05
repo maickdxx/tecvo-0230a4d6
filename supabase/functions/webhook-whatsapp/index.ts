@@ -4645,6 +4645,9 @@ Quando o usuário pedir para enviar, mandar, ver ou receber o PDF de uma OS ou o
 - Se o resultado começar com "SILENT_PDF_SENT:", significa que o PDF já foi enviado com sucesso. Confirme ao usuário de forma natural: "Pronto, enviei o PDF!"
 - NÃO é necessário pedir confirmação para enviar PDF — envie direto quando solicitado
 - Após criar OS/orçamento e o usuário pedir o PDF, use esta ferramenta imediatamente
+- Se o usuário responder apenas com o número da OS (ex: "100") depois que você pedir identificação, trate isso como suficiente e use a ferramenta
+- NUNCA diga que enviou, mandou ou reenviou um PDF sem a ferramenta send_service_pdf retornar sucesso nesta mesma conversa
+- Se faltar identificador, peça o número da OS ou o nome do cliente. Nunca finja que enviou
 
 ══════════ FLUXO COMPLETO DE ATENDIMENTO ══════════
 
