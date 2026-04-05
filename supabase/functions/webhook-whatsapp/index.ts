@@ -1608,10 +1608,13 @@ Deno.serve(async (req) => {
     }
 
     // 3. Deduplicate echo messages — skip saving if already exists
+    // IMPORTANT: Scope dedup to THIS channel to avoid cross-channel collisions.
+    // The same Evolution message_id can arrive via multiple channels (e.g., org channel + tecvo channel).
     const { data: existingMsg } = await supabase
       .from("whatsapp_messages")
       .select("id")
       .eq("message_id", messageId)
+      .eq("channel_id", channel.id)
       .maybeSingle();
 
     // For fromMe echoes, also check for recent outbound messages with same content
