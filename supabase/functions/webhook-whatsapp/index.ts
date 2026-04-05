@@ -1942,7 +1942,7 @@ Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro`;
           console.log("[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:", conversationHistory.length, "messages. System prompt length:", systemPrompt.length, "chars. Calling AI...");
 
           const startTime = Date.now();
-          let aiResult = await callAI(systemPrompt, conversationHistory, FINANCIAL_TOOLS);
+          let aiResult = await callAI(systemPrompt, conversationHistory, ADMIN_TOOLS);
           let aiDuration = Date.now() - startTime;
           console.log("[WEBHOOK-WHATSAPP] [DEBUG] AI returned in", aiDuration, "ms. Content length:", aiResult.content?.length, "toolCalls:", aiResult.toolCalls?.length || 0);
 
