@@ -10,7 +10,6 @@ export function useServicePDFSend() {
   const [sending, setSending] = useState(false);
   const { organization } = useOrganization();
   const { channels } = useWhatsAppChannels();
-  const tz = useOrgTimezone();
 
   const getStoredOfficialPdf = useCallback(async (service: Service): Promise<Blob | null> => {
     if (!service.organization_id) return null;
