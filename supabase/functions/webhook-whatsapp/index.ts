@@ -147,18 +147,19 @@ async function persistMedia(
 
 async function fetchOrgContext(supabase: any, organizationId: string) {
   const now = new Date();
-  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const oneEightyDaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString();
+  const thirtyDaysAhead = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes] = await Promise.all([
     supabase
       .from("services")
-      .select("id, status, scheduled_date, completed_date, value, description, service_type, assigned_to, client_id, created_at, payment_method, document_type")
+      .select("id, status, scheduled_date, completed_date, value, description, service_type, assigned_to, client_id, created_at, payment_method, document_type, operational_status")
       .eq("organization_id", organizationId)
       .is("deleted_at", null)
       .neq("status", "cancelled")
-      .gte("scheduled_date", ninetyDaysAgo)
+      .gte("scheduled_date", oneEightyDaysAgo)
       .order("scheduled_date", { ascending: false })
-      .limit(500),
+      .limit(1000),
     supabase
       .from("clients")
       .select("id, name, phone, email, created_at")
