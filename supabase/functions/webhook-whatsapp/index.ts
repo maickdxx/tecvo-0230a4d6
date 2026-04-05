@@ -2137,7 +2137,7 @@ Quando o usuário pedir para criar uma conta bancária ou financeira:
 
           if (!aiResponse) {
             console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for lead_comercial. Sending fallback.");
-            const fallbackMsg = "Olá! 👋 Sou a assistente do Tecvo. No momento não consegui processar sua mensagem, mas você pode conhecer nossa plataforma em https://tecvo.com.br";
+            const fallbackMsg = "Olá! 👋 Sou a Laura, secretária inteligente da Tecvo. No momento não consegui processar sua mensagem, mas você pode conhecer nossa plataforma em https://tecvo.com.br";
             const fbMsgId = `ai_fallback_${crypto.randomUUID()}`;
             await supabase.from("whatsapp_messages").insert({
               organization_id: targetOrganizationId,
