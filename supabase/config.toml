@@ -130,3 +130,5 @@ project_id = "vcuwimodpfbzpuvzesfm"
     verify_jwt = false
   [functions.dispatch-welcome]
     verify_jwt = false
+  [functions.onboarding-chat]
+    verify_jwt = false

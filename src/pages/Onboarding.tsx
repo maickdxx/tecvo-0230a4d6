@@ -292,7 +292,7 @@ export default function Onboarding() {
                 <div className="text-center space-y-2">
                   <div className="flex justify-center">
                     <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <MessageCircle className="h-6 w-6 text-green-600" />
+                      <MessageCircle className="h-6 w-6 text-primary" />
                     </div>
                   </div>
                   <h3 className="text-base font-semibold text-foreground">
