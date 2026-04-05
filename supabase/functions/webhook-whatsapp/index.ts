@@ -4941,9 +4941,9 @@ Cada "sim" aproxima o lead da decisão final.
           }
           if (aiResponse) {
             const outputCheckLead = validateAIOutput(aiResponse);
-            const safeResponseLead = outputCheckLead.safe
+            const safeResponseLead = markdownToWhatsApp(outputCheckLead.safe
               ? aiResponse
-              : (outputCheckLead.sanitizedContent || "");
+              : (outputCheckLead.sanitizedContent || ""));
             if (!outputCheckLead.safe) {
               await logOutputViolation(
                 supabase,
