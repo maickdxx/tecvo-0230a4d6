@@ -490,11 +490,11 @@ async function fetchConversationHistory(supabase: any, contactId: string, limit 
  * Call Lovable AI Gateway (non-streaming)
  */
 async function callAI(systemPrompt: string, conversationMessages: any[], tools?: any[]): Promise<{ content: string; usage: any; toolCalls: any[] | null }> {
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
   const body: any = {
-    model: "gemini-2.5-flash",
+    model: "google/gemini-2.5-flash",
     messages: [
       { role: "system", content: systemPrompt },
       ...conversationMessages,
@@ -505,10 +505,10 @@ async function callAI(systemPrompt: string, conversationMessages: any[], tools?:
     body.tools = tools;
   }
 
-  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${GEMINI_API_KEY}`,
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
@@ -516,14 +516,20 @@ async function callAI(systemPrompt: string, conversationMessages: any[], tools?:
 
   if (!response.ok) {
     const text = await response.text();
-    console.error("[WEBHOOK-WHATSAPP] AI error:", response.status, text);
+    console.error("[WEBHOOK-WHATSAPP] AI error:", response.status, text.substring(0, 500));
     throw new Error(`AI error ${response.status}`);
   }
 
   const result = await response.json();
   const choice = result.choices?.[0];
+  const content = choice?.message?.content || "";
+
+  if (!content && (!choice?.message?.tool_calls || choice.message.tool_calls.length === 0)) {
+    console.warn("[WEBHOOK-WHATSAPP] AI returned EMPTY content with no tool calls. finishReason:", choice?.finish_reason);
+  }
+
   return {
-    content: choice?.message?.content || "",
+    content,
     usage: result.usage || {},
     toolCalls: choice?.message?.tool_calls || null,
   };
@@ -1856,6 +1862,9 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
             totalTokens: aiUsage.totalTokens, durationMs: aiDuration, status: "success",
           });
 
+          if (!aiResponse) {
+            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for admin_empresa. No reply sent.");
+          }
           if (aiResponse) {
             // Output validation filter
             const outputCheck = validateAIOutput(aiResponse);
@@ -1906,8 +1915,10 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
             totalTokens: aiUsageLead.totalTokens, durationMs: aiDurationLead, status: "success",
           });
 
+          if (!aiResponse) {
+            console.warn("[WEBHOOK-WHATSAPP] AI returned empty response for lead_comercial. No reply sent.");
+          }
           if (aiResponse) {
-            // Output validation filter
             const outputCheckLead = validateAIOutput(aiResponse);
             const safeResponseLead = outputCheckLead.safe ? aiResponse : (outputCheckLead.sanitizedContent || "");
             if (!outputCheckLead.safe) {
