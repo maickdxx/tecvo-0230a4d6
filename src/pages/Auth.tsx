@@ -367,9 +367,9 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-[440px] space-y-5">
         <div className="text-center space-y-1.5">
-          <h1 className="text-2xl font-bold text-foreground">{mode === "signup" ? (invite ? "Você foi convidado!" : "Crie sua conta gratuita") : "Acesse sua conta"}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{mode === "signup" ? (invite ? "Você foi convidado!" : "Crie sua conta") : "Acesse sua conta"}</h1>
           {mode === "signup" && !invite && (
-            <p className="text-sm text-muted-foreground">Leva menos de 1 minuto • Sem cartão • 7 dias grátis</p>
+            <p className="text-sm text-muted-foreground">Leva menos de 1 minuto • Primeiro mês por R$1</p>
           )}
         </div>
 
