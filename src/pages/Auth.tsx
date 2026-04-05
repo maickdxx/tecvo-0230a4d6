@@ -50,6 +50,14 @@ export default function Auth() {
   const hasTrackedSignupStarted = useRef(false);
   const hasTrackedCadastroPage = useRef(false);
 
+  // Redirect authenticated users (e.g. returning from Google OAuth)
+  useEffect(() => {
+    if (!authLoading && user) {
+      const destination = getRedirectPath();
+      navigate(destination, { replace: true });
+    }
+  }, [authLoading, user]);
+
   useEffect(() => {
     if (!hasTrackedCadastroPage.current) {
       hasTrackedCadastroPage.current = true;
