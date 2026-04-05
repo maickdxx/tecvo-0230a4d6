@@ -291,7 +291,7 @@ export default function Onboarding() {
               <div className="bg-card border border-border rounded-2xl p-5 mb-3 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center space-y-2">
                   <div className="flex justify-center">
-                    <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                       <MessageCircle className="h-6 w-6 text-primary" />
                     </div>
                   </div>
