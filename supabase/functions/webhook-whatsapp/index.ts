@@ -1746,6 +1746,26 @@ const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "send_service_pdf",
+      description:
+        "Envia o PDF de uma Ordem de Serviço ou Orçamento para o usuário via WhatsApp. Use quando o técnico pedir para enviar, mandar ou ver o PDF de uma OS ou orçamento.",
+      parameters: {
+        type: "object",
+        properties: {
+          service_identifier: {
+            type: "string",
+            description:
+              "Identificador do serviço: pode ser o número da OS (ex: '0042'), nome do cliente, ou parte do ID. A busca é flexível.",
+          },
+        },
+        required: ["service_identifier"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function executeAdminTool(
