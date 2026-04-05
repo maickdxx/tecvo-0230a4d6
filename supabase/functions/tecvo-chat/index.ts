@@ -288,6 +288,15 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       durationMs, status: toolErrors.length > 0 ? "error" : "success",
     });
 
+    // Monitor recurring failure patterns - log if multiple tool errors in one request
+    if (toolErrors.length >= 2) {
+      console.warn(`[TECVO-CHAT] RECURRING FAILURE PATTERN: ${toolErrors.length} tool errors in single request for org=${organizationId}`, toolErrors);
+      await logAIUsage(supabaseAdmin, {
+        organizationId, userId, actionSlug: "recurring_failure_pattern", model: aiModel,
+        promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs: 0, status: "error",
+      }).catch(() => {});
+    }
+
     // Return as SSE stream format for frontend compatibility
     const encoder = new TextEncoder();
     const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: finalContent } }] })}\n\ndata: [DONE]\n\n`;
