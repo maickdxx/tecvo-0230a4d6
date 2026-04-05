@@ -86,9 +86,24 @@ export default function Onboarding() {
   const [whatsapp, setWhatsapp] = useState("");
   const [isActivating, setIsActivating] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [showPlanSelector, setShowPlanSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Plan selection: from URL param (landing page), localStorage, or needs selection
+  const [selectedPlan, setSelectedPlanRaw] = useState<"starter" | "essential" | "pro" | null>(() => {
+    const urlPlan = searchParams.get("plan");
+    if (urlPlan === "starter" || urlPlan === "essential" || urlPlan === "pro") return urlPlan;
+    const saved = localStorage.getItem("tecvo_onboarding_plan");
+    if (saved === "starter" || saved === "essential" || saved === "pro") return saved;
+    return null;
+  });
+
+  const setSelectedPlan = (p: "starter" | "essential" | "pro") => {
+    setSelectedPlanRaw(p);
+    localStorage.setItem("tecvo_onboarding_plan", p);
+  };
 
   const [whatsappMessages, setWhatsappMessages] = useState<Array<{role: "assistant" | "user"; content: string}>>([]);
   const whatsappInitRef = useRef(false);
