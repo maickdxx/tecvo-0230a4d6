@@ -530,7 +530,7 @@ export default function Auth() {
               }}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {invite ? "Aceitar Convite" : "Começar meu teste grátis agora"}
+              {invite ? "Aceitar Convite" : "Criar minha conta agora"}
             </Button>
           </form>
         )}
