@@ -83,9 +83,13 @@ export default function EditarOrdemServico() {
         description: "Os dados foram salvos com sucesso.",
       });
 
-      // Materialize PDF in background
+      // Materialize PDF (awaited to ensure it's ready)
       if (organization?.id) {
-        materializeServicePDF(id, organization.id).catch(() => {});
+        try {
+          await materializeServicePDF(id, organization.id);
+        } catch (e) {
+          console.warn("[EditarOS] PDF materialization failed:", e);
+        }
       }
 
       navigate("/ordens-servico");
