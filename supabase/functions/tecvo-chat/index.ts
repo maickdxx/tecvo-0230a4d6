@@ -275,13 +275,13 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       ? [{ role: "system", content: finalSystemPrompt }, { role: "user", content: "Me dê uma dica proativa baseada nos dados da minha empresa." }]
       : [{ role: "system", content: finalSystemPrompt }, ...messages];
 
-    const aiModel = "google/gemini-3-flash-preview";
+    const aiModel = "gemini-2.5-flash";
     const startTime = Date.now();
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GEMINI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
