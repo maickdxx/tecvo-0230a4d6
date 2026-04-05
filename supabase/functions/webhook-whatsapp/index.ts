@@ -1608,10 +1608,13 @@ Deno.serve(async (req) => {
     }
 
     // 3. Deduplicate echo messages — skip saving if already exists
+    // IMPORTANT: Scope dedup to THIS channel to avoid cross-channel collisions.
+    // The same Evolution message_id can arrive via multiple channels (e.g., org channel + tecvo channel).
     const { data: existingMsg } = await supabase
       .from("whatsapp_messages")
       .select("id")
       .eq("message_id", messageId)
+      .eq("channel_id", channel.id)
       .maybeSingle();
 
     // For fromMe echoes, also check for recent outbound messages with same content
@@ -2031,6 +2034,12 @@ Quando o usuário pedir para criar uma conta bancária ou financeira:
 
           // Fetch conversation history for context
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
+          // Safety net: if the current user message is not in history (race condition / just inserted),
+          // append it so the AI always has the user's latest message as context.
+          const lastHistoryMsg = conversationHistory[conversationHistory.length - 1];
+          if (content && (!lastHistoryMsg || lastHistoryMsg.role !== "user" || !lastHistoryMsg.content.includes(content.trim().substring(0, 30)))) {
+            conversationHistory.push({ role: "user", content: content.trim() });
+          }
           console.log("[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:", conversationHistory.length, "messages. System prompt length:", systemPrompt.length, "chars. Calling AI...");
 
           const startTime = Date.now();
@@ -2120,6 +2129,11 @@ Quando o usuário pedir para criar uma conta bancária ou financeira:
         } else {
           // lead_comercial on TECVO_AI channel
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
+          // Safety net: ensure current message is in history for AI context
+          const lastHistoryMsgLead = conversationHistory[conversationHistory.length - 1];
+          if (content && (!lastHistoryMsgLead || lastHistoryMsgLead.role !== "user" || !lastHistoryMsgLead.content.includes(content.trim().substring(0, 30)))) {
+            conversationHistory.push({ role: "user", content: content.trim() });
+          }
           systemPrompt = `Você é a Laura, secretária inteligente da Tecvo. Esta pessoa NÃO é cliente — é um possível lead.
 
 ══════════ SUA MISSÃO ══════════
