@@ -1819,10 +1819,12 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 
           // Fetch conversation history for context
           const conversationHistory = await fetchConversationHistory(supabase, contactId);
+          console.log("[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:", conversationHistory.length, "messages. Calling AI...");
 
           const startTime = Date.now();
           let aiResult = await callAI(systemPrompt, conversationHistory, FINANCIAL_TOOLS);
           let aiDuration = Date.now() - startTime;
+          console.log("[WEBHOOK-WHATSAPP] [DEBUG] AI returned in", aiDuration, "ms. Content length:", aiResult.content?.length, "toolCalls:", aiResult.toolCalls?.length || 0);
 
           // Handle tool calls (one round)
           if (aiResult.toolCalls && aiResult.toolCalls.length > 0) {
