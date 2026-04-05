@@ -3959,6 +3959,7 @@ Você NÃO deve compartilhar:
                           instance,
                           remoteJid,
                           audioBase64,
+                          supabase,
                         );
                         console.log(
                           "[WEBHOOK-WHATSAPP] Admin audio reply sent",
@@ -4209,6 +4210,7 @@ Conduzir uma conversa estratégica e consultiva que qualifique o lead e apresent
                           instance,
                           remoteJid,
                           audioBase64,
+                          supabase,
                         );
                         console.log("[WEBHOOK-WHATSAPP] Lead audio reply sent");
                       }
