@@ -725,7 +725,7 @@ export async function executeAdminTool(
 
   // Degradation mode check for high-risk actions
   const risk = ACTION_RISK[fnName] || "medium";
-  if (isDegradedMode() && risk === "high") {
+  if (await isDegradedMode(supabase, organizationId) && risk === "high") {
     console.warn(`[LAURA-DEGRADED] Blocking high-risk action "${fnName}" due to repeated errors`);
     await logToolError(supabase, organizationId, fnName, "blocked_degraded_mode", args);
     return `⚠️ Detectei instabilidade recente no sistema. Por segurança, não vou executar "${fnName}" automaticamente agora. Por favor, faça essa ação diretamente no sistema ou tente novamente em alguns minutos.`;
