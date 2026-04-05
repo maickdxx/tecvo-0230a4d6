@@ -619,18 +619,9 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
 
     const accountId = defaultAccount?.id || null;
 
-    // If we have an account, adjust its balance for expenses
-    if (accountId && type === "expense") {
-      await supabase.rpc("adjust_financial_account_balance", {
-        _account_id: accountId,
-        _delta: -amount,
-      });
-    } else if (accountId && type === "income") {
-      await supabase.rpc("adjust_financial_account_balance", {
-        _account_id: accountId,
-        _delta: amount,
-      });
-    }
+    // Expenses go as pending (contas a pagar) — manager approves later
+    // Income also goes as pending (contas a receber)
+    // No balance adjustment here — only on approval/reconciliation
 
     const { error } = await supabase.from("transactions").insert({
       organization_id: organizationId,
@@ -639,7 +630,8 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
       description,
       category,
       date,
-      status: type === "expense" ? "paid" : "pending",
+      due_date: date,
+      status: "pending",
       financial_account_id: accountId,
       ...(payment_method ? { payment_method } : {}),
     });
