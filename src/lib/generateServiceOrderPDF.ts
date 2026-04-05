@@ -20,6 +20,9 @@ export interface ServiceOrderData {
   paymentNotes: string;
 }
 
+export const OFFICIAL_SERVICE_PDF_GENERATOR = "official-service-pdf-html";
+export const OFFICIAL_SERVICE_PDF_LAYOUT = "tecvo-service-order-html-v1";
+
 interface ServiceOrderEquipment {
   id?: string;
   name?: string;
@@ -327,6 +330,39 @@ export async function generateServiceOrderPDF({
     if (orgId) {
       const storagePath = `os-pdfs/${orgId}/${service.id}.pdf`;
       const markerPath = `os-pdfs/${orgId}/${service.id}.official.json`;
+      const markerPayload = {
+        generator: OFFICIAL_SERVICE_PDF_GENERATOR,
+        layout: OFFICIAL_SERVICE_PDF_LAYOUT,
+        version: 2,
+        source: "panel_official",
+        document_type: service.document_type || "service_order",
+        service_id: service.id,
+        quote_number: service.quote_number || null,
+        generated_at: new Date().toISOString(),
+        sections: {
+          header: true,
+          company: true,
+          client: true,
+          items_table: true,
+          total: true,
+          signatures: true,
+          equipment: equipRender.length > 0,
+          description: Boolean(orderData.solution),
+          payment: Boolean(orderData.paymentMethod || orderData.paymentDueDate || orderData.paymentNotes),
+          notes: Boolean(service.notes),
+        },
+        validation: {
+          hasOfficialHeader: true,
+          hasCompanyData: Boolean(organizationName?.trim()),
+          hasClientData: Boolean(service.client?.name?.trim()),
+          hasItemsTable: true,
+          hasTotal: Number.isFinite(grandTotal),
+          hasSignaturesSection: true,
+          hasCommercialValue: grandTotal > 0 || Number(service.value || 0) > 0,
+          itemsCount: items.length,
+        },
+      };
+
       await supabase.storage
         .from("whatsapp-media")
         .upload(storagePath, blob, { contentType: "application/pdf", upsert: true });
@@ -336,14 +372,7 @@ export async function generateServiceOrderPDF({
         .upload(
           markerPath,
           new Blob([
-            JSON.stringify({
-              generator: "official-service-pdf-html",
-              version: 1,
-              document_type: service.document_type || "service_order",
-              service_id: service.id,
-              quote_number: service.quote_number || null,
-              generated_at: new Date().toISOString(),
-            }),
+            JSON.stringify(markerPayload),
           ], { type: "application/json" }),
           { contentType: "application/json", upsert: true }
         );
