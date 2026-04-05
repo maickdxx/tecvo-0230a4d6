@@ -641,11 +641,15 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
     // Income also goes as pending (contas a receber)
     // No balance adjustment here — only on approval/reconciliation
 
+    // Capitalize first letter and add (Secretária) tag
+    const capitalizedDesc = description.charAt(0).toUpperCase() + description.slice(1);
+    const taggedDesc = `${capitalizedDesc} (Secretária)`;
+
     const { error } = await supabase.from("transactions").insert({
       organization_id: organizationId,
       type,
       amount,
-      description,
+      description: taggedDesc,
       category,
       date,
       due_date: date,
