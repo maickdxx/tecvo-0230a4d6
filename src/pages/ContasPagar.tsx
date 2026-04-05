@@ -87,8 +87,6 @@ export default function ContasPagar() {
   const startDate = periodo.data_inicio;
   const endDate = periodo.data_fim;
 
-  const statusFilter = activeTab === "all" ? undefined : activeTab as "pending" | "paid" | "overdue";
-
   const { 
     accounts, 
     totals, 
@@ -101,7 +99,6 @@ export default function ContasPagar() {
     isUpdating 
   } = useAccounts({ 
     accountType: "payable",
-    status: statusFilter,
     startDate,
     endDate,
   });
