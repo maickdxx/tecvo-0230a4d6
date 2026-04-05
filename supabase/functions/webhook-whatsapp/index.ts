@@ -4368,7 +4368,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!fromMe && content && !isGroup && isTecvoAI) {
+    if (!fromMe && !isEchoDuplicate && content && !isGroup && isTecvoAI) {
       try {
         let systemPrompt: string;
 
