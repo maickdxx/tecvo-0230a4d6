@@ -1154,9 +1154,9 @@ function buildSystemPrompt(ctx: any) {
   );
 
   // ── THIS MONTH ──
-  const monthServices = osServices.filter((s: any) =>
-    s.scheduled_date?.substring(0, 7) === currentMonth
-  );
+  const monthServices = osServices.filter((s: any) => {
+    const d = getServiceDate(s); return d && d.substring(0, 7) === currentMonth;
+  });
   const monthCompleted = monthServices.filter((s: any) =>
     s.status === "completed"
   );
