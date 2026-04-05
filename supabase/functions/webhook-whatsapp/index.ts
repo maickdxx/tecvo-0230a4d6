@@ -2100,7 +2100,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+    } catch (parseErr: any) {
+      console.error("[WEBHOOK-WHATSAPP] Invalid JSON payload:", parseErr.message);
+      return new Response(JSON.stringify({ ok: false, error: "invalid_json" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!body || typeof body !== "object") {
+      console.error("[WEBHOOK-WHATSAPP] Payload is not an object");
+      return new Response(JSON.stringify({ ok: false, error: "invalid_payload" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     console.log(
       "[WEBHOOK-WHATSAPP] Received:",
       JSON.stringify(body).slice(0, 500),
