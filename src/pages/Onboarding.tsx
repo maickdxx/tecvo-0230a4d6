@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useOnboardingChat } from "@/hooks/useOnboardingChat";
