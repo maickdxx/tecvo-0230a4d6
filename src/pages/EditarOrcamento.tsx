@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { ServiceItemLocal } from "@/components/services/ServiceCatalogSelector";
 import { type ServiceEquipmentLocal } from "@/hooks/useServiceEquipment";
+import { materializeServicePDF } from "@/lib/materializePDF";
 
 export default function EditarOrcamento() {
   const { id } = useParams<{ id: string }>();
@@ -81,6 +82,11 @@ export default function EditarOrcamento() {
         title: "Orçamento atualizado",
         description: "Os dados foram salvos com sucesso.",
       });
+
+      // Materialize PDF in background
+      if (organization?.id) {
+        materializeServicePDF(id, organization.id).catch(() => {});
+      }
 
       navigate("/orcamentos");
     } catch (error) {

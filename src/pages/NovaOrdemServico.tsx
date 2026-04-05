@@ -273,6 +273,14 @@ export default function NovaOrdemServico() {
         title: "OS criada",
         description: `OS #${newService.quote_number} criada com sucesso.`,
       });
+
+      // Materialize PDF in background
+      if (organization?.id) {
+        import("@/lib/materializePDF").then(({ materializeServicePDF }) =>
+          materializeServicePDF(newService.id, organization!.id).catch(() => {})
+        );
+      }
+
       navigate("/ordens-servico");
     } catch (error) {
       if ((error as Error).message === "LIMIT_REACHED") {

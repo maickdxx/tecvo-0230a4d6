@@ -13,6 +13,7 @@ import type { ServiceItemLocal } from "@/components/services/ServiceCatalogSelec
 import { type ServiceEquipmentLocal } from "@/hooks/useServiceEquipment";
 import { UpgradeModal } from "@/components/subscription";
 import { useState } from "react";
+import { materializeServicePDF } from "@/lib/materializePDF";
 
 export default function NovoOrcamento() {
   const navigate = useNavigate();
@@ -76,6 +77,11 @@ export default function NovoOrcamento() {
         title: "Orçamento criado",
         description: `Orçamento #${newService.quote_number} criado. Pronto para o próximo.`,
       });
+
+      // Materialize PDF in background
+      if (organization?.id) {
+        materializeServicePDF(newService.id, organization.id).catch(() => {});
+      }
 
       setFormKey(prev => prev + 1);
     } catch (error) {
