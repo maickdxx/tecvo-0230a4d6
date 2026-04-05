@@ -327,7 +327,7 @@ export default function Onboarding() {
           <div className="flex-1 flex flex-col max-w-lg mx-auto w-full">
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence initial={false}>
                 {displayMessages.map((msg, i) => (
                   <motion.div
                     key={`${step}-${i}`}
