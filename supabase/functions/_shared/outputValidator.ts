@@ -1,20 +1,19 @@
 /**
  * AI Output Validator — filters sensitive data from AI responses
  * before they reach the end user.
+ * 
+ * IMPORTANT: Phone numbers, email addresses, and UUIDs are NOT blocked.
+ * These are normal operational data that the AI needs to share with users
+ * (client phones, service IDs, etc.). Only truly sensitive documents
+ * (CPF, CNPJ) and prompt leakage are blocked.
  */
 
-// Patterns for sensitive data detection
+// Patterns for sensitive data detection — only truly sensitive documents
 const SENSITIVE_PATTERNS: Array<{ name: string; regex: RegExp }> = [
-  // CPF: 000.000.000-00 or 00000000000
+  // CPF: 000.000.000-00 or 00000000000 (11 digits)
   { name: "cpf", regex: /\b\d{3}[\.\s]?\d{3}[\.\s]?\d{3}[\-\s]?\d{2}\b/ },
   // CNPJ: 00.000.000/0000-00
   { name: "cnpj", regex: /\b\d{2}[\.\s]?\d{3}[\.\s]?\d{3}[\/\s]?\d{4}[\-\s]?\d{2}\b/ },
-  // Phone numbers (Brazilian format)
-  { name: "phone", regex: /\b(?:\+55\s?)?\(?\d{2}\)?\s?\d{4,5}[\-\s]?\d{4}\b/ },
-  // Email addresses
-  { name: "email", regex: /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/ },
-  // UUIDs (potential internal IDs)
-  { name: "uuid", regex: /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i },
 ];
 
 // Phrases that indicate prompt/system leakage
@@ -48,7 +47,7 @@ const SAFE_FALLBACK_RESPONSE =
 export function validateAIOutput(text: string): ValidationResult {
   const reasons: string[] = [];
 
-  // 1. Check for sensitive data patterns
+  // 1. Check for sensitive document patterns (CPF/CNPJ only)
   for (const { name, regex } of SENSITIVE_PATTERNS) {
     if (regex.test(text)) {
       reasons.push(`sensitive_data:${name}`);
