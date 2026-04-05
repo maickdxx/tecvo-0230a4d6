@@ -1,9 +1,10 @@
-import { TrendingUp, ShieldCheck, Zap, Target, Clock, BarChart3 } from "lucide-react";
+import { TrendingUp, ShieldCheck, Zap, Target, Clock, BarChart3, Bot } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { cn } from "@/lib/utils";
 
 const benefits = [
   { icon: TrendingUp, title: "Fature mais sem trabalhar mais", description: "Encontre onde você está perdendo dinheiro e recupere receita que hoje escapa do seu controle." },
+  { icon: Bot, title: "Secretária IA que trabalha 24h", description: "Ela atende seus clientes no WhatsApp, agenda serviços, envia orçamentos e vende por você — mesmo quando você está em campo." },
   { icon: Clock, title: "Ganhe 3 horas por dia de volta", description: "Orçamentos, OS e cobranças que você fazia na mão agora saem com 2 cliques." },
   { icon: Zap, title: "Atenda antes do concorrente", description: "WhatsApp integrado com todas as conversas organizadas. Responda clientes entre um serviço e outro sem perder nenhuma mensagem." },
   { icon: Target, title: "Nenhum serviço cai no esquecimento", description: "A agenda avisa sua equipe automaticamente. Manutenção preventiva nunca mais passa batido." },
