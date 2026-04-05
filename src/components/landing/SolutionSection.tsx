@@ -9,7 +9,7 @@ const solutions = [
   "Cada serviço registrado com histórico, fotos e assinatura do cliente",
   "Agenda com lembretes — nenhuma manutenção esquecida",
   "WhatsApp integrado — todas as conversas organizadas num lugar só",
-  "Secretária IA que atende, agenda e vende por você no WhatsApp",
+  "Secretária IA que te ajuda a organizar serviços, clientes e agenda pelo WhatsApp",
   "Financeiro real: saiba quanto entrou, quanto saiu e quanto lucrou",
   "Orçamentos em PDF com a cara da sua empresa, prontos em segundos",
   "Seus clientes voltam automaticamente sem você precisar lembrar",
