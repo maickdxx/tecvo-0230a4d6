@@ -635,6 +635,24 @@ const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_client",
+      description: "Cadastra um novo cliente no sistema. Use quando precisar criar um cliente que não existe, especialmente antes de criar uma OS ou orçamento.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Nome completo do cliente" },
+          phone: { type: "string", description: "Telefone do cliente (com DDD, ex: 19999999999)" },
+          email: { type: "string", description: "Email do cliente. Opcional." },
+          address: { type: "string", description: "Endereço do cliente. Opcional." },
+        },
+        required: ["name", "phone"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function executeAdminTool(supabase: any, organizationId: string, toolCall: any, ctx?: any): Promise<string> {
@@ -745,7 +763,7 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
       .limit(5);
 
     if (!clientMatches || clientMatches.length === 0) {
-      return `Cliente "${client_name}" não encontrado no cadastro. Verifique o nome e tente novamente.`;
+      return `CLIENT_NOT_FOUND:${client_name}|Cliente "${client_name}" não encontrado no cadastro. Posso cadastrar agora para continuar a criação da OS. Preciso do nome completo e telefone do cliente.`;
     }
     if (clientMatches.length > 1) {
       const names = clientMatches.map((c: any) => c.name).join(", ");
@@ -818,7 +836,7 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
       .limit(5);
 
     if (!clientMatches || clientMatches.length === 0) {
-      return `Cliente "${client_name}" não encontrado no cadastro. Verifique o nome e tente novamente.`;
+      return `CLIENT_NOT_FOUND:${client_name}|Cliente "${client_name}" não encontrado no cadastro. Posso cadastrar agora para continuar a criação do orçamento. Preciso do nome completo e telefone do cliente.`;
     }
     if (clientMatches.length > 1) {
       const names = clientMatches.map((c: any) => c.name).join(", ");
@@ -847,6 +865,47 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
     }
 
     return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• ID: ${newQuote.id.substring(0, 8)}\n\nO orçamento está disponível no sistema. O gestor pode visualizar e enviar o PDF ao cliente pelo painel.`;
+  }
+
+  if (fnName === "create_client") {
+    const { name, phone, email, address } = args;
+    if (!name || !phone) {
+      return "Erro: nome e telefone são obrigatórios para cadastrar o cliente.";
+    }
+
+    // Check if client already exists by phone
+    const normalizedPhone = phone.replace(/\D/g, "");
+    const { data: existingByPhone } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .eq("phone", normalizedPhone)
+      .maybeSingle();
+
+    if (existingByPhone) {
+      return `Cliente já existe com este telefone: "${existingByPhone.name}". Use o nome "${existingByPhone.name}" para criar a OS ou orçamento.`;
+    }
+
+    const { data: newClient, error } = await supabase
+      .from("clients")
+      .insert({
+        organization_id: organizationId,
+        name,
+        phone: normalizedPhone,
+        ...(email ? { email } : {}),
+        ...(address ? { address } : {}),
+        person_type: "fisica",
+      })
+      .select("id, name")
+      .single();
+
+    if (error) {
+      console.error("[WEBHOOK-WHATSAPP] Client insert error:", error);
+      return `Erro ao cadastrar cliente: ${error.message}`;
+    }
+
+    return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Agora pode continuar criando a OS ou orçamento usando o nome "${newClient.name}".`;
   }
 
   return "Ferramenta desconhecida.";
@@ -2109,6 +2168,15 @@ Quando o usuário pedir para criar uma conta bancária ou financeira:
 - Extraia o nome da conta (ex: Itaú, Nubank, Bradesco)
 - Crie e defina como conta padrão da IA automaticamente
 
+5. FERRAMENTA 'create_client' — cadastrar novo cliente.
+Quando uma OS ou orçamento falhar porque o cliente não existe (resultado contém CLIENT_NOT_FOUND):
+- Informe ao usuário que o cliente não foi encontrado
+- Pergunte se deseja cadastrar agora, pedindo apenas nome completo e telefone
+- Quando o usuário fornecer os dados, use a ferramenta create_client para cadastrar
+- APÓS cadastrar com sucesso, continue AUTOMATICAMENTE criando a OS ou orçamento que estava pendente
+- NÃO peça para o usuário repetir os dados da OS/orçamento — use os dados que já foram informados antes
+- Fluxo ideal: criar cliente → criar OS/orçamento → confirmar tudo ao usuário em uma única resposta
+
 ══════════ FLUXO COMPLETO DE ATENDIMENTO ══════════
 
 Toda ação deve seguir este ciclo:
@@ -2116,9 +2184,10 @@ Toda ação deve seguir este ciclo:
 2. Coletar dados necessários (perguntar o que faltar)
 3. Mostrar resumo e pedir confirmação
 4. Executar a ferramenta no sistema
-5. Confirmar ao usuário com os dados registrados
-6. Informar próximos passos (ex: "O PDF está disponível no painel para envio ao cliente")
-7. Perguntar se precisa de mais alguma coisa
+5. Se o cliente não existir: oferecer cadastro → cadastrar → continuar a criação
+6. Confirmar ao usuário com os dados registrados
+7. Informar próximos passos (ex: "O PDF está disponível no painel para envio ao cliente")
+8. Perguntar se precisa de mais alguma coisa
 
 ══════════ DADOS PERMITIDOS NA RESPOSTA ══════════
 
@@ -2149,23 +2218,29 @@ Você NÃO deve compartilhar:
           let aiDuration = Date.now() - startTime;
           console.log("[WEBHOOK-WHATSAPP] [DEBUG] AI returned in", aiDuration, "ms. Content length:", aiResult.content?.length, "toolCalls:", aiResult.toolCalls?.length || 0);
 
-          // Handle tool calls (one round)
-          if (aiResult.toolCalls && aiResult.toolCalls.length > 0) {
-            console.log("[WEBHOOK-WHATSAPP] AI requested tool calls:", aiResult.toolCalls.length);
-            const toolMessages: any[] = [...conversationHistory];
+          // Handle tool calls (up to 3 rounds to support client creation → OS creation flow)
+          let toolRound = 0;
+          const maxToolRounds = 3;
+          let toolMessages: any[] = [...conversationHistory];
+
+          while (aiResult.toolCalls && aiResult.toolCalls.length > 0 && toolRound < maxToolRounds) {
+            toolRound++;
+            console.log("[WEBHOOK-WHATSAPP] AI requested tool calls (round", toolRound, "):", aiResult.toolCalls.length);
             // Add assistant message with tool_calls
             toolMessages.push({ role: "assistant", content: aiResult.content || "", tool_calls: aiResult.toolCalls });
 
             for (const tc of aiResult.toolCalls) {
               const toolResult = await executeAdminTool(supabase, targetOrganizationId, tc, orgContext);
-              console.log("[WEBHOOK-WHATSAPP] Tool result:", toolResult);
+              console.log("[WEBHOOK-WHATSAPP] Tool result (round", toolRound, "):", toolResult.slice(0, 200));
               toolMessages.push({ role: "tool", tool_call_id: tc.id, content: toolResult });
             }
 
-            // Second AI call with tool results (no tools this time to force text response)
-            const startTime2 = Date.now();
-            aiResult = await callAI(systemPrompt, toolMessages);
-            aiDuration += Date.now() - startTime2;
+            // Next AI call — allow tools again if we haven't hit the limit, to enable chained operations
+            const allowMoreTools = toolRound < maxToolRounds;
+            const startTimeN = Date.now();
+            aiResult = await callAI(systemPrompt, toolMessages, allowMoreTools ? ADMIN_TOOLS : undefined);
+            aiDuration += Date.now() - startTimeN;
+            console.log("[WEBHOOK-WHATSAPP] AI round", toolRound, "returned. Content length:", aiResult.content?.length, "toolCalls:", aiResult.toolCalls?.length || 0);
           }
 
           const aiResponse = aiResult.content;
