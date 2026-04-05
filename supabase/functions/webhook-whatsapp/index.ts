@@ -1686,6 +1686,8 @@ async function callAI(
 
 /**
  * Generate a professional PDF matching the system's visual style.
+/**
+ * Generates a professional PDF matching the app's generateServiceOrderPDF layout.
  * Uses pdf-lib for proper formatting with colors, sections, and layout.
  */
 async function generateProfessionalPDF(data: {
@@ -1696,6 +1698,8 @@ async function generateProfessionalPDF(data: {
   orgPhone?: string;
   orgEmail?: string;
   orgAddress?: string;
+  orgWebsite?: string;
+  orgLogoUrl?: string;
   clientName: string;
   clientPhone?: string;
   clientEmail?: string;
@@ -1705,20 +1709,30 @@ async function generateProfessionalPDF(data: {
   clientState?: string;
   clientZip?: string;
   scheduledDate: string;
+  entryDate?: string;
+  entryTime?: string;
+  exitDate?: string;
+  exitTime?: string;
   serviceType: string;
   description: string;
   value: number;
   status: string;
   notes?: string;
   paymentMethod?: string;
-  equipment: Array<{ type?: string; brand?: string; model?: string; capacity?: string; serial?: string }>;
-  items: Array<{ description: string; quantity: number; unitPrice: number; discount?: number }>;
+  paymentDueDate?: string;
+  paymentNotes?: string;
+  equipment: Array<{
+    type?: string; brand?: string; model?: string; capacity?: string; serial?: string;
+    conditions?: string; defects?: string; solution?: string; technical_report?: string; warranty_terms?: string;
+  }>;
+  items: Array<{ description: string; name?: string; quantity: number; unitPrice: number; discount?: number }>;
 }): Promise<Uint8Array> {
   const { PDFDocument, rgb, StandardFonts } = await import("https://esm.sh/pdf-lib@1.17.1");
 
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fontItalic = await doc.embedFont(StandardFonts.HelveticaOblique);
 
   const PAGE_W = 595.28; // A4
   const PAGE_H = 841.89;
@@ -1737,7 +1751,11 @@ async function generateProfessionalPDF(data: {
   const white = rgb(1, 1, 1);
   const totalBg = rgb(20 / 255, 80 / 255, 150 / 255);
 
-  const formatBRL = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
+  const formatBRL = (v: number) => {
+    const parts = v.toFixed(2).split(".");
+    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return `R$ ${intPart},${parts[1]}`;
+  };
 
   let page = doc.addPage([PAGE_W, PAGE_H]);
   let y = PAGE_H - M;
@@ -1780,17 +1798,47 @@ async function generateProfessionalPDF(data: {
   const headerH = 32;
   drawRect(M, y - headerH, CW, headerH, { fill: white, border: borderLight });
 
+  // Try to embed org logo
+  let logoEndX = M + 8;
+  if (data.orgLogoUrl) {
+    try {
+      const logoResp = await fetch(data.orgLogoUrl);
+      if (logoResp.ok) {
+        const logoBytes = new Uint8Array(await logoResp.arrayBuffer());
+        const contentType = logoResp.headers.get("content-type") || "";
+        let logoImage;
+        if (contentType.includes("png")) {
+          logoImage = await doc.embedPng(logoBytes);
+        } else {
+          logoImage = await doc.embedJpg(logoBytes);
+        }
+        const logoDim = logoImage.scale(Math.min(26 / logoImage.width, 26 / logoImage.height));
+        page.drawImage(logoImage, {
+          x: M + 4,
+          y: y - headerH + (headerH - logoDim.height) / 2,
+          width: logoDim.width,
+          height: logoDim.height,
+        });
+        logoEndX = M + 4 + logoDim.width + 4;
+      }
+    } catch { /* ignore logo errors */ }
+  }
+
   // Company name
-  drawText(data.orgName, M + 8, y - 12, { font: fontBold, size: 14, color: textDark });
+  drawText(data.orgName, logoEndX, y - 12, { font: fontBold, size: 14, color: textDark });
 
   // Company details
   const line1Parts: string[] = [];
   if (data.orgCnpj) line1Parts.push(`CNPJ: ${data.orgCnpj}`);
   if (data.orgPhone) line1Parts.push(data.orgPhone);
   if (data.orgEmail) line1Parts.push(data.orgEmail);
-  if (line1Parts.length) drawText(line1Parts.join("  ·  "), M + 8, y - 20, { size: 7.5, color: textMuted });
+  if (line1Parts.length) drawText(line1Parts.join("  ·  "), logoEndX, y - 20, { size: 7.5, color: textMuted });
 
-  if (data.orgAddress) drawText(data.orgAddress, M + 8, y - 27, { size: 7.5, color: textMuted, maxWidth: CW - 16 });
+  if (data.orgAddress) drawText(data.orgAddress, logoEndX, y - 27, { size: 7.5, color: textMuted, maxWidth: CW - (logoEndX - M) - 8 });
+
+  if (data.orgWebsite) {
+    drawText(data.orgWebsite, logoEndX, y - 34 > y - headerH + 2 ? y - 34 : y - headerH + 2, { size: 7.5, color: primary });
+  }
 
   y -= headerH + 5;
 
@@ -1815,6 +1863,30 @@ async function generateProfessionalPDF(data: {
     y -= 10;
   };
 
+  // ═══ EXECUTION PERIOD ═══
+  const hasEntry = data.entryDate && data.entryTime;
+  const hasExit = data.exitDate && data.exitTime;
+  if (hasEntry || hasExit) {
+    drawSectionTitle("PERÍODO DE EXECUÇÃO");
+    const periodH = 10;
+    ensureSpace(periodH);
+    drawRect(M, y - periodH, CW, periodH, { border: borderLight });
+    drawLine(M + CW / 2, y, M + CW / 2, y - periodH);
+
+    if (hasEntry) {
+      drawText("Entrada:", M + 4, y - 7, { font: fontBold, size: 7.5, color: textMuted });
+      const ew = fontBold.widthOfTextAtSize("Entrada:", 7.5);
+      drawText(`${data.entryDate} às ${data.entryTime}`, M + 4 + ew + 3, y - 7, { size: 8, color: textDark });
+    }
+    if (hasExit) {
+      const rx = M + CW / 2 + 4;
+      drawText("Saída:", rx, y - 7, { font: fontBold, size: 7.5, color: textMuted });
+      const sw = fontBold.widthOfTextAtSize("Saída:", 7.5);
+      drawText(`${data.exitDate} às ${data.exitTime}`, rx + sw + 3, y - 7, { size: 8, color: textDark });
+    }
+    y -= periodH + 4;
+  }
+
   // ═══ CLIENT DATA ═══
   drawSectionTitle("DADOS DO CLIENTE");
 
@@ -1836,13 +1908,11 @@ async function generateProfessionalPDF(data: {
     if (i > 0) drawLine(M, y - i * rowH, M + CW, y - i * rowH);
     const ty = y - i * rowH - 7;
 
-    // Left field
     const [lLabel, lVal] = row[0];
     drawText(lLabel, M + 4, ty, { font: fontBold, size: 7.5, color: textMuted });
     const lw = fontBold.widthOfTextAtSize(lLabel, 7.5);
     drawText(lVal, M + 4 + lw + 3, ty, { size: 8, color: textDark, maxWidth: CW / 2 - lw - 12 });
 
-    // Right field
     const [rLabel, rVal] = row[1];
     const rx = M + CW / 2 + 4;
     drawText(rLabel, rx, ty, { font: fontBold, size: 7.5, color: textMuted });
@@ -1865,14 +1935,12 @@ async function generateProfessionalPDF(data: {
 
       drawRect(M, y - eqHeaderH, CW, eqHeaderH, { fill: rowEven, border: borderLight });
 
-      // Column headers
       let cx = M;
       colHeaders.forEach((h, i) => {
         drawText(h, cx + 3, y - 4, { font: fontBold, size: 6.5, color: textMuted });
         cx += cols[i];
       });
 
-      // Column values
       cx = M;
       const vals = [eq.type || "—", eq.brand || "—", eq.model || "—", eq.serial || "—"];
       vals.forEach((v, i) => {
@@ -1880,19 +1948,43 @@ async function generateProfessionalPDF(data: {
         cx += cols[i];
       });
 
-      // Vertical lines
       let lx = M;
       for (let i = 0; i < cols.length - 1; i++) {
         lx += cols[i];
         drawLine(lx, y, lx, y - eqHeaderH);
       }
 
-      y -= eqHeaderH + 3;
+      y -= eqHeaderH;
+
+      // Equipment detail fields (conditions, defects, solution, etc.)
+      const detailFields: [string, string][] = [
+        ["Condições", eq.conditions || ""],
+        ["Defeitos", eq.defects || ""],
+        ["Solução", eq.solution || ""],
+        ["Laudo técnico", eq.technical_report || ""],
+        ["Termos de garantia", eq.warranty_terms || ""],
+      ];
+
+      for (const [label, text] of detailFields) {
+        if (!text) continue;
+        const lines = wrapText(text, font, 8, CW - 12);
+        const blockH = Math.max(lines.length * 12 + 6, 14);
+        ensureSpace(blockH);
+
+        drawRect(M, y - blockH, CW, blockH, { border: borderLight });
+        drawText(label, M + 4, y - 5, { font: fontBold, size: 7.5, color: primary });
+        lines.forEach((line, li) => {
+          drawText(line, M + 4, y - 10 - li * 12, { size: 8, color: textDark });
+        });
+        y -= blockH;
+      }
+
+      y -= 3;
     }
     y -= 2;
   }
 
-  // ═══ DESCRIPTION ═══
+  // ═══ DESCRIPTION / SOLUTION ═══
   if (data.description && data.description !== "-") {
     drawSectionTitle("DESCRIÇÃO DO SERVIÇO");
     const descLines = wrapText(data.description, font, 8, CW - 10);
@@ -1909,7 +2001,6 @@ async function generateProfessionalPDF(data: {
   // ═══ SERVICES TABLE ═══
   drawSectionTitle("SERVIÇOS E PEÇAS");
 
-  // Table header
   const tColW = [30, CW * 0.38, 40, 65, 50, CW - 30 - CW * 0.38 - 40 - 65 - 50];
   const tHeaders = ["#", "DESCRIÇÃO", "QTD", "VR. UNIT.", "DESC.", "SUBTOTAL"];
   const thH = 10;
@@ -1936,19 +2027,26 @@ async function generateProfessionalPDF(data: {
       grandTotal += itemTotal;
       totalDiscount += disc;
 
-      const trH = 10;
+      // Wrap description text
+      const descMaxW = tColW[1] - 8;
+      const displayName = item.name || item.description;
+      const descLines = wrapText(displayName, font, 7.5, descMaxW);
+      const trH = Math.max(10, descLines.length * 10 + 4);
       ensureSpace(trH);
 
       if (idx % 2 === 0) drawRect(M, y - trH, CW, trH, { fill: rowEven });
       drawLine(M, y - trH, M + CW, y - trH, borderLight, 0.1);
 
-      const midY = y - 7;
+      const midY = y - (trH / 2) - 1;
       let tx = M;
 
       drawText(String(idx + 1), tx + 3, midY, { size: 7.5, color: textDark });
       tx += tColW[0];
 
-      drawText(item.description, tx + 3, midY, { font: fontBold, size: 7.5, color: textDark, maxWidth: tColW[1] - 6 });
+      // Description with word-wrap
+      descLines.forEach((line, li) => {
+        drawText(line, tx + 3, y - 4 - li * 10, { font: fontBold, size: 7.5, color: textDark });
+      });
       tx += tColW[1];
 
       drawText(item.quantity.toFixed(2).replace(".", ","), tx + 3, midY, { size: 7.5, color: textDark });
@@ -1967,35 +2065,69 @@ async function generateProfessionalPDF(data: {
   } else {
     const trH = 10;
     drawRect(M, y - trH, CW, trH, { fill: rowEven });
-    drawText("Nenhum item cadastrado", M + 5, y - 7, { size: 7.5, color: textMuted });
+    drawText("Nenhum item cadastrado", M + 5, y - 7, { size: 7.5, color: textMuted, font: fontItalic });
     y -= trH;
     grandTotal = data.value || 0;
   }
 
-  // Total box
-  ensureSpace(20);
+  // Discount breakdown
+  ensureSpace(30);
   y -= 4;
-  const totalW = 140;
-  const totalX = M + CW - totalW;
+  const sumW = 140;
+  const sumX = M + CW - sumW;
+
+  if (totalDiscount > 0) {
+    drawText("Subtotal:", sumX + 4, y - 4, { size: 8, color: textMuted });
+    const stStr = formatBRL(grandTotal + totalDiscount);
+    drawText(stStr, sumX + sumW - 4 - font.widthOfTextAtSize(stStr, 8), y - 4, { size: 8, color: textDark });
+    y -= 8;
+
+    drawText("Desconto:", sumX + 4, y - 4, { size: 8, color: textMuted });
+    const dcStr = `– ${formatBRL(totalDiscount)}`;
+    drawText(dcStr, sumX + sumW - 4 - font.widthOfTextAtSize(dcStr, 8), y - 4, { size: 8, color: rgb(200 / 255, 40 / 255, 40 / 255) });
+    y -= 8;
+
+    drawLine(sumX, y, sumX + sumW, y, borderLight, 0.3);
+    y -= 2;
+  }
+
+  // Total box
   const totalBoxH = 16;
-  drawRect(totalX, y - totalBoxH, totalW, totalBoxH, { fill: totalBg });
-  drawText("TOTAL", totalX + 8, y - 11, { font: fontBold, size: 13, color: white });
+  drawRect(sumX, y - totalBoxH, sumW, totalBoxH, { fill: totalBg });
+  drawText("TOTAL", sumX + 8, y - 11, { font: fontBold, size: 13, color: white });
   const totalStr = formatBRL(grandTotal);
   const totalStrW = fontBold.widthOfTextAtSize(totalStr, 13);
-  drawText(totalStr, totalX + totalW - 8 - totalStrW, y - 11, { font: fontBold, size: 13, color: white });
+  drawText(totalStr, sumX + sumW - 8 - totalStrW, y - 11, { font: fontBold, size: 13, color: white });
   y -= totalBoxH + 6;
 
   // ═══ PAYMENT ═══
-  if (data.paymentMethod) {
+  const hasPayment = data.paymentMethod || data.paymentDueDate || data.paymentNotes;
+  if (hasPayment) {
     drawSectionTitle("DADOS DO PAGAMENTO");
-    const payH = 14;
+    const payNotes = data.paymentNotes;
+    const payH = payNotes ? 24 : 14;
     ensureSpace(payH);
     drawRect(M, y - payH, CW, payH, { fill: primaryLight, border: primary });
     drawRect(M, y - payH, 3, payH, { fill: primary });
 
-    drawText("Forma de pagamento:", M + 8, y - 9, { font: fontBold, size: 7.5, color: textMuted });
-    const pmLabelW = fontBold.widthOfTextAtSize("Forma de pagamento:", 7.5);
-    drawText(data.paymentMethod, M + 8 + pmLabelW + 3, y - 9, { size: 8, color: textDark });
+    if (data.paymentDueDate) {
+      drawText("Vencimento:", M + 8, y - 9, { font: fontBold, size: 7.5, color: textMuted });
+      const vlW = fontBold.widthOfTextAtSize("Vencimento:", 7.5);
+      drawText(data.paymentDueDate, M + 8 + vlW + 3, y - 9, { size: 8, color: textDark });
+    }
+
+    if (data.paymentMethod) {
+      const pmX = M + CW / 2 + 4;
+      drawText("Forma de pagamento:", pmX, y - 9, { font: fontBold, size: 7.5, color: textMuted });
+      const pmLabelW = fontBold.widthOfTextAtSize("Forma de pagamento:", 7.5);
+      drawText(data.paymentMethod, pmX + pmLabelW + 3, y - 9, { size: 8, color: textDark });
+    }
+
+    if (payNotes) {
+      drawText("Obs:", M + 8, y - 19, { font: fontBold, size: 7.5, color: textMuted });
+      const obsW = fontBold.widthOfTextAtSize("Obs:", 7.5);
+      drawText(payNotes.length > 80 ? payNotes.substring(0, 80) + "..." : payNotes, M + 8 + obsW + 3, y - 19, { size: 8, color: textDark });
+    }
 
     y -= payH + 4;
   }
@@ -2658,6 +2790,8 @@ async function executeAdminTool(
         orgPhone: orgData?.phone || undefined,
         orgEmail: orgData?.email || undefined,
         orgAddress: [orgData?.address, orgData?.city, orgData?.state].filter(Boolean).join(" – "),
+        orgWebsite: (orgData as any)?.website || undefined,
+        orgLogoUrl: orgData?.logo_url || undefined,
         clientName,
         clientPhone: serviceData.client?.phone || undefined,
         clientEmail: serviceData.client?.email || undefined,
@@ -2667,21 +2801,33 @@ async function executeAdminTool(
         clientState: serviceData.service_state || serviceData.client?.state || undefined,
         clientZip: serviceData.service_zip_code || serviceData.client?.zip_code || undefined,
         scheduledDate: fmtDate(serviceData.scheduled_date),
+        entryDate: serviceData.entry_date ? fmtDate(serviceData.entry_date) : undefined,
+        entryTime: serviceData.entry_date ? fmtTime(serviceData.entry_date) : undefined,
+        exitDate: serviceData.exit_date ? fmtDate(serviceData.exit_date) : undefined,
+        exitTime: serviceData.exit_date ? fmtTime(serviceData.exit_date) : undefined,
         serviceType: serviceData.service_type || "-",
         description: serviceData.solution || serviceData.description || "",
         value: finalValue,
         status: serviceData.status || "-",
         notes: serviceData.notes || undefined,
         paymentMethod: serviceData.payment_method || undefined,
+        paymentDueDate: serviceData.payment_due_date ? fmtDate(serviceData.payment_due_date) : undefined,
+        paymentNotes: serviceData.payment_notes || undefined,
         equipment: equipment.map((eq: any) => ({
           type: eq.equipment_type || eq.name || "",
           brand: eq.brand || "",
           model: eq.model || "",
           capacity: eq.capacity || "",
           serial: eq.serial_number || "",
+          conditions: eq.conditions || "",
+          defects: eq.defects || "",
+          solution: eq.solution || "",
+          technical_report: eq.technical_report || "",
+          warranty_terms: eq.warranty_terms || "",
         })),
         items: serviceItems.map((item: any) => ({
-          description: item.name || item.description || "",
+          description: item.description || "",
+          name: item.name || "",
           quantity: item.quantity || 1,
           unitPrice: item.unit_price || 0,
           discount: item.discount_type === "percentage" ? ((item.quantity || 1) * (item.unit_price || 0) * (item.discount || 0) / 100) : (item.discount || 0),
