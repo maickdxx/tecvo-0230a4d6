@@ -34,11 +34,11 @@ import { useTransactionCategories } from "@/hooks/useTransactionCategories";
 import { cn } from "@/lib/utils";
 
 function getEffectiveStatus(account: Account, tz: string) {
+  if (account.status === "paid" || account.status === "cancelled") return account.status;
   if (account.status === "pending" && account.due_date) {
     const todayStr = getTodayInTz(tz);
-    const dueDate = new Date(account.due_date + "T12:00:00");
-    const todayDate = new Date(todayStr + "T12:00:00");
-    if (dueDate < todayDate) return "overdue";
+    const dueDateStr = account.due_date.substring(0, 10);
+    if (dueDateStr < todayStr) return "overdue";
   }
   return account.status;
 }
@@ -87,8 +87,6 @@ export default function ContasPagar() {
   const startDate = periodo.data_inicio;
   const endDate = periodo.data_fim;
 
-  const statusFilter = activeTab === "all" ? undefined : activeTab as "pending" | "paid" | "overdue";
-
   const { 
     accounts, 
     totals, 
@@ -101,10 +99,23 @@ export default function ContasPagar() {
     isUpdating 
   } = useAccounts({ 
     accountType: "payable",
-    status: statusFilter,
     startDate,
     endDate,
   });
+
+  // Recalculate totals locally using effective status (timezone-aware)
+  const localTotals = useMemo(() => {
+    const result = { pending: 0, paid: 0, overdue: 0, total: 0 };
+    for (const acc of accounts) {
+      const status = getEffectiveStatus(acc, tz);
+      const amount = Number(acc.amount);
+      if (status === "pending") result.pending += amount;
+      else if (status === "overdue") result.overdue += amount;
+      else if (status === "paid") result.paid += amount;
+      result.total += amount;
+    }
+    return result;
+  }, [accounts, tz]);
 
   const { categoryLabels } = useTransactionCategories("expense");
 
@@ -146,6 +157,12 @@ export default function ContasPagar() {
   }, [accounts, categoryLabels]);
 
   const sortedAccounts = useMemo(() => sortAccountsByPriority(accounts, tz), [accounts, tz]);
+
+  // Filter by active tab locally
+  const filteredAccounts = useMemo(() => {
+    if (activeTab === "all") return sortedAccounts;
+    return sortedAccounts.filter((acc) => getEffectiveStatus(acc, tz) === activeTab);
+  }, [sortedAccounts, activeTab, tz]);
 
   const handlePrev = () => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1));
   const handleNext = () => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1));
@@ -271,10 +288,10 @@ export default function ContasPagar() {
 
       {/* Summary cards */}
       <AccountSummary
-        pending={totals.pending}
-        paid={totals.paid}
-        overdue={totals.overdue}
-        total={totals.total}
+        pending={localTotals.pending}
+        paid={localTotals.paid}
+        overdue={localTotals.overdue}
+        total={localTotals.total}
         accountType="payable"
       />
 
@@ -289,7 +306,7 @@ export default function ContasPagar() {
 
         <TabsContent value={activeTab} className="mt-3">
           <AccountList
-            accounts={sortedAccounts}
+            accounts={filteredAccounts}
             accountType="payable"
             isLoading={isLoading}
             onEdit={handleEdit}
