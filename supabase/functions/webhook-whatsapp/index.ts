@@ -2783,15 +2783,18 @@ async function executeAdminTool(
 
     // Check if there's a stored PDF from the dashboard first
     const storedPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
-    const { data: storedFile } = await supabase.storage
+    const { data: storedFile, error: storedFileError } = await supabase.storage
       .from("whatsapp-media")
-      .createSignedUrl(storedPath, 300); // 5 min signed URL
+      .createSignedUrl(storedPath, 300);
 
     let publicUrl: string | null = null;
 
-    if (storedFile?.signedUrl) {
-      // Use the stored PDF from the dashboard (exact same PDF the user sees)
-      publicUrl = storedFile.signedUrl;
+    if (storedFile?.signedUrl && !storedFileError) {
+      // Bucket is public — use a stable public URL when the file exists
+      const { data: storedPublicFile } = supabase.storage
+        .from("whatsapp-media")
+        .getPublicUrl(storedPath);
+      publicUrl = storedPublicFile?.publicUrl || storedFile.signedUrl;
       console.log("[WEBHOOK-WHATSAPP] Using stored PDF from dashboard for service:", serviceData.id);
     } else {
       // No stored PDF — generate one as fallback
