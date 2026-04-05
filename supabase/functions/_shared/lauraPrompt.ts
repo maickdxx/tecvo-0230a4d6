@@ -917,7 +917,11 @@ export async function executeAdminTool(
       return `Erro ao criar orçamento: ${error.message}`;
     }
 
-    return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• ID: ${newQuote.id.substring(0, 8)}`;
+    // Post-action verification
+    const verifyQuoteErr = await verifyInsert(supabase, "services", newQuote.id, "Quote");
+    if (verifyQuoteErr) return verifyQuoteErr;
+
+    return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• ID: ${newQuote.id.substring(0, 8)}\n✅ Confirmado no sistema.`;
   }
 
   if (fnName === "create_client") {
