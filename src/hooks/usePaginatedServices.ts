@@ -29,6 +29,7 @@ export function usePaginatedServices(options?: UsePaginatedServicesOptions) {
       let queryBuilder = supabase
         .from("services")
         .select("*, client:clients(*)", { count: "exact" })
+        .eq("organization_id", organizationId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
