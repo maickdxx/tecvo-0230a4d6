@@ -108,7 +108,7 @@ export function AppearanceSettings({ onBack }: AppearanceSettingsProps) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        As preferências são salvas automaticamente no seu navegador.
+        As preferências são salvas na sua empresa — todos os membros verão o mesmo tema.
       </p>
     </div>
   );
