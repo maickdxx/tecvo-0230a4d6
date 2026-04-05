@@ -19,7 +19,8 @@ const PLAN_TAGLINE: Record<string, string> = {
 };
 
 export function PricingSection() {
-  const { ref, isVisible } = useScrollReveal();
+  const { ref, isVisible: _isVisible } = useScrollReveal();
+  const isVisible = true; // Always visible — critical conversion section
 
   return (
     <section id="planos" className="py-20 md:py-28 scroll-mt-16 relative overflow-hidden">
