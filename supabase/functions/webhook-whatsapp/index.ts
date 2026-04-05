@@ -477,13 +477,25 @@ async function fetchConversationHistory(supabase: any, contactId: string, limit 
     .from("whatsapp_messages")
     .select("content, is_from_me, created_at")
     .eq("contact_id", contactId)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(limit);
 
-  return (data || []).map((msg: any) => ({
-    role: msg.is_from_me ? "assistant" : "user",
-    content: msg.content || "[mídia]",
-  }));
+  // Reverse to chronological, filter empty/whitespace-only messages,
+  // and collapse consecutive same-role messages to avoid confusing the model
+  const raw = (data || []).reverse().filter((msg: any) => msg.content && msg.content.trim().length > 0);
+  const collapsed: { role: string; content: string }[] = [];
+  for (const msg of raw) {
+    const role = msg.is_from_me ? "assistant" : "user";
+    const content = msg.content.trim();
+    const last = collapsed[collapsed.length - 1];
+    if (last && last.role === role) {
+      // Merge consecutive same-role messages
+      last.content += "\n" + content;
+    } else {
+      collapsed.push({ role, content });
+    }
+  }
+  return collapsed;
 }
 
 /**
