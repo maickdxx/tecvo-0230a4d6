@@ -38,7 +38,7 @@ export default function Auth() {
 
   const isSignupRoute = location.pathname === "/cadastro";
 
-  const { signIn, signUp, refreshProfile, signUpSuccess, setSignUpSuccess } = useAuth();
+  const { user, isLoading: authLoading, signIn, signUp, refreshProfile, signUpSuccess, setSignUpSuccess } = useAuth();
   const { data: invite, isLoading: isLoadingInvite } = useInviteByToken(inviteToken);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -49,6 +49,14 @@ export default function Auth() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const hasTrackedSignupStarted = useRef(false);
   const hasTrackedCadastroPage = useRef(false);
+
+  // Redirect authenticated users (e.g. returning from Google OAuth)
+  useEffect(() => {
+    if (!authLoading && user) {
+      const destination = getRedirectPath();
+      navigate(destination, { replace: true });
+    }
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (!hasTrackedCadastroPage.current) {
@@ -107,7 +115,7 @@ export default function Auth() {
   const handleGoogleAuth = async () => {
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: window.location.origin + "/login",
       });
 
       if (result.error) {
