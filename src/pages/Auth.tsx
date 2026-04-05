@@ -73,7 +73,7 @@ export default function Auth() {
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
-  const [signupWhatsapp, setSignupWhatsapp] = useState("");
+  
 
   useEffect(() => {
     if (mode === "signup" && !hasTrackedSignupStarted.current) {
