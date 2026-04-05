@@ -54,6 +54,12 @@ serve(async (req) => {
       });
     }
 
+    // CRITICAL: Validate user belongs to the requested organization
+    const hasAccess = await validateUserOrgAccess(supabaseAdmin, userId, organizationId, "whatsapp-ai-copilot");
+    if (!hasAccess) {
+      return accessDeniedResponse(corsHeaders);
+    }
+
     // Check and consume AI credits
     const { data: hasCredits, error: creditError } = await supabaseAdmin.rpc("consume_ai_credits", {
       _org_id: organizationId,

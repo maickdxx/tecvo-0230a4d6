@@ -54,6 +54,12 @@ serve(async (req) => {
       });
     }
 
+    // CRITICAL: Validate user belongs to the requested organization
+    const hasAccess = await validateUserOrgAccess(supabaseAdmin, userId, organizationId, "tecvo-chat");
+    if (!hasAccess) {
+      return accessDeniedResponse(corsHeaders);
+    }
+
     // Fetch org timezone and real data in parallel
     const now = new Date();
     const orgTz = await fetchOrgTimezone(supabaseAdmin, organizationId);
