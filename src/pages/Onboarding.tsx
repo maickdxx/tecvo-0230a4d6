@@ -12,7 +12,7 @@ import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-type OnboardingStep = "chat" | "payment" | "whatsapp" | "activating";
+type OnboardingStep = "chat" | "payment" | "whatsapp" | "activating" | "transition";
 
 const LauraAvatar = ({ size = "md" }: { size?: "sm" | "md" | "lg" }) => {
   const dims = size === "lg" ? "h-14 w-14" : size === "md" ? "h-9 w-9" : "h-7 w-7";
@@ -41,7 +41,7 @@ export default function Onboarding() {
 
   const [step, setStepRaw] = useState<OnboardingStep>(() => {
     const saved = localStorage.getItem("tecvo_onboarding_step");
-    if (saved === "whatsapp" || saved === "payment" || saved === "activating") return saved;
+    if (saved === "whatsapp" || saved === "payment" || saved === "activating" || saved === "transition") return saved as OnboardingStep;
     return "chat";
   });
 
@@ -94,7 +94,7 @@ export default function Onboarding() {
         setWhatsappMessages([
           {
             role: "assistant",
-            content: `${greeting}seu plano já tá ativo! 🎉\n\nAgora me passa seu WhatsApp pra eu te ajudar por lá também. Vou te enviar lembretes, alertas e você pode falar comigo direto pelo WhatsApp.`
+            content: `${greeting}seu plano já tá ativo! 🎉\n\nAgora me passa seu WhatsApp pra eu te acompanhar por lá também.`
           }
         ]);
       }, 600);
@@ -177,7 +177,8 @@ export default function Onboarding() {
 
   const handleActivate = async () => {
     setIsActivating(true);
-    setStep("activating");
+    // Go to transition step first
+    setStep("transition");
 
     try {
       if (whatsapp.replace(/\D/g, "").length >= 10 && user) {
@@ -211,7 +212,14 @@ export default function Onboarding() {
 
       localStorage.removeItem("tecvo_onboarding_step");
       await completeOnboarding();
-      navigate("/dashboard");
+
+      // Mark first dashboard visit
+      localStorage.setItem("tecvo_first_dashboard", "true");
+
+      // Wait 2.5s on transition screen then navigate
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2500);
     } catch (err) {
       console.error("Activation error:", err);
       navigate("/dashboard");
@@ -225,68 +233,99 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/30">
-        <div className="max-w-lg mx-auto w-full px-4 py-3 flex items-center gap-3">
-          <div className="relative">
-            <LauraAvatar size="md" />
-            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2 border-background" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-semibold text-foreground tracking-tight">Laura</h1>
-            <p className="text-[11px] text-muted-foreground leading-none mt-0.5">
-              {chatLoading && step === "chat" ? (
-                <span className="text-primary font-medium">digitando...</span>
-              ) : "Sua secretária inteligente"}
-            </p>
-          </div>
-          {/* Progress dots */}
-          <div className="flex items-center gap-1">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className={cn(
-                  "rounded-full transition-all duration-500 ease-out",
-                  i === stepIndex
-                    ? "w-5 h-1.5 bg-primary"
-                    : i < stepIndex
-                    ? "w-1.5 h-1.5 bg-primary/50"
-                    : "w-1.5 h-1.5 bg-muted-foreground/15"
-                )}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 flex flex-col max-w-lg mx-auto w-full">
-        {step === "activating" ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6">
+      {/* Transition screen */}
+      {step === "transition" ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col items-center gap-6 text-center"
+          >
+            <LauraAvatar size="lg" />
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="flex flex-col items-center gap-5"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="space-y-2"
             >
-              <div className="relative">
-                <LauraAvatar size="lg" />
-                <motion.div
-                  className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-primary flex items-center justify-center"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-foreground" />
-                </motion.div>
-              </div>
-              <div className="text-center space-y-1.5">
-                <p className="text-base font-semibold text-foreground">Preparando tudo pra você...</p>
-                <p className="text-sm text-muted-foreground">Só um instante</p>
-              </div>
+              <p className="text-lg font-semibold text-foreground">
+                Pronto, já deixei tudo preparado pra você 😊
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Vou te mostrar como está ficando...
+              </p>
             </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+            >
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </motion.div>
+          </motion.div>
+        </div>
+      ) : step === "activating" ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex flex-col items-center gap-5"
+          >
+            <div className="relative">
+              <LauraAvatar size="lg" />
+              <motion.div
+                className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-primary flex items-center justify-center"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-foreground" />
+              </motion.div>
+            </div>
+            <div className="text-center space-y-1.5">
+              <p className="text-base font-semibold text-foreground">Preparando tudo pra você...</p>
+              <p className="text-sm text-muted-foreground">Só um instante</p>
+            </div>
+          </motion.div>
+        </div>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/30">
+            <div className="max-w-lg mx-auto w-full px-4 py-3 flex items-center gap-3">
+              <div className="relative">
+                <LauraAvatar size="md" />
+                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2 border-background" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-sm font-semibold text-foreground tracking-tight">Laura</h1>
+                <p className="text-[11px] text-muted-foreground leading-none mt-0.5">
+                  {chatLoading && step === "chat" ? (
+                    <span className="text-primary font-medium">digitando...</span>
+                  ) : "Sua secretária inteligente"}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "rounded-full transition-all duration-500 ease-out",
+                      i === stepIndex
+                        ? "w-5 h-1.5 bg-primary"
+                        : i < stepIndex
+                        ? "w-1.5 h-1.5 bg-primary/50"
+                        : "w-1.5 h-1.5 bg-muted-foreground/15"
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-        ) : (
-          <>
+
+          {/* Body */}
+          <div className="flex-1 flex flex-col max-w-lg mx-auto w-full">
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
               <AnimatePresence mode="popLayout">
@@ -322,7 +361,6 @@ export default function Onboarding() {
                 ))}
               </AnimatePresence>
 
-              {/* Typing indicator */}
               {showTypingIndicator && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
@@ -363,30 +401,19 @@ export default function Onboarding() {
                         <Sparkles className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-foreground">
-                          Ative por R$ 1
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Primeiro mês por R$ 1 · Cancele quando quiser
-                        </p>
+                        <h3 className="text-lg font-bold text-foreground">Ative por R$ 1</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Primeiro mês por R$ 1 · Cancele quando quiser</p>
                       </div>
                     </div>
-
                     <Button
                       onClick={() => handleCheckout("starter")}
                       disabled={checkoutLoading}
                       className="w-full h-12 text-[15px] font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/20"
                     >
-                      {checkoutLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <ArrowRight className="h-4 w-4 mr-2" />
-                      )}
+                      {checkoutLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowRight className="h-4 w-4 mr-2" />}
                       Ativar agora
                     </Button>
-                    <p className="text-[10px] text-muted-foreground/70 text-center">
-                      Plano Start · Após o 1º mês: R$ 49/mês
-                    </p>
+                    <p className="text-[10px] text-muted-foreground/70 text-center">Plano Start · Após o 1º mês: R$ 49/mês</p>
                   </div>
                 </motion.div>
               )}
@@ -429,18 +456,14 @@ export default function Onboarding() {
                         disabled={isActivating || whatsapp.replace(/\D/g, "").length < 10}
                         className="w-full h-12 text-[15px] font-semibold rounded-xl shadow-lg shadow-primary/20"
                       >
-                        {isActivating ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Check className="h-4 w-4 mr-2" />
-                        )}
+                        {isActivating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
                         Começar a usar
                       </Button>
                       <button
                         onClick={() => handleActivate()}
-                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5"
+                        className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5"
                       >
-                        Pular por agora
+                        Pular por agora · algumas funções ficam limitadas
                       </button>
                     </div>
                   </div>
@@ -473,9 +496,9 @@ export default function Onboarding() {
                 </div>
               </div>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
