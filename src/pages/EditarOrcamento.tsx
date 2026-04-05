@@ -83,9 +83,9 @@ export default function EditarOrcamento() {
         description: "Os dados foram salvos com sucesso.",
       });
 
-      // Materialize PDF in background
+      // Materialize PDF (awaited)
       if (organization?.id) {
-        materializeServicePDF(id, organization.id).catch(() => {});
+        try { await materializeServicePDF(id, organization.id); } catch (e) { console.warn("[EditarOrcamento] PDF materialization failed:", e); }
       }
 
       navigate("/orcamentos");

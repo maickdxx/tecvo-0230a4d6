@@ -70,9 +70,9 @@ export default function NovoLaudo() {
         }]);
       }
     }
-    // Materialize PDF in background
+    // Materialize PDF (awaited)
     if (organizationId) {
-      materializeReportPDF(result.id, organizationId).catch(() => {});
+      try { await materializeReportPDF(result.id, organizationId); } catch (e) { console.warn("[NovoLaudo] PDF materialization failed:", e); }
     }
 
     navigate(`/laudos/${result.id}`);
