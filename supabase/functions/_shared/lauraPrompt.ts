@@ -116,11 +116,14 @@ export function buildSystemPrompt(ctx: any) {
   const lastWeek = getWeekBounds(now, -1);
   const nextWeek = getWeekBounds(now, 1);
 
+  // Helper: get date part in org timezone
+  const getServiceDate = (s: any) => s.scheduled_date ? getDatePartInTz(s.scheduled_date, tz) : null;
+
   const filterByDateRange = (items: any[], dateField: string, start: string, end: string) =>
-    items.filter((item: any) => { const d = item[dateField]?.substring(0, 10); return d && d >= start && d <= end; });
+    items.filter((item: any) => { const d = item[dateField] ? getDatePartInTz(item[dateField], tz) : null; return d && d >= start && d <= end; });
 
   // ── TODAY ──
-  const todayServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === todayISO);
+  const todayServices = osServices.filter((s: any) => getServiceDate(s) === todayISO);
   const todayCompleted = todayServices.filter((s: any) => s.status === "completed");
   const todayScheduled = todayServices.filter((s: any) => s.status === "scheduled");
   const todayInProgress = todayServices.filter((s: any) => s.status === "in_progress");
@@ -129,7 +132,7 @@ export function buildSystemPrompt(ctx: any) {
   const todayClients = [...new Set(todayServices.map((s: any) => s.client_id))];
 
   // ── TOMORROW ──
-  const tomorrowServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === tomorrowISO);
+  const tomorrowServices = osServices.filter((s: any) => getServiceDate(s) === tomorrowISO);
 
   // ── WEEKLY ──
   const thisWeekServices = filterByDateRange(osServices, "scheduled_date", thisWeek.start, thisWeek.end);
