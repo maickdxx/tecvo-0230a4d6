@@ -201,20 +201,8 @@ export default function Auth() {
       return;
     }
 
-    const cleanPhone = signupWhatsapp.replace(/\D/g, "");
-    const hasPhone = cleanPhone.length > 0;
-
-    if (hasPhone && cleanPhone.length < 10) {
-      toast({
-        variant: "destructive",
-        title: "WhatsApp inválido",
-        description: "Informe um número válido com DDD ou deixe em branco",
-      });
-      return;
-    }
-
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName, hasPhone ? cleanPhone : undefined);
+    const { error } = await signUp(signupEmail, signupPassword, signupName);
 
     if (error) {
       toast({ variant: "destructive", title: "Erro ao criar conta", description: error.message });
