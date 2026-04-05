@@ -207,6 +207,7 @@ export default function NovaOrdemServico() {
       await create({ ...data, document_type: "service_order" });
       refetch();
       await queryClient.invalidateQueries({ queryKey: ["guided-onboarding"] });
+      if (activationStep !== "completed") advanceActivation("completed");
       setShowSuccess(true);
       setTimeout(() => {
         navigate("/agenda?from=checklist");
