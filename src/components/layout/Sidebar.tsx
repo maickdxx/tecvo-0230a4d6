@@ -70,7 +70,7 @@ const financeiroSubItems: NavItem[] = [
 ];
 
 const pontoSubItems: NavItem[] = [
-  { label: "Dashboard", href: "/ponto-admin", icon: LayoutDashboard },
+  { label: "Visão Geral", href: "/ponto-admin", icon: LayoutDashboard },
   { label: "Registros", href: "/ponto-admin/registros", icon: ClipboardList },
   { label: "Espelho de Ponto", href: "/ponto-admin/espelho", icon: FileText },
   { label: "Funcionários", href: "/ponto-admin/funcionarios", icon: Users },
