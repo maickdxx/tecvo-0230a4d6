@@ -230,6 +230,7 @@ export default function NovaOrdemServico() {
     try {
       const newService = await create({ ...data, document_type: "service_order" });
       refetch();
+      if (activationStep !== "completed") advanceActivation("completed");
 
       if (items && items.length > 0 && organization?.id) {
         await supabase
