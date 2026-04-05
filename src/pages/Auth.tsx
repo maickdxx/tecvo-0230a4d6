@@ -473,25 +473,6 @@ export default function Auth() {
                 className="h-12 rounded-xl text-base"
               />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="signup-whatsapp">WhatsApp <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-              <Input
-                id="signup-whatsapp"
-                type="tel"
-                inputMode="numeric"
-                placeholder="(11) 99999-9999"
-                value={signupWhatsapp}
-                onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                  let formatted = digits;
-                  if (digits.length > 2) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-                  if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-                  setSignupWhatsapp(formatted);
-                }}
-                className="h-12 rounded-xl text-base"
-              />
-              <p className="text-xs text-muted-foreground">Usado para notificações e automações</p>
-            </div>
             <div className={`flex items-start gap-2.5 py-2 px-3 rounded-lg border transition-colors ${!acceptedTerms ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20" : "border-transparent"}`}>
               <input
                 type="checkbox"
