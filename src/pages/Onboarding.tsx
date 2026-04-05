@@ -91,6 +91,26 @@ export default function Onboarding() {
   const [whatsappMessages, setWhatsappMessages] = useState<Array<{role: "assistant" | "user"; content: string}>>([]);
   const whatsappInitRef = useRef(false);
 
+  // Handle return from Stripe checkout
+  const paymentReturnHandled = useRef(false);
+  useEffect(() => {
+    if (paymentReturnHandled.current) return;
+    const paymentStatus = searchParams.get("payment");
+    if (paymentStatus === "success") {
+      paymentReturnHandled.current = true;
+      // Payment confirmed by Stripe redirect — advance to whatsapp step
+      setStep("whatsapp");
+      // Clean URL params
+      setSearchParams({}, { replace: true });
+    } else if (paymentStatus === "cancelled") {
+      paymentReturnHandled.current = true;
+      // User cancelled — stay on payment step
+      setStep("payment");
+      setSearchParams({}, { replace: true });
+      toast({ variant: "destructive", title: "Pagamento cancelado", description: "Você pode tentar novamente quando quiser." });
+    }
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     // Delay scroll to allow animations to settle
     const t = setTimeout(() => {
