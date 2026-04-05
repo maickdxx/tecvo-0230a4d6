@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const MODEL = "google/gemini-2.5-flash";
 
 const SYSTEM_PROMPT = `Você é a Laura, secretária inteligente da empresa do usuário dentro da Tecvo.
 
@@ -94,77 +97,258 @@ Exemplo: "Perfeito! Vamos lá 🚀 {{ACTIVATE}}"
 DADOS PARA EXTRAIR:
 Quando capturar o nome da empresa ou serviço principal, retorne como tool_call com function name "save_onboarding_data".`;
 
+const BodySchema = z.object({
+  userName: z.string().optional().nullable(),
+  messages: z.array(
+    z.object({
+      role: z.enum(["user", "assistant"]),
+      content: z.string(),
+    }),
+  ).max(20),
+});
+
+type ChatMessage = {
+  role: "user" | "assistant" | "tool";
+  content: string;
+  tool_calls?: any[];
+  tool_call_id?: string;
+};
+
+type ExtractedData = {
+  company_name?: string;
+  main_service?: string;
+};
+
+const tools = [
+  {
+    type: "function",
+    function: {
+      name: "save_onboarding_data",
+      description: "Save onboarding data extracted from conversation",
+      parameters: {
+        type: "object",
+        properties: {
+          company_name: { type: "string", description: "Nome da empresa do usuário" },
+          main_service: { type: "string", description: "Serviço principal que o usuário realiza" },
+        },
+      },
+    },
+  },
+];
+
+async function callAI(messages: ChatMessage[], systemPrompt: string) {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      stream: false,
+      tools,
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      throw new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (response.status === 402) {
+      throw new Response(JSON.stringify({ error: "Credits exhausted" }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const text = await response.text();
+    console.error("AI gateway error:", response.status, text);
+    throw new Error("AI error");
+  }
+
+  const result = await response.json();
+  const choice = result.choices?.[0];
+
+  return {
+    content: choice?.message?.content || "",
+    toolCalls: choice?.message?.tool_calls || [],
+  };
+}
+
+function mergeExtractedData(current: ExtractedData, incoming: Record<string, unknown>): ExtractedData {
+  const next = { ...current };
+  if (typeof incoming.company_name === "string" && incoming.company_name.trim()) {
+    next.company_name = incoming.company_name.trim();
+  }
+  if (typeof incoming.main_service === "string" && incoming.main_service.trim()) {
+    next.main_service = incoming.main_service.trim();
+  }
+  return next;
+}
+
+function fallbackContent(messages: ChatMessage[], extractedData: ExtractedData): string {
+  const lastUserMessage = [...messages].reverse().find((message) => message.role === "user")?.content?.trim() || "";
+  const normalizedLastUser = lastUserMessage.toLowerCase();
+
+  if (/(^|\b)(sim|vamos|bora|ok|beleza|claro|pode|perfeito|quero)(\b|$)/i.test(normalizedLastUser)) {
+    return "Perfeito! Vamos lá 🚀 {{ACTIVATE}}";
+  }
+
+  if (extractedData.main_service) {
+    const companyPart = extractedData.company_name ? ` na ${extractedData.company_name}` : "";
+    return `Pronto! Já organizei ${extractedData.main_service} como seu serviço principal${companyPart}. Agora vamos ativar tudo pra você começar de verdade? 🚀`;
+  }
+
+  if (extractedData.company_name) {
+    return `${extractedData.company_name}, adorei! 💪 E qual serviço você mais faz no dia a dia?`;
+  }
+
+  return "Perfeito! Me diz qual o nome da sua empresa?";
+}
+
+function chunkText(content: string, size = 120): string[] {
+  if (!content) return [];
+  const chunks: string[] = [];
+  for (let index = 0; index < content.length; index += size) {
+    chunks.push(content.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function buildSSEPayload(content: string, extractedData: ExtractedData): string {
+  const payloadParts: string[] = [];
+
+  if (Object.keys(extractedData).length > 0) {
+    payloadParts.push(
+      `data: ${JSON.stringify({
+        choices: [
+          {
+            index: 0,
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  function: {
+                    arguments: JSON.stringify(extractedData),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      })}\n\n`,
+    );
+  }
+
+  const textChunks = chunkText(content);
+  if (textChunks.length === 0) {
+    textChunks.push("");
+  }
+
+  textChunks.forEach((chunk, index) => {
+    payloadParts.push(
+      `data: ${JSON.stringify({
+        choices: [
+          {
+            index: 0,
+            delta: {
+              role: index === 0 ? "assistant" : undefined,
+              content: chunk,
+            },
+          },
+        ],
+      })}\n\n`,
+    );
+  });
+
+  payloadParts.push("data: [DONE]\n\n");
+  return payloadParts.join("");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, userName } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
-    const systemPrompt = SYSTEM_PROMPT.replaceAll("{{USER_NAME}}", userName || "");
-
-    const aiMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages,
-    ];
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: aiMessages,
-        stream: true,
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "save_onboarding_data",
-              description: "Save onboarding data extracted from conversation",
-              parameters: {
-                type: "object",
-                properties: {
-                  company_name: { type: "string", description: "Nome da empresa do usuário" },
-                  main_service: { type: "string", description: "Serviço principal que o usuário realiza" },
-                },
-              },
-            },
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Credits exhausted" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const parsedBody = BodySchema.safeParse(await req.json());
+    if (!parsedBody.success) {
+      return new Response(JSON.stringify({ error: parsedBody.error.flatten().fieldErrors }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(response.body, {
+    const { messages, userName } = parsedBody.data;
+    const systemPrompt = SYSTEM_PROMPT.replaceAll("{{USER_NAME}}", userName || "");
+
+    const conversationMessages: ChatMessage[] = [...messages];
+    let extractedData: ExtractedData = {};
+    let finalContent = "";
+    let lastNonEmptyContent = "";
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const result = await callAI(conversationMessages, systemPrompt);
+
+      if (result.content?.trim()) {
+        lastNonEmptyContent = result.content.trim();
+      }
+
+      if (!result.toolCalls.length) {
+        finalContent = result.content?.trim() || lastNonEmptyContent;
+        break;
+      }
+
+      conversationMessages.push({
+        role: "assistant",
+        content: result.content || "",
+        tool_calls: result.toolCalls,
+      });
+
+      for (const toolCall of result.toolCalls) {
+        let toolArgs: Record<string, unknown> = {};
+
+        try {
+          toolArgs = JSON.parse(toolCall?.function?.arguments || "{}");
+        } catch {
+          toolArgs = {};
+        }
+
+        extractedData = mergeExtractedData(extractedData, toolArgs);
+
+        conversationMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: JSON.stringify({ ok: true, saved: toolArgs }),
+        });
+      }
+    }
+
+    const contentToSend = finalContent || fallbackContent(conversationMessages, extractedData);
+    const ssePayload = buildSSEPayload(contentToSend, extractedData);
+
+    return new Response(ssePayload, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
-  } catch (e) {
-    console.error("onboarding-chat error:", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  } catch (error) {
+    if (error instanceof Response) {
+      return error;
+    }
+
+    console.error("onboarding-chat error:", error);
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

@@ -194,7 +194,10 @@ export default function Onboarding() {
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Bot className="h-5 w-5 text-primary" />
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
+            <div
+              className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background"
+              style={{ backgroundColor: "hsl(var(--success))" }}
+            />
           </div>
           <div>
             <h1 className="text-sm font-semibold text-foreground">Laura</h1>
