@@ -35,16 +35,15 @@ serve(async (req) => {
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
-      console.error("Auth error:", claimsError);
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser(token);
+    if (userError || !user) {
+      console.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     const { messages, organizationId, mode } = await req.json();
     if (!organizationId) {
