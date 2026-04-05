@@ -375,7 +375,7 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
           const config = PLAN_CONFIG[slug];
           const btnProps = getButtonProps(slug);
           const isCurrentPlan = plan === slug;
-          const showTrialBadge = !hasPaidPlan && !isTrial;
+          const showTrialBadge = false;
 
           return (
             <Card
