@@ -1855,25 +1855,35 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
           });
 
           if (aiResponse) {
-            // Send guard check for AI reply
-            const aiGuard = await checkSendLimit(supabase, targetOrganizationId, contactId, "ai");
-            if (!aiGuard.allowed) {
-              console.warn("[WEBHOOK-WHATSAPP] AI reply blocked by send guard:", aiGuard.reason);
-            } else {
-              console.log("[WEBHOOK-WHATSAPP] AI admin response:", aiResponse.slice(0, 200));
-              const aiMessageId = `ai_${crypto.randomUUID()}`;
-              await supabase.from("whatsapp_messages").insert({
-                organization_id: targetOrganizationId,
-                contact_id: contactId,
-                message_id: aiMessageId,
-                content: aiResponse,
-                is_from_me: true,
-                status: "sent",
-                channel_id: channel.id,
-                ai_generated: true,
-              });
-              const sent = await sendWhatsAppReply(instance, remoteJid, aiResponse);
-              console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
+            // Output validation filter
+            const outputCheck = validateAIOutput(aiResponse);
+            const safeResponse = outputCheck.safe ? aiResponse : (outputCheck.sanitizedContent || "");
+            if (!outputCheck.safe) {
+              await logOutputViolation(supabase, targetOrganizationId, null as any, "webhook-whatsapp-admin", outputCheck.reasons, aiResponse);
+              console.warn("[WEBHOOK-WHATSAPP] AI output blocked:", outputCheck.reasons);
+            }
+
+            if (safeResponse) {
+              // Send guard check for AI reply
+              const aiGuard = await checkSendLimit(supabase, targetOrganizationId, contactId, "ai");
+              if (!aiGuard.allowed) {
+                console.warn("[WEBHOOK-WHATSAPP] AI reply blocked by send guard:", aiGuard.reason);
+              } else {
+                console.log("[WEBHOOK-WHATSAPP] AI admin response:", safeResponse.slice(0, 200));
+                const aiMessageId = `ai_${crypto.randomUUID()}`;
+                await supabase.from("whatsapp_messages").insert({
+                  organization_id: targetOrganizationId,
+                  contact_id: contactId,
+                  message_id: aiMessageId,
+                  content: safeResponse,
+                  is_from_me: true,
+                  status: "sent",
+                  channel_id: channel.id,
+                  ai_generated: true,
+                });
+                const sent = await sendWhatsAppReply(instance, remoteJid, safeResponse);
+                console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
+              }
             }
           }
         } else {
