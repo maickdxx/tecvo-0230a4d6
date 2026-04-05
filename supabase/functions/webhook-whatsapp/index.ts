@@ -607,17 +607,33 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
     }
     if (amount <= 0) return "Erro: valor deve ser positivo.";
 
-    // Find default financial account for this org (prefer "Dinheiro"/cash)
-    const { data: defaultAccount } = await supabase
-      .from("financial_accounts")
-      .select("id")
-      .eq("organization_id", organizationId)
-      .eq("is_active", true)
-      .eq("account_type", "cash")
-      .limit(1)
+    // Check for default AI account configured on the organization
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("default_ai_account_id")
+      .eq("id", organizationId)
       .single();
 
-    const accountId = defaultAccount?.id || null;
+    let accountId: string | null = orgData?.default_ai_account_id || null;
+
+    // If no default AI account, try to find any active cash account as fallback
+    if (!accountId) {
+      const { data: defaultAccount } = await supabase
+        .from("financial_accounts")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .eq("account_type", "cash")
+        .limit(1)
+        .single();
+
+      accountId = defaultAccount?.id || null;
+    }
+
+    // If still no account, warn the user
+    if (!accountId) {
+      return "⚠️ Nenhuma conta financeira padrão configurada para a IA. Para organizar melhor o financeiro, vá em Configurações e defina uma conta padrão para que eu possa registrar as transações corretamente.";
+    }
 
     // Expenses go as pending (contas a pagar) — manager approves later
     // Income also goes as pending (contas a receber)
