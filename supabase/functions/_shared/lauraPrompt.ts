@@ -961,7 +961,11 @@ export async function executeAdminTool(
       return `Erro ao cadastrar cliente: ${error.message}`;
     }
 
-    return `✅ Cliente "${newClient.name}" cadastrado com sucesso!`;
+    // Post-action verification
+    const verifyClientErr = await verifyInsert(supabase, "clients", newClient.id, "Client");
+    if (verifyClientErr) return verifyClientErr;
+
+    return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Confirmado no sistema.`;
   }
 
     return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar OS, criar orçamento, criar conta financeira e cadastrar cliente.`;
