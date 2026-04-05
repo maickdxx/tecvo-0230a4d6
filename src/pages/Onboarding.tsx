@@ -4,13 +4,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useOnboardingChat } from "@/hooks/useOnboardingChat";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, ArrowRight, Sparkles, Check, MessageCircle } from "lucide-react";
+import { Loader2, Send, ArrowRight, Sparkles, Check, MessageCircle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { PLAN_CONFIG, PAID_PLANS } from "@/lib/planConfig";
+import type { PlanSlug } from "@/lib/planConfig";
 
 type OnboardingStep = "chat" | "payment" | "whatsapp" | "activating" | "transition";
 
