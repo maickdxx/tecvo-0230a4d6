@@ -547,8 +547,8 @@ async function callAI(systemPrompt: string, conversationMessages: any[], tools?:
   };
 }
 
-// Financial tools for admin_empresa mode
-const FINANCIAL_TOOLS = [
+// Tools for admin_empresa mode
+const ADMIN_TOOLS = [
   {
     type: "function",
     function: {
@@ -565,6 +565,26 @@ const FINANCIAL_TOOLS = [
           payment_method: { type: "string", enum: ["pix", "dinheiro", "cartao_credito", "cartao_debito", "boleto", "transferencia", "outro"], description: "Forma de pagamento" },
         },
         required: ["type", "amount", "description", "category", "date"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_service",
+      description: "Cria uma Ordem de Serviço (OS) no sistema. Use quando o usuário pedir para criar, agendar ou registrar um serviço/OS.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_name: { type: "string", description: "Nome do cliente (busca parcial no cadastro)" },
+          scheduled_date: { type: "string", description: "Data e hora no formato YYYY-MM-DDTHH:MM:SS. Se só informar data, use 08:00 como padrão." },
+          service_type: { type: "string", description: "Tipo de serviço: ex: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro" },
+          description: { type: "string", description: "Descrição do serviço a ser realizado" },
+          value: { type: "number", description: "Valor do serviço em reais. Se não informado, pode ser 0." },
+          assigned_to_name: { type: "string", description: "Nome do técnico responsável (busca parcial na equipe). Opcional." },
+        },
+        required: ["client_name", "scheduled_date", "service_type", "description"],
         additionalProperties: false,
       },
     },
