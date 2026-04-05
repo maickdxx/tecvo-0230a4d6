@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
       }
 
       const userName = profile.full_name || org.name || "empreendedor";
-      const welcomeText = `👋 Olá, ${userName}! Bem-vindo(a) à *Tecvo*!\n\nSua conta foi configurada com sucesso. Estamos aqui para facilitar a gestão do seu negócio.\n\nSe precisar de ajuda, é só mandar uma mensagem! 🚀`;
+      const welcomeText = `Oi, ${userName}! Já tô por aqui te ajudando 😊\nHoje tá mais corrido ou mais tranquilo?`;
 
       let cleanNumber = phone.replace(/\D/g, "");
       if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
