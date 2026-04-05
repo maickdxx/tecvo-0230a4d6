@@ -612,7 +612,33 @@ export const ADMIN_TOOLS = [
   },
 ];
 
-// ─────────────────── tool executor (shared) ───────────────────
+// ─────────────────── reliability layer ───────────────────
+
+// In-memory error tracking for degradation mode (per isolate)
+const recentToolErrors: { ts: number; tool: string; msg: string }[] = [];
+const MAX_ERROR_HISTORY = 20;
+const DEGRADATION_THRESHOLD = 3; // 3 errors in 10 min → degraded
+const DEGRADATION_WINDOW_MS = 10 * 60 * 1000;
+
+// Risk classification
+const ACTION_RISK: Record<string, "low" | "medium" | "high"> = {
+  register_transaction: "high",
+  create_service: "high",
+  create_quote: "medium",
+  create_client: "medium",
+  create_financial_account: "low",
+};
+
+function isDegradedMode(): boolean {
+  const cutoff = Date.now() - DEGRADATION_WINDOW_MS;
+  const recentErrors = recentToolErrors.filter((e) => e.ts > cutoff);
+  return recentErrors.length >= DEGRADATION_THRESHOLD;
+}
+
+function trackError(tool: string, msg: string) {
+  recentToolErrors.push({ ts: Date.now(), tool, msg });
+  if (recentToolErrors.length > MAX_ERROR_HISTORY) recentToolErrors.shift();
+}
 
 /**
  * Logs a tool execution error to ai_usage_logs for diagnostics.
@@ -624,6 +650,7 @@ async function logToolError(
   errorMessage: string,
   args?: any,
 ): Promise<void> {
+  trackError(toolName, errorMessage);
   try {
     await supabase.from("ai_usage_logs").insert({
       organization_id: organizationId,
@@ -639,6 +666,32 @@ async function logToolError(
     console.error(`[LAURA-TOOL-ERROR] ${toolName} | org=${organizationId} | error=${errorMessage} | args=${JSON.stringify(args || {}).slice(0, 300)}`);
   } catch (logErr) {
     console.error("[LAURA-TOOL-ERROR] Failed to log tool error:", logErr);
+  }
+}
+
+/**
+ * Verifies a record was actually created in the database after insert.
+ */
+async function verifyInsert(
+  supabase: any,
+  table: string,
+  id: string,
+  label: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from(table)
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (error || !data) {
+      console.error(`[LAURA-VERIFY] ${label} id=${id} NOT found after insert. error=${error?.message}`);
+      return `⚠️ A ação foi executada mas não foi possível confirmar o registro no sistema. Verifique manualmente.`;
+    }
+    return null; // OK
+  } catch (e) {
+    console.error(`[LAURA-VERIFY] Verification failed for ${label}:`, e);
+    return null; // Don't block on verification failure
   }
 }
 
