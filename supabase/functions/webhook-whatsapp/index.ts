@@ -4690,6 +4690,148 @@ Você NÃO deve compartilhar:
           ) {
             conversationHistory.push({ role: "user", content: content.trim() });
           }
+
+          const currentUserText = content.trim();
+          const normalizeIntentText = (value: string) =>
+            value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+          const extractStrongServiceIdentifier = (value: string) => {
+            const trimmed = value.trim();
+            if (!trimmed) return null;
+            if (/^\d{1,6}$/.test(trimmed)) return trimmed;
+
+            const explicitNumberMatch = trimmed.match(
+              /(?:os|ordem de servi[cç]o|orcamento|orçamento|numero|n[uú]mero|#)\s*[:#-]?\s*(\d{1,6})\b/i,
+            );
+            if (explicitNumberMatch?.[1]) return explicitNumberMatch[1];
+
+            const idMatch = trimmed.match(/\b[a-f0-9]{8}(?:-[a-f0-9-]{4,})?\b/i);
+            if (idMatch?.[0]) return idMatch[0];
+
+            return null;
+          };
+
+          const extractServiceIdentifierFromRequest = (value: string) => {
+            const strongIdentifier = extractStrongServiceIdentifier(value);
+            if (strongIdentifier) return strongIdentifier;
+
+            const cleaned = value
+              .replace(
+                /\b(pdf|ordem de servi[cç]o|orcamento|orçamento|os|manda|mandar|envia|enviar|me|pra|para|favor|por favor|do|da|de|o|a|um|uma|receber|ver|reenvia|reenviar|reenvie|novamente)\b/gi,
+                " ",
+              )
+              .replace(/[#:,.!?-]+/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
+
+            return cleaned.length >= 3 ? cleaned : null;
+          };
+
+          const looksLikePdfRequest = (value: string) => {
+            const normalized = normalizeIntentText(value);
+            const hasDocument =
+              normalized.includes("pdf") ||
+              normalized.includes("ordem de servico") ||
+              normalized.includes("orcamento") ||
+              /(?:^|\s)os(?:\s|$|#)/.test(normalized);
+            const hasAction =
+              normalized.includes("envia") ||
+              normalized.includes("enviar") ||
+              normalized.includes("manda") ||
+              normalized.includes("mandar") ||
+              normalized.includes("receber") ||
+              normalized.includes("reenvia") ||
+              normalized.includes("reenvia") ||
+              normalized.includes("ver");
+
+            return hasDocument && hasAction;
+          };
+
+          const looksLikePdfSentConfirmation = (
+            value: string | null | undefined,
+          ) => {
+            const normalized = normalizeIntentText(value || "");
+            const mentionsDocument =
+              normalized.includes("pdf") ||
+              normalized.includes("ordem de servico") ||
+              normalized.includes("orcamento") ||
+              /(?:^|\s)os(?:\s|$|#)/.test(normalized);
+            const claimsSent =
+              normalized.includes("enviei") ||
+              normalized.includes("mandei") ||
+              normalized.includes("reenviei") ||
+              normalized.includes("foi enviado") ||
+              normalized.includes("ja foi enviado") ||
+              normalized.includes("pronto, enviei") ||
+              normalized.includes("acabei de enviar");
+
+            return mentionsDocument && claimsSent;
+          };
+
+          const recentUserMessages = conversationHistory
+            .filter((message: any) => message.role === "user")
+            .slice(-6)
+            .map((message: any) => message.content || "");
+          const previousUserContext = recentUserMessages.slice(0, -1).join("\n");
+          const previousPdfContext = looksLikePdfRequest(previousUserContext);
+          const lastAssistantMessage = [...conversationHistory]
+            .reverse()
+            .find((message: any) => message.role === "assistant")?.content || "";
+          const normalizedCurrentUserText = normalizeIntentText(currentUserText);
+          const ignoredIdentifierReplies = new Set([
+            "ok",
+            "okay",
+            "sim",
+            "pode",
+            "isso",
+            "essa",
+            "obrigado",
+            "obg",
+            "valeu",
+            "oi",
+            "ola",
+            "bom dia",
+            "boa tarde",
+            "boa noite",
+            "novamente",
+          ]);
+          const currentStrongIdentifier = extractStrongServiceIdentifier(
+            currentUserText,
+          );
+          const currentLooksLikeNameIdentifier =
+            /^[a-z\s]{3,}$/i.test(normalizedCurrentUserText) &&
+            !ignoredIdentifierReplies.has(normalizedCurrentUserText);
+          const assistantAskedForPdfIdentifier = (() => {
+            const normalized = normalizeIntentText(lastAssistantMessage);
+            const askedForIdentifier =
+              normalized.includes("numero da os") ||
+              normalized.includes("nome do cliente") ||
+              normalized.includes("identificador");
+            const mentionsDocument =
+              normalized.includes("pdf") ||
+              normalized.includes("ordem de servico") ||
+              normalized.includes("orcamento") ||
+              /(?:^|\s)os(?:\s|$|#)/.test(normalized);
+
+            return askedForIdentifier && mentionsDocument;
+          })();
+
+          const currentExplicitPdfRequest = looksLikePdfRequest(currentUserText);
+          const wantsPdfNow = currentExplicitPdfRequest ||
+            (
+              previousPdfContext &&
+              assistantAskedForPdfIdentifier &&
+              Boolean(currentStrongIdentifier || currentLooksLikeNameIdentifier)
+            );
+          const fallbackPdfIdentifier = currentExplicitPdfRequest
+            ? extractServiceIdentifierFromRequest(currentUserText)
+            : (
+              previousPdfContext &&
+                assistantAskedForPdfIdentifier
+            )
+            ? (currentStrongIdentifier ||
+              (currentLooksLikeNameIdentifier ? currentUserText : null))
+            : null;
           console.log(
             "[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:",
             conversationHistory.length,
