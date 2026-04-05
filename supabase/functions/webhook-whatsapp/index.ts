@@ -818,12 +818,14 @@ async function generateTTSAudioWithElevenLabs(
 }
 
 /**
- * Send audio message via Evolution API using base64.
+ * Send audio message via Evolution API.
+ * Uploads the audio to Supabase Storage first, then sends the public URL.
  */
 async function sendWhatsAppAudio(
   instance: string,
   remoteJid: string,
   audioPayload: string,
+  supabase?: any,
 ): Promise<boolean> {
   const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
   const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
@@ -835,6 +837,44 @@ async function sendWhatsAppAudio(
 
   try {
     const baseUrl = vpsUrl.replace(/\/+$/, "");
+
+    // Strategy: upload to Storage first, then send URL (more reliable than inline base64)
+    let audioUrl = audioPayload;
+
+    if (audioPayload.startsWith("data:") && supabase) {
+      try {
+        // Extract base64 and mime from data URI
+        const dataUriMatch = audioPayload.match(/^data:([^;]+);base64,(.+)$/);
+        if (dataUriMatch) {
+          const mime = dataUriMatch[1];
+          const b64 = dataUriMatch[2];
+          const { bytes } = decodeBase64ToBytes(b64);
+          const ext = mime.includes("wav") ? "wav" : mime.includes("mpeg") ? "mp3" : "ogg";
+          const fileName = `tts-audio/${crypto.randomUUID()}.${ext}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("whatsapp-media")
+            .upload(fileName, bytes, { contentType: mime, upsert: true });
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from("whatsapp-media")
+              .getPublicUrl(fileName);
+            audioUrl = publicUrl;
+            console.log("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: uploaded TTS to storage:", publicUrl);
+          } else {
+            console.warn("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: storage upload failed, falling back to base64:", uploadError.message);
+            audioUrl = audioPayload;
+          }
+        }
+      } catch (uploadErr: any) {
+        console.warn("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: upload error, falling back:", uploadErr.message);
+        audioUrl = audioPayload;
+      }
+    } else if (!audioPayload.startsWith("data:") && !audioPayload.startsWith("http")) {
+      audioUrl = `data:audio/mpeg;base64,${audioPayload}`;
+    }
+
     const response = await fetch(
       `${baseUrl}/message/sendWhatsAppAudio/${instance}`,
       {
@@ -845,9 +885,7 @@ async function sendWhatsAppAudio(
         },
         body: JSON.stringify({
           number: remoteJid,
-          audio: audioPayload.startsWith("data:")
-            ? audioPayload
-            : `data:audio/mpeg;base64,${audioPayload}`,
+          audio: audioUrl,
         }),
       },
     );
