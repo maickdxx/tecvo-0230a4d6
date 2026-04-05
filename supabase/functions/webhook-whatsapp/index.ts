@@ -616,23 +616,9 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
 
     let accountId: string | null = orgData?.default_ai_account_id || null;
 
-    // If no default AI account, try to find any active cash account as fallback
+    // If no default AI account configured, block and warn the user
     if (!accountId) {
-      const { data: defaultAccount } = await supabase
-        .from("financial_accounts")
-        .select("id")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .eq("account_type", "cash")
-        .limit(1)
-        .single();
-
-      accountId = defaultAccount?.id || null;
-    }
-
-    // If still no account, warn the user
-    if (!accountId) {
-      return "⚠️ Nenhuma conta financeira padrão configurada para a IA. Para organizar melhor o financeiro, vá em Configurações e defina uma conta padrão para que eu possa registrar as transações corretamente.";
+      return "⚠️ Você ainda não tem uma conta financeira padrão configurada para a IA.\n\nPara eu registrar transações corretamente, você precisa definir uma conta padrão nas configurações do sistema.\n\n👉 Acesse: https://tecvo.lovable.app/configuracoes\n\nOu, se preferir, posso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: \"Crie uma conta do Itaú\".";
     }
 
     // Expenses go as pending (contas a pagar) — manager approves later
