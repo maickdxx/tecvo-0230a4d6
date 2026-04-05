@@ -10,6 +10,7 @@ import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/hooks/useAuth";
 import { useReportEquipment } from "@/hooks/useReportEquipment";
 import type { LocalReportEquipment } from "@/components/laudos/ReportEquipmentEditor";
+import { materializeReportPDF } from "@/lib/materializePDF";
 
 export default function NovoLaudo() {
   const navigate = useNavigate();
