@@ -867,6 +867,47 @@ async function executeAdminTool(supabase: any, organizationId: string, toolCall:
     return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• ID: ${newQuote.id.substring(0, 8)}\n\nO orçamento está disponível no sistema. O gestor pode visualizar e enviar o PDF ao cliente pelo painel.`;
   }
 
+  if (fnName === "create_client") {
+    const { name, phone, email, address } = args;
+    if (!name || !phone) {
+      return "Erro: nome e telefone são obrigatórios para cadastrar o cliente.";
+    }
+
+    // Check if client already exists by phone
+    const normalizedPhone = phone.replace(/\D/g, "");
+    const { data: existingByPhone } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .eq("phone", normalizedPhone)
+      .maybeSingle();
+
+    if (existingByPhone) {
+      return `Cliente já existe com este telefone: "${existingByPhone.name}". Use o nome "${existingByPhone.name}" para criar a OS ou orçamento.`;
+    }
+
+    const { data: newClient, error } = await supabase
+      .from("clients")
+      .insert({
+        organization_id: organizationId,
+        name,
+        phone: normalizedPhone,
+        ...(email ? { email } : {}),
+        ...(address ? { address } : {}),
+        person_type: "fisica",
+      })
+      .select("id, name")
+      .single();
+
+    if (error) {
+      console.error("[WEBHOOK-WHATSAPP] Client insert error:", error);
+      return `Erro ao cadastrar cliente: ${error.message}`;
+    }
+
+    return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Agora pode continuar criando a OS ou orçamento usando o nome "${newClient.name}".`;
+  }
+
   return "Ferramenta desconhecida.";
 }
 
