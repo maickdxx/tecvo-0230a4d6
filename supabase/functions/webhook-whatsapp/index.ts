@@ -589,6 +589,22 @@ const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_financial_account",
+      description: "Cria uma nova conta financeira (ex: conta do Itaú, Nubank, Bradesco) e define como conta padrão da IA. Use quando o usuário pedir para criar uma conta bancária/financeira.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Nome da conta (ex: Itaú, Nubank, Bradesco, Caixa Econômica)" },
+          account_type: { type: "string", enum: ["checking", "savings", "cash", "digital"], description: "Tipo: checking (corrente), savings (poupança), cash (dinheiro), digital (carteira digital)" },
+        },
+        required: ["name"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function executeAdminTool(supabase: any, organizationId: string, toolCall: any, ctx?: any): Promise<string> {
