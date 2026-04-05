@@ -333,7 +333,14 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: "success",
     });
 
-    return new Response(response.body, {
+    // Apply output sanitization filter on the stream
+    const sanitizedStream = createSanitizedStream(response.body!, async (fullText, hadIssues) => {
+      if (hadIssues) {
+        await logOutputViolation(supabaseAdmin, organizationId, userId, "tecvo-chat", ["stream_sanitized"], fullText);
+      }
+    });
+
+    return new Response(sanitizedStream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {

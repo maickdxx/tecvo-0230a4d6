@@ -261,8 +261,14 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
         promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: "success",
       });
 
-      // Stream response
-      return new Response(response.body, {
+      // Stream response with sanitization filter
+      const sanitizedStream = createSanitizedStream(response.body!, async (fullText, hadIssues) => {
+        if (hadIssues) {
+          await logOutputViolation(supabaseAdmin, organizationId, userId, "whatsapp-ai-copilot", ["stream_sanitized"], fullText);
+        }
+      });
+
+      return new Response(sanitizedStream, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     } else {
