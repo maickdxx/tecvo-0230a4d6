@@ -18,9 +18,15 @@ export function useOnboardingChat(userName: string) {
   const [extractedData, setExtractedData] = useState<OnboardingData>({});
   const [showActivate, setShowActivate] = useState(false);
   const dataRef = useRef<OnboardingData>({});
+  const abortRef = useRef<AbortController | null>(null);
 
   const streamChat = useCallback(
     async (allMessages: ChatMessage[]) => {
+      // Abort any previous stream
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       setIsLoading(true);
 
       try {
@@ -31,16 +37,19 @@ export function useOnboardingChat(userName: string) {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ messages: allMessages, userName }),
+          signal: controller.signal,
         });
 
-        if (!resp.ok || !resp.body) throw new Error("Stream failed");
+        if (!resp.ok || !resp.body) {
+          console.error("Onboarding chat: response not ok", resp.status);
+          throw new Error("Stream failed");
+        }
 
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
         let assistantContent = "";
         let toolCallArgs = "";
-        let inToolCall = false;
 
         const updateAssistant = (content: string) => {
           setMessages((prev) => {
@@ -74,7 +83,6 @@ export function useOnboardingChat(userName: string) {
 
               // Handle tool calls
               if (delta?.tool_calls) {
-                inToolCall = true;
                 for (const tc of delta.tool_calls) {
                   if (tc.function?.arguments) {
                     toolCallArgs += tc.function.arguments;
@@ -87,7 +95,6 @@ export function useOnboardingChat(userName: string) {
               const content = delta?.content;
               if (content) {
                 assistantContent += content;
-                // Check for activation token
                 if (assistantContent.includes("{{ACTIVATE}}")) {
                   assistantContent = assistantContent.replace("{{ACTIVATE}}", "").trim();
                   if (assistantContent) updateAssistant(assistantContent);
@@ -97,7 +104,7 @@ export function useOnboardingChat(userName: string) {
                 }
               }
             } catch {
-              // partial JSON, wait
+              // Ignore parse errors on partial chunks
             }
           }
         }
@@ -112,10 +119,11 @@ export function useOnboardingChat(userName: string) {
             dataRef.current = newData;
             setExtractedData(newData);
           } catch {
-            // ignore parse errors
+            // ignore
           }
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
         console.error("Onboarding chat error:", err);
       } finally {
         setIsLoading(false);
@@ -135,7 +143,6 @@ export function useOnboardingChat(userName: string) {
   );
 
   const startConversation = useCallback(() => {
-    // Send empty to trigger Laura's first message
     streamChat([]);
   }, [streamChat]);
 
