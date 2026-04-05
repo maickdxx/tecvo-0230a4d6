@@ -70,6 +70,10 @@ export default function NovoLaudo() {
         }]);
       }
     }
+    // Materialize PDF in background
+    if (organizationId) {
+      materializeReportPDF(result.id, organizationId).catch(() => {});
+    }
 
     navigate(`/laudos/${result.id}`);
   };

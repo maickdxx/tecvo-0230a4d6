@@ -83,6 +83,11 @@ export default function EditarOrcamento() {
         description: "Os dados foram salvos com sucesso.",
       });
 
+      // Materialize PDF in background
+      if (organization?.id) {
+        materializeServicePDF(id, organization.id).catch(() => {});
+      }
+
       navigate("/orcamentos");
     } catch (error) {
       toast({

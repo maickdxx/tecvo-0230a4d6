@@ -52,6 +52,10 @@ export default function EditarLaudo() {
         measurements: eq.measurements || {},
       }]);
     }
+    // Materialize PDF in background
+    if (organizationId) {
+      materializeReportPDF(id, organizationId).catch(() => {});
+    }
 
     navigate(`/laudos/${id}`);
   };

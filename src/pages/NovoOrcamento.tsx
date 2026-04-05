@@ -78,6 +78,11 @@ export default function NovoOrcamento() {
         description: `Orçamento #${newService.quote_number} criado. Pronto para o próximo.`,
       });
 
+      // Materialize PDF in background
+      if (organization?.id) {
+        materializeServicePDF(newService.id, organization.id).catch(() => {});
+      }
+
       setFormKey(prev => prev + 1);
     } catch (error) {
       if ((error as Error).message === "LIMIT_REACHED") {
