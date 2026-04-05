@@ -922,5 +922,27 @@ export async function generateReportPDF({
     addFooter();
   }
 
-  doc.save(`Laudo_Tecnico_${report.report_number.toString().padStart(4, "0")}_${report.client?.name?.replace(/\s+/g, "_") || ""}.pdf`);
+  const fileName = `Laudo_Tecnico_${report.report_number.toString().padStart(4, "0")}_${report.client?.name?.replace(/\s+/g, "_") || ""}.pdf`;
+
+  // Always upload a copy to storage so Laura can send the exact same PDF
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const blob = doc.output("blob");
+    const orgId = report.organization_id;
+    if (orgId) {
+      const storagePath = `os-pdfs/${orgId}/report_${report.id}.pdf`;
+      await supabase.storage
+        .from("whatsapp-media")
+        .upload(storagePath, blob, { contentType: "application/pdf", upsert: true });
+      console.log("[PDF] Report PDF uploaded to storage:", storagePath);
+    }
+  } catch (e) {
+    console.warn("[PDF] Failed to upload report PDF to storage:", e);
+  }
+
+  if (returnBlob) {
+    return doc.output("blob");
+  }
+
+  doc.save(fileName);
 }
