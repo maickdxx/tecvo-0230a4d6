@@ -38,7 +38,7 @@ export default function Auth() {
 
   const isSignupRoute = location.pathname === "/cadastro";
 
-  const { signIn, signUp, refreshProfile, signUpSuccess, setSignUpSuccess } = useAuth();
+  const { user, isLoading: authLoading, signIn, signUp, refreshProfile, signUpSuccess, setSignUpSuccess } = useAuth();
   const { data: invite, isLoading: isLoadingInvite } = useInviteByToken(inviteToken);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
