@@ -123,7 +123,7 @@ export function ExecutiveHeroBlock({
       {/* SEÇÃO: REALIZADO (FINANCEIRO) */}
       <div className="rounded-xl border border-border bg-card p-6 sm:p-8 shadow-card relative overflow-hidden">
         {/* Subtle accent line for distinction */}
-        <div className="absolute top-0 left-0 w-1.5 h-full bg-success/40" />
+        <div className={`absolute top-0 left-0 w-1.5 h-full ${balance >= 0 ? "bg-success/40" : "bg-destructive/40"}`} />
         
         <div className="mb-6">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">

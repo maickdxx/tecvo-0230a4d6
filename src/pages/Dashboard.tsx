@@ -83,73 +83,66 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="page-enter">
+      <div className="page-enter space-y-8 pb-10">
         <DashboardGreeting />
         
         <TrialUrgencyBanner />
 
-        {/* Money on Table Alert */}
-        {canViewFinance && <MoneyOnTable />}
-
-        
-
-
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-6 mt-8">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">Painel Financeiro</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Resumo estratégico do seu negócio</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Nova OS</span>
-            </Button>
-          </div>
+        {/* Alerts & Critical Info — Always at top if relevant */}
+        <div className="space-y-6">
+          {canViewFinance && <MoneyOnTable />}
+          <AlertasInteligentes />
         </div>
 
-        {/* 1. Situação Atual */}
+        {/* Financial Section — Only for admins/owners */}
         {canViewFinance && (
-          <div data-tour="dashboard-hero">
-            <CurrentSituationBlock />
-          </div>
-        )}
-
-        {/* Period Selector */}
-        {canViewFinance && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
-            <Tabs
-              value={granularity}
-              onValueChange={(v) => {
-                setGranularity(v as Granularity);
-                setReferenceDate(getHojeBRT());
-              }}
-            >
-              <TabsList className="h-8">
-                <TabsTrigger value="day" className="text-xs px-3 h-7">Dia</TabsTrigger>
-                <TabsTrigger value="week" className="text-xs px-3 h-7">Semana</TabsTrigger>
-                <TabsTrigger value="month" className="text-xs px-3 h-7">Mês</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </Button>
-              <span className="text-sm font-medium text-foreground capitalize min-w-[140px] text-center period-transition" key={periodLabel}>
-                {periodLabel}
-              </span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
-                <ChevronRight className="h-3.5 w-3.5" />
+          <div className="space-y-6 animate-in fade-in duration-500 delay-150">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">Painel Financeiro</h2>
+                <p className="text-sm text-muted-foreground">Resumo estratégico do seu negócio</p>
+              </div>
+              <Button size="sm" onClick={() => navigate("/ordens-servico/nova")} className="gap-1.5 shadow-sm active:scale-95 transition-transform">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nova OS</span>
               </Button>
             </div>
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-8 space-y-6">
-            {/* 2. Lucro / Receita / Gastos */}
-            {canViewFinance && (
+            <div data-tour="dashboard-hero">
+              <CurrentSituationBlock />
+            </div>
+
+            {/* Period Selector & Hero Block */}
+            <div className="space-y-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-card/40 border border-border/40 p-3 rounded-xl">
+                <Tabs
+                  value={granularity}
+                  onValueChange={(v) => {
+                    setGranularity(v as Granularity);
+                    setReferenceDate(getHojeBRT());
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <TabsList className="h-8 w-full sm:w-auto grid grid-cols-3 sm:flex">
+                    <TabsTrigger value="day" className="text-xs px-4 h-7">Dia</TabsTrigger>
+                    <TabsTrigger value="week" className="text-xs px-4 h-7">Semana</TabsTrigger>
+                    <TabsTrigger value="month" className="text-xs px-4 h-7">Mês</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, -1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-semibold text-foreground capitalize min-w-[140px] text-center period-transition py-1 px-2 bg-muted/50 rounded-lg" key={periodLabel}>
+                    {periodLabel}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted" onClick={() => setReferenceDate(navegarPeriodo(granularity, referenceDate, 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
               <ExecutiveHeroBlock
                 income={metrics.income}
                 expense={metrics.expense}
@@ -163,18 +156,17 @@ export default function Dashboard() {
                 balanceChange={metrics.balanceChange}
                 granularity={granularity}
               />
-            )}
+            </div>
           </div>
-          
-          <div className="lg:col-span-4 space-y-6">
-            {/* 3. Alertas */}
-            <AlertasInteligentes />
+        )}
 
-            {/* 4. Serviços Fechados */}
-            <ClosedPeriodServices />
-
-            {/* 5. Lembretes de Amanhã */}
+        {/* Secondary Info Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div className="space-y-6">
             <TomorrowServices />
+          </div>
+          <div className="space-y-6">
+            <ClosedPeriodServices />
           </div>
         </div>
       </div>

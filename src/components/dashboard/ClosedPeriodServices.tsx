@@ -57,12 +57,12 @@ export function ClosedPeriodServices() {
 
       let query = supabase
         .from("services")
-        .select("id, value, service_type, status, created_at, document_type")
+        .select("id, value, service_type, status, completed_date, document_type")
         .is("deleted_at", null)
-        .neq("status", "cancelled")
+        .eq("status", "completed")
         .neq("document_type", "quote")
-        .gte("created_at", dayStart)
-        .lte("created_at", dayEnd);
+        .gte("completed_date", dayStart)
+        .lte("completed_date", dayEnd);
 
       if (!isDemoMode) {
         query = query.eq("is_demo_data", false);
@@ -71,7 +71,7 @@ export function ClosedPeriodServices() {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).filter((s) => getDatePartInTz(s.created_at, DEFAULT_TIMEZONE) === currentDate);
+      return (data || []).filter((s) => getDatePartInTz(s.completed_date || "", DEFAULT_TIMEZONE) === currentDate);
     },
     enabled: !!organizationId,
   });
