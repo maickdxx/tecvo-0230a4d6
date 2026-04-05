@@ -4831,7 +4831,17 @@ Você NÃO deve compartilhar:
             return mentionsDocument && claimsSent;
           };
 
-          const recentUserMessages = conversationHistory
+          // Extract OS/quote identifier from AI hallucinated response text
+          const extractServiceIdentifierFromAIResponse = (text: string | null | undefined): string | null => {
+            if (!text) return null;
+            // Match patterns like "#0099", "#100", "OS 100", "ORDEM DE SERVIÇO #0099"
+            const osMatch = text.match(/#\s*(\d{2,6})/);
+            if (osMatch) return osMatch[1];
+            const osNumMatch = text.match(/(?:os|ordem[^a-z]*servi[cç]o)\s*(?:#?\s*)(\d{2,6})/i);
+            if (osNumMatch) return osNumMatch[1];
+            return null;
+          };
+
             .filter((message: any) => message.role === "user")
             .slice(-6)
             .map((message: any) => message.content || "");
