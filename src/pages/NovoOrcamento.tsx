@@ -13,6 +13,7 @@ import type { ServiceItemLocal } from "@/components/services/ServiceCatalogSelec
 import { type ServiceEquipmentLocal } from "@/hooks/useServiceEquipment";
 import { UpgradeModal } from "@/components/subscription";
 import { useState } from "react";
+import { materializeServicePDF } from "@/lib/materializePDF";
 
 export default function NovoOrcamento() {
   const navigate = useNavigate();
