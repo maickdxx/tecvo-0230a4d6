@@ -186,6 +186,7 @@ export default function NovaOrdemServico() {
   const { organization } = useOrganization();
   const { showGuide, steps } = useGuidedOnboarding();
   const queryClient = useQueryClient();
+  const { step: activationStep, advance: advanceActivation } = useActivationStep();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
