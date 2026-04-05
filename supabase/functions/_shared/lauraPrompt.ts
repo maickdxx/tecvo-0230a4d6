@@ -187,9 +187,9 @@ export function buildSystemPrompt(ctx: any) {
     for (let i = 0; i < 7; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() + i);
-      const iso = d.toISOString().substring(0, 10);
-      const dayName = d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
-      const daySvcs = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === iso);
+      const iso = d.toLocaleDateString("en-CA", { timeZone: tz });
+      const dayName = d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: tz });
+      const daySvcs = osServices.filter((s: any) => getServiceDate(s) === iso);
       if (daySvcs.length === 0) {
         days.push(`  ${dayName}: livre`);
       } else {
@@ -197,7 +197,7 @@ export function buildSystemPrompt(ctx: any) {
         const details = daySvcs.slice(0, 5).map((s: any) => {
           const client = clients.find((c: any) => c.id === s.client_id);
           const tech = s.assigned_to ? techMap[s.assigned_to] : "—";
-          const time = s.scheduled_date?.substring(11, 16) || "—";
+          const time = s.scheduled_date ? formatTimeInTz(s.scheduled_date, tz) : "—";
           return `    ${time} | ${client?.name || "?"} | ${s.service_type} | ${tech} | ${formatBRL(s.value || 0)} | ${s.status}`;
         }).join("\n");
         days.push(`  ${dayName}: ${daySvcs.length} serviço(s) | ${formatBRL(val)}\n${details}`);
