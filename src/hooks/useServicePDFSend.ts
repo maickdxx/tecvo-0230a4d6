@@ -1,47 +1,26 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrganization } from "@/hooks/useOrganization";
 import { useWhatsAppChannels } from "@/hooks/useWhatsAppChannels";
 import { materializeServicePDF } from "@/lib/materializePDF";
+import {
+  readOfficialServicePdfStatus,
+  waitForOfficialServicePdf,
+} from "@/lib/officialPdfStorage";
 import { toast } from "sonner";
 import type { Service } from "@/hooks/useServices";
 
 export function useServicePDFSend() {
   const [sending, setSending] = useState(false);
-  const { organization } = useOrganization();
   const { channels } = useWhatsAppChannels();
 
   const getStoredOfficialPdf = useCallback(async (service: Service): Promise<Blob | null> => {
     if (!service.organization_id) return null;
 
-    const storage = supabase.storage.from("whatsapp-media");
-    const storagePath = `os-pdfs/${service.organization_id}/${service.id}.pdf`;
-    const markerPath = `os-pdfs/${service.organization_id}/${service.id}.official.json`;
+    const status = await readOfficialServicePdfStatus(service.organization_id, service.id);
+    if (!status.ready || !status.blob) return null;
 
-    const [{ data: markerBlob }, { data: pdfBlob, error: pdfError }] = await Promise.all([
-      storage.download(markerPath),
-      storage.download(storagePath),
-    ]);
-
-    if (!markerBlob || !pdfBlob || pdfError) return null;
-
-    try {
-      const marker = JSON.parse(await markerBlob.text());
-      const isOfficial = marker?.generator === "official-service-pdf-html" &&
-        marker?.service_id === service.id &&
-        marker?.source !== "legacy_official" &&
-        !marker?.canonicalized_at;
-
-      if (!isOfficial) return null;
-
-      const bytes = new Uint8Array(await pdfBlob.arrayBuffer());
-      const header = new TextDecoder().decode(bytes.slice(0, 5));
-      if (!header.startsWith("%PDF-") || bytes.byteLength < 1024) return null;
-
-      return new Blob([bytes], { type: "application/pdf" });
-    } catch {
-      return null;
-    }
+    const bytes = new Uint8Array(await status.blob.arrayBuffer());
+    return new Blob([bytes], { type: "application/pdf" });
   }, []);
 
   const retryMaterialization = useCallback(async (service: Service): Promise<Blob | null> => {
@@ -49,8 +28,12 @@ export function useServicePDFSend() {
     console.log("[PDF-SEND] Attempting materialization retry for service:", service.id);
     try {
       await materializeServicePDF(service.id, service.organization_id);
-      // After materialization, try fetching again
-      return await getStoredOfficialPdf(service);
+
+      const status = await waitForOfficialServicePdf(service.organization_id, service.id);
+      if (!status.ready || !status.blob) return null;
+
+      const bytes = new Uint8Array(await status.blob.arrayBuffer());
+      return new Blob([bytes], { type: "application/pdf" });
     } catch (err) {
       console.warn("[PDF-SEND] Materialization retry failed:", service.id, err);
       return null;

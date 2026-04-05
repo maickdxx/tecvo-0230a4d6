@@ -8,6 +8,7 @@ import type { Client } from "./useClients";
 import { format } from "date-fns";
 import { getTodayInTz, buildTimestamp, toTimestampWithTz, DEFAULT_TIMEZONE } from "@/lib/timezone";
 import { trackFBCustomEvent } from "@/lib/fbPixel";
+import { materializeServicePDF } from "@/lib/materializePDF";
 export type ServiceType = string;
 
 const serviceTypeSlugToEnum: Record<string, string> = {
@@ -189,6 +190,34 @@ function ensureDateTimestamp(
   }
   // Date-only without time: attach noon + org offset to avoid UTC midnight shift
   return buildTimestamp(dateStr, "12:00:00", tz);
+}
+
+async function materializeOfficialServiceDocument(
+  serviceId: string,
+  organizationId: string | null | undefined,
+  documentType: string | null | undefined,
+  reason: string,
+) {
+  if (!serviceId || !organizationId) return;
+  if (documentType !== "service_order" && documentType !== "quote") return;
+
+  try {
+    console.log("[SERVICE-PDF] Starting official PDF materialization:", {
+      serviceId,
+      organizationId,
+      documentType,
+      reason,
+    });
+    await materializeServicePDF(serviceId, organizationId);
+  } catch (error) {
+    console.warn("[SERVICE-PDF] Official PDF materialization failed:", {
+      serviceId,
+      organizationId,
+      documentType,
+      reason,
+      error,
+    });
+  }
 }
 /**
  * Helper: creates service_payments + transactions for each payment parcela (split support).
@@ -478,6 +507,13 @@ export function useServices(options?: UseServicesOptions | string) {
         });
       } catch { /* silent */ }
 
+      await materializeOfficialServiceDocument(
+        service.id,
+        service.organization_id,
+        service.document_type,
+        "create",
+      );
+
       return service;
     },
     onSuccess: () => {
@@ -629,6 +665,13 @@ export function useServices(options?: UseServicesOptions | string) {
           }
         }
       }
+
+      await materializeOfficialServiceDocument(
+        service.id,
+        service.organization_id,
+        service.document_type,
+        "update",
+      );
 
       return service;
     },
@@ -811,6 +854,13 @@ export function useServices(options?: UseServicesOptions | string) {
           payments, // ← NOW ACTUALLY USED
         });
       }
+
+      await materializeOfficialServiceDocument(
+        service.id,
+        currentService.organization_id,
+        currentService.document_type,
+        `status:${status}`,
+      );
 
       return service;
     },

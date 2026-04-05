@@ -2803,7 +2803,7 @@ async function executeAdminTool(
       officialTotal,
     };
 
-    if (!validationState.hasClient || !validationState.hasQuoteNumber || !validationState.hasCoreContent || !validationState.hasCommercialValue) {
+    if (!validationState.hasClient || !validationState.hasQuoteNumber || !validationState.hasCoreContent) {
       console.warn(
         "[WEBHOOK-WHATSAPP] Blocking official PDF send due to invalid service data:",
         JSON.stringify({
@@ -2926,7 +2926,7 @@ async function executeAdminTool(
     if (!resolvedPath || !pdfBlob) {
       const blockReason = hasCanonicalPdf || legacyOfficialFile?.name || markerData
         ? "O arquivo salvo pertence a uma versão antiga ou não verificada do layout oficial"
-        : "Ainda não existe PDF oficial materializado para esse documento";
+        : "O PDF oficial ainda está sendo materializado para esse documento";
       console.warn(
         "[WEBHOOK-WHATSAPP] Blocking send because no official stored PDF was found:",
         JSON.stringify({
@@ -2940,7 +2940,7 @@ async function executeAdminTool(
           markerData,
         }),
       );
-      return `${blockReason}. Reabra a ${docLabel} #${osNumber} no painel para atualizar a versão oficial antes do envio.`;
+      return `${blockReason}. Vou liberar o envio assim que a versão oficial validada estiver pronta no sistema.`;
     }
 
     const pdfBytes = new Uint8Array(await pdfBlob.arrayBuffer());
