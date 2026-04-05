@@ -2658,6 +2658,21 @@ Conduzir uma conversa estratégica e consultiva que qualifique o lead e apresent
                 });
                 const sent = await sendWhatsAppReply(instance, remoteJid, safeResponseLead);
                 console.log("[WEBHOOK-WHATSAPP] Lead reply sent:", sent);
+
+                // If the incoming message was audio, also send audio response
+                if (isIncomingAudio && safeResponseLead.length <= 2000) {
+                  (async () => {
+                    try {
+                      const audioBase64 = await generateTTSAudio(safeResponseLead);
+                      if (audioBase64) {
+                        await sendWhatsAppAudio(instance, remoteJid, audioBase64);
+                        console.log("[WEBHOOK-WHATSAPP] Lead audio reply sent");
+                      }
+                    } catch (ttsErr: any) {
+                      console.warn("[WEBHOOK-WHATSAPP] TTS audio reply failed:", ttsErr.message);
+                    }
+                  })();
+                }
               }
             }
           }
