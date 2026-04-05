@@ -296,6 +296,17 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
         suggestions = [{ label: "Sugestão", text: content }];
       }
 
+      // Validate each suggestion text
+      for (const suggestion of suggestions) {
+        if (suggestion.text) {
+          const validation = validateAIOutput(suggestion.text);
+          if (!validation.safe) {
+            await logOutputViolation(supabaseAdmin, organizationId, userId, "whatsapp-ai-copilot-suggest", validation.reasons, suggestion.text);
+            suggestion.text = validation.sanitizedContent;
+          }
+        }
+      }
+
       return new Response(JSON.stringify({ suggestions }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
