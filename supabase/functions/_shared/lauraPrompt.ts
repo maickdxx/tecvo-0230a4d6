@@ -10,6 +10,8 @@ import {
   getFormattedDateTimeInTz,
   getTodayInTz,
   getTomorrowInTz,
+  formatTimeInTz,
+  getDatePartInTz,
 } from "./timezone.ts";
 
 // ─────────────────── helpers ───────────────────
@@ -107,18 +109,21 @@ export function buildSystemPrompt(ctx: any) {
     monday.setDate(d.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    return { start: monday.toISOString().substring(0, 10), end: sunday.toISOString().substring(0, 10) };
+    return { start: monday.toLocaleDateString("en-CA", { timeZone: tz }), end: sunday.toLocaleDateString("en-CA", { timeZone: tz }) };
   };
 
   const thisWeek = getWeekBounds(now, 0);
   const lastWeek = getWeekBounds(now, -1);
   const nextWeek = getWeekBounds(now, 1);
 
+  // Helper: get date part in org timezone
+  const getServiceDate = (s: any) => s.scheduled_date ? getDatePartInTz(s.scheduled_date, tz) : null;
+
   const filterByDateRange = (items: any[], dateField: string, start: string, end: string) =>
-    items.filter((item: any) => { const d = item[dateField]?.substring(0, 10); return d && d >= start && d <= end; });
+    items.filter((item: any) => { const d = item[dateField] ? getDatePartInTz(item[dateField], tz) : null; return d && d >= start && d <= end; });
 
   // ── TODAY ──
-  const todayServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === todayISO);
+  const todayServices = osServices.filter((s: any) => getServiceDate(s) === todayISO);
   const todayCompleted = todayServices.filter((s: any) => s.status === "completed");
   const todayScheduled = todayServices.filter((s: any) => s.status === "scheduled");
   const todayInProgress = todayServices.filter((s: any) => s.status === "in_progress");
@@ -127,7 +132,7 @@ export function buildSystemPrompt(ctx: any) {
   const todayClients = [...new Set(todayServices.map((s: any) => s.client_id))];
 
   // ── TOMORROW ──
-  const tomorrowServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === tomorrowISO);
+  const tomorrowServices = osServices.filter((s: any) => getServiceDate(s) === tomorrowISO);
 
   // ── WEEKLY ──
   const thisWeekServices = filterByDateRange(osServices, "scheduled_date", thisWeek.start, thisWeek.end);
@@ -144,7 +149,7 @@ export function buildSystemPrompt(ctx: any) {
   const nextWeekTotalValue = nextWeekServices.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
 
   // ── THIS MONTH ──
-  const monthServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 7) === currentMonth);
+  const monthServices = osServices.filter((s: any) => { const d = getServiceDate(s); return d && d.substring(0, 7) === currentMonth; });
   const monthCompleted = monthServices.filter((s: any) => s.status === "completed");
   const monthRevenue = monthCompleted.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
   const monthTotalValue = monthServices.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
@@ -152,7 +157,7 @@ export function buildSystemPrompt(ctx: any) {
   // ── LAST MONTH ──
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
-  const lastMonthServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 7) === lastMonth);
+  const lastMonthServices = osServices.filter((s: any) => { const d = getServiceDate(s); return d && d.substring(0, 7) === lastMonth; });
   const lastMonthCompleted = lastMonthServices.filter((s: any) => s.status === "completed");
   const lastMonthRevenue = lastMonthCompleted.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
 
@@ -182,9 +187,9 @@ export function buildSystemPrompt(ctx: any) {
     for (let i = 0; i < 7; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() + i);
-      const iso = d.toISOString().substring(0, 10);
-      const dayName = d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
-      const daySvcs = osServices.filter((s: any) => s.scheduled_date?.substring(0, 10) === iso);
+      const iso = d.toLocaleDateString("en-CA", { timeZone: tz });
+      const dayName = d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: tz });
+      const daySvcs = osServices.filter((s: any) => getServiceDate(s) === iso);
       if (daySvcs.length === 0) {
         days.push(`  ${dayName}: livre`);
       } else {
@@ -192,7 +197,7 @@ export function buildSystemPrompt(ctx: any) {
         const details = daySvcs.slice(0, 5).map((s: any) => {
           const client = clients.find((c: any) => c.id === s.client_id);
           const tech = s.assigned_to ? techMap[s.assigned_to] : "—";
-          const time = s.scheduled_date?.substring(11, 16) || "—";
+          const time = s.scheduled_date ? formatTimeInTz(s.scheduled_date, tz) : "—";
           return `    ${time} | ${client?.name || "?"} | ${s.service_type} | ${tech} | ${formatBRL(s.value || 0)} | ${s.status}`;
         }).join("\n");
         days.push(`  ${dayName}: ${daySvcs.length} serviço(s) | ${formatBRL(val)}\n${details}`);
@@ -206,7 +211,7 @@ export function buildSystemPrompt(ctx: any) {
     return svcs.slice(0, maxItems).map((s: any) => {
       const client = clients.find((c: any) => c.id === s.client_id);
       const tech = s.assigned_to ? techMap[s.assigned_to] : "—";
-      const time = s.scheduled_date?.substring(11, 16) || "—";
+      const time = s.scheduled_date ? formatTimeInTz(s.scheduled_date, tz) : "—";
       return `  ${time} | ${client?.name || "?"} | ${s.service_type} | ${tech} | ${formatBRL(s.value || 0)} | ${s.status}`;
     }).join("\n");
   };
