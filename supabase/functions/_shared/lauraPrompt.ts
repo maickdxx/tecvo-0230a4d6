@@ -614,19 +614,50 @@ export const ADMIN_TOOLS = [
 
 // ─────────────────── tool executor (shared) ───────────────────
 
+/**
+ * Logs a tool execution error to ai_usage_logs for diagnostics.
+ */
+async function logToolError(
+  supabase: any,
+  organizationId: string,
+  toolName: string,
+  errorMessage: string,
+  args?: any,
+): Promise<void> {
+  try {
+    await supabase.from("ai_usage_logs").insert({
+      organization_id: organizationId,
+      action_slug: `tool_error_${toolName}`,
+      model: "tool_execution",
+      status: "error",
+      prompt_tokens: 0,
+      completion_tokens: 0,
+      total_tokens: 0,
+      duration_ms: 0,
+      estimated_cost_usd: 0,
+    });
+    console.error(`[LAURA-TOOL-ERROR] ${toolName} | org=${organizationId} | error=${errorMessage} | args=${JSON.stringify(args || {}).slice(0, 300)}`);
+  } catch (logErr) {
+    console.error("[LAURA-TOOL-ERROR] Failed to log tool error:", logErr);
+  }
+}
+
 export async function executeAdminTool(
   supabase: any,
   organizationId: string,
   toolCall: any,
   ctx?: any,
 ): Promise<string> {
-  const fnName = toolCall.function?.name;
+  const fnName = toolCall.function?.name || "unknown";
   let args: any;
   try {
     args = JSON.parse(toolCall.function?.arguments || "{}");
-  } catch {
-    return "Erro: argumentos inválidos.";
+  } catch (parseErr) {
+    await logToolError(supabase, organizationId, fnName, "JSON parse failed", { raw: toolCall.function?.arguments?.slice(0, 200) });
+    return `Erro ao processar os dados da ação "${fnName}". Os parâmetros estão em formato inválido. Tente novamente informando os dados de forma mais clara.`;
   }
+
+  try {
 
   if (fnName === "register_transaction") {
     const { type, amount, description, category, date, payment_method } = args;
