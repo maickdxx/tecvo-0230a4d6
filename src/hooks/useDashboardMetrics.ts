@@ -68,6 +68,7 @@ export function useDashboardMetrics(
     },
     enabled: !!organizationId,
     staleTime: 30_000, // 30s — dashboard doesn't need real-time updates
+    refetchOnMount: "always",
   });
 
   if (!data || isLoading) {
