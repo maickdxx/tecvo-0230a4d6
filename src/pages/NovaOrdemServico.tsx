@@ -21,6 +21,7 @@ import { type ServiceEquipmentLocal } from "@/hooks/useServiceEquipment";
 import { UpgradeModal } from "@/components/subscription";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useActivationStep } from "@/hooks/useActivationStep";
 
 function getSmartScheduledDate(tz: string): string {
   const todayStr = getTodayInTz(tz);
@@ -185,6 +186,7 @@ export default function NovaOrdemServico() {
   const { organization } = useOrganization();
   const { showGuide, steps } = useGuidedOnboarding();
   const queryClient = useQueryClient();
+  const { step: activationStep, advance: advanceActivation } = useActivationStep();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -205,6 +207,7 @@ export default function NovaOrdemServico() {
       await create({ ...data, document_type: "service_order" });
       refetch();
       await queryClient.invalidateQueries({ queryKey: ["guided-onboarding"] });
+      if (activationStep !== "completed") advanceActivation("completed");
       setShowSuccess(true);
       setTimeout(() => {
         navigate("/agenda?from=checklist");
@@ -227,6 +230,7 @@ export default function NovaOrdemServico() {
     try {
       const newService = await create({ ...data, document_type: "service_order" });
       refetch();
+      if (activationStep !== "completed") advanceActivation("completed");
 
       if (items && items.length > 0 && organization?.id) {
         await supabase

@@ -2234,6 +2234,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          activation_step: string
           address: string | null
           auto_notify_client_completion: boolean
           auto_signature_os: boolean | null
@@ -2278,6 +2279,7 @@ export type Database = {
           zip_code: string | null
         }
         Insert: {
+          activation_step?: string
           address?: string | null
           auto_notify_client_completion?: boolean
           auto_signature_os?: boolean | null
@@ -2322,6 +2324,7 @@ export type Database = {
           zip_code?: string | null
         }
         Update: {
+          activation_step?: string
           address?: string | null
           auto_notify_client_completion?: boolean
           auto_signature_os?: boolean | null

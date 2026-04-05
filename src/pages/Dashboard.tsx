@@ -13,7 +13,7 @@ import { AlertasInteligentes } from "@/components/dashboard/AlertasInteligentes"
 import { ClosedPeriodServices } from "@/components/dashboard/ClosedPeriodServices";
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
 import { TrialUrgencyBanner } from "@/components/dashboard/TrialUrgencyBanner";
-import { LauraWelcomeModal } from "@/components/dashboard/LauraWelcomeModal";
+
 
 import { MoneyOnTable } from "@/components/dashboard/MoneyOnTable";
 import { TomorrowServices } from "@/components/dashboard/TomorrowServices";
@@ -85,7 +85,7 @@ export default function Dashboard() {
     <AppLayout>
       <div className="page-enter">
         <DashboardGreeting />
-        <LauraWelcomeModal />
+        
         <TrialUrgencyBanner />
 
         {/* Money on Table Alert */}
