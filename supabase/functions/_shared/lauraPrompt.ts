@@ -157,7 +157,7 @@ export function buildSystemPrompt(ctx: any) {
   // ── LAST MONTH ──
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
-  const lastMonthServices = osServices.filter((s: any) => s.scheduled_date?.substring(0, 7) === lastMonth);
+  const lastMonthServices = osServices.filter((s: any) => { const d = getServiceDate(s); return d && d.substring(0, 7) === lastMonth; });
   const lastMonthCompleted = lastMonthServices.filter((s: any) => s.status === "completed");
   const lastMonthRevenue = lastMonthCompleted.reduce((sum: number, s: any) => sum + (s.value || 0), 0);
 
