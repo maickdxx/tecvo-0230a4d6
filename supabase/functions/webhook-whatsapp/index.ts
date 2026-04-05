@@ -2823,15 +2823,97 @@ async function executeAdminTool(
     }
 
     if (!mediaUrl) {
-      console.warn(
-        "[WEBHOOK-WHATSAPP] Official stored PDF not found for service:",
+      console.log(
+        "[WEBHOOK-WHATSAPP] Official stored PDF not found, generating fallback for service:",
         serviceData.id,
-        "canonicalPath:",
-        canonicalPath,
-        "canonicalError:",
-        canonicalError?.message || canonicalError,
       );
-      return `Ainda não encontrei um PDF oficial salvo para a ${docLabel} #${osNumber}. Ela existe no sistema, mas o arquivo PDF salvo não foi localizado para envio.`;
+
+      // Fallback: generate PDF on-demand using pdf-lib
+      try {
+        // Fetch org info
+        const { data: orgData } = await supabase
+          .from("organizations")
+          .select("name, cnpj_cpf, phone, email, address, website, logo_url")
+          .eq("id", organizationId)
+          .single();
+
+        // Fetch items
+        const { data: itemsData } = await supabase
+          .from("service_items")
+          .select("*")
+          .eq("service_id", serviceData.id);
+
+        // Fetch equipment
+        const { data: eqData } = await supabase
+          .from("service_equipment")
+          .select("*")
+          .eq("service_id", serviceData.id);
+
+        const pdfBytes = await generateProfessionalPDF({
+          docType,
+          osNumber,
+          orgName: orgData?.name || "",
+          orgCnpj: orgData?.cnpj_cpf || undefined,
+          orgPhone: orgData?.phone || undefined,
+          orgEmail: orgData?.email || undefined,
+          orgAddress: orgData?.address || undefined,
+          orgWebsite: orgData?.website || undefined,
+          orgLogoUrl: orgData?.logo_url || undefined,
+          clientName,
+          clientPhone: serviceData.client?.phone || undefined,
+          clientEmail: serviceData.client?.email || undefined,
+          clientDocument: serviceData.client?.document || undefined,
+          clientAddress: [serviceData.client?.street, serviceData.client?.number, serviceData.client?.complement, serviceData.client?.neighborhood].filter(Boolean).join(", ") || undefined,
+          clientCity: serviceData.client?.city || undefined,
+          clientState: serviceData.client?.state || undefined,
+          clientZip: serviceData.client?.zip_code || undefined,
+          scheduledDate: serviceData.scheduled_date || "",
+          entryDate: serviceData.entry_date || undefined,
+          exitDate: serviceData.exit_date || undefined,
+          serviceType: serviceData.service_type || "",
+          description: serviceData.description || "",
+          value: serviceData.value || 0,
+          status: serviceData.status || "",
+          notes: serviceData.notes || undefined,
+          paymentMethod: serviceData.payment_method || undefined,
+          paymentDueDate: serviceData.payment_due_date || undefined,
+          paymentNotes: serviceData.payment_notes || undefined,
+          equipment: (eqData || []).map((e: any) => ({
+            type: e.name, brand: e.brand, model: e.model, serial: e.serial_number,
+            conditions: e.conditions, defects: e.defects, solution: e.solution,
+            technical_report: e.technical_report, warranty_terms: e.warranty_terms,
+          })),
+          items: (itemsData || []).map((i: any) => ({
+            name: i.name, description: i.description, quantity: i.quantity || 1,
+            unitPrice: i.unit_price || 0, discount: i.discount || 0,
+          })),
+        });
+
+        // Upload the fallback PDF to storage
+        const fallbackBlob = new Blob([pdfBytes], { type: "application/pdf" });
+        const { error: uploadErr } = await supabase.storage
+          .from("whatsapp-media")
+          .upload(canonicalPath, fallbackBlob, { contentType: "application/pdf", upsert: true });
+
+        if (uploadErr) {
+          console.error("[WEBHOOK-WHATSAPP] Fallback PDF upload error:", uploadErr.message);
+        } else {
+          console.log("[WEBHOOK-WHATSAPP] Fallback PDF uploaded to:", canonicalPath);
+        }
+
+        // Get signed URL for the just-uploaded file
+        const { data: fallbackSigned } = await storage.createSignedUrl(canonicalPath, 900);
+        if (fallbackSigned?.signedUrl) {
+          mediaUrl = fallbackSigned.signedUrl;
+          resolvedPath = canonicalPath;
+        }
+      } catch (fallbackErr: any) {
+        console.error("[WEBHOOK-WHATSAPP] Fallback PDF generation failed:", fallbackErr.message);
+      }
+    }
+
+    if (!mediaUrl) {
+      return `Não consegui gerar o PDF da ${docLabel} #${osNumber}. Tente abrir a ${docLabel} no painel para gerar o PDF primeiro.`;
     }
 
     console.log(
