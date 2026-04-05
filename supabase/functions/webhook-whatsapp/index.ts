@@ -838,41 +838,19 @@ async function sendWhatsAppAudio(
   try {
     const baseUrl = vpsUrl.replace(/\/+$/, "");
 
-    // Strategy: upload to Storage first, then send URL (more reliable than inline base64)
+    // Strategy: send raw base64 directly (Evolution API accepts it natively)
     let audioUrl = audioPayload;
 
-    if (audioPayload.startsWith("data:") && supabase) {
-      try {
-        // Extract base64 and mime from data URI
-        const dataUriMatch = audioPayload.match(/^data:([^;]+);base64,(.+)$/);
-        if (dataUriMatch) {
-          const mime = dataUriMatch[1];
-          const b64 = dataUriMatch[2];
-          const { bytes } = decodeBase64ToBytes(b64);
-          const ext = mime.includes("wav") ? "wav" : mime.includes("mpeg") ? "mp3" : "ogg";
-          const fileName = `tts-audio/${crypto.randomUUID()}.${ext}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("whatsapp-media")
-            .upload(fileName, bytes, { contentType: mime, upsert: true });
-
-          if (!uploadError) {
-            const { data: { publicUrl } } = supabase.storage
-              .from("whatsapp-media")
-              .getPublicUrl(fileName);
-            audioUrl = publicUrl;
-            console.log("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: uploaded TTS to storage:", publicUrl);
-          } else {
-            console.warn("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: storage upload failed, falling back to base64:", uploadError.message);
-            audioUrl = audioPayload;
-          }
-        }
-      } catch (uploadErr: any) {
-        console.warn("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: upload error, falling back:", uploadErr.message);
-        audioUrl = audioPayload;
+    if (audioPayload.startsWith("data:")) {
+      // Extract raw base64 from data URI — Evolution API wants plain base64, not data URI
+      const dataUriMatch = audioPayload.match(/^data:([^;]+);base64,(.+)$/);
+      if (dataUriMatch) {
+        audioUrl = dataUriMatch[2];
+        console.log("[WEBHOOK-WHATSAPP] sendWhatsAppAudio: extracted raw base64, length:", audioUrl.length);
       }
-    } else if (!audioPayload.startsWith("data:") && !audioPayload.startsWith("http")) {
-      audioUrl = `data:audio/mpeg;base64,${audioPayload}`;
+    } else if (!audioPayload.startsWith("http")) {
+      // Already raw base64, use as-is
+      audioUrl = audioPayload;
     }
 
     const response = await fetch(
