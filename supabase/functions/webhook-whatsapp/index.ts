@@ -635,6 +635,24 @@ const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_client",
+      description: "Cadastra um novo cliente no sistema. Use quando precisar criar um cliente que não existe, especialmente antes de criar uma OS ou orçamento.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Nome completo do cliente" },
+          phone: { type: "string", description: "Telefone do cliente (com DDD, ex: 19999999999)" },
+          email: { type: "string", description: "Email do cliente. Opcional." },
+          address: { type: "string", description: "Endereço do cliente. Opcional." },
+        },
+        required: ["name", "phone"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function executeAdminTool(supabase: any, organizationId: string, toolCall: any, ctx?: any): Promise<string> {
