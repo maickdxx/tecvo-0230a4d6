@@ -24,6 +24,36 @@ const LauraAvatar = ({ size = "md" }: { size?: "sm" | "md" | "lg" }) => {
   );
 };
 
+function TransitionScreen({ onDone }: { onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3000);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center gap-6 text-center"
+      >
+        <LauraAvatar size="lg" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="space-y-2">
+          <p className="text-lg font-semibold text-foreground">Pronto, já deixei tudo preparado pra você 😊</p>
+          <p className="text-sm text-muted-foreground">Vou te mostrar como está ficando...</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </motion.div>
+      </motion.div>
+      <button onClick={onDone} className="mt-8 text-xs text-muted-foreground hover:text-foreground transition-colors">
+        Ir para o painel →
+      </button>
+    </div>
+  );
+}
+
 export default function Onboarding() {
   const { user, profile, isLoading: authLoading } = useAuth();
   const { isOnboardingCompleted, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
@@ -212,14 +242,8 @@ export default function Onboarding() {
 
       localStorage.removeItem("tecvo_onboarding_step");
       await completeOnboarding();
-
-      // Mark first dashboard visit
       localStorage.setItem("tecvo_first_dashboard", "true");
-
-      // Wait 2.5s on transition screen then navigate
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2500);
+      // TransitionScreen component handles the redirect
     } catch (err) {
       console.error("Activation error:", err);
       navigate("/dashboard");
@@ -235,36 +259,7 @@ export default function Onboarding() {
     <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Transition screen */}
       {step === "transition" ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col items-center gap-6 text-center"
-          >
-            <LauraAvatar size="lg" />
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="space-y-2"
-            >
-              <p className="text-lg font-semibold text-foreground">
-                Pronto, já deixei tudo preparado pra você 😊
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Vou te mostrar como está ficando...
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-            >
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            </motion.div>
-          </motion.div>
-        </div>
+        <TransitionScreen onDone={() => navigate("/dashboard")} />
       ) : step === "activating" ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6">
           <motion.div
