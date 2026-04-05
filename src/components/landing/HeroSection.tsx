@@ -8,9 +8,9 @@ import screenshotWhatsapp from "@/assets/screenshot-whatsapp.jpg";
 
 const highlights = [
   { icon: MessageCircle, label: "WhatsApp integrado" },
+  { icon: Zap, label: "Secretária IA inclusa" },
   { icon: CalendarCheck, label: "Agenda de serviços" },
   { icon: Wallet, label: "Controle financeiro" },
-  { icon: Zap, label: "Recorrência automática" },
 ];
 
 export function HeroSection() {
