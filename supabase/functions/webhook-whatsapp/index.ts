@@ -1872,6 +1872,7 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
                 is_from_me: true,
                 status: "sent",
                 channel_id: channel.id,
+                ai_generated: true,
               });
               const sent = await sendWhatsAppReply(instance, remoteJid, aiResponse);
               console.log("[WEBHOOK-WHATSAPP] Admin reply sent:", sent);
