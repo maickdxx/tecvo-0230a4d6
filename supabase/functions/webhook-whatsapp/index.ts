@@ -2307,7 +2307,32 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4. AI Processing — only for TECVO_AI channel, incoming messages with text
+    // 4. AI Processing — only for TECVO_AI channel, incoming messages with text or audio
+    const isIncomingAudio = !fromMe && mediaType === "audio" && !isGroup && isTecvoAI;
+    const hasTextContent = !fromMe && content && !isGroup && isTecvoAI;
+
+    // Transcribe audio if incoming audio message on TECVO_AI channel
+    if (isIncomingAudio && !content && data?.key) {
+      console.log("[WEBHOOK-WHATSAPP] Incoming audio detected, attempting transcription...");
+      const msg = data.message || {};
+      const audioMime = msg.audioMessage?.mimetype || "audio/ogg";
+      const transcription = await transcribeAudio(instance, data.key, audioMime);
+      if (transcription) {
+        content = transcription;
+        // Update the saved message content with transcription
+        if (savedMsg?.id) {
+          await supabase
+            .from("whatsapp_messages")
+            .update({ content: `🎤 ${transcription}` })
+            .eq("id", savedMsg.id);
+        }
+        console.log("[WEBHOOK-WHATSAPP] Audio transcribed successfully:", transcription.slice(0, 100));
+      } else {
+        console.warn("[WEBHOOK-WHATSAPP] Audio transcription failed, sending text fallback");
+        content = "[Áudio recebido - não foi possível transcrever]";
+      }
+    }
+
     if (!fromMe && content && !isGroup && isTecvoAI) {
       try {
         let systemPrompt: string;
