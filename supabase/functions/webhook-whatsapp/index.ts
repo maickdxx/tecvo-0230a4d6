@@ -5021,8 +5021,9 @@ Você NÃO deve compartilhar:
                 .slice(0, 20);
               if (numbersCited.length > 0 && orgContext?._meta) {
                 const meta = orgContext._meta;
-                const classification = meta.servicesTruncated || meta.clientsTruncated || meta.transactionsTruncated
-                  ? 'parcial' : 'completa';
+                const hasTruncation = !!(meta.servicesTruncated || meta.clientsTruncated || meta.transactionsTruncated);
+                const hasPartialPeriod = (meta.servicePeriodDays || 180) < 365;
+                const classification = hasTruncation ? 'parcial' : hasPartialPeriod ? 'parcial' : 'completa';
                 await supabase.from('ai_response_audit').insert({
                   organization_id: targetOrganizationId,
                   user_id: null,
@@ -5030,18 +5031,35 @@ Você NÃO deve compartilhar:
                   user_question: (incomingText || '').slice(0, 2000),
                   ai_response: aiResponse.slice(0, 5000),
                   numbers_cited: numbersCited,
-                  data_source: `orgContext: services=${orgContext.services?.length || 0}, clients=${orgContext.clients?.length || 0}`,
+                  data_source: JSON.stringify({
+                    servicesLoaded: orgContext.services?.length || 0,
+                    serviceTotalAllTime: meta.serviceTotalAllTime,
+                    servicesTruncated: meta.servicesTruncated || false,
+                    clientsLoaded: orgContext.clients?.length || 0,
+                    clientTotalAllTime: meta.clientTotalAllTime,
+                    clientsTruncated: meta.clientsTruncated || false,
+                    transactionsLoaded: orgContext.transactions?.length || 0,
+                    transactionTotalAllTime: meta.transactionTotalAllTime,
+                    transactionsTruncated: meta.transactionsTruncated || false,
+                    queryLimits: { services: meta.serviceLimit, clients: meta.clientLimit, transactions: meta.transactionLimit },
+                  }),
                   period_considered: `${meta.servicePeriodDays || 180} dias`,
                   is_total_or_partial: classification === 'completa' ? 'total' : 'parcial',
-                  had_limit: !!(meta.servicesTruncated || meta.clientsTruncated || meta.transactionsTruncated),
-                  had_truncation: !!(meta.servicesTruncated || meta.clientsTruncated || meta.transactionsTruncated),
+                  had_limit: hasTruncation,
+                  had_truncation: hasTruncation,
                   classification,
                   context_snapshot: {
                     servicePeriodDays: meta.servicePeriodDays,
                     servicesLoaded: orgContext.services?.length,
                     serviceTotalAllTime: meta.serviceTotalAllTime,
+                    servicesTruncated: meta.servicesTruncated,
                     clientsLoaded: orgContext.clients?.length,
                     clientTotalAllTime: meta.clientTotalAllTime,
+                    clientsTruncated: meta.clientsTruncated,
+                    transactionsLoaded: orgContext.transactions?.length,
+                    transactionTotalAllTime: meta.transactionTotalAllTime,
+                    transactionsTruncated: meta.transactionsTruncated,
+                    queryLimits: { services: meta.serviceLimit, clients: meta.clientLimit, transactions: meta.transactionLimit },
                   },
                 });
               }

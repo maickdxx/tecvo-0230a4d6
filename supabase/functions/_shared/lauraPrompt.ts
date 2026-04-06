@@ -26,9 +26,9 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const now = new Date();
   const oneEightyDaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString();
 
-  const SERVICE_LIMIT = 1000;
-  const CLIENT_LIMIT = 500;
-  const TRANSACTION_LIMIT = 1000;
+  const SERVICE_LIMIT = 2000;
+  const CLIENT_LIMIT = 1000;
+  const TRANSACTION_LIMIT = 2000;
 
   const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes,
          servicesTotalRes, clientsTotalRes, transactionsTotalRes] = await Promise.all([
@@ -337,20 +337,38 @@ ${catalogText}
 
 📇 CLIENTES: ${meta.clientTotalAllTime ?? clients.length} cadastrados no total${meta.clientsTruncated ? ` (mostrando ${meta.clientLoadedCount} mais recentes)` : ""}
 
-══════════ COMPLETUDE DOS DADOS (INTERNO — NÃO MOSTRAR AO USUÁRIO) ══════════
+══════════ COMPLETUDE DOS DADOS (INTERNO — NÃO MOSTRAR ESTA SEÇÃO AO USUÁRIO) ══════════
 
-⚠️ Os dados acima cobrem os ÚLTIMOS ${meta.servicePeriodDays || 180} DIAS de serviços e transações.
-• Serviços carregados: ${meta.serviceLoadedCount ?? services.length} de ${meta.serviceTotalAllTime ?? "?"} totais${meta.servicesTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
-• Transações carregadas: ${meta.transactionLoadedCount ?? transactions.length} de ${meta.transactionTotalAllTime ?? "?"} totais${meta.transactionsTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
-• Clientes carregados: ${meta.clientLoadedCount ?? clients.length} de ${meta.clientTotalAllTime ?? "?"} totais${meta.clientsTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
+⚠️ ATENÇÃO: Os dados numéricos acima NÃO representam o histórico completo da empresa.
+• Período carregado: ÚLTIMOS ${meta.servicePeriodDays || 180} DIAS de serviços e transações.
+• Serviços carregados: ${meta.serviceLoadedCount ?? services.length} de ${meta.serviceTotalAllTime ?? "?"} totais (todos os tempos)${meta.servicesTruncated ? " ⚠️ LISTA TRUNCADA — limite de " + (meta.serviceLimit || 1000) + " atingido" : ""}
+• Transações carregadas: ${meta.transactionLoadedCount ?? transactions.length} de ${meta.transactionTotalAllTime ?? "?"} totais${meta.transactionsTruncated ? " ⚠️ LISTA TRUNCADA — limite de " + (meta.transactionLimit || 1000) + " atingido" : ""}
+• Clientes carregados: ${meta.clientLoadedCount ?? clients.length} de ${meta.clientTotalAllTime ?? "?"} totais${meta.clientsTruncated ? " ⚠️ LISTA TRUNCADA — limite de " + (meta.clientLimit || 500) + " atingido" : ""}
 
-REGRAS DE TRANSPARÊNCIA (OBRIGATÓRIO):
-1. Se o usuário perguntar "quantos serviços eu tenho no total", use o número TOTAL (${meta.serviceTotalAllTime ?? "?"}) e informe que é o total de todos os tempos.
-2. Se responder sobre faturamento, sempre mencione o período: "este mês", "esta semana", "hoje". NUNCA diga "faturamento total" sem especificar período.
-3. Se os dados estiverem truncados (⚠️ acima), informe: "estou mostrando os dados dos últimos 6 meses".
-4. NUNCA apresente um número parcial como se fosse absoluto.
-5. Se não tiver certeza se o dado é completo, diga: "com base nos registros recentes" ou "nos últimos 6 meses".
-6. Para totais históricos (total de clientes, total de serviços de todos os tempos), use os números TOTAIS fornecidos acima.
+REGRAS DE TRANSPARÊNCIA E INCERTEZA (OBRIGATÓRIO — PRIORIDADE MÁXIMA):
+
+🚫 PROIBIÇÃO ABSOLUTA: NUNCA apresente um número parcial como se fosse total absoluto. Isso é INADMISSÍVEL.
+
+1. TOTAIS HISTÓRICOS: Se o usuário perguntar "quantos serviços eu tenho", "total de clientes", etc., use os números TOTAIS acima (${meta.serviceTotalAllTime ?? "?"} serviços, ${meta.clientTotalAllTime ?? "?"} clientes). Esses são contagens reais do banco.
+
+2. FATURAMENTO E MÉTRICAS CALCULADAS: SEMPRE especifique o período. Diga "este mês", "esta semana", "hoje", "nos últimos 6 meses". NUNCA diga "faturamento total" ou "receita total" sem contexto temporal.
+
+3. DADOS TRUNCADOS: Se qualquer lista acima mostra ⚠️ TRUNCADA, você NÃO TEM todos os dados para cálculos precisos. Nesse caso:
+   - Informe: "Com base nos registros dos últimos 6 meses..."
+   - Ou: "Nos dados que tenho disponíveis..."
+   - NUNCA diga "você faturou X no total" se a lista está truncada.
+
+4. INCERTEZA: Se não tiver certeza se o dado é completo ou preciso:
+   - Diga: "com base nos registros recentes" ou "pelo que vejo nos últimos meses"
+   - NUNCA afirme com certeza absoluta sobre dados que podem estar incompletos.
+
+5. TICKET MÉDIO E MÉDIAS: Ao calcular ticket médio, média de serviços, etc., deixe claro o período base:
+   - "Seu ticket médio este mês é R$ X" (correto)
+   - "Seu ticket médio é R$ X" (INCORRETO — falta período)
+
+6. COMPARAÇÕES: Ao comparar períodos, ambos devem ter dados completos. Se um período pode estar incompleto, sinalize.
+
+7. SE NÃO SABE, NÃO INVENTE: Se o dado não está nos dados acima, diga "não tenho essa informação agora" em vez de estimar.
 ══════════ INTENÇÕES COMUNS ══════════
 
 Interprete a mensagem do usuário e identifique a INTENÇÃO. Exemplos:
