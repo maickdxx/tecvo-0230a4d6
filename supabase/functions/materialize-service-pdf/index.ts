@@ -345,10 +345,18 @@ serve(async (req) => {
 
     if (!verifyFile?.signedUrl) {
       console.error("[MATERIALIZE-PDF] Verification failed - file not found after upload");
+      await supabase.from("services").update({ pdf_status: "failed" }).eq("id", serviceId).eq("organization_id", organizationId);
       return new Response(JSON.stringify({ error: "Verification failed", status: "failed" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ── Set pdf_status = ready ──
+    await supabase
+      .from("services")
+      .update({ pdf_status: "ready", pdf_generated_at: new Date().toISOString() })
+      .eq("id", serviceId)
+      .eq("organization_id", organizationId);
 
     console.log(`[MATERIALIZE-PDF] Success: ${storagePath}`);
 
