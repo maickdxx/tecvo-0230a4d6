@@ -785,7 +785,7 @@ export const ADMIN_TOOLS = [
     function: {
       name: "send_service_pdf",
       description:
-        "Envia o PDF oficial de uma Ordem de Serviço ou Orçamento para o CLIENTE da OS via WhatsApp. NUNCA gera PDF novo. Requer confirmação do usuário antes de enviar.",
+        "Envia o PDF oficial de uma Ordem de Serviço ou Orçamento para o CLIENTE da OS via WhatsApp. NUNCA gera PDF novo. Requer confirmação EXPLÍCITA do usuário (confirmed=true). Só chame esta ferramenta APÓS o usuário dizer 'sim' ou equivalente.",
       parameters: {
         type: "object",
         properties: {
@@ -794,8 +794,13 @@ export const ADMIN_TOOLS = [
             description:
               "Identificador do serviço: número da OS (ex: '0042'), nome do cliente, ou parte do ID.",
           },
+          confirmed: {
+            type: "boolean",
+            description:
+              "OBRIGATÓRIO: deve ser true. Indica que o usuário CONFIRMOU explicitamente o envio. Se o usuário não confirmou, NÃO chame esta ferramenta.",
+          },
         },
-        required: ["service_identifier"],
+        required: ["service_identifier", "confirmed"],
         additionalProperties: false,
       },
     },
