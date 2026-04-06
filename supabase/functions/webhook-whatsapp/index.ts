@@ -4908,32 +4908,8 @@ Você NÃO deve compartilhar:
 
           let aiResponse = aiResult.content;
 
-          if (wantsPdfNow && !pdfToolAttempted && fallbackPdfIdentifier) {
-            console.warn(
-              "[WEBHOOK-WHATSAPP] AI skipped send_service_pdf; running fallback with identifier:",
-              fallbackPdfIdentifier,
-            );
-            const fallbackToolResult = await executeAdminTool(
-              supabase,
-              targetOrganizationId,
-              {
-                id: `fallback_pdf_${crypto.randomUUID()}`,
-                type: "function",
-                function: {
-                  name: "send_service_pdf",
-                  arguments: JSON.stringify({
-                    service_identifier: fallbackPdfIdentifier,
-                  }),
-                },
-              },
-              { ...orgContext, instance, remoteJid },
-            );
-            pdfToolAttempted = true;
-            pdfToolResult = fallbackToolResult;
-            if (fallbackToolResult.startsWith("SILENT_PDF_SENT:")) {
-              pdfToolSent = true;
-            }
-          }
+          // REMOVED: Dangerous fallback auto-send mechanism
+          // PDF sending now requires explicit user confirmation and goes through the shared send_service_pdf tool
 
           if (pdfToolSent && pdfToolResult?.startsWith("SILENT_PDF_SENT:")) {
             const sentLabel = pdfToolResult
@@ -4945,14 +4921,6 @@ Você NÃO deve compartilhar:
             }
           } else if (wantsPdfNow && pdfToolResult && !pdfToolSent) {
             aiResponse = pdfToolResult;
-          } else if (
-            wantsPdfNow &&
-            !pdfToolAttempted &&
-            looksLikePdfSentConfirmation(aiResponse)
-          ) {
-            aiResponse = fallbackPdfIdentifier
-              ? "Tive um problema ao concluir o envio do PDF. Me peça novamente que eu envio com o anexo certo."
-              : "Me passe o número da OS ou o nome do cliente para eu enviar o PDF certinho.";
           }
 
           // Log AI usage with CORRECT model name
