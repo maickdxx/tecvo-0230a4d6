@@ -4636,6 +4636,111 @@ Você NÃO deve compartilhar:
             ? (currentStrongIdentifier ||
               (currentLooksLikeNameIdentifier ? currentUserText : null))
             : null;
+          // ── CONFIRMATION INTERCEPTION: Check pending action before AI call ──
+          const AFFIRMATIVE_PATTERNS = /^(sim|s|pode|pode enviar|envia|enviar|confirmado|manda|ok|pode mandar|isso|positivo|com certeza|claro|bora|vai|perfeito|beleza|manda bala|pode ser)\s*[.!]?$/i;
+          let confirmationIntercepted = false;
+
+          if (AFFIRMATIVE_PATTERNS.test(normalizedCurrentUserText)) {
+            try {
+              const { data: contactState } = await supabase
+                .from("whatsapp_contacts")
+                .select("pending_action, pending_service_id, awaiting_confirmation")
+                .eq("id", contactId)
+                .single();
+
+              if (contactState?.awaiting_confirmation && contactState?.pending_action === "send_service_pdf" && contactState?.pending_service_id) {
+                console.log("[WEBHOOK-WHATSAPP] CONFIRMATION INTERCEPTED: Executing send_service_pdf directly for service:", contactState.pending_service_id);
+                
+                const directToolCall = {
+                  id: `direct_confirm_${crypto.randomUUID()}`,
+                  function: {
+                    name: "send_service_pdf",
+                    arguments: JSON.stringify({
+                      service_id: contactState.pending_service_id,
+                      confirmed: true,
+                    }),
+                  },
+                };
+
+                const directResult = await executeAdminTool(
+                  supabase,
+                  targetOrganizationId,
+                  directToolCall,
+                  { ...orgContext, instance, remoteJid },
+                );
+
+                // Clear pending state
+                await supabase
+                  .from("whatsapp_contacts")
+                  .update({
+                    pending_action: null,
+                    pending_service_id: null,
+                    awaiting_confirmation: false,
+                  })
+                  .eq("id", contactId);
+
+                // Format response
+                let directResponse: string;
+                if (directResult.startsWith("SILENT_PDF_SENT:")) {
+                  const sentLabel = directResult.replace("SILENT_PDF_SENT:", "").replace(/\s+enviado com sucesso!?$/i, "").trim();
+                  directResponse = `Pronto! Enviei o PDF da ${sentLabel} para o cliente. ✅`;
+                } else {
+                  directResponse = directResult;
+                }
+
+                confirmationIntercepted = true;
+
+                // Send the response directly
+                const safeDirect = markdownToWhatsApp(directResponse);
+                const directMsgId = `ai_confirm_${crypto.randomUUID()}`;
+                await supabase.from("whatsapp_messages").insert({
+                  organization_id: targetOrganizationId,
+                  contact_id: contactId,
+                  message_id: directMsgId,
+                  content: safeDirect,
+                  is_from_me: true,
+                  status: "sent",
+                  channel_id: channel.id,
+                  ai_generated: true,
+                });
+                await sendWhatsAppReply(instance, remoteJid, safeDirect);
+
+                // Log usage
+                await logAIUsage(supabase, {
+                  organizationId: targetOrganizationId,
+                  userId: null,
+                  actionSlug: "bot_confirmation_intercept",
+                  model: "none",
+                  promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                  durationMs: Date.now() - Date.now(),
+                  status: "success",
+                });
+              }
+            } catch (interceptErr) {
+              console.warn("[WEBHOOK-WHATSAPP] Confirmation interception error:", interceptErr);
+            }
+          }
+
+          // Also check for negative responses to clear pending state
+          const NEGATIVE_PATTERNS = /^(não|nao|n|cancela|cancelar|deixa|deixa pra lá|não precisa|nao precisa|depois|agora não|agora nao)\s*[.!]?$/i;
+          if (NEGATIVE_PATTERNS.test(normalizedCurrentUserText)) {
+            try {
+              await supabase
+                .from("whatsapp_contacts")
+                .update({
+                  pending_action: null,
+                  pending_service_id: null,
+                  awaiting_confirmation: false,
+                })
+                .eq("id", contactId);
+            } catch { /* non-blocking */ }
+          }
+
+          if (confirmationIntercepted) {
+            // Skip AI call entirely — response already sent
+            console.log("[WEBHOOK-WHATSAPP] Confirmation intercepted, skipping AI call");
+          } else {
+
           console.log(
             "[WEBHOOK-WHATSAPP] [DEBUG] Conversation history loaded:",
             conversationHistory.length,
