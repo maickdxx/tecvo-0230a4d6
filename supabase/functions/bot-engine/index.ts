@@ -380,7 +380,7 @@ async function resolveMessageVariables(
 
   const { data: org, error: orgError } = await supabase
     .from("organizations")
-    .select("name, phone, website, whatsapp_owner")
+    .select("name, phone, website, whatsapp_owner, owner_id")
     .eq("id", orgId)
     .single();
 
