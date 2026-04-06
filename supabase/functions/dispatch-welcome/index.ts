@@ -74,8 +74,8 @@ Deno.serve(async (req) => {
     const userEmail = authRes.data?.user?.email;
     const userName = profile?.full_name || org?.name || "empreendedor";
 
-    // Resolve WhatsApp
-    const waNumber = profile?.whatsapp_ai_enabled ? normalizeToDigits(profile?.phone) : null;
+    // Resolve WhatsApp — send welcome to any user with a phone, regardless of AI toggle
+    const waNumber = normalizeToDigits(profile?.phone) || null;
 
     const results: Record<string, string> = {};
 
@@ -125,20 +125,30 @@ Deno.serve(async (req) => {
         payload: { email: userEmail },
         sendFn: async () => {
           try {
-            // Call send-transactional-email edge function internally
-            const { data, error } = await adminClient.functions.invoke("send-transactional-email", {
-              body: {
+            // Call send-transactional-email via direct HTTP
+            const fnUrl = `${supabaseUrl}/functions/v1/send-transactional-email`;
+            const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+            const res = await fetch(fnUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${anonKey}`,
+                "apikey": anonKey,
+              },
+              body: JSON.stringify({
                 templateName: "welcome",
                 recipientEmail: userEmail,
                 idempotencyKey: `welcome-email-${user_id}`,
                 templateData: { name: userName },
-              },
+              }),
             });
 
-            if (error) {
-              return { success: false, error: `invoke error: ${error.message}` };
+            if (!res.ok) {
+              const errText = await res.text();
+              return { success: false, error: `HTTP ${res.status}: ${errText}` };
             }
 
+            const data = await res.json().catch(() => ({}));
             if (data?.success || data?.queued) {
               return { success: true, messageId: data?.message_id || null };
             }

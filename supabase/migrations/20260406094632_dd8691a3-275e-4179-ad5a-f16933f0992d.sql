@@ -1,0 +1,1 @@
+DELETE FROM public.onboarding_delivery_logs WHERE trigger_type = 'welcome' AND channel = 'email' AND status = 'failed';
