@@ -57,6 +57,13 @@ serve(async (req) => {
 
     console.log(`[MATERIALIZE-PDF] Starting for service=${serviceId} org=${organizationId}`);
 
+    // ── Set pdf_status = generating ──
+    await supabase
+      .from("services")
+      .update({ pdf_status: "generating" })
+      .eq("id", serviceId)
+      .eq("organization_id", organizationId);
+
     // ── Fetch all needed data ──
     const [serviceRes, orgRes, itemsRes] = await Promise.all([
       supabase
