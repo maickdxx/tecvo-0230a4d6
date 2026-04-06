@@ -26,7 +26,12 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const now = new Date();
   const oneEightyDaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes] = await Promise.all([
+  const SERVICE_LIMIT = 1000;
+  const CLIENT_LIMIT = 500;
+  const TRANSACTION_LIMIT = 1000;
+
+  const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes,
+         servicesTotalRes, clientsTotalRes, transactionsTotalRes] = await Promise.all([
     supabase
       .from("services")
       .select("id, status, scheduled_date, completed_date, value, description, service_type, assigned_to, client_id, created_at, payment_method, document_type, operational_status")
@@ -35,13 +40,13 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .neq("status", "cancelled")
       .gte("scheduled_date", oneEightyDaysAgo)
       .order("scheduled_date", { ascending: false })
-      .limit(1000),
+      .limit(SERVICE_LIMIT),
     supabase
       .from("clients")
       .select("id, name, phone, email, created_at")
       .eq("organization_id", organizationId)
       .is("deleted_at", null)
-      .limit(500),
+      .limit(CLIENT_LIMIT),
     supabase
       .from("transactions")
       .select("id, type, amount, date, due_date, status, category, description, payment_date, payment_method")
@@ -49,7 +54,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .is("deleted_at", null)
       .gte("date", oneEightyDaysAgo)
       .order("date", { ascending: false })
-      .limit(1000),
+      .limit(TRANSACTION_LIMIT),
     supabase
       .from("profiles")
       .select("user_id, full_name, position")
@@ -67,17 +72,59 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .eq("is_active", true)
       .is("deleted_at", null)
       .limit(50),
+    // Real COUNT queries — no limit, just count
+    supabase
+      .from("services")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .neq("status", "cancelled"),
+    supabase
+      .from("clients")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null),
+    supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null),
   ]);
 
+  const services = servicesRes.data || [];
+  const clients = clientsRes.data || [];
+  const transactions = transactionsRes.data || [];
+
+  const totalServicesAllTime = servicesTotalRes.count ?? services.length;
+  const totalClientsAllTime = clientsTotalRes.count ?? clients.length;
+  const totalTransactionsAllTime = transactionsTotalRes.count ?? transactions.length;
+
   return {
-    services: servicesRes.data || [],
-    clients: clientsRes.data || [],
-    transactions: transactionsRes.data || [],
+    services,
+    clients,
+    transactions,
     profiles: profilesRes.data || [],
     orgName: orgRes.data?.name || "Empresa",
     monthlyGoal: orgRes.data?.monthly_goal || null,
     catalog: catalogRes.data || [],
     timezone: orgRes.data?.timezone || "America/Sao_Paulo",
+    // Data completeness metadata
+    _meta: {
+      servicePeriodDays: 180,
+      serviceLimit: SERVICE_LIMIT,
+      serviceLoadedCount: services.length,
+      serviceTotalAllTime: totalServicesAllTime,
+      servicesTruncated: services.length >= SERVICE_LIMIT,
+      clientLimit: CLIENT_LIMIT,
+      clientLoadedCount: clients.length,
+      clientTotalAllTime: totalClientsAllTime,
+      clientsTruncated: clients.length >= CLIENT_LIMIT,
+      transactionPeriodDays: 180,
+      transactionLimit: TRANSACTION_LIMIT,
+      transactionLoadedCount: transactions.length,
+      transactionTotalAllTime: totalTransactionsAllTime,
+      transactionsTruncated: transactions.length >= TRANSACTION_LIMIT,
+    },
   };
 }
 
