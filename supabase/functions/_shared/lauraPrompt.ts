@@ -1066,6 +1066,7 @@ export async function executeAdminTool(
       assigned_to: assignedTo,
       status: "scheduled",
       document_type: "service_order",
+      pdf_status: "pending",
     }).select("id").single();
 
     if (error) {
