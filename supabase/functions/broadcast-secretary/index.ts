@@ -83,10 +83,7 @@ Você pode me perguntar sobre:
 💰 *Financeiro* — "Quanto tenho a receber?"
 📈 *Desempenho* — "Como está meu mês?"
 
-Também envio *automaticamente*:
-☀️ Previsão do tempo diária às 06h
-🔧 Atualizações em tempo real dos seus serviços
-💡 Dicas de negócio ocasionais
+🔧 Você também recebe *notificações automáticas* sobre seus serviços em tempo real.
 
 É só me mandar uma mensagem aqui quando precisar! 😊
 

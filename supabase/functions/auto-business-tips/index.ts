@@ -1,12 +1,13 @@
 /**
  * ── SEND FLOW: PLATFORM_NOTIFICATION ──
- * Auto business tips sent to org owners via their phone.
+ * Weekly business tips sent to org owners via their phone.
+ * Runs once per week (Monday at 10:00 BRT via cron).
  *
  * PHONE SOURCE: Uses owner's phone (profiles.phone)
  * with fallback to legacy organizations.whatsapp_owner.
  *
- * IDEMPOTENCY: Uses INSERT-before-send pattern with unique constraint
- * on (organization_id, message_type, sent_date) to prevent duplicate sends.
+ * CADENCE: Maximum 1 tip per week per org (7-day cooldown).
+ * Tips are practical, actionable and directly applicable to HVAC technicians.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
@@ -18,25 +19,43 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/**
+ * Tips are direct, professional, actionable.
+ * No motivational fluff. No generic advice. No "AI-sounding" language.
+ * Each tip solves a real problem or increases revenue.
+ */
 const BUSINESS_TIPS = [
-  "💡 Clientes que fazem limpeza preventiva a cada 6 meses reduzem muito a chance de quebra do equipamento. Oferecer esse serviço aumenta o faturamento recorrente.",
-  "💡 Enviar uma mensagem de acompanhamento 30 dias após o serviço gera recompra e fidelização. Simples e eficaz!",
-  "💡 Equipamentos mal dimensionados são a principal causa de reclamação. Ofereça consultoria de capacidade como diferencial.",
-  "💡 Contratos de manutenção preventiva garantem receita previsível todo mês. Considere oferecer pacotes trimestrais ou semestrais.",
-  "💡 Fotos de antes e depois do serviço são poderosas para marketing no WhatsApp e Instagram. Peça autorização e publique!",
-  "💡 Clientes corporativos costumam ter ticket médio 3x maior que residenciais. Vale investir em prospecção B2B.",
-  "💡 Oferecer garantia estendida nos seus serviços aumenta a confiança do cliente e reduz a taxa de desistência.",
-  "💡 Um técnico bem treinado resolve chamados mais rápido e gera menos retorno. Invista em capacitação.",
-  "💡 A maioria dos chamados de emergência acontece no verão. Prepare seu estoque e equipe com antecedência.",
-  "💡 Uniforme e identificação profissional aumentam a percepção de valor do serviço e justificam preços maiores.",
-  "💡 Agendar retornos de manutenção preventiva automaticamente evita perder clientes para a concorrência.",
-  "💡 Oferecer múltiplas formas de pagamento (PIX, cartão, boleto) elimina objeções na hora de fechar o serviço.",
-  "💡 Categorize seus serviços por tipo: limpeza, instalação, reparo e preventiva. Isso ajuda a identificar onde está seu maior faturamento.",
-  "💡 Um bom atendimento no WhatsApp gera 5x mais indicações do que propaganda paga. Seja rápido e educado!",
-  "💡 Fotografe sempre o modelo e número de série do equipamento. Isso agiliza futuras manutenções e compra de peças.",
-  "💡 Cadastre todos os clientes com endereço completo. Isso economiza tempo de deslocamento e permite roteirizar melhor.",
-  "💡 Revise seus preços a cada 6 meses. Custos de peças e combustível sobem, e seu lucro pode estar diminuindo sem perceber.",
-  "💡 Crie pacotes de serviço (ex: limpeza + higienização) com desconto. Isso aumenta o ticket médio por visita.",
+  "💡 *Cobrança na hora certa:* envie o link de pagamento assim que o serviço for concluído. Cada dia de atraso reduz em 15% a chance de receber sem precisar cobrar de novo.",
+
+  "💡 *Contrato preventivo = receita previsível:* ofereça pacotes semestrais de manutenção. Clientes com contrato renovam 4x mais e você elimina a sazonalidade.",
+
+  "💡 *Checklist antes de sair:* antes de ir ao cliente, confira peças, ferramentas e dados da OS. Voltar para buscar algo custa tempo e combustível.",
+
+  "💡 *Reagende, não cancele:* quando o cliente pede para remarcar, sugira uma nova data na mesma ligação. OS sem data vira cliente perdido.",
+
+  "💡 *Revise seus preços a cada 6 meses:* custo de peças, gás e combustível sobe, mas muitos técnicos mantêm a tabela antiga. Calcule seu custo real por hora.",
+
+  "💡 *Foto de antes e depois:* registre o estado do equipamento antes e depois do serviço. Isso justifica o valor cobrado e gera conteúdo para divulgação.",
+
+  "💡 *Confirme o agendamento na véspera:* uma mensagem rápida no dia anterior reduz faltas em 40% e mostra profissionalismo.",
+
+  "💡 *Separe conta pessoal da empresa:* misturar finanças impede você de saber se está lucrando. Use uma conta exclusiva para receber dos clientes.",
+
+  "💡 *Cliente corporativo paga mais:* invista em prospecção de condomínios, clínicas e escritórios. O ticket médio é 3x maior que residencial.",
+
+  "💡 *Não dê desconto, agregue valor:* ao invés de baixar o preço, inclua uma higienização ou revisão extra. Você mantém a margem e o cliente sente que ganhou.",
+
+  "💡 *Cadastre o equipamento do cliente:* anotar modelo, BTUs e número de série agiliza futuras manutenções e facilita a compra de peças.",
+
+  "💡 *Roteirize seus atendimentos:* agrupar serviços por região no mesmo dia economiza combustível e permite encaixar mais OS.",
+
+  "💡 *Defina sua meta mensal:* sem meta, não tem como saber se o mês foi bom. Calcule: custos fixos + lucro desejado = meta mínima.",
+
+  "💡 *Responda rápido no WhatsApp:* clientes que recebem resposta em até 5 minutos fecham 3x mais do que os que esperam horas.",
+
+  "💡 *Identifique seus serviços mais lucrativos:* saiba quais tipos de OS dão mais margem e foque sua divulgação neles.",
+
+  "💡 *Peça indicação após cada serviço bem feito:* uma simples pergunta \"conhece alguém que precisa?\" gera leads qualificados sem custo.",
 ];
 
 async function sendWhatsApp(phone: string, text: string) {
@@ -94,26 +113,25 @@ Deno.serve(async (req) => {
       const ownerPhone = await resolveOwnerPhone(supabase, org.id);
       if (!ownerPhone.phone) {
         console.log(`[AUTO-TIPS] No phone for org ${org.id} owner (userId=${ownerPhone.userId} reason=${ownerPhone.blockedReason})`);
-        // Log the shield block for audit
-        await logShieldBlocked(supabase, org.id, ownerPhone, "tips", "Business Tip: " + BUSINESS_TIPS[0].substring(0, 50));
+        await logShieldBlocked(supabase, org.id, ownerPhone, "tips", "Business Tip");
         continue;
       }
 
-      // Check if tip was sent in last 3 days (business_tip has its own cadence)
-      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      // Check if tip was sent in last 7 days (weekly cadence)
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { count: recentTips } = await supabase
         .from("auto_message_log")
         .select("id", { count: "exact", head: true })
         .eq("organization_id", org.id)
         .eq("message_type", "business_tip")
-        .gte("sent_at", threeDaysAgo);
+        .gte("sent_at", sevenDaysAgo);
 
       if ((recentTips || 0) > 0) {
-        console.log(`[AUTO-TIPS] Tip sent recently for org ${org.id}, skipping`);
+        console.log(`[AUTO-TIPS] Tip sent within last 7 days for org ${org.id}, skipping`);
         continue;
       }
 
-      // Pick a tip
+      // Pick a tip (cycle through the list)
       const { count: totalTips } = await supabase
         .from("auto_message_log")
         .select("id", { count: "exact", head: true })
@@ -132,7 +150,6 @@ Deno.serve(async (req) => {
 
       const orgTz = org.timezone || "America/Sao_Paulo";
 
-      // IDEMPOTENT: Insert log first, send only if insert succeeds
       const result = await idempotentSend({
         supabase,
         organizationId: org.id,
