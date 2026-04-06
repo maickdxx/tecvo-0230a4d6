@@ -3762,6 +3762,7 @@ export type Database = {
           id: string
           internal_notes: string | null
           is_demo_data: boolean
+          last_pdf_sent_at: string | null
           notes: string | null
           operational_status: string | null
           organization_id: string
@@ -3769,6 +3770,8 @@ export type Database = {
           payment_due_date: string | null
           payment_method: string | null
           payment_notes: string | null
+          pdf_generated_at: string | null
+          pdf_status: string
           priority: string | null
           quote_number: number
           quote_validity_days: number | null
@@ -3805,6 +3808,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           is_demo_data?: boolean
+          last_pdf_sent_at?: string | null
           notes?: string | null
           operational_status?: string | null
           organization_id: string
@@ -3812,6 +3816,8 @@ export type Database = {
           payment_due_date?: string | null
           payment_method?: string | null
           payment_notes?: string | null
+          pdf_generated_at?: string | null
+          pdf_status?: string
           priority?: string | null
           quote_number: number
           quote_validity_days?: number | null
@@ -3848,6 +3854,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           is_demo_data?: boolean
+          last_pdf_sent_at?: string | null
           notes?: string | null
           operational_status?: string | null
           organization_id?: string
@@ -3855,6 +3862,8 @@ export type Database = {
           payment_due_date?: string | null
           payment_method?: string | null
           payment_notes?: string | null
+          pdf_generated_at?: string | null
+          pdf_status?: string
           priority?: string | null
           quote_number?: number
           quote_validity_days?: number | null
