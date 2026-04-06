@@ -26,9 +26,9 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const now = new Date();
   const oneEightyDaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString();
 
-  const SERVICE_LIMIT = 1000;
-  const CLIENT_LIMIT = 500;
-  const TRANSACTION_LIMIT = 1000;
+  const SERVICE_LIMIT = 2000;
+  const CLIENT_LIMIT = 1000;
+  const TRANSACTION_LIMIT = 2000;
 
   const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes,
          servicesTotalRes, clientsTotalRes, transactionsTotalRes] = await Promise.all([
