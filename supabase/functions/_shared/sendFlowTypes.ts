@@ -20,7 +20,7 @@
  * │  • Always uses the "tecvo" institutional instance.                 │
  * │  • These are NOT part of any customer conversation thread.         │
  * │  • Must NEVER be used as a fallback for customer conversations.    │
- * │  • Functions: broadcast-secretary, send-welcome-whatsapp.          │
+ * │  • Functions: laura-lifecycle-cron, send-welcome-whatsapp.         │
  * │                                                                     │
  * │  ── ORG_AUTOMATION ──                                              │
  * │  Automated messages sent on behalf of an organization.             │

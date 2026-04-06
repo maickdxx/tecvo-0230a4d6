@@ -123,6 +123,9 @@ Deno.serve(async (req) => {
     }
 
     const phone = ownerPhone.phone;
+    const userName = profile.full_name?.split(" ")[0] || "empreendedor";
+    const msg1 = `Oi, tudo bem? 👋\n\nEu sou a Laura, sua secretária aqui na Tecvo.`;
+    const msg2 = `Pode ficar tranquilo — eu consigo te ajudar a organizar sua empresa, cuidar dos clientes, serviços e até do financeiro pra você.\n\nE o melhor: você não precisa mexer em nada complicado.`;
 
     // Check send window — queue welcome for appropriate time
     const orgTz = await fetchOrgTimezone(adminClient, profile.organization_id);
@@ -155,7 +158,6 @@ Deno.serve(async (req) => {
       const guard = await checkSendLimit(adminClient, profile.organization_id, null, "welcome");
       if (!guard.allowed) {
         console.log(`[WELCOME] Blocked by send guard: ${guard.reason}`);
-        // Revert the flag so it can be retried later
         await adminClient
           .from("organizations")
           .update({ welcome_whatsapp_sent: false })
@@ -165,10 +167,6 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      const userName = profile.full_name?.split(" ")[0] || "empreendedor";
-      const msg1 = `Oi, tudo bem? 👋\n\nEu sou a Laura, sua secretária aqui na Tecvo.`;
-      const msg2 = `Pode ficar tranquilo — eu consigo te ajudar a organizar sua empresa, cuidar dos clientes, serviços e até do financeiro pra você.\n\nE o melhor: você não precisa mexer em nada complicado.`;
 
       let cleanNumber = phone.replace(/\D/g, "");
       if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {

@@ -18,17 +18,15 @@ project_id = "vcuwimodpfbzpuvzesfm"
     verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
-  [functions.auto-business-tips]
-    verify_jwt = false
   [functions.auto-org-backup]
     verify_jwt = false
   [functions.auto-service-notify]
     verify_jwt = false
-  [functions.auto-weather-notify]
+  [functions.laura-lifecycle-cron]
     verify_jwt = false
   [functions.bot-engine]
     verify_jwt = false
-  [functions.broadcast-secretary]
+  [functions.bot-engine]
     verify_jwt = false
   [functions.recurrence-automation]
     verify_jwt = false

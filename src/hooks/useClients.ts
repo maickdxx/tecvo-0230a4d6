@@ -110,16 +110,7 @@ export function useClients() {
         description: "O cliente foi adicionado com sucesso",
       });
 
-      // Fire-and-forget: send Laura's welcome message to the new client
-      if (client?.phone && organizationId) {
-        supabase.functions.invoke("dispatch-client-welcome", {
-          body: {
-            organization_id: organizationId,
-            client_phone: client.whatsapp || client.phone,
-            client_name: client.name,
-          },
-        }).catch(() => { /* silent – welcome is best-effort */ });
-      }
+      // Client welcome is now handled by Laura via WhatsApp AI when the client messages
     },
     onError: (error) => {
       toast({
