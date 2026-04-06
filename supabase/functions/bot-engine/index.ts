@@ -443,6 +443,23 @@ async function resolveMessageVariables(
     assignedProfile = data;
   }
 
+  // Fallback: if no assigned attendant, use the organization owner's name
+  if (!assignedProfile?.full_name && o?.owner_id) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", o.owner_id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`[BOT-ENGINE] Falha ao carregar owner ${o.owner_id}: ${error.message}`);
+    }
+
+    if (data?.full_name) {
+      assignedProfile = data;
+    }
+  }
+
   const fullClientName = getFirstNonEmptyString(
     c?.name,
     client?.contact_name,
