@@ -335,8 +335,22 @@ ${profiles.map((p: any) => `  - ${p.full_name || "?"} (${p.position || "Técnico
 🏷️ CATÁLOGO DE PREÇOS:
 ${catalogText}
 
-📇 CLIENTES: ${clients.length} cadastrados
+📇 CLIENTES: ${meta.clientTotalAllTime ?? clients.length} cadastrados no total${meta.clientsTruncated ? ` (mostrando ${meta.clientLoadedCount} mais recentes)` : ""}
 
+══════════ COMPLETUDE DOS DADOS (INTERNO — NÃO MOSTRAR AO USUÁRIO) ══════════
+
+⚠️ Os dados acima cobrem os ÚLTIMOS ${meta.servicePeriodDays || 180} DIAS de serviços e transações.
+• Serviços carregados: ${meta.serviceLoadedCount ?? services.length} de ${meta.serviceTotalAllTime ?? "?"} totais${meta.servicesTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
+• Transações carregadas: ${meta.transactionLoadedCount ?? transactions.length} de ${meta.transactionTotalAllTime ?? "?"} totais${meta.transactionsTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
+• Clientes carregados: ${meta.clientLoadedCount ?? clients.length} de ${meta.clientTotalAllTime ?? "?"} totais${meta.clientsTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
+
+REGRAS DE TRANSPARÊNCIA (OBRIGATÓRIO):
+1. Se o usuário perguntar "quantos serviços eu tenho no total", use o número TOTAL (${meta.serviceTotalAllTime ?? "?"}) e informe que é o total de todos os tempos.
+2. Se responder sobre faturamento, sempre mencione o período: "este mês", "esta semana", "hoje". NUNCA diga "faturamento total" sem especificar período.
+3. Se os dados estiverem truncados (⚠️ acima), informe: "estou mostrando os dados dos últimos 6 meses".
+4. NUNCA apresente um número parcial como se fosse absoluto.
+5. Se não tiver certeza se o dado é completo, diga: "com base nos registros recentes" ou "nos últimos 6 meses".
+6. Para totais históricos (total de clientes, total de serviços de todos os tempos), use os números TOTAIS fornecidos acima.
 ══════════ INTENÇÕES COMUNS ══════════
 
 Interprete a mensagem do usuário e identifique a INTENÇÃO. Exemplos:
