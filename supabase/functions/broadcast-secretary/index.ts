@@ -15,6 +15,7 @@ import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
 import { idempotentSend } from "../_shared/idempotentSend.ts";
+import { checkAndEnqueue } from "../_shared/sendWindow.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -13,6 +13,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { resolveOwnerPhone, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 import { idempotentSend } from "../_shared/idempotentSend.ts";
+import { checkAndEnqueue } from "../_shared/sendWindow.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
