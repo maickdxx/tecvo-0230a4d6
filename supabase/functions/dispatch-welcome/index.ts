@@ -93,21 +93,42 @@ Deno.serve(async (req) => {
           const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
           if (!vpsUrl || !apiKey) return { success: false, error: "WA not configured" };
 
-          const jid = `${waNumber}@s.whatsapp.net`;
           const text = buildWhatsAppText(userName);
 
-          const res = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", apikey: apiKey },
-            body: JSON.stringify({ number: jid, text }),
-          });
-
-          if (!res.ok) {
-            const errText = await res.text();
-            return { success: false, error: `HTTP ${res.status}: ${errText}` };
+          // Try with the original number first, then without the 9th digit (BR mobile compat)
+          const numbersToTry = [waNumber];
+          // If BR number with 13 digits (55 + 2-digit area + 9-digit mobile), try without the 9th digit
+          if (waNumber.startsWith("55") && waNumber.length === 13) {
+            const withoutNinth = waNumber.slice(0, 4) + waNumber.slice(5); // remove the 5th char (the leading 9 of mobile)
+            numbersToTry.push(withoutNinth);
           }
-          const resBody = await res.json().catch(() => ({}));
-          return { success: true, messageId: resBody?.key?.id || null };
+
+          let lastError = "";
+          for (const num of numbersToTry) {
+            const jid = `${num}@s.whatsapp.net`;
+            console.log(`[DISPATCH-WELCOME] Trying WhatsApp send to ${jid}`);
+
+            const res = await fetch(`${vpsUrl}/message/sendText/${TECVO_PLATFORM_INSTANCE}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", apikey: apiKey },
+              body: JSON.stringify({ number: jid, text }),
+            });
+
+            if (res.ok) {
+              const resBody = await res.json().catch(() => ({}));
+              return { success: true, messageId: resBody?.key?.id || null };
+            }
+
+            lastError = await res.text();
+            console.log(`[DISPATCH-WELCOME] Failed for ${num}: ${lastError}`);
+            
+            // If it's a "not exists" error and we have another number to try, continue
+            if (lastError.includes('"exists":false') && numbersToTry.indexOf(num) < numbersToTry.length - 1) {
+              continue;
+            }
+          }
+
+          return { success: false, error: `HTTP 400: ${lastError}` };
         },
       });
     } else {
