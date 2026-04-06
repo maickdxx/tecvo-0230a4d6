@@ -1110,6 +1110,7 @@ export async function executeAdminTool(
     }
 
     const dateFormatted = new Date(scheduled_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const osNum = String((await supabase.from("services").select("quote_number").eq("id", newService.id).single()).data?.quote_number || 0).padStart(4, "0");
     const pdfNote = pdfStatus === "ready"
       ? "\n📄 PDF oficial gerado com sucesso."
       : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
