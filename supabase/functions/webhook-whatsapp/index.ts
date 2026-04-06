@@ -5089,6 +5089,7 @@ Você NÃO deve compartilhar:
               }
             }
           }
+          } // end confirmationIntercepted else
         } else {
           // lead_comercial on TECVO_AI channel
           // ── Lead follow-up: cancel pending follow-ups when lead replies ──
