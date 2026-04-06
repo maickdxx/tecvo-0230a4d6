@@ -1,0 +1,1 @@
+DELETE FROM public.onboarding_delivery_logs WHERE organization_id = '66b5154b-7ce3-414d-af44-168cc09c1a61' AND channel = 'whatsapp' AND trigger_type = 'welcome';
