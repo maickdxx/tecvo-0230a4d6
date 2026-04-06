@@ -278,6 +278,48 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
 
     const durationMs = Date.now() - startTime;
 
+    // ── Audit numerical responses ──
+    try {
+      const numberPattern = /\b\d[\d.,]*\b/g;
+      const numbersCited = (finalContent.match(numberPattern) || [])
+        .filter((n: string) => parseFloat(n.replace(/\./g, '').replace(',', '.')) > 0)
+        .slice(0, 20);
+
+      if (numbersCited.length > 0) {
+        const meta = orgContext._meta || {};
+        const userQuestion = messages?.[messages.length - 1]?.content || mode || '';
+        const classification = meta.servicesTruncated || meta.clientsTruncated || meta.transactionsTruncated
+          ? 'parcial'
+          : 'completa';
+
+        await supabaseAdmin.from('ai_response_audit').insert({
+          organization_id: organizationId,
+          user_id: userId,
+          channel: 'app',
+          user_question: userQuestion.slice(0, 2000),
+          ai_response: finalContent.slice(0, 5000),
+          numbers_cited: numbersCited,
+          data_source: `orgContext: services=${orgContext.services?.length || 0}, clients=${orgContext.clients?.length || 0}, transactions=${orgContext.transactions?.length || 0}`,
+          period_considered: `${meta.servicePeriodDays || 180} dias`,
+          is_total_or_partial: classification === 'completa' ? 'total' : 'parcial',
+          had_limit: !!(meta.servicesTruncated || meta.clientsTruncated || meta.transactionsTruncated),
+          had_truncation: !!(meta.servicesTruncated || meta.clientsTruncated || meta.transactionsTruncated),
+          classification,
+          context_snapshot: {
+            servicePeriodDays: meta.servicePeriodDays,
+            servicesLoaded: orgContext.services?.length,
+            serviceTotalAllTime: meta.serviceTotalAllTime,
+            clientsLoaded: orgContext.clients?.length,
+            clientTotalAllTime: meta.clientTotalAllTime,
+            transactionsLoaded: orgContext.transactions?.length,
+            transactionTotalAllTime: meta.transactionTotalAllTime,
+          },
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[TECVO-CHAT] Audit log failed:', auditErr);
+    }
+
     // Log usage
     const usage = result.usage || {};
     await logAIUsage(supabaseAdmin, {
