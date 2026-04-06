@@ -1216,7 +1216,9 @@ export async function executeAdminTool(
 
     // ── BLOQUEIO: confirmação obrigatória no backend ──
     if (confirmed !== true) {
-      return "Confirme primeiro se deseja enviar a ordem de serviço para o cliente. Pergunte ao usuário antes de chamar esta ferramenta.";
+      // Return a user-friendly message — NEVER expose technical instructions
+      const pendingId = service_id || service_identifier || "desconhecido";
+      return `PENDING_CONFIRMATION:${pendingId}|Pergunte ao usuário se deseja enviar a OS para o cliente antes de prosseguir.`;
     }
 
     if (!service_id && !service_identifier) {
