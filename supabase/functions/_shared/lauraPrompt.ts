@@ -649,7 +649,9 @@ Quando uma OS ou orçamento falhar porque o cliente não existe (resultado cont�
 
 6. FERRAMENTA 'send_service_pdf' — enviar PDF de OS ou Orçamento para o cliente.
 Quando o usuário pedir para enviar o PDF de uma OS ou orçamento:
-- Use o número da OS, nome do cliente ou ID informado
+- PRIORIDADE MÁXIMA: Se você ACABOU de criar uma OS nesta conversa, use o service_id (UUID completo) retornado na criação. NUNCA use ID parcial ou busca quando já tem o UUID.
+- Se o usuário responde "sim" após criação de OS, use IMEDIATAMENTE o service_id da OS recém-criada. Não faça busca.
+- Só use service_identifier (busca por nome/número) quando NÃO houver OS recém-criada no contexto.
 - A ferramenta busca e envia apenas o PDF OFICIAL já salvo no sistema
 - Ela NUNCA gera um PDF novo ou alternativo
 - OBRIGATÓRIO: Sempre pedir confirmação antes de enviar para o CLIENTE
