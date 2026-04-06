@@ -1,0 +1,1 @@
+DELETE FROM public.onboarding_delivery_logs WHERE id = '11f7611b-235d-4bcb-bcd7-d3b03e7b74ca';
