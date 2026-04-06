@@ -2711,178 +2711,9 @@ async function executeAdminTool(
   }
 
   if (fnName === "send_service_pdf") {
-    const { service_identifier } = args;
-    if (!service_identifier) return "Erro: identificador do serviço é obrigatório.";
-
-    const identifier = service_identifier.trim();
-    let serviceData: any = null;
-
-    // Try by quote_number first (numeric)
-    const numericId = parseInt(identifier, 10);
-    if (!isNaN(numericId)) {
-      const { data } = await supabase
-        .from("services")
-        .select("*, client:clients(name, phone, whatsapp, email, document, street, number, complement, neighborhood, city, state, zip_code)")
-        .eq("organization_id", organizationId)
-        .eq("quote_number", numericId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
-    }
-
-    // Try by client name
-    if (!serviceData) {
-      const { data } = await supabase
-        .from("services")
-        .select("*, client:clients!inner(name, phone, whatsapp, email, document, street, number, complement, neighborhood, city, state, zip_code)")
-        .eq("organization_id", organizationId)
-        .ilike("client.name", `%${identifier}%`)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
-    }
-
-    // Try by partial ID
-    if (!serviceData) {
-      const { data } = await supabase
-        .from("services")
-        .select("*, client:clients(name, phone, whatsapp, email, document, street, number, complement, neighborhood, city, state, zip_code)")
-        .eq("organization_id", organizationId)
-        .ilike("id", `${identifier}%`)
-        .is("deleted_at", null)
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
-    }
-
-    if (!serviceData) {
-      return `Não encontrei nenhuma OS ou orçamento com "${identifier}". Verifique o número ou nome do cliente.`;
-    }
-
-    const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
-    const docType = serviceData.document_type === "quote" ? "ORÇAMENTO" : "ORDEM DE SERVIÇO";
-    const clientName = serviceData.client?.name || "Cliente";
-    const docLabel = serviceData.document_type === "quote" ? "orçamento" : "OS";
-
-    // Use only the official PDF already saved by the system.
-    // Support both the current canonical path and older legacy paths with timestamp suffixes.
-    const storage = supabase.storage.from("whatsapp-media");
-    const canonicalPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
-    let resolvedPath = canonicalPath;
-    let mediaUrl: string | null = null;
-
-    const { data: canonicalFile, error: canonicalError } = await storage
-      .createSignedUrl(canonicalPath, 900);
-
-    if (canonicalFile?.signedUrl && !canonicalError) {
-      mediaUrl = canonicalFile.signedUrl;
-    } else {
-      const folderPath = `os-pdfs/${organizationId}`;
-      const { data: candidateFiles, error: listError } = await storage.list(folderPath, {
-        limit: 100,
-        search: serviceData.id,
-      });
-
-      if (listError) {
-        console.warn(
-          "[WEBHOOK-WHATSAPP] Failed listing legacy PDF candidates for service:",
-          serviceData.id,
-          listError.message,
-        );
-      }
-
-      const legacyFile = (candidateFiles || [])
-        .filter((file: any) => typeof file?.name === "string")
-        .filter((file: any) => {
-          const name = String(file.name);
-          return (
-            name.endsWith(".pdf") &&
-            !name.endsWith("_fallback.pdf") &&
-            (name === `${serviceData.id}.pdf` || name.startsWith(`${serviceData.id}_`))
-          );
-        })
-        .sort((a: any, b: any) => {
-          const aTime = new Date(a.created_at || a.updated_at || 0).getTime();
-          const bTime = new Date(b.created_at || b.updated_at || 0).getTime();
-          return bTime - aTime;
-        })[0];
-
-      if (legacyFile?.name) {
-        resolvedPath = `${folderPath}/${legacyFile.name}`;
-        const { data: legacySigned, error: legacyError } = await storage
-          .createSignedUrl(resolvedPath, 900);
-
-        if (legacySigned?.signedUrl && !legacyError) {
-          mediaUrl = legacySigned.signedUrl;
-        } else {
-          console.warn(
-            "[WEBHOOK-WHATSAPP] Failed signing legacy stored PDF for service:",
-            serviceData.id,
-            "path:",
-            resolvedPath,
-            "error:",
-            legacyError?.message || legacyError,
-          );
-        }
-      }
-    }
-
-    if (!mediaUrl) {
-      console.warn(
-        "[WEBHOOK-WHATSAPP] Official stored PDF not found for service:",
-        serviceData.id,
-        "canonicalPath:",
-        canonicalPath,
-        "canonicalError:",
-        canonicalError?.message || canonicalError,
-      );
-      return `Ainda não encontrei um PDF oficial salvo para a ${docLabel} #${osNumber}. Ela existe no sistema, mas o arquivo PDF salvo não foi localizado para envio.`;
-    }
-
-    console.log(
-      "[WEBHOOK-WHATSAPP] Using stored official PDF for service:",
-      serviceData.id,
-      "path:",
-      resolvedPath,
-    );
-
-    // Send PDF via Evolution API
-    const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
-    const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-    const instance = ctx?.instance;
-    const remoteJid = ctx?.remoteJid;
-
-    if (!vpsUrl || !apiKey || !instance || !remoteJid) {
-      return `PDF pronto! Mas não consegui enviar automaticamente. O PDF está disponível no sistema.`;
-    }
-
-    const fileName = `${docType.replace(/ /g, "_")}_${osNumber}.pdf`;
-    try {
-      const evoResp = await fetch(`${vpsUrl}/message/sendMedia/${instance}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: apiKey },
-        body: JSON.stringify({
-          number: remoteJid,
-          mediatype: "document",
-          media: mediaUrl,
-          caption: `📋 ${docType} #${osNumber} - ${clientName}`,
-          fileName,
-        }),
-      });
-
-      if (!evoResp.ok) {
-        const errText = await evoResp.text();
-        console.error("[WEBHOOK-WHATSAPP] PDF send error:", evoResp.status, errText);
-        return `PDF pronto, mas houve erro ao enviar. Tente enviar pelo painel.`;
-      }
-
-      await evoResp.text();
-      return `SILENT_PDF_SENT:${docType} #${osNumber} de ${clientName} enviado com sucesso!`;
-    } catch (sendErr: any) {
-      console.error("[WEBHOOK-WHATSAPP] PDF send exception:", sendErr.message);
-      return `PDF pronto, mas houve erro ao enviar: ${sendErr.message}`;
-    }
+    // Delegate to the shared implementation from lauraPrompt which sends to CLIENT's phone
+    const { executeAdminTool: sharedExecute } = await import("../_shared/lauraPrompt.ts");
+    return sharedExecute(supabase, organizationId, toolCall, ctx);
   }
 
   return "Ferramenta desconhecida.";
@@ -4908,32 +4739,8 @@ Você NÃO deve compartilhar:
 
           let aiResponse = aiResult.content;
 
-          if (wantsPdfNow && !pdfToolAttempted && fallbackPdfIdentifier) {
-            console.warn(
-              "[WEBHOOK-WHATSAPP] AI skipped send_service_pdf; running fallback with identifier:",
-              fallbackPdfIdentifier,
-            );
-            const fallbackToolResult = await executeAdminTool(
-              supabase,
-              targetOrganizationId,
-              {
-                id: `fallback_pdf_${crypto.randomUUID()}`,
-                type: "function",
-                function: {
-                  name: "send_service_pdf",
-                  arguments: JSON.stringify({
-                    service_identifier: fallbackPdfIdentifier,
-                  }),
-                },
-              },
-              { ...orgContext, instance, remoteJid },
-            );
-            pdfToolAttempted = true;
-            pdfToolResult = fallbackToolResult;
-            if (fallbackToolResult.startsWith("SILENT_PDF_SENT:")) {
-              pdfToolSent = true;
-            }
-          }
+          // REMOVED: Dangerous fallback auto-send mechanism
+          // PDF sending now requires explicit user confirmation and goes through the shared send_service_pdf tool
 
           if (pdfToolSent && pdfToolResult?.startsWith("SILENT_PDF_SENT:")) {
             const sentLabel = pdfToolResult
@@ -4945,14 +4752,6 @@ Você NÃO deve compartilhar:
             }
           } else if (wantsPdfNow && pdfToolResult && !pdfToolSent) {
             aiResponse = pdfToolResult;
-          } else if (
-            wantsPdfNow &&
-            !pdfToolAttempted &&
-            looksLikePdfSentConfirmation(aiResponse)
-          ) {
-            aiResponse = fallbackPdfIdentifier
-              ? "Tive um problema ao concluir o envio do PDF. Me peça novamente que eu envio com o anexo certo."
-              : "Me passe o número da OS ou o nome do cliente para eu enviar o PDF certinho.";
           }
 
           // Log AI usage with CORRECT model name
