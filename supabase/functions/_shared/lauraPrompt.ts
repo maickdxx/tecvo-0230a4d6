@@ -1196,7 +1196,175 @@ export async function executeAdminTool(
     return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Confirmado no sistema.`;
   }
 
-    return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar OS, criar orçamento, criar conta financeira e cadastrar cliente.`;
+  if (fnName === "send_service_pdf") {
+    const { service_identifier } = args;
+    if (!service_identifier) return "Erro: identificador do serviço é obrigatório.";
+
+    const identifier = service_identifier.trim();
+    let serviceData: any = null;
+
+    // Search by quote_number
+    const numericId = parseInt(identifier, 10);
+    if (!isNaN(numericId)) {
+      const { data } = await supabase
+        .from("services")
+        .select("*, client:clients(name, phone, whatsapp)")
+        .eq("organization_id", organizationId)
+        .eq("quote_number", numericId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) serviceData = data[0];
+    }
+
+    // Search by client name
+    if (!serviceData) {
+      const { data } = await supabase
+        .from("services")
+        .select("*, client:clients!inner(name, phone, whatsapp)")
+        .eq("organization_id", organizationId)
+        .ilike("client.name", `%${identifier}%`)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) serviceData = data[0];
+    }
+
+    // Search by partial ID
+    if (!serviceData) {
+      const { data } = await supabase
+        .from("services")
+        .select("*, client:clients(name, phone, whatsapp)")
+        .eq("organization_id", organizationId)
+        .ilike("id", `${identifier}%`)
+        .is("deleted_at", null)
+        .limit(1);
+      if (data && data.length > 0) serviceData = data[0];
+    }
+
+    if (!serviceData) {
+      return `Não encontrei nenhuma OS ou orçamento com "${identifier}". Verifique o número ou nome do cliente.`;
+    }
+
+    const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
+    const docType = serviceData.document_type === "quote" ? "ORÇAMENTO" : "ORDEM DE SERVIÇO";
+    const clientName = serviceData.client?.name || "Cliente";
+    const clientPhone = serviceData.client?.phone || serviceData.client?.whatsapp;
+    const docLabel = serviceData.document_type === "quote" ? "orçamento" : "OS";
+
+    // ── Validate client phone ──
+    if (!clientPhone) {
+      return `O cliente "${clientName}" não tem telefone cadastrado. Não é possível enviar a ${docLabel}. Cadastre o telefone primeiro.`;
+    }
+
+    // ── Check PDF exists ──
+    const storage = supabase.storage.from("whatsapp-media");
+    const canonicalPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
+    const { data: pdfFile, error: pdfError } = await storage.createSignedUrl(canonicalPath, 900);
+
+    if (!pdfFile?.signedUrl || pdfError) {
+      // Try to materialize on the fly
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+        const matResp = await fetch(`${supabaseUrl}/functions/v1/materialize-service-pdf`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
+          body: JSON.stringify({ serviceId: serviceData.id, organizationId }),
+        });
+        if (!matResp.ok) {
+          return `Ainda não encontrei um PDF oficial salvo para a ${docLabel} #${osNumber}. Tente gerar pelo painel.`;
+        }
+      } catch {
+        return `Ainda não encontrei um PDF oficial salvo para a ${docLabel} #${osNumber}. Tente gerar pelo painel.`;
+      }
+
+      // Re-check after materialization
+      const { data: retryPdf } = await storage.createSignedUrl(canonicalPath, 900);
+      if (!retryPdf?.signedUrl) {
+        return `Não consegui gerar o PDF oficial da ${docLabel} #${osNumber}. Tente pelo painel.`;
+      }
+    }
+
+    // ── Get signed URL for sending ──
+    const { data: signedPdf } = await storage.createSignedUrl(canonicalPath, 900);
+    if (!signedPdf?.signedUrl) {
+      return `Erro ao preparar o PDF para envio.`;
+    }
+
+    // ── Send to CLIENT's phone via WhatsApp ──
+    const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
+    const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+
+    // Find the org's WhatsApp channel instance
+    const { data: channels } = await supabase
+      .from("whatsapp_channels")
+      .select("instance_name, status")
+      .eq("organization_id", organizationId)
+      .eq("status", "connected")
+      .limit(1);
+
+    const instance = channels?.[0]?.instance_name || ctx?.instance;
+
+    if (!vpsUrl || !apiKey || !instance) {
+      return `PDF da ${docLabel} #${osNumber} está pronto! Mas não consegui enviar automaticamente (canal WhatsApp não configurado). O PDF está disponível no sistema.`;
+    }
+
+    // Normalize client phone for WhatsApp
+    let whatsappNumber = clientPhone.replace(/\D/g, "");
+    if (!whatsappNumber.startsWith("55") && whatsappNumber.length <= 11) {
+      whatsappNumber = "55" + whatsappNumber;
+    }
+
+    const fileName = `${docType.replace(/ /g, "_")}_${osNumber}.pdf`;
+    try {
+      const evoResp = await fetch(`${vpsUrl}/message/sendMedia/${instance}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: apiKey },
+        body: JSON.stringify({
+          number: whatsappNumber,
+          mediatype: "document",
+          media: signedPdf.signedUrl,
+          caption: `📋 ${docType} #${osNumber} - ${clientName}`,
+          fileName,
+        }),
+      });
+
+      if (!evoResp.ok) {
+        const errText = await evoResp.text();
+        console.error("[LAURA] PDF send error:", evoResp.status, errText);
+        return `PDF pronto, mas houve erro ao enviar para ${clientName}. Tente pelo painel.`;
+      }
+
+      await evoResp.text();
+
+      // ── Log the send ──
+      try {
+        await supabase.from("data_audit_log").insert({
+          organization_id: organizationId,
+          table_name: "services",
+          operation: "PDF_SENT",
+          record_id: serviceData.id,
+          metadata: {
+            os_number: osNumber,
+            doc_type: docType,
+            client_name: clientName,
+            client_phone: whatsappNumber,
+            channel: ctx?.remoteJid ? "whatsapp_chat" : "app",
+            instance,
+            sent_at: new Date().toISOString(),
+          },
+        });
+      } catch { /* logging should never block */ }
+
+      return `SILENT_PDF_SENT:${docType} #${osNumber} enviado com sucesso para ${clientName} (${clientPhone})!`;
+    } catch (sendErr: any) {
+      console.error("[LAURA] PDF send exception:", sendErr.message);
+      return `PDF pronto, mas houve erro ao enviar: ${sendErr.message}`;
+    }
+  }
+
+    return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar OS, criar orçamento, criar conta financeira, cadastrar cliente e enviar PDF.`;
   } catch (err: any) {
     const errorMsg = err?.message || String(err);
     await logToolError(supabase, organizationId, fnName, errorMsg, args);
@@ -1207,6 +1375,7 @@ export async function executeAdminTool(
       create_quote: "Não consegui criar o orçamento. Verifique os dados (cliente, tipo, valor) e tente novamente.",
       create_financial_account: "Não consegui criar a conta financeira. Verifique o nome da conta e tente novamente.",
       create_client: "Não consegui cadastrar o cliente. Verifique nome e telefone e tente novamente.",
+      send_service_pdf: "Não consegui enviar o PDF. Verifique se a OS existe e se o cliente tem telefone cadastrado.",
     };
     
     return `❌ ${friendlyMessages[fnName] || `Erro ao executar "${fnName}".`}\n\nDetalhes técnicos: ${errorMsg.slice(0, 150)}`;
