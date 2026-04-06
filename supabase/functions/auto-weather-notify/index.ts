@@ -124,13 +124,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // TEMP: Only send to Space Ar Condicionado
-    const ALLOWED_ORG_ID = "f46f0514-fecf-4939-b1fa-6a0247f96540";
-
+    // Send to all organizations with active paid plans
     const { data: orgs, error: orgsErr } = await supabase
       .from("organizations")
       .select("id, city, timezone")
-      .eq("id", ALLOWED_ORG_ID);
+      .neq("plan", "free")
+      .eq("messaging_paused", false);
 
     if (orgsErr) throw orgsErr;
     console.log(`[AUTO-WEATHER] Found ${orgs?.length || 0} orgs`);

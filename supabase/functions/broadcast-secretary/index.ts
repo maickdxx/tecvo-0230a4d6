@@ -94,9 +94,7 @@ Também envio *automaticamente*:
 
     const message = customMessage || defaultMessage;
 
-    // TEMP: Only send to Space Ar Condicionado
-    const ALLOWED_ORG_ID = "f46f0514-fecf-4939-b1fa-6a0247f96540";
-
+    // Send to all organizations with active paid plans
     let query = supabase
       .from("organizations")
       .select("id, name, timezone");
@@ -104,7 +102,7 @@ Também envio *automaticamente*:
     if (singleOrgId) {
       query = query.eq("id", singleOrgId);
     } else {
-      query = query.eq("id", ALLOWED_ORG_ID);
+      query = query.neq("plan", "free").eq("messaging_paused", false);
     }
 
     const { data: orgs, error } = await query;

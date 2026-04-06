@@ -110,10 +110,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // TEMP: Only send to Space Ar Condicionado
-    const ALLOWED_ORG_ID = "f46f0514-fecf-4939-b1fa-6a0247f96540";
-    if (organization_id !== ALLOWED_ORG_ID) {
-      console.log("[AUTO-SERVICE] Skipping non-allowed org:", organization_id);
+    // Only send for organizations with active paid plans
+    const { data: orgCheck } = await supabase
+      .from("organizations")
+      .select("plan, messaging_paused")
+      .eq("id", organization_id)
+      .single();
+
+    if (!orgCheck || orgCheck.plan === "free" || orgCheck.messaging_paused) {
+      console.log("[AUTO-SERVICE] Skipping org (free plan or paused):", organization_id);
       return new Response(JSON.stringify({ ok: true, skipped: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
