@@ -43,35 +43,27 @@ interface FunnelStage {
 const FUNNEL_STAGES: FunnelStage[] = [
   {
     id: "onboarding",
-    label: "Onboarding",
-    description: "Primeiros passos após o cadastro",
+    label: "Onboarding (Laura)",
+    description: "Conduzido pela Laura via chat e WhatsApp",
     icon: <Rocket className="h-5 w-5" />,
     color: "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300",
-    triggerTypes: ["trial_d0", "trial_d1", "new_user_activation", "signup_recovery"],
-  },
-  {
-    id: "conversion",
-    label: "Conversão",
-    description: "Transformar trial em cliente pagante",
-    icon: <Target className="h-5 w-5" />,
-    color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300",
-    triggerTypes: ["trial_d3", "trial_d5", "trial_d7", "trial_d10", "trial_d13", "trial_d14"],
+    triggerTypes: ["trial_d0", "trial_d1", "new_user_activation", "signup_recovery", "activation_d0", "activation_d1"],
   },
   {
     id: "retention",
-    label: "Retenção",
-    description: "Manter o cliente ativo e engajado",
+    label: "Retenção (Laura)",
+    description: "Reengajamento conduzido pela Laura",
     icon: <Heart className="h-5 w-5" />,
     color: "bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300",
-    triggerTypes: ["trial_ending_3d", "trial_ending_1d", "trial_ending_0d"],
+    triggerTypes: ["inactive_3d", "inactive_7d", "inactive_15d", "churn_recovery"],
   },
   {
-    id: "reactivation",
-    label: "Reativação",
-    description: "Trazer de volta quem parou de usar",
-    icon: <RefreshCcw className="h-5 w-5" />,
-    color: "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300",
-    triggerTypes: ["churn_recovery"],
+    id: "operational",
+    label: "Operacional",
+    description: "Notificações automáticas de serviço",
+    icon: <Target className="h-5 w-5" />,
+    color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300",
+    triggerTypes: [],
   },
 ];
 
@@ -87,25 +79,25 @@ interface SystemFlow {
 
 const SYSTEM_FLOWS: SystemFlow[] = [
   {
-    name: "Boas-vindas WhatsApp",
-    trigger: "Conclusão do onboarding",
+    name: "Laura — Onboarding e Boas-vindas",
+    trigger: "Primeiro acesso após cadastro",
     channel: "whatsapp",
-    description: "Mensagem única de boas-vindas enviada pela instância Tecvo ao concluir o cadastro. Protegida por lock atômico (envio único garantido).",
+    description: "A Laura conduz o onboarding completo via chat e WhatsApp, incluindo boas-vindas, ativação e conversão. Centralizado, sem automações paralelas.",
     stage: "onboarding",
   },
   {
-    name: "Notificação Admin — Novo Cadastro",
-    trigger: "Criação de organização (trigger DB)",
+    name: "Laura — Reativação de Usuários",
+    trigger: "Inatividade detectada",
     channel: "whatsapp",
-    description: "Alerta interno para o Super Admin (WhatsApp + E-mail) quando uma nova empresa se cadastra. Enviado para 19989307608 via instância Tecvo e para o e-mail do administrador.",
-    stage: "onboarding",
+    description: "A Laura identifica usuários inativos e conduz reengajamento com base em comportamento real, sem mensagens genéricas.",
+    stage: "retention",
   },
   {
     name: "Notificação de Status de OS",
     trigger: "Mudança de status operacional (en_route, in_attendance, completed)",
     channel: "whatsapp",
     description: "Notificação automática ao cliente quando o técnico muda o status da OS. Controlada pela flag auto_notify_client_completion.",
-    stage: "retention",
+    stage: "operational",
   },
 ];
 

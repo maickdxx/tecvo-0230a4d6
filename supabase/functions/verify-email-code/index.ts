@@ -96,23 +96,8 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (profile?.organization_id) {
-      logger.step("Dispatching welcome after verification", { userId: user.id });
-      try {
-        await supabaseAdmin.functions.invoke("dispatch-welcome", {
-          body: {
-            user_id: user.id,
-            organization_id: profile.organization_id,
-          },
-        });
-        logger.step("Welcome dispatched successfully");
-      } catch (welcomeErr) {
-        logger.error("Failed to dispatch welcome (non-blocking)", welcomeErr);
-        // Non-blocking — user is already verified, welcome failure shouldn't break flow
-      }
-    } else {
-      logger.step("No profile/org found, skipping welcome dispatch");
-    }
+    // Welcome is now handled by Laura (onboarding chat) — no dispatch-welcome needed.
+    logger.step("Email verified. Welcome handled by Laura onboarding.", { userId: user.id });
 
     // Generate a magic link token for auto-login
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
