@@ -649,7 +649,9 @@ Quando uma OS ou orçamento falhar porque o cliente não existe (resultado cont�
 
 6. FERRAMENTA 'send_service_pdf' — enviar PDF de OS ou Orçamento para o cliente.
 Quando o usuário pedir para enviar o PDF de uma OS ou orçamento:
-- Use o número da OS, nome do cliente ou ID informado
+- PRIORIDADE MÁXIMA: Se você ACABOU de criar uma OS nesta conversa, use o service_id (UUID completo) retornado na criação. NUNCA use ID parcial ou busca quando já tem o UUID.
+- Se o usuário responde "sim" após criação de OS, use IMEDIATAMENTE o service_id da OS recém-criada. Não faça busca.
+- Só use service_identifier (busca por nome/número) quando NÃO houver OS recém-criada no contexto.
 - A ferramenta busca e envia apenas o PDF OFICIAL já salvo no sistema
 - Ela NUNCA gera um PDF novo ou alternativo
 - OBRIGATÓRIO: Sempre pedir confirmação antes de enviar para o CLIENTE
@@ -789,18 +791,23 @@ export const ADMIN_TOOLS = [
       parameters: {
         type: "object",
         properties: {
+          service_id: {
+            type: "string",
+            description:
+              "UUID COMPLETO do serviço. Use SEMPRE que tiver o ID (ex: após create_service). Tem prioridade absoluta sobre service_identifier.",
+          },
           service_identifier: {
             type: "string",
             description:
-              "Identificador do serviço: número da OS (ex: '0042'), nome do cliente, ou parte do ID.",
+              "Fallback: número da OS (ex: '0042') ou nome do cliente. Só use quando NÃO tiver o service_id UUID.",
           },
           confirmed: {
             type: "boolean",
             description:
-              "OBRIGATÓRIO: deve ser true. Indica que o usuário CONFIRMOU explicitamente o envio. Se o usuário não confirmou, NÃO chame esta ferramenta.",
+              "OBRIGATÓRIO: deve ser true. Indica que o usuário CONFIRMOU explicitamente o envio.",
           },
         },
-        required: ["service_identifier", "confirmed"],
+        required: ["confirmed"],
         additionalProperties: false,
       },
     },
@@ -1103,10 +1110,11 @@ export async function executeAdminTool(
     }
 
     const dateFormatted = new Date(scheduled_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const osNum = String((await supabase.from("services").select("quote_number").eq("id", newService.id).single()).data?.quote_number || 0).padStart(4, "0");
     const pdfNote = pdfStatus === "ready"
       ? "\n📄 PDF oficial gerado com sucesso."
       : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
-    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}${pdfNote}\n✅ Confirmado no sistema.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
+    return `OS #${osNum} criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• service_id: ${newService.id}${pdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newService.id}" diretamente.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
   }
 
   if (fnName === "create_quote") {
@@ -1204,58 +1212,77 @@ export async function executeAdminTool(
   }
 
   if (fnName === "send_service_pdf") {
-    const { service_identifier, confirmed } = args;
-    if (!service_identifier) return "Erro: identificador do serviço é obrigatório.";
+    const { service_id, service_identifier, confirmed } = args;
 
     // ── BLOQUEIO: confirmação obrigatória no backend ──
     if (confirmed !== true) {
       return "Confirme primeiro se deseja enviar a ordem de serviço para o cliente. Pergunte ao usuário antes de chamar esta ferramenta.";
     }
 
-    const identifier = service_identifier.trim();
+    if (!service_id && !service_identifier) {
+      return "Erro: informe o service_id ou o identificador do serviço (número/nome).";
+    }
+
     let serviceData: any = null;
 
-    // Search by quote_number
-    const numericId = parseInt(identifier, 10);
-    if (!isNaN(numericId)) {
+    // ── PRIORIDADE 1: Busca direta por UUID (contexto da OS recém-criada) ──
+    if (service_id) {
       const { data } = await supabase
         .from("services")
         .select("*, client:clients(name, phone, whatsapp)")
+        .eq("id", service_id)
         .eq("organization_id", organizationId)
-        .eq("quote_number", numericId)
         .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
+        .single();
+      if (data) serviceData = data;
     }
 
-    // Search by client name
-    if (!serviceData) {
-      const { data } = await supabase
-        .from("services")
-        .select("*, client:clients!inner(name, phone, whatsapp)")
-        .eq("organization_id", organizationId)
-        .ilike("client.name", `%${identifier}%`)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
+    // ── PRIORIDADE 2: Busca por identifier (fallback) ──
+    if (!serviceData && service_identifier) {
+      const identifier = service_identifier.trim();
+
+      // Search by quote_number
+      const numericId = parseInt(identifier, 10);
+      if (!isNaN(numericId)) {
+        const { data } = await supabase
+          .from("services")
+          .select("*, client:clients(name, phone, whatsapp)")
+          .eq("organization_id", organizationId)
+          .eq("quote_number", numericId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) serviceData = data[0];
+      }
+
+      // Search by client name
+      if (!serviceData) {
+        const { data } = await supabase
+          .from("services")
+          .select("*, client:clients!inner(name, phone, whatsapp)")
+          .eq("organization_id", organizationId)
+          .ilike("client.name", `%${identifier}%`)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) serviceData = data[0];
+      }
+
+      // Search by partial ID
+      if (!serviceData) {
+        const { data } = await supabase
+          .from("services")
+          .select("*, client:clients(name, phone, whatsapp)")
+          .eq("organization_id", organizationId)
+          .ilike("id", `${identifier}%`)
+          .is("deleted_at", null)
+          .limit(1);
+        if (data && data.length > 0) serviceData = data[0];
+      }
     }
 
-    // Search by partial ID
     if (!serviceData) {
-      const { data } = await supabase
-        .from("services")
-        .select("*, client:clients(name, phone, whatsapp)")
-        .eq("organization_id", organizationId)
-        .ilike("id", `${identifier}%`)
-        .is("deleted_at", null)
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
-    }
-
-    if (!serviceData) {
-      return `Não encontrei nenhuma OS ou orçamento com "${identifier}". Verifique o número ou nome do cliente.`;
+      return `Não encontrei a OS informada. Verifique o número ou nome do cliente.`;
     }
 
     const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
