@@ -11,6 +11,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
+import { checkAndEnqueue } from "../_shared/sendWindow.ts";
+import { fetchOrgTimezone } from "../_shared/timezone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -121,6 +123,28 @@ Deno.serve(async (req) => {
     }
 
     const phone = ownerPhone.phone;
+
+    // Check send window — queue welcome for appropriate time
+    const orgTz = await fetchOrgTimezone(adminClient, profile.organization_id);
+    const fullMessage = `${msg1}\n\n${msg2}`;
+    const windowCheck = await checkAndEnqueue({
+      supabase: adminClient,
+      organizationId: profile.organization_id,
+      phone,
+      messageContent: fullMessage,
+      messageType: "welcome",
+      sourceFunction: "send-welcome-whatsapp",
+      idempotencyKey: `welcome-${profile.organization_id}`,
+      timezone: orgTz,
+    });
+
+    if (windowCheck.action === "queued") {
+      console.log(`[WELCOME] ⏰ Queued for ${windowCheck.scheduledFor} (outside send window)`);
+      return new Response(JSON.stringify({ message: "Queued for appropriate time", scheduledFor: windowCheck.scheduledFor }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Send welcome message via WhatsApp bridge
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");

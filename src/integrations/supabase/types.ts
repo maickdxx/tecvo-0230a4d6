@@ -2063,6 +2063,74 @@ export type Database = {
           },
         ]
       }
+      message_send_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          idempotency_key: string | null
+          instance_name: string | null
+          last_error: string | null
+          max_attempts: number
+          message_content: string
+          message_type: string
+          organization_id: string
+          phone: string
+          priority: string
+          scheduled_for: string
+          sent_at: string | null
+          source_function: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          instance_name?: string | null
+          last_error?: string | null
+          max_attempts?: number
+          message_content: string
+          message_type?: string
+          organization_id: string
+          phone: string
+          priority?: string
+          scheduled_for: string
+          sent_at?: string | null
+          source_function?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          instance_name?: string | null
+          last_error?: string | null
+          max_attempts?: number
+          message_content?: string
+          message_type?: string
+          organization_id?: string
+          phone?: string
+          priority?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          source_function?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_send_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_tokens: {
         Row: {
           auth: string

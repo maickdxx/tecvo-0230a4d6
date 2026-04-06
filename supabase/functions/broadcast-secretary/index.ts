@@ -15,6 +15,7 @@ import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
 import { resolveOwnerPhone } from "../_shared/resolveOwnerPhone.ts";
 import { idempotentSend } from "../_shared/idempotentSend.ts";
+import { checkAndEnqueue } from "../_shared/sendWindow.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -133,6 +134,24 @@ Você pode me perguntar sobre:
       }
 
       const orgTz = org.timezone || "America/Sao_Paulo";
+
+      // CHECK SEND WINDOW — queue if outside hours
+      const windowCheck = await checkAndEnqueue({
+        supabase,
+        organizationId: org.id,
+        phone: ownerPhone.phone!,
+        messageContent: message,
+        messageType: "broadcast",
+        sourceFunction: "broadcast-secretary",
+        idempotencyKey: `broadcast-${org.id}-${new Date().toLocaleDateString("en-CA", { timeZone: orgTz })}`,
+        timezone: orgTz,
+      });
+
+      if (windowCheck.action === "queued") {
+        console.log(`[BROADCAST] ${org.name}: ⏰ Queued for ${windowCheck.scheduledFor} (outside send window)`);
+        results.push({ org: org.name, phone: ownerPhone.phone, sent: false, source: ownerPhone.source!, skipped: true });
+        continue;
+      }
 
       // IDEMPOTENT: Insert log first, send only if insert succeeds
       const result = await idempotentSend({

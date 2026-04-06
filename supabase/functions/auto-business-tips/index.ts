@@ -13,6 +13,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { resolveOwnerPhone, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 import { idempotentSend } from "../_shared/idempotentSend.ts";
+import { checkAndEnqueue } from "../_shared/sendWindow.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,6 +150,23 @@ Deno.serve(async (req) => {
       }
 
       const orgTz = org.timezone || "America/Sao_Paulo";
+
+      // CHECK SEND WINDOW — queue if outside hours
+      const windowCheck = await checkAndEnqueue({
+        supabase,
+        organizationId: org.id,
+        phone: ownerPhone.phone!,
+        messageContent: message,
+        messageType: "business_tip",
+        sourceFunction: "auto-business-tips",
+        idempotencyKey: `tip-${org.id}-${new Date().toLocaleDateString("en-CA", { timeZone: orgTz })}`,
+        timezone: orgTz,
+      });
+
+      if (windowCheck.action === "queued") {
+        console.log(`[AUTO-TIPS] ⏰ Org ${org.id} queued for ${windowCheck.scheduledFor} (outside send window)`);
+        continue;
+      }
 
       const result = await idempotentSend({
         supabase,
