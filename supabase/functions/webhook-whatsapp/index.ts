@@ -4691,12 +4691,51 @@ Você NÃO deve compartilhar:
                 pdfToolAttempted = true;
               }
 
-              const toolResult = await executeAdminTool(
+              let toolResult = await executeAdminTool(
                 supabase,
                 targetOrganizationId,
                 tc,
                 { ...orgContext, instance, remoteJid },
               );
+
+              // ── Translate PENDING_CONFIRMATION into AI-friendly instruction ──
+              if (toolResult.startsWith("PENDING_CONFIRMATION:")) {
+                // Save pending state to whatsapp_contacts for next message interception
+                try {
+                  const pendingId = toolResult.split("|")[0].replace("PENDING_CONFIRMATION:", "").trim();
+                  await supabase
+                    .from("whatsapp_contacts")
+                    .update({
+                      pending_action: "send_service_pdf",
+                      pending_service_id: pendingId.length === 36 ? pendingId : null,
+                      awaiting_confirmation: true,
+                    })
+                    .eq("id", contactId);
+                } catch (pendErr) {
+                  console.warn("[WEBHOOK-WHATSAPP] Failed to save pending state:", pendErr);
+                }
+                toolResult = "O envio da OS requer confirmação do usuário. Pergunte ao usuário se deseja enviar o PDF da OS para o cliente. Quando ele confirmar, chame send_service_pdf novamente com confirmed=true.";
+              }
+
+              // ── Save pending state after create_service success ──
+              if (tc.function?.name === "create_service" && toolResult.includes("service_id:")) {
+                try {
+                  const svcIdMatch = toolResult.match(/service_id:\s*"?([a-f0-9-]{36})"?/);
+                  if (svcIdMatch) {
+                    await supabase
+                      .from("whatsapp_contacts")
+                      .update({
+                        pending_action: "send_service_pdf",
+                        pending_service_id: svcIdMatch[1],
+                        awaiting_confirmation: true,
+                      })
+                      .eq("id", contactId);
+                  }
+                } catch (pendErr) {
+                  console.warn("[WEBHOOK-WHATSAPP] Failed to save pending state after create_service:", pendErr);
+                }
+              }
+
               console.log(
                 "[WEBHOOK-WHATSAPP] Tool result (round",
                 toolRound,
@@ -4708,6 +4747,17 @@ Você NÃO deve compartilhar:
                 pdfToolResult = toolResult;
                 if (toolResult.startsWith("SILENT_PDF_SENT:")) {
                   pdfToolSent = true;
+                  // Clear pending state after successful send
+                  try {
+                    await supabase
+                      .from("whatsapp_contacts")
+                      .update({
+                        pending_action: null,
+                        pending_service_id: null,
+                        awaiting_confirmation: false,
+                      })
+                      .eq("id", contactId);
+                  } catch { /* non-blocking */ }
                 }
               }
 
