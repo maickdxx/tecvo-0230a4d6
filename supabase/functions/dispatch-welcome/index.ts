@@ -127,11 +127,13 @@ Deno.serve(async (req) => {
           try {
             // Call send-transactional-email via direct HTTP with service role key
             const fnUrl = `${supabaseUrl}/functions/v1/send-transactional-email`;
+            const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
             const res = await fetch(fnUrl, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${supabaseServiceKey}`,
+                "apikey": anonKey,
               },
               body: JSON.stringify({
                 templateName: "welcome",
