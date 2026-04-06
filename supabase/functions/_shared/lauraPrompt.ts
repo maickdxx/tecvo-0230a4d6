@@ -1051,8 +1051,35 @@ export async function executeAdminTool(
     const verifySvcErr = await verifyInsert(supabase, "services", newService.id, "Service");
     if (verifySvcErr) return verifySvcErr;
 
+    // ── Auto-materialize PDF in backend ──
+    let pdfStatus = "pending";
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+      const materializeResp = await fetch(`${supabaseUrl}/functions/v1/materialize-service-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
+        body: JSON.stringify({ serviceId: newService.id, organizationId }),
+      });
+      if (materializeResp.ok) {
+        const materializeResult = await materializeResp.json();
+        pdfStatus = materializeResult.status || "ready";
+        console.log("[LAURA] PDF materialized:", pdfStatus, "for service:", newService.id);
+      } else {
+        const errText = await materializeResp.text();
+        console.error("[LAURA] PDF materialization failed:", materializeResp.status, errText);
+        pdfStatus = "failed";
+      }
+    } catch (pdfErr: any) {
+      console.error("[LAURA] PDF materialization error:", pdfErr?.message);
+      pdfStatus = "failed";
+    }
+
     const dateFormatted = new Date(scheduled_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}\n✅ Confirmado no sistema.`;
+    const pdfNote = pdfStatus === "ready"
+      ? "\n📄 PDF oficial gerado com sucesso."
+      : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
+    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• ID: ${newService.id.substring(0, 8)}${pdfNote}\n✅ Confirmado no sistema.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
   }
 
   if (fnName === "create_quote") {
