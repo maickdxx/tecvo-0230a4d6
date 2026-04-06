@@ -814,6 +814,7 @@ const ACTION_RISK: Record<string, "low" | "medium" | "high"> = {
   create_quote: "medium",
   create_client: "medium",
   create_financial_account: "low",
+  send_service_pdf: "high",
 };
 
 /**
