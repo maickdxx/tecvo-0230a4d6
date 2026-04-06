@@ -785,7 +785,7 @@ export const ADMIN_TOOLS = [
     function: {
       name: "send_service_pdf",
       description:
-        "Envia o PDF oficial de uma Ordem de Serviço ou Orçamento para o CLIENTE da OS via WhatsApp. NUNCA gera PDF novo. Requer confirmação do usuário antes de enviar.",
+        "Envia o PDF oficial de uma Ordem de Serviço ou Orçamento para o CLIENTE da OS via WhatsApp. NUNCA gera PDF novo. Requer confirmação EXPLÍCITA do usuário (confirmed=true). Só chame esta ferramenta APÓS o usuário dizer 'sim' ou equivalente.",
       parameters: {
         type: "object",
         properties: {
@@ -794,8 +794,13 @@ export const ADMIN_TOOLS = [
             description:
               "Identificador do serviço: número da OS (ex: '0042'), nome do cliente, ou parte do ID.",
           },
+          confirmed: {
+            type: "boolean",
+            description:
+              "OBRIGATÓRIO: deve ser true. Indica que o usuário CONFIRMOU explicitamente o envio. Se o usuário não confirmou, NÃO chame esta ferramenta.",
+          },
         },
-        required: ["service_identifier"],
+        required: ["service_identifier", "confirmed"],
         additionalProperties: false,
       },
     },
@@ -1061,6 +1066,7 @@ export async function executeAdminTool(
       assigned_to: assignedTo,
       status: "scheduled",
       document_type: "service_order",
+      pdf_status: "pending",
     }).select("id").single();
 
     if (error) {
@@ -1198,8 +1204,13 @@ export async function executeAdminTool(
   }
 
   if (fnName === "send_service_pdf") {
-    const { service_identifier } = args;
+    const { service_identifier, confirmed } = args;
     if (!service_identifier) return "Erro: identificador do serviço é obrigatório.";
+
+    // ── BLOQUEIO: confirmação obrigatória no backend ──
+    if (confirmed !== true) {
+      return "Confirme primeiro se deseja enviar a ordem de serviço para o cliente. Pergunte ao usuário antes de chamar esta ferramenta.";
+    }
 
     const identifier = service_identifier.trim();
     let serviceData: any = null;
@@ -1253,51 +1264,54 @@ export async function executeAdminTool(
     const clientPhone = serviceData.client?.phone || serviceData.client?.whatsapp;
     const docLabel = serviceData.document_type === "quote" ? "orçamento" : "OS";
 
-    // ── Validate client phone ──
-    if (!clientPhone) {
-      return `O cliente "${clientName}" não tem telefone cadastrado. Não é possível enviar a ${docLabel}. Cadastre o telefone primeiro.`;
+    // ── Validação: organização correta ──
+    if (serviceData.organization_id !== organizationId) {
+      return "Erro de segurança: essa OS não pertence à sua organização.";
     }
 
-    // ── Check PDF exists ──
+    // ── Validação: OS não deletada ──
+    if (serviceData.deleted_at) {
+      return `A ${docLabel} #${osNumber} foi excluída e não pode ser enviada.`;
+    }
+
+    // ── Validação: telefone do cliente ──
+    if (!clientPhone) {
+      return `O cliente "${clientName}" não tem telefone cadastrado. Cadastre o telefone primeiro para enviar a ${docLabel}.`;
+    }
+
+    // ── Validação: pdf_status = ready (campo real no banco) ──
+    if (serviceData.pdf_status !== "ready") {
+      const statusMessages: Record<string, string> = {
+        pending: `A ${docLabel} #${osNumber} ainda não teve o PDF gerado. Aguarde ou tente gerar pelo painel.`,
+        generating: `O PDF da ${docLabel} #${osNumber} está sendo gerado. Aguarde alguns segundos e tente novamente.`,
+        failed: `A geração do PDF da ${docLabel} #${osNumber} falhou. Tente gerar novamente pelo painel.`,
+      };
+      return statusMessages[serviceData.pdf_status] || `A ${docLabel} #${osNumber} não está pronta para envio. Status do PDF: ${serviceData.pdf_status || "desconhecido"}.`;
+    }
+
+    // ── Validação: proteção contra envio duplicado (30s) ──
+    if (serviceData.last_pdf_sent_at) {
+      const lastSent = new Date(serviceData.last_pdf_sent_at).getTime();
+      const now = Date.now();
+      const diffSeconds = (now - lastSent) / 1000;
+      if (diffSeconds < 30) {
+        return `A ${docLabel} #${osNumber} já foi enviada há ${Math.round(diffSeconds)} segundos para ${clientName}. Aguarde antes de enviar novamente.`;
+      }
+    }
+
+    // ── Validação: PDF existe no storage (verificação real) ──
     const storage = supabase.storage.from("whatsapp-media");
     const canonicalPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
     const { data: pdfFile, error: pdfError } = await storage.createSignedUrl(canonicalPath, 900);
 
     if (!pdfFile?.signedUrl || pdfError) {
-      // Try to materialize on the fly
-      try {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-        const matResp = await fetch(`${supabaseUrl}/functions/v1/materialize-service-pdf`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
-          body: JSON.stringify({ serviceId: serviceData.id, organizationId }),
-        });
-        if (!matResp.ok) {
-          return `Ainda não encontrei um PDF oficial salvo para a ${docLabel} #${osNumber}. Tente gerar pelo painel.`;
-        }
-      } catch {
-        return `Ainda não encontrei um PDF oficial salvo para a ${docLabel} #${osNumber}. Tente gerar pelo painel.`;
-      }
-
-      // Re-check after materialization
-      const { data: retryPdf } = await storage.createSignedUrl(canonicalPath, 900);
-      if (!retryPdf?.signedUrl) {
-        return `Não consegui gerar o PDF oficial da ${docLabel} #${osNumber}. Tente pelo painel.`;
-      }
+      return `O PDF oficial da ${docLabel} #${osNumber} não foi encontrado no sistema. Gere o PDF pelo painel antes de enviar.`;
     }
 
-    // ── Get signed URL for sending ──
-    const { data: signedPdf } = await storage.createSignedUrl(canonicalPath, 900);
-    if (!signedPdf?.signedUrl) {
-      return `Erro ao preparar o PDF para envio.`;
-    }
-
-    // ── Send to CLIENT's phone via WhatsApp ──
+    // ── Enviar para o telefone do CLIENTE ──
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
     const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
 
-    // Find the org's WhatsApp channel instance
     const { data: channels } = await supabase
       .from("whatsapp_channels")
       .select("instance_name, status")
@@ -1308,10 +1322,10 @@ export async function executeAdminTool(
     const instance = channels?.[0]?.instance_name || ctx?.instance;
 
     if (!vpsUrl || !apiKey || !instance) {
-      return `PDF da ${docLabel} #${osNumber} está pronto! Mas não consegui enviar automaticamente (canal WhatsApp não configurado). O PDF está disponível no sistema.`;
+      return `PDF da ${docLabel} #${osNumber} está pronto, mas o canal WhatsApp não está configurado. Envie pelo painel.`;
     }
 
-    // Normalize client phone for WhatsApp
+    // Normalize client phone
     let whatsappNumber = clientPhone.replace(/\D/g, "");
     if (!whatsappNumber.startsWith("55") && whatsappNumber.length <= 11) {
       whatsappNumber = "55" + whatsappNumber;
@@ -1325,7 +1339,7 @@ export async function executeAdminTool(
         body: JSON.stringify({
           number: whatsappNumber,
           mediatype: "document",
-          media: signedPdf.signedUrl,
+          media: pdfFile.signedUrl,
           caption: `📋 ${docType} #${osNumber} - ${clientName}`,
           fileName,
         }),
@@ -1339,7 +1353,13 @@ export async function executeAdminTool(
 
       await evoResp.text();
 
-      // ── Log the send ──
+      // ── Registrar envio: last_pdf_sent_at + audit log ──
+      await supabase
+        .from("services")
+        .update({ last_pdf_sent_at: new Date().toISOString() })
+        .eq("id", serviceData.id)
+        .eq("organization_id", organizationId);
+
       try {
         await supabase.from("data_audit_log").insert({
           organization_id: organizationId,
