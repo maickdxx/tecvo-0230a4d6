@@ -154,7 +154,7 @@ export function AdminAutomationFlows() {
 
   const runManualMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.functions.invoke("analytics-automation-engine", {
+      const { error } = await supabase.functions.invoke("laura-lifecycle-cron", {
         body: { mode: "manual" },
       });
       if (error) throw error;
