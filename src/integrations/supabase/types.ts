@@ -806,23 +806,35 @@ export type Database = {
       }
       assistant_conversations: {
         Row: {
+          awaiting_confirmation: boolean | null
           created_at: string
           id: string
           organization_id: string
+          pending_action: string | null
+          pending_client_name: string | null
+          pending_service_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          awaiting_confirmation?: boolean | null
           created_at?: string
           id?: string
           organization_id: string
+          pending_action?: string | null
+          pending_client_name?: string | null
+          pending_service_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          awaiting_confirmation?: boolean | null
           created_at?: string
           id?: string
           organization_id?: string
+          pending_action?: string | null
+          pending_client_name?: string | null
+          pending_service_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -6222,6 +6234,7 @@ export type Database = {
       whatsapp_contacts: {
         Row: {
           assigned_to: string | null
+          awaiting_confirmation: boolean | null
           channel_id: string | null
           conversation_status: string
           conversion_status: string | null
@@ -6244,6 +6257,9 @@ export type Database = {
           needs_resolution: boolean
           normalized_phone: string | null
           organization_id: string
+          pending_action: string | null
+          pending_client_name: string | null
+          pending_service_id: string | null
           phone: string | null
           profile_picture_url: string | null
           source: string | null
@@ -6255,6 +6271,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          awaiting_confirmation?: boolean | null
           channel_id?: string | null
           conversation_status?: string
           conversion_status?: string | null
@@ -6277,6 +6294,9 @@ export type Database = {
           needs_resolution?: boolean
           normalized_phone?: string | null
           organization_id: string
+          pending_action?: string | null
+          pending_client_name?: string | null
+          pending_service_id?: string | null
           phone?: string | null
           profile_picture_url?: string | null
           source?: string | null
@@ -6288,6 +6308,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          awaiting_confirmation?: boolean | null
           channel_id?: string | null
           conversation_status?: string
           conversion_status?: string | null
@@ -6310,6 +6331,9 @@ export type Database = {
           needs_resolution?: boolean
           normalized_phone?: string | null
           organization_id?: string
+          pending_action?: string | null
+          pending_client_name?: string | null
+          pending_service_id?: string | null
           phone?: string | null
           profile_picture_url?: string | null
           source?: string | null
