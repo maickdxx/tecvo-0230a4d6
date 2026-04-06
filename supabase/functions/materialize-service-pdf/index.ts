@@ -88,6 +88,7 @@ serve(async (req) => {
 
     if (serviceRes.error || !serviceRes.data) {
       console.error("[MATERIALIZE-PDF] Service not found:", serviceRes.error);
+      await supabase.from("services").update({ pdf_status: "failed" }).eq("id", serviceId).eq("organization_id", organizationId);
       return new Response(JSON.stringify({ error: "Service not found", status: "failed" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
