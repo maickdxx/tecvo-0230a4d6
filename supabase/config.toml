@@ -26,7 +26,7 @@ project_id = "vcuwimodpfbzpuvzesfm"
     verify_jwt = false
   [functions.bot-engine]
     verify_jwt = false
-  [functions.broadcast-secretary]
+  [functions.bot-engine]
     verify_jwt = false
   [functions.recurrence-automation]
     verify_jwt = false
