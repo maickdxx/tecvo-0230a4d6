@@ -26,7 +26,12 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const now = new Date();
   const oneEightyDaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes] = await Promise.all([
+  const SERVICE_LIMIT = 1000;
+  const CLIENT_LIMIT = 500;
+  const TRANSACTION_LIMIT = 1000;
+
+  const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes,
+         servicesTotalRes, clientsTotalRes, transactionsTotalRes] = await Promise.all([
     supabase
       .from("services")
       .select("id, status, scheduled_date, completed_date, value, description, service_type, assigned_to, client_id, created_at, payment_method, document_type, operational_status")
@@ -35,13 +40,13 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .neq("status", "cancelled")
       .gte("scheduled_date", oneEightyDaysAgo)
       .order("scheduled_date", { ascending: false })
-      .limit(1000),
+      .limit(SERVICE_LIMIT),
     supabase
       .from("clients")
       .select("id, name, phone, email, created_at")
       .eq("organization_id", organizationId)
       .is("deleted_at", null)
-      .limit(500),
+      .limit(CLIENT_LIMIT),
     supabase
       .from("transactions")
       .select("id, type, amount, date, due_date, status, category, description, payment_date, payment_method")
@@ -49,7 +54,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .is("deleted_at", null)
       .gte("date", oneEightyDaysAgo)
       .order("date", { ascending: false })
-      .limit(1000),
+      .limit(TRANSACTION_LIMIT),
     supabase
       .from("profiles")
       .select("user_id, full_name, position")
@@ -67,17 +72,59 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .eq("is_active", true)
       .is("deleted_at", null)
       .limit(50),
+    // Real COUNT queries — no limit, just count
+    supabase
+      .from("services")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .neq("status", "cancelled"),
+    supabase
+      .from("clients")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null),
+    supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null),
   ]);
 
+  const services = servicesRes.data || [];
+  const clients = clientsRes.data || [];
+  const transactions = transactionsRes.data || [];
+
+  const totalServicesAllTime = servicesTotalRes.count ?? services.length;
+  const totalClientsAllTime = clientsTotalRes.count ?? clients.length;
+  const totalTransactionsAllTime = transactionsTotalRes.count ?? transactions.length;
+
   return {
-    services: servicesRes.data || [],
-    clients: clientsRes.data || [],
-    transactions: transactionsRes.data || [],
+    services,
+    clients,
+    transactions,
     profiles: profilesRes.data || [],
     orgName: orgRes.data?.name || "Empresa",
     monthlyGoal: orgRes.data?.monthly_goal || null,
     catalog: catalogRes.data || [],
     timezone: orgRes.data?.timezone || "America/Sao_Paulo",
+    // Data completeness metadata
+    _meta: {
+      servicePeriodDays: 180,
+      serviceLimit: SERVICE_LIMIT,
+      serviceLoadedCount: services.length,
+      serviceTotalAllTime: totalServicesAllTime,
+      servicesTruncated: services.length >= SERVICE_LIMIT,
+      clientLimit: CLIENT_LIMIT,
+      clientLoadedCount: clients.length,
+      clientTotalAllTime: totalClientsAllTime,
+      clientsTruncated: clients.length >= CLIENT_LIMIT,
+      transactionPeriodDays: 180,
+      transactionLimit: TRANSACTION_LIMIT,
+      transactionLoadedCount: transactions.length,
+      transactionTotalAllTime: totalTransactionsAllTime,
+      transactionsTruncated: transactions.length >= TRANSACTION_LIMIT,
+    },
   };
 }
 
@@ -91,7 +138,8 @@ export function buildSystemPrompt(ctx: any) {
   const { dateStr, timeStr } = getFormattedDateTimeInTz(tz);
   const currentMonth = getCurrentMonthInTz(tz);
 
-  const { services, clients, transactions, profiles, orgName, monthlyGoal, catalog } = ctx;
+  const { services, clients, transactions, profiles, orgName, monthlyGoal, catalog, _meta } = ctx;
+  const meta = _meta || {};
 
   const osServices = services.filter((s: any) => s.document_type !== "quote");
 
@@ -287,8 +335,22 @@ ${profiles.map((p: any) => `  - ${p.full_name || "?"} (${p.position || "Técnico
 🏷️ CATÁLOGO DE PREÇOS:
 ${catalogText}
 
-📇 CLIENTES: ${clients.length} cadastrados
+📇 CLIENTES: ${meta.clientTotalAllTime ?? clients.length} cadastrados no total${meta.clientsTruncated ? ` (mostrando ${meta.clientLoadedCount} mais recentes)` : ""}
 
+══════════ COMPLETUDE DOS DADOS (INTERNO — NÃO MOSTRAR AO USUÁRIO) ══════════
+
+⚠️ Os dados acima cobrem os ÚLTIMOS ${meta.servicePeriodDays || 180} DIAS de serviços e transações.
+• Serviços carregados: ${meta.serviceLoadedCount ?? services.length} de ${meta.serviceTotalAllTime ?? "?"} totais${meta.servicesTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
+• Transações carregadas: ${meta.transactionLoadedCount ?? transactions.length} de ${meta.transactionTotalAllTime ?? "?"} totais${meta.transactionsTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
+• Clientes carregados: ${meta.clientLoadedCount ?? clients.length} de ${meta.clientTotalAllTime ?? "?"} totais${meta.clientsTruncated ? " ⚠️ TRUNCADO — limite atingido" : ""}
+
+REGRAS DE TRANSPARÊNCIA (OBRIGATÓRIO):
+1. Se o usuário perguntar "quantos serviços eu tenho no total", use o número TOTAL (${meta.serviceTotalAllTime ?? "?"}) e informe que é o total de todos os tempos.
+2. Se responder sobre faturamento, sempre mencione o período: "este mês", "esta semana", "hoje". NUNCA diga "faturamento total" sem especificar período.
+3. Se os dados estiverem truncados (⚠️ acima), informe: "estou mostrando os dados dos últimos 6 meses".
+4. NUNCA apresente um número parcial como se fosse absoluto.
+5. Se não tiver certeza se o dado é completo, diga: "com base nos registros recentes" ou "nos últimos 6 meses".
+6. Para totais históricos (total de clientes, total de serviços de todos os tempos), use os números TOTAIS fornecidos acima.
 ══════════ INTENÇÕES COMUNS ══════════
 
 Interprete a mensagem do usuário e identifique a INTENÇÃO. Exemplos:
@@ -391,7 +453,7 @@ IDENTIDADE: Você é a Laura, secretária inteligente da ${orgName}.
 
 REGRAS DE RESPOSTA:
 1. Respostas CURTAS (máx 600 caracteres para listas, 400 para respostas simples). Use emojis com moderação e variação.
-2. Responda com DADOS REAIS. NÃO invente números.
+2. Responda APENAS com DADOS REAIS presentes acima. NÃO invente, estime ou suponha números. Se o dado não estiver nos dados acima, diga "não tenho essa informação agora".
 3. Faturamento = APENAS serviços concluídos (status=completed).
 4. Valores monetários: "R$ 1.234,56".
 5. Seja direto: dado PRIMEIRO, contexto depois (se necessário).
@@ -400,6 +462,8 @@ REGRAS DE RESPOSTA:
 8. SEMPRE em português brasileiro.
 9. Comparações → mostre variação percentual.
 10. Tom: como uma colega de trabalho experiente e confiável.
+11. SEMPRE contextualize com período: "este mês", "esta semana", "hoje", "nos últimos 6 meses". NUNCA use "total" sem contexto temporal.
+12. Se não encontrar dados para responder, NÃO invente. Diga: "Não encontrei registros para esse período."
 
 ══════════ FORMATAÇÃO DE RESPOSTAS (OBRIGATÓRIO) ══════════
 
