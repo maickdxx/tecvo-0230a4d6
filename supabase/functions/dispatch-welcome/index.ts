@@ -125,20 +125,28 @@ Deno.serve(async (req) => {
         payload: { email: userEmail },
         sendFn: async () => {
           try {
-            // Call send-transactional-email edge function internally
-            const { data, error } = await adminClient.functions.invoke("send-transactional-email", {
-              body: {
+            // Call send-transactional-email via direct HTTP with service role key
+            const fnUrl = `${supabaseUrl}/functions/v1/send-transactional-email`;
+            const res = await fetch(fnUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({
                 templateName: "welcome",
                 recipientEmail: userEmail,
                 idempotencyKey: `welcome-email-${user_id}`,
                 templateData: { name: userName },
-              },
+              }),
             });
 
-            if (error) {
-              return { success: false, error: `invoke error: ${error.message}` };
+            if (!res.ok) {
+              const errText = await res.text();
+              return { success: false, error: `HTTP ${res.status}: ${errText}` };
             }
 
+            const data = await res.json().catch(() => ({}));
             if (data?.success || data?.queued) {
               return { success: true, messageId: data?.message_id || null };
             }
