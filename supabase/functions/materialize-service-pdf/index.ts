@@ -332,6 +332,7 @@ serve(async (req) => {
 
     if (uploadError) {
       console.error("[MATERIALIZE-PDF] Upload failed:", uploadError);
+      await supabase.from("services").update({ pdf_status: "failed" }).eq("id", serviceId).eq("organization_id", organizationId);
       return new Response(JSON.stringify({ error: "Upload failed", details: uploadError.message, status: "failed" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
