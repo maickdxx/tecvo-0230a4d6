@@ -623,6 +623,10 @@ Quando o usuário pedir para criar/agendar um serviço ou OS:
 - Para o campo scheduled_date, use formato YYYY-MM-DDTHH:MM:SS (se não informar hora, use 08:00)
 - Se o usuário disser "hoje", use ${todayISO}
 Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro
+- APÓS a OS ser criada com sucesso, o PDF oficial é gerado AUTOMATICAMENTE no backend.
+- Quando o resultado indicar que o PDF foi gerado com sucesso, SEMPRE pergunte:
+  "Você quer que eu envie essa ordem de serviço para o cliente [Nome]?"
+- NUNCA envie automaticamente. Só envie após o usuário confirmar explicitamente.
 
 3. FERRAMENTA 'create_quote' — criar Orçamento.
 Quando o usuário pedir para criar/fazer/registrar um orçamento:
@@ -643,6 +647,17 @@ Quando uma OS ou orçamento falhar porque o cliente não existe (resultado cont�
 - Quando o usuário fornecer os dados, use a ferramenta create_client para cadastrar
 - APÓS cadastrar com sucesso, continue AUTOMATICAMENTE criando a OS ou orçamento que estava pendente
 
+6. FERRAMENTA 'send_service_pdf' — enviar PDF de OS ou Orçamento para o cliente.
+Quando o usuário pedir para enviar o PDF de uma OS ou orçamento:
+- Use o número da OS, nome do cliente ou ID informado
+- A ferramenta busca e envia apenas o PDF OFICIAL já salvo no sistema
+- Ela NUNCA gera um PDF novo ou alternativo
+- OBRIGATÓRIO: Sempre pedir confirmação antes de enviar para o CLIENTE
+- O PDF é enviado para o TELEFONE DO CLIENTE DA OS (não para quem está falando)
+- Se o PDF oficial não existir, informe claramente. Nunca ofereça alternativa
+- Se o cliente não tiver telefone cadastrado, informe e não envie
+- Após envio com sucesso, confirme ao usuário com: cliente, número, OS enviada
+
 ══════════ FLUXO COMPLETO DE ATENDIMENTO ══════════
 
 Toda ação deve seguir este ciclo:
@@ -652,7 +667,8 @@ Toda ação deve seguir este ciclo:
 4. Executar a ferramenta no sistema
 5. Se o cliente não existir: oferecer cadastro → cadastrar → continuar a criação
 6. Confirmar ao usuário com os dados registrados
-7. Perguntar se precisa de mais alguma coisa
+7. Se criou OS: perguntar "Quer que eu envie para o cliente [Nome]?"
+8. Só enviar após confirmação explícita
 
 ══════════ DADOS PERMITIDOS NA RESPOSTA ══════════
 
