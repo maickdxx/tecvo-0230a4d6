@@ -151,6 +151,23 @@ Deno.serve(async (req) => {
 
       const orgTz = org.timezone || "America/Sao_Paulo";
 
+      // CHECK SEND WINDOW — queue if outside hours
+      const windowCheck = await checkAndEnqueue({
+        supabase,
+        organizationId: org.id,
+        phone: ownerPhone.phone!,
+        messageContent: message,
+        messageType: "business_tip",
+        sourceFunction: "auto-business-tips",
+        idempotencyKey: `tip-${org.id}-${new Date().toLocaleDateString("en-CA", { timeZone: orgTz })}`,
+        timezone: orgTz,
+      });
+
+      if (windowCheck.action === "queued") {
+        console.log(`[AUTO-TIPS] ⏰ Org ${org.id} queued for ${windowCheck.scheduledFor} (outside send window)`);
+        continue;
+      }
+
       const result = await idempotentSend({
         supabase,
         organizationId: org.id,

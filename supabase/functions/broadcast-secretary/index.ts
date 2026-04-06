@@ -135,6 +135,24 @@ Você pode me perguntar sobre:
 
       const orgTz = org.timezone || "America/Sao_Paulo";
 
+      // CHECK SEND WINDOW — queue if outside hours
+      const windowCheck = await checkAndEnqueue({
+        supabase,
+        organizationId: org.id,
+        phone: ownerPhone.phone!,
+        messageContent: message,
+        messageType: "broadcast",
+        sourceFunction: "broadcast-secretary",
+        idempotencyKey: `broadcast-${org.id}-${new Date().toLocaleDateString("en-CA", { timeZone: orgTz })}`,
+        timezone: orgTz,
+      });
+
+      if (windowCheck.action === "queued") {
+        console.log(`[BROADCAST] ${org.name}: ⏰ Queued for ${windowCheck.scheduledFor} (outside send window)`);
+        results.push({ org: org.name, phone: ownerPhone.phone, sent: false, source: ownerPhone.source!, skipped: true });
+        continue;
+      }
+
       // IDEMPOTENT: Insert log first, send only if insert succeeds
       const result = await idempotentSend({
         supabase,
