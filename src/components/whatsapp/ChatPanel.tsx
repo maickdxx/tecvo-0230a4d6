@@ -382,6 +382,18 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
   const handleSend = async () => {
     if (!text.trim() || isSending || !channelId) return;
     let msg = text.trim();
+
+    // Resolve quick reply variables with current sender's name
+    const senderFirstName = userName ? userName.split(" ")[0] : "";
+    const contactName = contact.name || contact.phone || "";
+    const contactFirstNameVar = contactName.split(" ")[0];
+    msg = msg
+      .replace(/\{\{atendente_nome\}\}/g, senderFirstName)
+      .replace(/\{\{primeiro_nome_atendente\}\}/g, senderFirstName)
+      .replace(/\{\{primeiro_nome\}\}/g, contactFirstNameVar)
+      .replace(/\{\{nome_completo\}\}/g, contactName)
+      .replace(/\{\{nome_empresa\}\}/g, organization?.name || "");
+
     const isWebchat = contact?.source === "webchat" || (contact?.whatsapp_id || "").startsWith("webchat-");
     // Build the raw message with signature for WhatsApp
     const finalMsg = (signatureEnabled && userName && !isWebchat) ? `*${userName}:*\n${msg}` : msg;
