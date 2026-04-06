@@ -74,8 +74,8 @@ Deno.serve(async (req) => {
     const userEmail = authRes.data?.user?.email;
     const userName = profile?.full_name || org?.name || "empreendedor";
 
-    // Resolve WhatsApp
-    const waNumber = profile?.whatsapp_ai_enabled ? normalizeToDigits(profile?.phone) : null;
+    // Resolve WhatsApp — send welcome to any user with a phone, regardless of AI toggle
+    const waNumber = normalizeToDigits(profile?.phone) || null;
 
     const results: Record<string, string> = {};
 
