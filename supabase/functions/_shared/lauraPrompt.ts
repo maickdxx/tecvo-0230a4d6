@@ -780,6 +780,26 @@ export const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "send_service_pdf",
+      description:
+        "Envia o PDF oficial de uma Ordem de Serviço ou Orçamento para o CLIENTE da OS via WhatsApp. NUNCA gera PDF novo. Requer confirmação do usuário antes de enviar.",
+      parameters: {
+        type: "object",
+        properties: {
+          service_identifier: {
+            type: "string",
+            description:
+              "Identificador do serviço: número da OS (ex: '0042'), nome do cliente, ou parte do ID.",
+          },
+        },
+        required: ["service_identifier"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─────────────────── reliability layer ───────────────────
