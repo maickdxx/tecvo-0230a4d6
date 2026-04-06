@@ -467,6 +467,68 @@ export type Database = {
           },
         ]
       }
+      ai_response_audit: {
+        Row: {
+          ai_response: string
+          channel: string
+          classification: string
+          context_snapshot: Json | null
+          created_at: string
+          data_source: string | null
+          had_limit: boolean | null
+          had_truncation: boolean | null
+          id: string
+          is_total_or_partial: string | null
+          numbers_cited: Json | null
+          organization_id: string
+          period_considered: string | null
+          user_id: string | null
+          user_question: string
+        }
+        Insert: {
+          ai_response: string
+          channel?: string
+          classification?: string
+          context_snapshot?: Json | null
+          created_at?: string
+          data_source?: string | null
+          had_limit?: boolean | null
+          had_truncation?: boolean | null
+          id?: string
+          is_total_or_partial?: string | null
+          numbers_cited?: Json | null
+          organization_id: string
+          period_considered?: string | null
+          user_id?: string | null
+          user_question: string
+        }
+        Update: {
+          ai_response?: string
+          channel?: string
+          classification?: string
+          context_snapshot?: Json | null
+          created_at?: string
+          data_source?: string | null
+          had_limit?: boolean | null
+          had_truncation?: boolean | null
+          id?: string
+          is_total_or_partial?: string | null
+          numbers_cited?: Json | null
+          organization_id?: string
+          period_considered?: string | null
+          user_id?: string | null
+          user_question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_response_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_usage_logs: {
         Row: {
           action_slug: string
