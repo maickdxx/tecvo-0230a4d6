@@ -1212,58 +1212,77 @@ export async function executeAdminTool(
   }
 
   if (fnName === "send_service_pdf") {
-    const { service_identifier, confirmed } = args;
-    if (!service_identifier) return "Erro: identificador do serviço é obrigatório.";
+    const { service_id, service_identifier, confirmed } = args;
 
     // ── BLOQUEIO: confirmação obrigatória no backend ──
     if (confirmed !== true) {
       return "Confirme primeiro se deseja enviar a ordem de serviço para o cliente. Pergunte ao usuário antes de chamar esta ferramenta.";
     }
 
-    const identifier = service_identifier.trim();
+    if (!service_id && !service_identifier) {
+      return "Erro: informe o service_id ou o identificador do serviço (número/nome).";
+    }
+
     let serviceData: any = null;
 
-    // Search by quote_number
-    const numericId = parseInt(identifier, 10);
-    if (!isNaN(numericId)) {
+    // ── PRIORIDADE 1: Busca direta por UUID (contexto da OS recém-criada) ──
+    if (service_id) {
       const { data } = await supabase
         .from("services")
         .select("*, client:clients(name, phone, whatsapp)")
+        .eq("id", service_id)
         .eq("organization_id", organizationId)
-        .eq("quote_number", numericId)
         .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
+        .single();
+      if (data) serviceData = data;
     }
 
-    // Search by client name
-    if (!serviceData) {
-      const { data } = await supabase
-        .from("services")
-        .select("*, client:clients!inner(name, phone, whatsapp)")
-        .eq("organization_id", organizationId)
-        .ilike("client.name", `%${identifier}%`)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
+    // ── PRIORIDADE 2: Busca por identifier (fallback) ──
+    if (!serviceData && service_identifier) {
+      const identifier = service_identifier.trim();
+
+      // Search by quote_number
+      const numericId = parseInt(identifier, 10);
+      if (!isNaN(numericId)) {
+        const { data } = await supabase
+          .from("services")
+          .select("*, client:clients(name, phone, whatsapp)")
+          .eq("organization_id", organizationId)
+          .eq("quote_number", numericId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) serviceData = data[0];
+      }
+
+      // Search by client name
+      if (!serviceData) {
+        const { data } = await supabase
+          .from("services")
+          .select("*, client:clients!inner(name, phone, whatsapp)")
+          .eq("organization_id", organizationId)
+          .ilike("client.name", `%${identifier}%`)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) serviceData = data[0];
+      }
+
+      // Search by partial ID
+      if (!serviceData) {
+        const { data } = await supabase
+          .from("services")
+          .select("*, client:clients(name, phone, whatsapp)")
+          .eq("organization_id", organizationId)
+          .ilike("id", `${identifier}%`)
+          .is("deleted_at", null)
+          .limit(1);
+        if (data && data.length > 0) serviceData = data[0];
+      }
     }
 
-    // Search by partial ID
     if (!serviceData) {
-      const { data } = await supabase
-        .from("services")
-        .select("*, client:clients(name, phone, whatsapp)")
-        .eq("organization_id", organizationId)
-        .ilike("id", `${identifier}%`)
-        .is("deleted_at", null)
-        .limit(1);
-      if (data && data.length > 0) serviceData = data[0];
-    }
-
-    if (!serviceData) {
-      return `Não encontrei nenhuma OS ou orçamento com "${identifier}". Verifique o número ou nome do cliente.`;
+      return `Não encontrei a OS informada. Verifique o número ou nome do cliente.`;
     }
 
     const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
