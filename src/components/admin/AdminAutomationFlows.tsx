@@ -79,25 +79,25 @@ interface SystemFlow {
 
 const SYSTEM_FLOWS: SystemFlow[] = [
   {
-    name: "Boas-vindas WhatsApp",
-    trigger: "Conclusão do onboarding",
+    name: "Laura — Onboarding e Boas-vindas",
+    trigger: "Primeiro acesso após cadastro",
     channel: "whatsapp",
-    description: "Mensagem única de boas-vindas enviada pela instância Tecvo ao concluir o cadastro. Protegida por lock atômico (envio único garantido).",
+    description: "A Laura conduz o onboarding completo via chat e WhatsApp, incluindo boas-vindas, ativação e conversão. Centralizado, sem automações paralelas.",
     stage: "onboarding",
   },
   {
-    name: "Notificação Admin — Novo Cadastro",
-    trigger: "Criação de organização (trigger DB)",
+    name: "Laura — Reativação de Usuários",
+    trigger: "Inatividade detectada",
     channel: "whatsapp",
-    description: "Alerta interno para o Super Admin (WhatsApp + E-mail) quando uma nova empresa se cadastra. Enviado para 19989307608 via instância Tecvo e para o e-mail do administrador.",
-    stage: "onboarding",
+    description: "A Laura identifica usuários inativos e conduz reengajamento com base em comportamento real, sem mensagens genéricas.",
+    stage: "retention",
   },
   {
     name: "Notificação de Status de OS",
     trigger: "Mudança de status operacional (en_route, in_attendance, completed)",
     channel: "whatsapp",
     description: "Notificação automática ao cliente quando o técnico muda o status da OS. Controlada pela flag auto_notify_client_completion.",
-    stage: "retention",
+    stage: "operational",
   },
 ];
 
