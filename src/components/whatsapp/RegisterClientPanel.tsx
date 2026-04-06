@@ -68,6 +68,17 @@ export function RegisterClientPanel({ contact, onClose, onClientRegistered }: Re
           .eq("id", contact.id);
       }
 
+      // Send Laura's welcome message to the new client (fire-and-forget)
+      if (data.phone || data.whatsapp) {
+        supabase.functions.invoke("dispatch-client-welcome", {
+          body: {
+            organization_id: organization.id,
+            client_phone: data.whatsapp || data.phone,
+            client_name: data.name,
+          },
+        }).catch(() => { /* silent */ });
+      }
+
       toast.success("Cliente cadastrado e vinculado!");
       onClientRegistered();
       onClose();

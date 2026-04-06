@@ -102,13 +102,24 @@ export function useClients() {
       if (error) throw error;
       return client;
     },
-    onSuccess: () => {
+    onSuccess: (client) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       trackFBCustomEvent("ClientCreated");
       toast({
         title: "Cliente cadastrado",
         description: "O cliente foi adicionado com sucesso",
       });
+
+      // Fire-and-forget: send Laura's welcome message to the new client
+      if (client?.phone && organizationId) {
+        supabase.functions.invoke("dispatch-client-welcome", {
+          body: {
+            organization_id: organizationId,
+            client_phone: client.whatsapp || client.phone,
+            client_name: client.name,
+          },
+        }).catch(() => { /* silent – welcome is best-effort */ });
+      }
     },
     onError: (error) => {
       toast({
