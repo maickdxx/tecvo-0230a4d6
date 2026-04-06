@@ -181,6 +181,11 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
           toolResult = `⚠️ A ação "${tc.function?.name || "solicitada"}" não retornou resultado. Isso pode indicar um problema temporário. Tente novamente.`;
         }
 
+        // ── Translate PENDING_CONFIRMATION into AI-friendly instruction ──
+        if (toolResult.startsWith("PENDING_CONFIRMATION:")) {
+          toolResult = "O envio da OS requer confirmação do usuário. Pergunte ao usuário se deseja enviar o PDF da OS para o cliente. Quando ele confirmar, chame send_service_pdf novamente com confirmed=true.";
+        }
+
         console.log("[TECVO-CHAT] Tool result:", toolResult.slice(0, 200));
 
         toolMessages.push({
