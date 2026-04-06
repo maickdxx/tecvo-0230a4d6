@@ -791,18 +791,23 @@ export const ADMIN_TOOLS = [
       parameters: {
         type: "object",
         properties: {
+          service_id: {
+            type: "string",
+            description:
+              "UUID COMPLETO do serviço. Use SEMPRE que tiver o ID (ex: após create_service). Tem prioridade absoluta sobre service_identifier.",
+          },
           service_identifier: {
             type: "string",
             description:
-              "Identificador do serviço: número da OS (ex: '0042'), nome do cliente, ou parte do ID.",
+              "Fallback: número da OS (ex: '0042') ou nome do cliente. Só use quando NÃO tiver o service_id UUID.",
           },
           confirmed: {
             type: "boolean",
             description:
-              "OBRIGATÓRIO: deve ser true. Indica que o usuário CONFIRMOU explicitamente o envio. Se o usuário não confirmou, NÃO chame esta ferramenta.",
+              "OBRIGATÓRIO: deve ser true. Indica que o usuário CONFIRMOU explicitamente o envio.",
           },
         },
-        required: ["service_identifier", "confirmed"],
+        required: ["confirmed"],
         additionalProperties: false,
       },
     },
