@@ -12,7 +12,7 @@
 export interface IdempotentSendOptions {
   supabase: any;
   organizationId: string;
-  messageType: "weather" | "business_tip" | "broadcast";
+  messageType: "business_tip" | "broadcast";
   content: string;
   /** The timezone of the org, used to compute sent_date */
   timezone?: string;
