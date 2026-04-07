@@ -195,9 +195,9 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       {/* Top bar */}
       {!isMobileChatFocused && !fullscreen && (
         <>
-          <div className="flex items-center justify-between px-4 border-b border-border/40 bg-card gap-3 shrink-0 py-3 shadow-[0_1px_3px_0_hsl(0,0%,0%,0.04)]">
+          <div className="flex items-center justify-between px-4 border-b border-border/30 bg-card gap-3 shrink-0 py-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <h1 className="text-base font-black tracking-tight text-foreground shrink-0">WhatsApp</h1>
+              <h1 className="text-base font-bold tracking-tight text-foreground shrink-0">WhatsApp</h1>
               <ConnectionStatusPanel
                 channelId={channel?.id || null}
                 isConnected={!!channel?.is_connected}
@@ -214,16 +214,16 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
 
             <div className="flex items-center gap-0.5 shrink-0">
               <AICreditsDisplay />
-              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => navigate("/whatsapp/contatos")} title="Contatos">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex text-muted-foreground hover:text-foreground" onClick={() => navigate("/whatsapp/contatos")} title="Contatos">
                 <Users className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => navigate("/whatsapp/relatorio")} title="Relatório">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex text-muted-foreground hover:text-foreground" onClick={() => navigate("/whatsapp/relatorio")} title="Relatório">
                 <BarChart3 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => window.open("/whatsapp/full", "_blank")} title="Abrir em tela cheia">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex text-muted-foreground hover:text-foreground" onClick={() => window.open("/whatsapp/full", "_blank")} title="Abrir em tela cheia">
                 <Maximize2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/whatsapp/configuracoes")} title="Configurações">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => navigate("/whatsapp/configuracoes")} title="Configurações">
                 <Settings className="h-4 w-4" />
               </Button>
             </div>
