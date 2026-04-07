@@ -4047,13 +4047,10 @@ Você NÃO deve compartilhar:
               normalized.includes("orcamento") ||
               /(?:^|\s)os(?:\s|$|#)/.test(normalized);
             const hasAction =
-              normalized.includes("envia") ||
-              normalized.includes("enviar") ||
-              normalized.includes("manda") ||
-              normalized.includes("mandar") ||
+              normalized.includes("envi") ||
+              normalized.includes("mand") ||
               normalized.includes("receber") ||
-              normalized.includes("reenvia") ||
-              normalized.includes("reenvia") ||
+              normalized.includes("reenvi") ||
               normalized.includes("ver");
 
             return hasDocument && hasAction;
