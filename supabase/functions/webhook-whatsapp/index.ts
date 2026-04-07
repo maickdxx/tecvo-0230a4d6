@@ -4428,10 +4428,56 @@ Você NÃO deve compartilhar:
 
           let aiResponse = aiResult.content;
 
-          // REMOVED: Dangerous fallback auto-send mechanism
-          // PDF sending now requires explicit user confirmation and goes through the shared send_service_pdf tool
+          const explicitClientPdfRequest = /\b(cliente|pro cliente|para o cliente)\b/i.test(normalizedCurrentUserText);
 
-          if (pdfToolSent && pdfToolResult?.startsWith("SILENT_PDF_SENT:")) {
+          if (wantsPdfNow && !pdfToolAttempted && fallbackPdfIdentifier && !explicitClientPdfRequest) {
+            console.warn(
+              "[WEBHOOK-WHATSAPP] Explicit PDF self-request without tool call. Forcing official PDF send.",
+              { fallbackPdfIdentifier },
+            );
+
+            const forcedPdfToolCall = {
+              id: `direct_pdf_${crypto.randomUUID()}`,
+              function: {
+                name: "send_service_pdf",
+                arguments: JSON.stringify(
+                  /^[a-f0-9]{8}(?:-[a-f0-9-]{4,})?$/i.test(fallbackPdfIdentifier)
+                    ? { service_id: fallbackPdfIdentifier, target: "self" }
+                    : { service_identifier: fallbackPdfIdentifier, target: "self" },
+                ),
+              },
+            };
+
+            pdfToolAttempted = true;
+            pdfToolResult = await executeAdminTool(
+              supabase,
+              targetOrganizationId,
+              forcedPdfToolCall,
+              { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id },
+            );
+
+            if (
+              pdfToolResult.startsWith("SILENT_PDF_SENT:") ||
+              pdfToolResult.startsWith("SILENT_PDF_SENT_SELF:")
+            ) {
+              pdfToolSent = true;
+            }
+
+            console.log(
+              "[WEBHOOK-WHATSAPP] Forced PDF tool result:",
+              pdfToolResult.slice(0, 200),
+            );
+          }
+
+          if (pdfToolSent && pdfToolResult?.startsWith("SILENT_PDF_SENT_SELF:")) {
+            const sentLabel = pdfToolResult
+              .replace("SILENT_PDF_SENT_SELF:", "")
+              .replace(/\s+enviado para você!?$/i, "")
+              .trim();
+            if (!aiResponse || !looksLikePdfSentConfirmation(aiResponse)) {
+              aiResponse = `Pronto, enviei o PDF da ${sentLabel} para você.`;
+            }
+          } else if (pdfToolSent && pdfToolResult?.startsWith("SILENT_PDF_SENT:")) {
             const sentLabel = pdfToolResult
               .replace("SILENT_PDF_SENT:", "")
               .replace(/\s+enviado com sucesso!?$/i, "")
@@ -4441,6 +4487,16 @@ Você NÃO deve compartilhar:
             }
           } else if (wantsPdfNow && pdfToolResult && !pdfToolSent) {
             aiResponse = pdfToolResult;
+          }
+
+          if (looksLikePdfSentConfirmation(aiResponse) && !pdfToolSent) {
+            console.warn(
+              "[WEBHOOK-WHATSAPP] Blocking false PDF sent confirmation without successful tool execution.",
+              { fallbackPdfIdentifier, pdfToolAttempted, pdfToolResult },
+            );
+            aiResponse = fallbackPdfIdentifier
+              ? "Ainda não consegui enviar o PDF de verdade. Me peça com o número da OS ou do orçamento para eu buscar o arquivo oficial e enviar para você."
+              : "Para eu enviar o PDF de verdade, preciso do número da OS ou do orçamento.";
           }
 
           // Log AI usage with CORRECT model name
