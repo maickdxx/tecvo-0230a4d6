@@ -585,7 +585,7 @@ export async function generateServiceOrderPDF({
 
   // ── Payment data ──
   if (hasPayment) {
-    drawSectionTitle("DADOS DO PAGAMENTO");
+    drawSectionTitle("DADOS DO PAGAMENTO", true);
     const payH = orderData.paymentNotes ? 16 : 10;
     doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
     doc.setDrawColor(primary.r, primary.g, primary.b);
