@@ -9,24 +9,24 @@ const levelConfig: Record<
   { border: string; bg: string; icon: typeof AlertTriangle; iconColor: string; label: string }
 > = {
   critical: {
-    border: "border-l-red-500",
-    bg: "bg-red-500/5",
+    border: "border-l-destructive",
+    bg: "bg-destructive/5",
     icon: AlertTriangle,
-    iconColor: "text-red-500",
+    iconColor: "text-destructive",
     label: "Alerta Crítico",
   },
   opportunity: {
-    border: "border-l-emerald-500",
-    bg: "bg-emerald-500/5",
+    border: "border-l-primary",
+    bg: "bg-primary/5",
     icon: TrendingUp,
-    iconColor: "text-emerald-500",
+    iconColor: "text-primary",
     label: "Oportunidade",
   },
   trend: {
-    border: "border-l-amber-500",
-    bg: "bg-amber-500/5",
+    border: "border-l-accent-foreground",
+    bg: "bg-accent/30",
     icon: TrendingDown,
-    iconColor: "text-amber-500",
+    iconColor: "text-accent-foreground",
     label: "Tendência",
   },
 };
