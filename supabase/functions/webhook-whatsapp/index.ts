@@ -4334,7 +4334,7 @@ Você NÃO deve compartilhar:
                 supabase,
                 targetOrganizationId,
                 tc,
-                { ...orgContext, instance, remoteJid },
+                { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id },
               );
 
               // ── Translate PENDING_CONFIRMATION into AI-friendly instruction ──
