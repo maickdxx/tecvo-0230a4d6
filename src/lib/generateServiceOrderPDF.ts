@@ -607,7 +607,7 @@ export async function generateServiceOrderPDF({
     doc.setFontSize(7.5);
     const noteLines = doc.splitTextToSize(notes, contentWidth - 10);
     const noteH = Math.max(noteLines.length * 3.5 + 6, 12);
-    drawSectionTitle("OBSERVAÇÕES");
+    drawSectionTitle("OBSERVAÇÕES", true);
     doc.setFillColor(255, 252, 240);
     doc.setDrawColor(230, 200, 100);
     doc.setLineWidth(0.3);
