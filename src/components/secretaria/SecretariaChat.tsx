@@ -72,7 +72,7 @@ export function SecretariaChat() {
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
             <h4 className="text-sm font-medium text-foreground mb-1">
-              Olá! Sou sua Assistente IA
+              Olá! Sou a Laura
             </h4>
             <p className="text-xs text-muted-foreground max-w-xs mb-4">
               Posso analisar sua agenda, faturamento, clientes e operações. Pergunte qualquer coisa!
