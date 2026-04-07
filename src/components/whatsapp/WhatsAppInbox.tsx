@@ -197,7 +197,7 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
         <>
           <div className="flex items-center justify-between px-4 whatsapp-topbar gap-3 shrink-0 py-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <h1 className="text-base font-bold tracking-tight text-foreground shrink-0">WhatsApp</h1>
+              <h1 className="text-base font-bold tracking-tight text-foreground shrink-0 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">WhatsApp</h1>
               <ConnectionStatusPanel
                 channelId={channel?.id || null}
                 isConnected={!!channel?.is_connected}
