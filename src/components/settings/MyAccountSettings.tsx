@@ -3,23 +3,21 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { 
   ArrowLeft, 
   User, 
-  Bot, 
   Palette, 
   Check, 
   Sun, 
   Moon, 
   Monitor,
   PenLine,
-  Camera
+  Camera,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
-import { useNotifications } from "@/hooks/useNotifications";
 import { useTheme } from "next-themes";
 import { useColorTheme, type ColorTheme } from "@/hooks/useColorTheme";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -53,7 +51,6 @@ const colorThemes: { id: ColorTheme; name: string; hsl: string }[] = [
 export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { profile, updateProfile, isUpdating } = useProfile();
   const { sensitiveData } = useProfileSensitiveData();
-  const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
   const { role, isOwner, isAdmin, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
@@ -157,7 +154,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   if (isLoadingRole || !role) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Bot className="h-12 w-12 animate-pulse text-primary/20" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary/20" />
         <p className="text-sm text-muted-foreground animate-pulse">Confirmando permissões de acesso...</p>
       </div>
     );
@@ -291,81 +288,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
         </Card>
       )}
 
-      {/* IA e Notificações - Only for Owner/SuperAdmin */}
-      {hasFullAccess && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Bot className="h-5 w-5 text-primary" />
-              Assistente IA & Notificações
-            </CardTitle>
-            <CardDescription>Como a IA interage com você</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="whatsappAiEnabled" className="text-sm font-medium cursor-pointer">
-                  Receber mensagens da IA no WhatsApp
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Dicas de negócio, resumos diários e alertas operacionais.
-                </p>
-              </div>
-              <Switch
-                id="whatsappAiEnabled"
-                checked={whatsappAiEnabled}
-                onCheckedChange={setWhatsappAiEnabled}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border/50">
-              <div className="space-y-2">
-                <Label htmlFor="aiName">Nome do Assistente</Label>
-                <Input
-                  id="aiName"
-                  value={aiAssistantName}
-                  onChange={(e) => setAiAssistantName(e.target.value)}
-                  placeholder="Ex: TecBot"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="aiVoice">Voz / Personalidade</Label>
-                <select 
-                  id="aiVoice"
-                  value={aiAssistantVoice}
-                  onChange={(e) => setAiAssistantVoice(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="neutral">Neutro</option>
-                  <option value="professional">Profissional</option>
-                  <option value="friendly">Amigável</option>
-                  <option value="enthusiastic">Entusiasta</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-border/50">
-              <h4 className="text-sm font-semibold mb-3">Preferências de Alerta</h4>
-              <div className="space-y-3">
-                {[
-                  { key: "new_service", label: "Novo serviço concluído" },
-                  { key: "new_schedule", label: "Novo agendamento" },
-                  { key: "whatsapp_message", label: "Mensagens recebidas" },
-                ].map((notif) => (
-                  <div key={notif.key} className="flex items-center justify-between">
-                    <Label htmlFor={`notif-${notif.key}`} className="text-sm cursor-pointer">{notif.label}</Label>
-                    <Switch 
-                      id={`notif-${notif.key}`}
-                      checked={(preferences as any)[notif.key]}
-                      onCheckedChange={(checked) => updatePreferences({ [notif.key]: checked })}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* IA settings moved to Laura Preferences in Settings */}
 
       {/* Aparência - Only for Owner/SuperAdmin per request */}
       {hasFullAccess && (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout";
-import { User, Bell, Shield, Palette, CreditCard, Tags, Users, Wallet, PenLine, Landmark, UserCircle, Settings2, Clock, Globe } from "lucide-react";
+import { User, Bell, Shield, Palette, CreditCard, Tags, Users, Wallet, PenLine, Landmark, UserCircle, Settings2, Clock, Globe, Bot } from "lucide-react";
 import { ProfileSettings, SubscriptionSettings, AppearanceSettings } from "@/components/settings";
 import { TransactionCategoriesSettings } from "@/components/settings/TransactionCategoriesSettings";
 import { TeamSettings } from "@/components/settings/TeamSettings";
@@ -13,12 +13,13 @@ import { SecuritySettings } from "@/components/settings/SecuritySettings";
 import { MyAccountSettings } from "@/components/settings/MyAccountSettings";
 import { OperationalCapacitySettings } from "@/components/settings/OperationalCapacitySettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
+import { LauraPreferencesSettings } from "@/components/settings/LauraPreferencesSettings";
 import { TimeClockSettings } from "@/components/settings/TimeClockSettings";
 import { ClientPortalSettings } from "@/components/settings/ClientPortalSettings";
 import { toast } from "@/hooks/use-toast";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type SettingsView = "main" | "profile" | "my-account" | "subscription" | "transaction-categories" | "team" | "payment-methods" | "appearance" | "signature" | "security" | "financial-accounts" | "operational-capacity" | "notifications" | "time-clock" | "client-portal";
+type SettingsView = "main" | "profile" | "my-account" | "subscription" | "transaction-categories" | "team" | "payment-methods" | "appearance" | "signature" | "security" | "financial-accounts" | "operational-capacity" | "notifications" | "laura" | "time-clock" | "client-portal";
 
 interface SettingItem {
   id: SettingsView;
@@ -65,7 +66,8 @@ const settingsGroups: SettingsGroup[] = [
       { id: "my-account", title: "Minha Conta", description: "Seu nome, telefone e WhatsApp pessoal", icon: UserCircle, enabled: true },
       { id: "security", title: "Segurança", description: "Senha, sessões e verificação", icon: Shield, enabled: true },
       { id: "appearance", title: "Aparência", description: "Tema e personalização", icon: Palette, enabled: true },
-      { id: "notifications", title: "Notificações", description: "Configure alertas e lembretes", icon: Bell, enabled: true },
+      { id: "laura", title: "Laura", description: "Preferências de notificações inteligentes", icon: Bot, enabled: true },
+      { id: "notifications", title: "Notificações Push", description: "Configure alertas do navegador", icon: Bell, enabled: true },
     ],
   },
 ];
@@ -108,6 +110,7 @@ export default function Configuracoes() {
     "financial-accounts": <FinancialAccountsSettings onBack={() => setCurrentView("main")} />,
     "operational-capacity": <OperationalCapacitySettings onBack={() => setCurrentView("main")} />,
     notifications: <NotificationSettings onBack={() => setCurrentView("main")} />,
+    laura: <LauraPreferencesSettings onBack={() => setCurrentView("main")} />,
     "time-clock": <TimeClockSettings onBack={() => setCurrentView("main")} />,
     "client-portal": <ClientPortalSettings onBack={() => setCurrentView("main")} />,
   };
