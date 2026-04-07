@@ -1404,14 +1404,42 @@ export async function executeAdminTool(
       return `O cliente "${clientName}" não tem telefone cadastrado. Cadastre o telefone primeiro para enviar a ${docLabel}.`;
     }
 
-    // ── Validação: pdf_status = ready (campo real no banco) ──
+    // ── Validação: pdf_status = ready (com re-materialização automática única) ──
     if (serviceData.pdf_status !== "ready") {
-      const statusMessages: Record<string, string> = {
-        pending: `A ${docLabel} #${osNumber} ainda não teve o PDF gerado. Aguarde ou tente gerar pelo painel.`,
-        generating: `O PDF da ${docLabel} #${osNumber} está sendo gerado. Aguarde alguns segundos e tente novamente.`,
-        failed: `A geração do PDF da ${docLabel} #${osNumber} falhou. Tente gerar novamente pelo painel.`,
-      };
-      return statusMessages[serviceData.pdf_status] || `A ${docLabel} #${osNumber} não está pronta para envio. Status do PDF: ${serviceData.pdf_status || "desconhecido"}.`;
+      // Attempt one auto-rematerialization for pending/failed
+      if (serviceData.pdf_status === "pending" || serviceData.pdf_status === "failed" || !serviceData.pdf_status) {
+        console.log(`[LAURA] PDF not ready (${serviceData.pdf_status}), attempting auto-rematerialization for ${serviceData.id}`);
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+          const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+          const rematResp = await fetch(`${supabaseUrl}/functions/v1/materialize-service-pdf`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
+            body: JSON.stringify({ serviceId: serviceData.id, organizationId }),
+          });
+          if (rematResp.ok) {
+            const rematResult = await rematResp.json();
+            if (rematResult.status === "ready") {
+              console.log(`[LAURA] Auto-rematerialization succeeded for ${serviceData.id}`);
+              // Update local reference so the rest of the flow proceeds
+              serviceData.pdf_status = "ready";
+            } else {
+              return `A geração do PDF da ${docLabel} #${osNumber} falhou na tentativa automática. Tente gerar pelo painel.`;
+            }
+          } else {
+            const errText = await rematResp.text();
+            console.error("[LAURA] Auto-rematerialization failed:", rematResp.status, errText);
+            return `Não foi possível gerar o PDF da ${docLabel} #${osNumber} automaticamente. Tente gerar pelo painel.`;
+          }
+        } catch (rematErr: any) {
+          console.error("[LAURA] Auto-rematerialization error:", rematErr?.message);
+          return `Erro ao tentar gerar o PDF da ${docLabel} #${osNumber}. Tente gerar pelo painel.`;
+        }
+      } else if (serviceData.pdf_status === "generating") {
+        return `O PDF da ${docLabel} #${osNumber} está sendo gerado. Aguarde alguns segundos e tente novamente.`;
+      } else {
+        return `A ${docLabel} #${osNumber} não está pronta para envio. Status do PDF: ${serviceData.pdf_status || "desconhecido"}.`;
+      }
     }
 
     // ── Validação: proteção contra envio duplicado (30s) — só para envio ao cliente ──

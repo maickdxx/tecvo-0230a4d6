@@ -1690,13 +1690,12 @@ async function callAI(
   };
 }
 
-/**
- * Generate a professional PDF matching the system's visual style.
-/**
- * Generates a professional PDF matching the app's generateServiceOrderPDF layout.
- * Uses pdf-lib for proper formatting with colors, sections, and layout.
- */
-async function generateProfessionalPDF(data: {
+// [REMOVED] generateProfessionalPDF — dead code removed during PDF pipeline cleanup.
+// The official PDF generator is materialize-service-pdf edge function.
+// Keeping wrapText helper below as it may be used elsewhere.
+
+/** @deprecated Dead code — kept as reference only, never called */
+function _REMOVED_generateProfessionalPDF(_data: {
   docType: string;
   osNumber: string;
   orgName: string;
