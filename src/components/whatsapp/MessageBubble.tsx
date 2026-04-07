@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { formatWhatsAppMessage } from "@/lib/whatsappUtils";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Check,
   CheckCheck,
@@ -638,9 +639,25 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                 </div>
               )}
 
-              {/* Footer: time + status */}
+              {/* Footer: time + status + message type */}
               {!editing && (
-                <div className={cn("flex items-center gap-1 mt-1", isMe ? "justify-end" : "justify-start")}>
+                <div className={cn("flex items-center gap-1.5 mt-1", isMe ? "justify-end" : "justify-start")}>
+                  {/* Message type label */}
+                  {!isMe && message.sender_type === "ai" && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/15">
+                      IA
+                    </span>
+                  )}
+                  {!isMe && message.sender_type === "bot" && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15">
+                      Bot
+                    </span>
+                  )}
+                  {isMe && message.sender_type === "automation" && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/15">
+                      Auto
+                    </span>
+                  )}
                   {isEdited && (
                     <span className={cn("text-[10px] italic", isMe ? "text-primary-foreground/40" : "text-muted-foreground/40")}>
                       editada
@@ -652,7 +669,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                       className="flex items-center gap-1 text-[10px] text-destructive hover:underline"
                     >
                       <AlertCircle className="h-3 w-3" />
-                      Falha
+                      Falha no envio
                       {onRetry && <RotateCcw className="h-2.5 w-2.5 ml-0.5" />}
                     </button>
                   )}
@@ -660,15 +677,26 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                     {time}
                   </span>
                   {isMe && message.status !== "failed" && (
-                    message.status === "pending" ? (
-                      <Clock className={cn("h-3 w-3 animate-pulse", "text-primary-foreground/50")} />
-                    ) : message.status === "read" ? (
-                      <CheckCheck className="h-3 w-3 text-blue-300" />
-                    ) : message.status === "delivered" ? (
-                      <CheckCheck className={cn("h-3 w-3", "text-primary-foreground/50")} />
-                    ) : (
-                      <Check className={cn("h-3 w-3", "text-primary-foreground/50")} />
-                    )
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex">
+                            {message.status === "pending" ? (
+                              <Clock className={cn("h-3 w-3 animate-pulse", "text-primary-foreground/50")} />
+                            ) : message.status === "read" ? (
+                              <CheckCheck className="h-3 w-3 text-blue-300" />
+                            ) : message.status === "delivered" ? (
+                              <CheckCheck className={cn("h-3 w-3", "text-primary-foreground/50")} />
+                            ) : (
+                              <Check className={cn("h-3 w-3", "text-primary-foreground/50")} />
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-[10px]">
+                          {message.status === "pending" ? "Enviando..." : message.status === "read" ? "Lida" : message.status === "delivered" ? "Entregue" : "Enviada"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
                 </div>
               )}
