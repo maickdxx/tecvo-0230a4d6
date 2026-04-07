@@ -884,6 +884,7 @@ export type Database = {
           send_status: string
           sent_at: string | null
           sent_date: string | null
+          service_id: string | null
         }
         Insert: {
           content?: string | null
@@ -893,6 +894,7 @@ export type Database = {
           send_status?: string
           sent_at?: string | null
           sent_date?: string | null
+          service_id?: string | null
         }
         Update: {
           content?: string | null
@@ -902,6 +904,7 @@ export type Database = {
           send_status?: string
           sent_at?: string | null
           sent_date?: string | null
+          service_id?: string | null
         }
         Relationships: [
           {
