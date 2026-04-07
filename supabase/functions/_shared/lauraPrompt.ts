@@ -1193,6 +1193,7 @@ export async function executeAdminTool(
       value: value || 0,
       status: "scheduled",
       document_type: "quote",
+      pdf_status: "pending",
     }).select("id").single();
 
     if (error) {
@@ -1204,7 +1205,35 @@ export async function executeAdminTool(
     const verifyQuoteErr = await verifyInsert(supabase, "services", newQuote.id, "Quote");
     if (verifyQuoteErr) return verifyQuoteErr;
 
-    return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• ID: ${newQuote.id.substring(0, 8)}\n✅ Confirmado no sistema.`;
+    // ── Auto-materialize PDF in backend (same as OS) ──
+    let quotePdfStatus = "pending";
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+      const materializeResp = await fetch(`${supabaseUrl}/functions/v1/materialize-service-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
+        body: JSON.stringify({ serviceId: newQuote.id, organizationId }),
+      });
+      if (materializeResp.ok) {
+        const materializeResult = await materializeResp.json();
+        quotePdfStatus = materializeResult.status || "ready";
+        console.log("[LAURA] Quote PDF materialized:", quotePdfStatus, "for quote:", newQuote.id);
+      } else {
+        const errText = await materializeResp.text();
+        console.error("[LAURA] Quote PDF materialization failed:", materializeResp.status, errText);
+        quotePdfStatus = "failed";
+      }
+    } catch (pdfErr: any) {
+      console.error("[LAURA] Quote PDF materialization error:", pdfErr?.message);
+      quotePdfStatus = "failed";
+    }
+
+    const quoteNum = String((await supabase.from("services").select("quote_number").eq("id", newQuote.id).single()).data?.quote_number || 0).padStart(4, "0");
+    const quotePdfNote = quotePdfStatus === "ready"
+      ? "\n📄 PDF oficial gerado com sucesso."
+      : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
+    return `Orçamento #${quoteNum} criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• service_id: ${newQuote.id}${quotePdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newQuote.id}" diretamente.`;
   }
 
   if (fnName === "create_client") {
