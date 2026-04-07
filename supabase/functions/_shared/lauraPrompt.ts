@@ -1328,7 +1328,7 @@ export async function executeAdminTool(
 
     // If the user is acting on the current conversation context (especially target=self
     // or confirmation follow-ups), prefer the exact pending_service_id instead of any lookup.
-    if (!resolvedServiceId && conversationPendingServiceId && (!normalizedIdentifier || confirmed === true || sendTarget === "self")) {
+    if (!resolvedServiceId && conversationPendingServiceId && (!normalizedIdentifier || confirmed === true)) {
       resolvedServiceId = conversationPendingServiceId;
     }
 
