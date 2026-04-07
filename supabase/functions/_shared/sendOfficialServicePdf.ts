@@ -211,8 +211,8 @@ export async function sendOfficialServicePdf(
     // ignore HEAD failures and keep current signed URL
   }
 
-  let targetChannelId = target === "self" ? null : (contextChannelId || null);
-  let targetContactId = target === "self" ? null : null;
+  let targetChannelId = contextChannelId || null;
+  let targetContactId: string | null = null;
 
   if (target === "self") {
     const { data: connectedSelfChannels } = await supabase
