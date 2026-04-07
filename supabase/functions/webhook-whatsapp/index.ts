@@ -2484,6 +2484,39 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Handle EDIT via protocolMessage (some Evolution API versions send edits this way)
+        if ((protoType === "EDIT" || protoType === 14) && revokedMsgId) {
+          const editedContent =
+            data.message.protocolMessage?.editedMessage?.conversation ||
+            data.message.protocolMessage?.editedMessage?.extendedTextMessage?.text ||
+            "";
+          console.log(
+            "[WEBHOOK-WHATSAPP] ProtocolMessage EDIT — targetMsgId:",
+            revokedMsgId,
+            "newText:",
+            editedContent?.slice(0, 50),
+          );
+
+          if (editedContent) {
+            const { data: targetMsg } = await supabase
+              .from("whatsapp_messages")
+              .select("id")
+              .eq("message_id", revokedMsgId)
+              .maybeSingle();
+
+            if (targetMsg) {
+              await supabase
+                .from("whatsapp_messages")
+                .update({ content: editedContent, status: "edited" })
+                .eq("id", targetMsg.id);
+              console.log(
+                "[WEBHOOK-WHATSAPP] Message edited via protocolMessage:",
+                targetMsg.id,
+              );
+            }
+          }
+        }
+
         // Skip further processing — protocol messages are not chat messages
         return new Response(JSON.stringify({ ok: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
