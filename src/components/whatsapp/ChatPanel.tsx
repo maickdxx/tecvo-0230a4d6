@@ -1485,7 +1485,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                 <button
                   onClick={handleSend}
                   disabled={isSending}
-                  className="shrink-0 h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all disabled:opacity-50 shadow-sm"
+                  className="shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-primary to-primary/85 text-primary-foreground flex items-center justify-center hover:from-primary/90 hover:to-primary/80 transition-all disabled:opacity-50 shadow-md shadow-primary/20"
                 >
                   {isSending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
