@@ -349,12 +349,14 @@ export function useWhatsAppConversations() {
     const currentConvStatus = contact.conversation_status || "novo";
     const currentPipelineStatus = contact.conversion_status || "novo_contato";
     
-    if (currentConvStatus !== "novo" && currentPipelineStatus !== "novo_contato") return;
+    // Skip only if already "atendendo" and pipeline is past initial stage
+    if (currentConvStatus === "atendendo" && currentPipelineStatus !== "novo_contato") return;
     
     const updates: Record<string, any> = {};
     const optimisticFields: Record<string, any> = {};
     
-    if (currentConvStatus === "novo") {
+    // Reopen resolved/finalized conversations or promote new ones
+    if (currentConvStatus === "novo" || currentConvStatus === "resolvido" || currentConvStatus === "resolved") {
       updates.conversation_status = "atendendo";
       optimisticFields.conversation_status = "atendendo";
     }
