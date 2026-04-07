@@ -2208,6 +2208,48 @@ export type Database = {
           },
         ]
       }
+      notification_dispatch_log: {
+        Row: {
+          action: string
+          channel: string
+          created_at: string
+          executor_user_id: string | null
+          id: string
+          notification_type: string
+          organization_id: string
+          preference_value: boolean | null
+          reason: string | null
+          service_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          channel?: string
+          created_at?: string
+          executor_user_id?: string | null
+          id?: string
+          notification_type: string
+          organization_id: string
+          preference_value?: boolean | null
+          reason?: string | null
+          service_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          channel?: string
+          created_at?: string
+          executor_user_id?: string | null
+          id?: string
+          notification_type?: string
+          organization_id?: string
+          preference_value?: boolean | null
+          reason?: string | null
+          service_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notification_tokens: {
         Row: {
           auth: string
@@ -5330,6 +5372,62 @@ export type Database = {
             columns: ["last_automation_id"]
             isOneToOne: false
             referencedRelation: "analytics_automations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notification_preferences: {
+        Row: {
+          channel_internal: boolean
+          channel_whatsapp: boolean
+          created_at: string
+          id: string
+          laura_tips: boolean
+          operational_alerts: boolean
+          organization_id: string
+          schedule_reminder: boolean
+          service_completed: boolean
+          service_en_route: boolean
+          service_started: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_internal?: boolean
+          channel_whatsapp?: boolean
+          created_at?: string
+          id?: string
+          laura_tips?: boolean
+          operational_alerts?: boolean
+          organization_id: string
+          schedule_reminder?: boolean
+          service_completed?: boolean
+          service_en_route?: boolean
+          service_started?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_internal?: boolean
+          channel_whatsapp?: boolean
+          created_at?: string
+          id?: string
+          laura_tips?: boolean
+          operational_alerts?: boolean
+          organization_id?: string
+          schedule_reminder?: boolean
+          service_completed?: boolean
+          service_en_route?: boolean
+          service_started?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_preferences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
