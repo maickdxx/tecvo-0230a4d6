@@ -339,6 +339,7 @@ export async function sendOfficialServicePdf(
         storagePath,
       };
     }
+    } // end fallback discovery
   } else {
     if (explicitTargetContactId) {
       const { data: explicitContact } = await supabase
