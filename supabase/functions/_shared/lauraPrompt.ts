@@ -1213,6 +1213,7 @@ export async function executeAdminTool(
     const quotePdfNote = quotePdfStatus === "ready"
       ? "\n📄 PDF oficial gerado com sucesso."
       : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `Orçamento #${quoteNum} criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• service_id: ${newQuote.id}${quotePdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newQuote.id}" diretamente.`;
   }
 
