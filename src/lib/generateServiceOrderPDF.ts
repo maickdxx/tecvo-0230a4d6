@@ -101,7 +101,7 @@ export async function generateServiceOrderPDF({
 
   trackFBCustomEvent("GeneratePDF", { os_number: service.quote_number });
 
-  const FOOTER_RESERVED = 16;
+  const FOOTER_RESERVED = 14;
   const usableHeight = pageHeight - FOOTER_RESERVED;
 
   // ── Premium color palette ──
@@ -132,12 +132,12 @@ export async function generateServiceOrderPDF({
   const drawField = (label: string, value: string | null | undefined, x: number, y: number, maxW?: number) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.setFontSize(7.5);
+    doc.setFontSize(7);
     doc.text(label, x, y);
     const labelW = doc.getTextWidth(label);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(textDark.r, textDark.g, textDark.b);
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     const val = value || "—";
     if (maxW) {
       const truncated = doc.getTextWidth(val) > maxW - labelW - 4
@@ -149,63 +149,54 @@ export async function generateServiceOrderPDF({
     }
   };
 
-  // ── Helper: section title bar ──
+  // ── Helper: compact section title bar ──
   const drawSectionTitle = (title: string) => {
-    ensureSpace(14);
-    yPos += 3;
-    // Accent bar
+    ensureSpace(10);
+    yPos += 2;
     doc.setFillColor(primary.r, primary.g, primary.b);
-    doc.rect(margin, yPos, 3, 8, "F");
-    // Background
+    doc.rect(margin, yPos, 2.5, 7, "F");
     doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
-    doc.rect(margin + 3, yPos, contentWidth - 3, 8, "F");
-    // Border
+    doc.rect(margin + 2.5, yPos, contentWidth - 2.5, 7, "F");
     doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
     doc.setLineWidth(0.2);
-    doc.rect(margin, yPos, contentWidth, 8, "S");
-    // Text
-    doc.setFontSize(9);
+    doc.rect(margin, yPos, contentWidth, 7, "S");
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(primary.r, primary.g, primary.b);
-    doc.text(title, margin + 7, yPos + 5.5);
-    yPos += 10;
+    doc.text(title, margin + 6, yPos + 5);
+    yPos += 8;
   };
 
   // ═══════════════════════════════════════════
-  //  HEADER — Logo + Company Info
+  //  HEADER — Logo + Company Info (compact)
   // ═══════════════════════════════════════════
-  const headerH = 32;
-  // Top accent line
+  const headerH = 28;
   doc.setFillColor(primary.r, primary.g, primary.b);
-  doc.rect(margin, yPos, contentWidth, 2.5, "F");
-  yPos += 2.5;
+  doc.rect(margin, yPos, contentWidth, 2, "F");
+  yPos += 2;
 
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
   doc.setLineWidth(0.3);
   doc.rect(margin, yPos, contentWidth, headerH, "FD");
 
-  let logoEndX = margin + 6;
+  let logoEndX = margin + 5;
   if (organizationLogo) {
     const logoData = await loadImageAsBase64(organizationLogo);
     if (logoData) {
       try {
-        doc.addImage(logoData, 'AUTO', margin + 5, yPos + 3, 26, 26);
-        logoEndX = margin + 34;
-      } catch {
-        /* ignore */
-      }
+        doc.addImage(logoData, 'AUTO', margin + 4, yPos + 2, 24, 24);
+        logoEndX = margin + 30;
+      } catch { /* ignore */ }
     }
   }
 
-  // Company name
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(textDark.r, textDark.g, textDark.b);
-  doc.text(organizationName, logoEndX, yPos + 9);
+  doc.text(organizationName, logoEndX, yPos + 8);
 
-  // Company details (2 lines)
-  doc.setFontSize(7.5);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
 
@@ -213,7 +204,7 @@ export async function generateServiceOrderPDF({
   if (organizationCnpj) line1Parts.push(`CNPJ: ${organizationCnpj}`);
   if (organizationPhone) line1Parts.push(organizationPhone);
   if (organizationEmail) line1Parts.push(organizationEmail);
-  if (line1Parts.length) doc.text(line1Parts.join("  ·  "), logoEndX, yPos + 15);
+  if (line1Parts.length) doc.text(line1Parts.join("  ·  "), logoEndX, yPos + 13);
 
   const line2Parts: string[] = [];
   if (organizationAddress) line2Parts.push(organizationAddress);
@@ -224,41 +215,39 @@ export async function generateServiceOrderPDF({
     const addr = line2Parts.join(" – ");
     const maxAddrW = pageWidth - margin - logoEndX - 6;
     const truncAddr = doc.getTextWidth(addr) > maxAddrW ? addr.substring(0, 85) + "..." : addr;
-    doc.text(truncAddr, logoEndX, yPos + 20);
+    doc.text(truncAddr, logoEndX, yPos + 18);
   }
 
   if (organizationWebsite) {
     doc.setTextColor(primary.r, primary.g, primary.b);
-    doc.text(organizationWebsite, logoEndX, yPos + 25);
+    doc.text(organizationWebsite, logoEndX, yPos + 23);
   }
 
-  yPos += headerH + 5;
+  yPos += headerH + 3;
 
   // ═══════════════════════════════════════════
-  //  DOCUMENT TITLE — "ORDEM DE SERVIÇO Nº XXXX"
+  //  DOCUMENT TITLE
   // ═══════════════════════════════════════════
-  const titleH = 16;
+  const titleH = 13;
   doc.setFillColor(primary.r, primary.g, primary.b);
   doc.roundedRect(margin, yPos, contentWidth, titleH, 1.5, 1.5, "F");
-
-  // Subtle darker stripe at bottom
   doc.setFillColor(primaryDark.r, primaryDark.g, primaryDark.b);
-  doc.rect(margin, yPos + titleH - 2, contentWidth, 2, "F");
+  doc.rect(margin, yPos + titleH - 1.5, contentWidth, 1.5, "F");
 
   const osNumber = service.quote_number?.toString().padStart(4, "0") || "0001";
-  doc.setFontSize(15);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text(`ORDEM DE SERVIÇO  Nº ${osNumber}`, margin + 8, yPos + 10.5);
+  doc.text(`ORDEM DE SERVIÇO  Nº ${osNumber}`, margin + 7, yPos + 9);
 
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(format(new Date(), "dd/MM/yyyy"), pageWidth - margin - 8, yPos + 10.5, { align: "right" });
+  doc.text(format(new Date(), "dd/MM/yyyy"), pageWidth - margin - 7, yPos + 9, { align: "right" });
 
-  yPos += titleH + 6;
+  yPos += titleH + 4;
 
   // ═══════════════════════════════════════════
-  //  EXECUTION PERIOD
+  //  EXECUTION PERIOD (compact)
   // ═══════════════════════════════════════════
   const hasEntry = orderData.entryDate && orderData.entryTime;
   const hasExit = orderData.exitDate && orderData.exitTime;
@@ -267,20 +256,18 @@ export async function generateServiceOrderPDF({
     drawSectionTitle("PERÍODO DE EXECUÇÃO");
     doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
     doc.setLineWidth(0.2);
-    doc.rect(margin, yPos, contentWidth, 9, "S");
-
-    doc.setFontSize(8);
-    if (hasEntry) drawField("Entrada:", `${orderData.entryDate} às ${orderData.entryTime}`, leftX, yPos + 6);
-    if (hasExit) drawField("Saída:", `${orderData.exitDate} às ${orderData.exitTime}`, rightX, yPos + 6);
-    yPos += 12;
+    doc.rect(margin, yPos, contentWidth, 8, "S");
+    doc.setFontSize(7.5);
+    if (hasEntry) drawField("Entrada:", `${orderData.entryDate} às ${orderData.entryTime}`, leftX, yPos + 5.5);
+    if (hasExit) drawField("Saída:", `${orderData.exitDate} às ${orderData.exitTime}`, rightX, yPos + 5.5);
+    yPos += 10;
   }
 
   // ═══════════════════════════════════════════
-  //  CLIENT DATA
+  //  CLIENT DATA (compact)
   // ═══════════════════════════════════════════
   drawSectionTitle("DADOS DO CLIENTE");
 
-  // Build address
   const hasServiceAddr = service.service_street || service.service_city;
   const clientAddr = hasServiceAddr
     ? [service.service_street, service.service_number, service.service_complement, service.service_neighborhood].filter(Boolean).join(", ")
@@ -289,22 +276,21 @@ export async function generateServiceOrderPDF({
   const clientState = hasServiceAddr ? (service.service_state || "") : (service.client?.state || "");
   const clientZip = hasServiceAddr ? (service.service_zip_code || "") : (service.client?.zip_code || "");
 
-  // Calculate address multiline height
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   const addrLabelW = doc.getTextWidth("Endereço: ");
   const addrMaxW = halfWidth - 10;
   const addrLines = doc.splitTextToSize(clientAddr || "", addrMaxW - addrLabelW);
-  const addrRowH = Math.max(8, 4 + addrLines.length * 3.5);
+  const addrRowH = Math.max(7, 3.5 + addrLines.length * 3.2);
 
   const rows = [
-    { lLabel: "Cliente:", lVal: service.client?.name || "", rLabel: "CNPJ/CPF:", rVal: service.client?.document || "", h: 8 },
+    { lLabel: "Cliente:", lVal: service.client?.name || "", rLabel: "CNPJ/CPF:", rVal: service.client?.document || "", h: 7 },
     { lLabel: "Endereço:", lVal: clientAddr || "", rLabel: "CEP:", rVal: clientZip, h: addrRowH, multiline: true },
-    { lLabel: "Cidade:", lVal: clientCity, rLabel: "Estado:", rVal: clientState, h: 8 },
-    { lLabel: "Telefone:", lVal: service.client?.phone || "", rLabel: "E-mail:", rVal: service.client?.email || "", h: 8 },
+    { lLabel: "Cidade:", lVal: clientCity, rLabel: "Estado:", rVal: clientState, h: 7 },
+    { lLabel: "Telefone:", lVal: service.client?.phone || "", rLabel: "E-mail:", rVal: service.client?.email || "", h: 7 },
   ];
 
   const boxH = rows.reduce((s, r) => s + r.h, 0);
-  ensureSpace(boxH + 4);
+  ensureSpace(boxH + 3);
 
   doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
   doc.setLineWidth(0.2);
@@ -314,11 +300,11 @@ export async function generateServiceOrderPDF({
   let cellY = yPos;
   rows.forEach((row, i) => {
     if (i > 0) doc.line(margin, cellY, margin + contentWidth, cellY);
-    const ty = cellY + 5.5;
+    const ty = cellY + 5;
     if (row.multiline) {
-      doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
       doc.text(row.lLabel, leftX, ty);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(textDark.r, textDark.g, textDark.b);
       doc.text(addrLines, leftX + addrLabelW + 2, ty);
     } else {
       drawField(row.lLabel, row.lVal, leftX, ty);
@@ -327,10 +313,10 @@ export async function generateServiceOrderPDF({
     cellY += row.h;
   });
 
-  yPos += boxH + 5;
+  yPos += boxH + 3;
 
   // ═══════════════════════════════════════════
-  //  EQUIPMENT
+  //  EQUIPMENT (compact)
   // ═══════════════════════════════════════════
   const normalized = (equipmentList || [])
     .map(e => ({
@@ -354,7 +340,7 @@ export async function generateServiceOrderPDF({
     equipRender.forEach((eq, idx) => {
       const eqTitle = eq.name || `Equipamento ${String(idx + 1).padStart(2, "0")}`;
       const textAreaW = contentWidth - 8;
-      const headerRowH = 13;
+      const headerRowH = 11;
 
       const details: Array<{ label: string; lines: string[] }> = [];
       const fields: [string, string][] = [
@@ -363,77 +349,75 @@ export async function generateServiceOrderPDF({
         ["Termos de garantia", eq.warranty_terms || ""],
       ];
       fields.forEach(([label, text]) => {
-        if (text) details.push({ label, lines: doc.setFontSize(8).splitTextToSize(text, textAreaW) });
+        if (text) details.push({ label, lines: doc.setFontSize(7.5).splitTextToSize(text, textAreaW) });
       });
 
       let blockH = headerRowH;
-      details.forEach(s => { blockH += 5 + s.lines.length * 3.5 + 2; });
-      blockH += 2;
+      details.forEach(s => { blockH += 4 + s.lines.length * 3.2 + 1; });
+      blockH += 1;
 
       if (yPos + blockH > usableHeight) {
         doc.addPage(); yPos = margin;
         drawSectionTitle("EQUIPAMENTOS (CONT.)");
       }
 
-      // Header row
       const col1 = contentWidth * 0.35, col2 = contentWidth * 0.25, col3 = contentWidth * 0.25, col4 = contentWidth * 0.15;
       doc.setFillColor(rowEven.r, rowEven.g, rowEven.b);
       doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
       doc.setLineWidth(0.2);
       doc.rect(margin, yPos, contentWidth, headerRowH, "FD");
 
-      doc.setFontSize(6.5); doc.setFont("helvetica", "bold"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-      doc.text("EQUIPAMENTO", margin + 3, yPos + 4);
-      doc.text("MARCA", margin + col1 + 3, yPos + 4);
-      doc.text("MODELO", margin + col1 + col2 + 3, yPos + 4);
-      doc.text("SÉRIE", margin + col1 + col2 + col3 + 3, yPos + 4);
+      doc.setFontSize(6); doc.setFont("helvetica", "bold"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+      doc.text("EQUIPAMENTO", margin + 3, yPos + 3.5);
+      doc.text("MARCA", margin + col1 + 3, yPos + 3.5);
+      doc.text("MODELO", margin + col1 + col2 + 3, yPos + 3.5);
+      doc.text("SÉRIE", margin + col1 + col2 + col3 + 3, yPos + 3.5);
 
-      doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
-      doc.text(eqTitle, margin + 3, yPos + 10);
-      doc.text(eq.brand || "—", margin + col1 + 3, yPos + 10);
-      doc.text(eq.model || "—", margin + col1 + col2 + 3, yPos + 10);
-      doc.text(eq.serial_number || "—", margin + col1 + col2 + col3 + 3, yPos + 10);
+      doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+      doc.text(eqTitle, margin + 3, yPos + 8.5);
+      doc.text(eq.brand || "—", margin + col1 + 3, yPos + 8.5);
+      doc.text(eq.model || "—", margin + col1 + col2 + 3, yPos + 8.5);
+      doc.text(eq.serial_number || "—", margin + col1 + col2 + col3 + 3, yPos + 8.5);
 
-      // Vertical lines
       [col1, col1 + col2, col1 + col2 + col3].forEach(x => doc.line(margin + x, yPos, margin + x, yPos + headerRowH));
 
       let sY = yPos + headerRowH;
 
       details.forEach(section => {
-        const sH = 5 + section.lines.length * 3.5 + 2;
+        const sH = 4 + section.lines.length * 3.2 + 1;
         if (sY + sH > usableHeight) { doc.addPage(); sY = margin; }
         doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
         doc.rect(margin, sY, contentWidth, sH, "S");
-        doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(primary.r, primary.g, primary.b);
-        doc.text(section.label, margin + 4, sY + 4.5);
-        doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b); doc.setFontSize(8);
-        doc.text(section.lines, margin + 4, sY + 9);
+        doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(primary.r, primary.g, primary.b);
+        doc.text(section.label, margin + 4, sY + 4);
+        doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b); doc.setFontSize(7.5);
+        doc.text(section.lines, margin + 4, sY + 7.5);
         sY += sH;
       });
 
-      yPos = sY + 3;
+      yPos = sY + 2;
     });
-    yPos += 2;
+    yPos += 1;
   }
 
   // ═══════════════════════════════════════════
-  //  SOLUTION / DESCRIPTION
+  //  SOLUTION / DESCRIPTION (compact)
   // ═══════════════════════════════════════════
   if (orderData.solution) {
-    const solLines = doc.setFontSize(8).splitTextToSize(orderData.solution, contentWidth - 10);
-    const solH = Math.max(solLines.length * 4 + 8, 14);
+    const solLines = doc.setFontSize(7.5).splitTextToSize(orderData.solution, contentWidth - 10);
+    const solH = Math.max(solLines.length * 3.5 + 6, 12);
     drawSectionTitle("DESCRIÇÃO DO SERVIÇO");
     ensureSpace(solH + 2);
     doc.setFillColor(rowEven.r, rowEven.g, rowEven.b);
     doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
     doc.rect(margin, yPos, contentWidth, solH, "FD");
-    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
-    doc.text(solLines, margin + 5, yPos + 6);
-    yPos += solH + 4;
+    doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+    doc.text(solLines, margin + 5, yPos + 5);
+    yPos += solH + 3;
   }
 
   // ═══════════════════════════════════════════
-  //  SERVICES TABLE
+  //  SERVICES TABLE (compact)
   // ═══════════════════════════════════════════
   drawSectionTitle("SERVIÇOS E PEÇAS");
 
@@ -441,17 +425,17 @@ export async function generateServiceOrderPDF({
 
   const drawTableHeader = () => {
     doc.setFillColor(primary.r, primary.g, primary.b);
-    doc.roundedRect(margin, yPos, contentWidth, 8, 0.5, 0.5, "F");
-    doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
+    doc.roundedRect(margin, yPos, contentWidth, 7, 0.5, 0.5, "F");
+    doc.setFontSize(6.5); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
     const headers = ["#", "DESCRIÇÃO", "QTD", "VR. UNIT.", "DESC.", "SUBTOTAL"];
     let cx = margin;
     headers.forEach((h, i) => {
       const align = i >= 2 ? "right" : "left";
       const tx = align === "right" ? cx + colW[i] - 3 : cx + 3;
-      doc.text(h, tx, yPos + 5.5, { align: align as any });
+      doc.text(h, tx, yPos + 5, { align: align as any });
       cx += colW[i];
     });
-    yPos += 8;
+    yPos += 7;
   };
 
   drawTableHeader();
@@ -469,16 +453,15 @@ export async function generateServiceOrderPDF({
       grandTotal += itemTotal;
       totalDiscount += discAmt;
 
-      // Word-wrap description/name
       const descMaxW = colW[1] - 6;
-      doc.setFontSize(7.5);
+      doc.setFontSize(7);
       const displayName = item.name || item.description;
       const descLines = doc.splitTextToSize(displayName, descMaxW);
-      
+
       const hasDetail = item.name && item.description && item.name !== item.description;
-      const detailLines = hasDetail ? doc.setFontSize(6.5).splitTextToSize(item.description, descMaxW) : [];
-      
-      const rowH = Math.max(8, (descLines.length + detailLines.length) * 3.5 + 4);
+      const detailLines = hasDetail ? doc.setFontSize(6).splitTextToSize(item.description, descMaxW) : [];
+
+      const rowH = Math.max(7, (descLines.length + detailLines.length) * 3.2 + 3);
 
       if (yPos + rowH > usableHeight) {
         doc.addPage(); yPos = margin;
@@ -493,29 +476,27 @@ export async function generateServiceOrderPDF({
       doc.setLineWidth(0.1);
       doc.line(margin, yPos + rowH, margin + contentWidth, yPos + rowH);
 
-      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(textDark.r, textDark.g, textDark.b);
       const midY = yPos + (rowH / 2) + 1;
       let cx = margin;
 
-      // # column
       doc.text((index + 1).toString(), cx + 3, midY);
       cx += colW[0];
 
-      // Description/Name with word-wrap
-      const descStartY = yPos + 4;
+      const descStartY = yPos + 3.5;
       doc.setFont("helvetica", "bold");
       doc.text(descLines, cx + 3, descStartY);
-      
+
       if (hasDetail) {
         doc.setFont("helvetica", "italic");
-        doc.setFontSize(6.5);
+        doc.setFontSize(6);
         doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-        doc.text(detailLines, cx + 3, descStartY + (descLines.length * 3.5));
+        doc.text(detailLines, cx + 3, descStartY + (descLines.length * 3.2));
       }
-      
+
       cx += colW[1];
 
-      // Numeric columns (vertically centered)
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(textDark.r, textDark.g, textDark.b);
       doc.text(item.quantity.toFixed(2).replace(".", ","), cx + colW[2] - 3, midY, { align: "right" });
       cx += colW[2];
       doc.text(formatCurrency(item.unit_price), cx + colW[3] - 3, midY, { align: "right" });
@@ -529,149 +510,160 @@ export async function generateServiceOrderPDF({
     });
   } else {
     doc.setFillColor(rowEven.r, rowEven.g, rowEven.b);
-    doc.rect(margin, yPos, contentWidth, 8, "F");
-    doc.setFont("helvetica", "italic"); doc.setFontSize(7.5); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text("Nenhum item cadastrado", margin + 5, yPos + 5.5);
-    yPos += 8;
+    doc.rect(margin, yPos, contentWidth, 7, "F");
+    doc.setFont("helvetica", "italic"); doc.setFontSize(7); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    doc.text("Nenhum item cadastrado", margin + 5, yPos + 5);
+    yPos += 7;
     grandTotal = service.value || 0;
   }
 
+  // ═══════════════════════════════════════════
+  //  BLOCO FINAL — Total + Payment + Notes + Signatures
+  //  NEVER SPLIT across pages
+  // ═══════════════════════════════════════════
+  const hasPayment = orderData.paymentMethod || orderData.paymentDueDate || orderData.paymentNotes;
+  const notes = service.notes || "";
+  const needsClause = organizationSignature && autoSignatureOS;
+
+  // Pre-calculate total height of BLOCO FINAL
+  let blocoFinalH = 2; // initial gap
+
+  // Total summary
+  if (totalDiscount > 0) blocoFinalH += 14; // subtotal + discount + separator
+  blocoFinalH += 12 + 4; // total box + gap
+
+  // Payment
+  if (hasPayment) {
+    const payH = orderData.paymentNotes ? 16 : 10;
+    blocoFinalH += 10 + payH + 3; // section title + content + gap
+  }
+
+  // Notes
+  if (notes) {
+    doc.setFontSize(7.5);
+    const noteLines = doc.splitTextToSize(notes, contentWidth - 10);
+    const noteH = Math.max(noteLines.length * 3.5 + 6, 12);
+    blocoFinalH += 10 + noteH + 3; // section title + content + gap
+  }
+
+  // Signatures
+  const sigBlockH = needsClause ? 40 : 30;
+  blocoFinalH += 4 + sigBlockH;
+
+  // ── ENSURE THE ENTIRE BLOCK FITS ──
+  ensureSpace(blocoFinalH);
+
   // ── Total summary block ──
-  ensureSpace(28);
-  yPos += 3;
-  const sumW = 80;
+  yPos += 2;
+  const sumW = 78;
   const sumX = margin + contentWidth - sumW;
 
   if (totalDiscount > 0) {
-    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text("Subtotal:", sumX, yPos + 4);
+    doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    doc.text("Subtotal:", sumX, yPos + 3.5);
     doc.setTextColor(textDark.r, textDark.g, textDark.b);
-    doc.text(formatCurrency(grandTotal + totalDiscount), sumX + sumW, yPos + 4, { align: "right" });
-    yPos += 6;
+    doc.text(formatCurrency(grandTotal + totalDiscount), sumX + sumW, yPos + 3.5, { align: "right" });
+    yPos += 5;
     doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
-    doc.text("Desconto:", sumX, yPos + 4);
+    doc.text("Desconto:", sumX, yPos + 3.5);
     doc.setTextColor(200, 40, 40);
-    doc.text(`– ${formatCurrency(totalDiscount)}`, sumX + sumW, yPos + 4, { align: "right" });
-    yPos += 6;
-    // Separator line
+    doc.text(`– ${formatCurrency(totalDiscount)}`, sumX + sumW, yPos + 3.5, { align: "right" });
+    yPos += 5;
     doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
     doc.line(sumX, yPos, sumX + sumW, yPos);
     yPos += 2;
   }
 
   // Total box
-  const totalBoxH = 14;
+  const totalBoxH = 12;
   doc.setFillColor(totalBg.r, totalBg.g, totalBg.b);
   doc.roundedRect(sumX - 2, yPos, sumW + 4, totalBoxH, 2, 2, "F");
-  doc.setFontSize(13); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
-  doc.text("TOTAL", sumX + 4, yPos + 10);
-  doc.text(formatCurrency(grandTotal), sumX + sumW - 2, yPos + 10, { align: "right" });
+  doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
+  doc.text("TOTAL", sumX + 4, yPos + 8.5);
+  doc.text(formatCurrency(grandTotal), sumX + sumW - 2, yPos + 8.5, { align: "right" });
+  yPos += totalBoxH + 4;
 
-  yPos += totalBoxH + 6;
-
-  // ═══════════════════════════════════════════
-  //  PAYMENT DATA
-  // ═══════════════════════════════════════════
-  const hasPayment = orderData.paymentMethod || orderData.paymentDueDate || orderData.paymentNotes;
+  // ── Payment data ──
   if (hasPayment) {
-    const payH = orderData.paymentNotes ? 18 : 12;
-    ensureSpace(payH + 14);
     drawSectionTitle("DADOS DO PAGAMENTO");
-    // Highlighted block with light blue background
+    const payH = orderData.paymentNotes ? 16 : 10;
     doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
     doc.setDrawColor(primary.r, primary.g, primary.b);
     doc.setLineWidth(0.3);
     doc.rect(margin, yPos, contentWidth, payH, "FD");
-    // Left accent bar
     doc.setFillColor(primary.r, primary.g, primary.b);
-    doc.rect(margin, yPos, 3, payH, "F");
-    doc.setFontSize(8);
-    drawField("Vencimento:", orderData.paymentDueDate || undefined, leftX + 2, yPos + 7);
-    drawField("Forma de pagamento:", orderData.paymentMethod || undefined, rightX, yPos + 7);
+    doc.rect(margin, yPos, 2.5, payH, "F");
+    doc.setFontSize(7.5);
+    drawField("Vencimento:", orderData.paymentDueDate || undefined, leftX + 2, yPos + 6);
+    drawField("Forma de pagamento:", orderData.paymentMethod || undefined, rightX, yPos + 6);
     if (orderData.paymentNotes) {
-      drawField("Obs:", orderData.paymentNotes.length > 80 ? orderData.paymentNotes.substring(0, 80) + "..." : orderData.paymentNotes, leftX + 2, yPos + 14);
+      drawField("Obs:", orderData.paymentNotes.length > 80 ? orderData.paymentNotes.substring(0, 80) + "..." : orderData.paymentNotes, leftX + 2, yPos + 12);
     }
-    yPos += payH + 4;
+    yPos += payH + 3;
   }
 
-  // ═══════════════════════════════════════════
-  //  NOTES / OBSERVAÇÕES
-  // ═══════════════════════════════════════════
-  const notes = service.notes || "";
+  // ── Notes ──
   if (notes) {
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     const noteLines = doc.splitTextToSize(notes, contentWidth - 10);
-    const noteH = Math.max(noteLines.length * 4 + 8, 14);
+    const noteH = Math.max(noteLines.length * 3.5 + 6, 12);
     drawSectionTitle("OBSERVAÇÕES");
-    ensureSpace(noteH + 2);
     doc.setFillColor(255, 252, 240);
     doc.setDrawColor(230, 200, 100);
     doc.setLineWidth(0.3);
     doc.rect(margin, yPos, contentWidth, noteH, "FD");
     doc.setFillColor(230, 180, 50);
-    doc.rect(margin, yPos, 3, noteH, "F");
-    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
-    doc.text(noteLines, margin + 7, yPos + 6);
-    yPos += noteH + 4;
+    doc.rect(margin, yPos, 2.5, noteH, "F");
+    doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(textDark.r, textDark.g, textDark.b);
+    doc.text(noteLines, margin + 6, yPos + 5);
+    yPos += noteH + 3;
   }
 
-  // ═══════════════════════════════════════════
-  //  SIGNATURES — flow naturally after content, no forced bottom push
-  // ═══════════════════════════════════════════
-  const needsClause = organizationSignature && autoSignatureOS;
-  const sigBlockH = needsClause ? 48 : 34;
-  ensureSpace(sigBlockH);
+  // ── Signatures ──
+  yPos += 4;
 
-  // Small gap then signatures — NO push to bottom
-  yPos += 6;
+  const signatureWidth = 66;
+  const leftSignX = margin + 16;
+  const rightSignX = pageWidth - margin - signatureWidth - 16;
 
-  const signatureWidth = 68;
-  const leftSignX = margin + 18;
-  const rightSignX = pageWidth - margin - signatureWidth - 18;
-
-  // Signature area top label
-  doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+  doc.setFontSize(6.5); doc.setFont("helvetica", "bold"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
   doc.text("ASSINATURA DO CLIENTE", leftSignX + signatureWidth / 2, yPos, { align: "center" });
   doc.text("ASSINATURA DA EMPRESA", rightSignX + signatureWidth / 2, yPos, { align: "center" });
-  yPos += 3;
+  yPos += 2;
 
-  // Signature image area — images sit between label and line
   const sigImgY = yPos;
-  const sigLineY = yPos + 18; // fixed space for signature images
+  const sigLineY = yPos + 16;
 
-  // Draw client signature image
   if (clientSignatureUrl) {
     try {
       const cSigB64 = await loadImageAsBase64(clientSignatureUrl);
       if (cSigB64) {
-        const maxH = 16, maxW = 58;
+        const maxH = 14, maxW = 56;
         const img = new Image();
         img.src = cSigB64;
         await new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); });
         const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
         const dw = (img.width || maxW) * ratio, dh = (img.height || maxH) * ratio;
-        doc.addImage(cSigB64, "PNG", leftSignX + (signatureWidth - dw) / 2, sigImgY + (16 - dh) / 2, dw, dh);
+        doc.addImage(cSigB64, "PNG", leftSignX + (signatureWidth - dw) / 2, sigImgY + (14 - dh) / 2, dw, dh);
       }
     } catch { /* ignore */ }
   }
 
-  // Draw org signature image
   if (organizationSignature && autoSignatureOS) {
     try {
       const oSigB64 = await loadImageAsBase64(organizationSignature);
       if (oSigB64) {
-        const maxH = 16, maxW = 58;
+        const maxH = 14, maxW = 56;
         const img = new Image();
         img.src = oSigB64;
         await new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); });
         const ratio = Math.min(maxW / (img.width || 1), maxH / (img.height || 1), 1);
         const dw = (img.width || maxW) * ratio, dh = (img.height || maxH) * ratio;
-        doc.addImage(oSigB64, "PNG", rightSignX + (signatureWidth - dw) / 2, sigImgY + (16 - dh) / 2, dw, dh);
+        doc.addImage(oSigB64, "PNG", rightSignX + (signatureWidth - dw) / 2, sigImgY + (14 - dh) / 2, dw, dh);
       }
     } catch { /* ignore */ }
   }
 
-  // Signature lines
   yPos = sigLineY;
   doc.setDrawColor(textMuted.r, textMuted.g, textMuted.b);
   doc.setLineWidth(0.4);
@@ -680,16 +672,14 @@ export async function generateServiceOrderPDF({
   doc.line(rightSignX, yPos, rightSignX + signatureWidth, yPos);
   doc.setLineDashPattern([], 0);
 
-  // Names below lines
-  yPos += 4;
-  doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+  yPos += 3.5;
+  doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
   doc.text(service.client?.name || "Cliente", leftSignX + signatureWidth / 2, yPos, { align: "center" });
   doc.text(organizationName, rightSignX + signatureWidth / 2, yPos, { align: "center" });
 
-  // Disclaimer clause
   if (needsClause) {
-    yPos += 8;
-    doc.setFontSize(6); doc.setFont("helvetica", "italic"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    yPos += 6;
+    doc.setFontSize(5.5); doc.setFont("helvetica", "italic"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
     const clause = "A assinatura da empresa neste documento representa apenas a emissão formal da Ordem de Serviço e não confirma a execução do serviço, que depende da realização e aceite final do cliente.";
     const clauseLines = doc.splitTextToSize(clause, contentWidth - 20);
     doc.text(clauseLines, pageWidth / 2, yPos, { align: "center" });
@@ -701,14 +691,13 @@ export async function generateServiceOrderPDF({
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
-    const footerY = pageHeight - 8;
+    const footerY = pageHeight - 6;
 
-    // Divider line
     doc.setDrawColor(primary.r, primary.g, primary.b);
-    doc.setLineWidth(0.4);
-    doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4);
+    doc.setLineWidth(0.3);
+    doc.line(margin, footerY - 3, pageWidth - margin, footerY - 3);
 
-    doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
+    doc.setFontSize(6); doc.setFont("helvetica", "normal"); doc.setTextColor(textMuted.r, textMuted.g, textMuted.b);
     doc.text("Documento gerado pela Tecvo · tecvo.com.br", margin, footerY);
     doc.text(`Página ${p} de ${totalPages}`, pageWidth - margin, footerY, { align: "right" });
   }
@@ -716,8 +705,6 @@ export async function generateServiceOrderPDF({
   // ── Output ──
   const fileName = `OS-${osNumber}-${(service.client?.name || "cliente").replace(/\s+/g, "_")}.pdf`;
 
-  // Always upload the canonical PDF to storage — this is the SINGLE SOURCE OF TRUTH
-  // used by Laura, manual WhatsApp send, and panel download.
   try {
     const blob = doc.output("blob");
     const orgId = service.organization_id;
@@ -726,7 +713,6 @@ export async function generateServiceOrderPDF({
       await supabase.storage
         .from("whatsapp-media")
         .upload(storagePath, blob, { contentType: "application/pdf", upsert: true });
-      // Mark as ready so Laura knows this PDF is valid
       await supabase
         .from("services")
         .update({ pdf_status: "ready", pdf_generated_at: new Date().toISOString() })
