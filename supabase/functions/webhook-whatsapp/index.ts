@@ -4168,7 +4168,7 @@ Você NÃO deve compartilhar:
               supabase,
               targetOrganizationId,
               forcedPdfToolCall,
-              { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id },
+              { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
             );
 
             if (
