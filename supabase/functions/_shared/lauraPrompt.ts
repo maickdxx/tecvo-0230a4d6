@@ -854,46 +854,13 @@ export const ADMIN_TOOLS = [
   },
 ];
 
-// ─────────────────── reliability layer ───────────────────
+// ─────────────────── reliability layer (via actionShield) ───────────────────
 
-const DEGRADATION_THRESHOLD = 3; // 3 errors in 10 min → degraded
-const DEGRADATION_WINDOW_MINUTES = 10;
-
-// Risk classification
-const ACTION_RISK: Record<string, "low" | "medium" | "high"> = {
-  register_transaction: "high",
-  create_service: "high",
-  create_quote: "medium",
-  create_client: "medium",
-  create_financial_account: "low",
-  send_service_pdf: "high",
-};
-
-/**
- * Checks degradation mode using PERSISTENT database state (ai_usage_logs).
- * Counts recent tool_error_* entries for the org in the last N minutes.
- */
-async function isDegradedMode(supabase: any, organizationId: string): Promise<boolean> {
-  try {
-    const cutoff = new Date(Date.now() - DEGRADATION_WINDOW_MINUTES * 60 * 1000).toISOString();
-    const { count, error } = await supabase
-      .from("ai_usage_logs")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organizationId)
-      .like("action_slug", "tool_error_%")
-      .eq("status", "error")
-      .gte("created_at", cutoff);
-    
-    if (error) {
-      console.error("[LAURA-DEGRADED] Failed to check degradation:", error.message);
-      return false; // Don't block on check failure
-    }
-    return (count || 0) >= DEGRADATION_THRESHOLD;
-  } catch (e) {
-    console.error("[LAURA-DEGRADED] Check exception:", e);
-    return false;
-  }
-}
+import {
+  enforceActionShield,
+  logToolSuccess,
+  type ShieldContext,
+} from "./actionShield.ts";
 
 /**
  * Logs a tool execution error to ai_usage_logs for diagnostics.
@@ -966,12 +933,22 @@ export async function executeAdminTool(
 
   try {
 
-  // Degradation mode check for high-risk actions
-  const risk = ACTION_RISK[fnName] || "medium";
-  if (await isDegradedMode(supabase, organizationId) && risk === "high") {
-    console.warn(`[LAURA-DEGRADED] Blocking high-risk action "${fnName}" due to repeated errors`);
-    await logToolError(supabase, organizationId, fnName, "blocked_degraded_mode", args);
-    return `⚠️ Detectei instabilidade recente no sistema. Por segurança, não vou executar "${fnName}" automaticamente agora. Por favor, faça essa ação diretamente no sistema ou tente novamente em alguns minutos.`;
+  // ── ACTION SHIELD: Central pre-execution gate ──
+  const shieldCtx: ShieldContext = {
+    supabase,
+    organizationId,
+    userId: ctx?.userId || null,
+    contextOrgId: ctx?.contextOrgId || organizationId,
+    channelId: ctx?.channelId || null,
+    channelType: ctx?.channelType || null,
+    contactId: ctx?.contactId || null,
+    source: ctx?.remoteJid ? "whatsapp" : "app",
+  };
+
+  const shieldResult = await enforceActionShield(fnName, args, shieldCtx);
+  if (!shieldResult.allowed) {
+    console.warn(`[LAURA-SHIELD] Action "${fnName}" BLOCKED: ${shieldResult.reason} — ${shieldResult.detail}`);
+    return shieldResult.detail || `⚠️ Ação bloqueada: ${shieldResult.reason}`;
   }
 
   if (fnName === "register_transaction") {
