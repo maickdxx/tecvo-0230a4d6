@@ -88,7 +88,7 @@ export const ClientSummaryBar = memo(function ClientSummaryBar({
   };
 
   return (
-    <div className="px-3 py-1.5 border-b border-border/40 bg-muted/20 flex items-center gap-2 overflow-x-auto shrink-0">
+    <div className="px-3 py-2 border-b border-border/30 bg-muted/5 flex items-center gap-2.5 overflow-x-auto shrink-0">
       {/* Conversion Status */}
       <ConversionStatusSelector
         contactId={contact.id}
@@ -97,20 +97,20 @@ export const ClientSummaryBar = memo(function ClientSummaryBar({
         onStatusChange={onStatusChange}
       />
 
-      <div className="w-px h-4 bg-border/60 shrink-0" />
+      <div className="w-px h-4 bg-border/40 shrink-0" />
 
       {/* Client type badge */}
       {contact.linked_client_id ? (
         loading ? (
           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
         ) : summary ? (
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
             <span
               className={cn(
-                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold",
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold",
                 summary.isRecurrent
-                  ? "bg-emerald-500/10 text-emerald-600"
-                  : "bg-blue-500/10 text-blue-600"
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "bg-primary/8 text-primary"
               )}
             >
               {summary.isRecurrent ? (
@@ -121,7 +121,7 @@ export const ClientSummaryBar = memo(function ClientSummaryBar({
             </span>
 
             {summary.totalValue > 0 && (
-              <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
+              <span className="inline-flex items-center gap-0.5 whitespace-nowrap font-medium text-foreground/70">
                 <DollarSign className="h-3 w-3" />
                 {formatCurrency(summary.totalValue)}
               </span>
@@ -137,14 +137,14 @@ export const ClientSummaryBar = memo(function ClientSummaryBar({
             )}
 
             {summary.totalServices > 0 && (
-              <span className="whitespace-nowrap">
-                {summary.totalServices} serviço{summary.totalServices !== 1 ? "s" : ""}
+              <span className="whitespace-nowrap text-muted-foreground/60">
+                {summary.totalServices} OS{summary.totalServices !== 1 ? "s" : ""}
               </span>
             )}
           </div>
         ) : null
       ) : (
-        <span className="text-[10px] text-muted-foreground/60 italic">
+        <span className="text-[10px] text-muted-foreground/50 italic">
           Sem cliente vinculado
         </span>
       )}

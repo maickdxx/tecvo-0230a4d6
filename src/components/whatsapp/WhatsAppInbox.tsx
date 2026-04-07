@@ -195,9 +195,9 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       {/* Top bar */}
       {!isMobileChatFocused && !fullscreen && (
         <>
-          <div className="flex items-center justify-between px-4 border-b border-border/40 bg-card gap-3 shrink-0 py-3 shadow-[0_1px_3px_0_hsl(0,0%,0%,0.04)]">
+          <div className="flex items-center justify-between px-4 border-b border-border/30 bg-card gap-3 shrink-0 py-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <h1 className="text-base font-black tracking-tight text-foreground shrink-0">WhatsApp</h1>
+              <h1 className="text-base font-bold tracking-tight text-foreground shrink-0">WhatsApp</h1>
               <ConnectionStatusPanel
                 channelId={channel?.id || null}
                 isConnected={!!channel?.is_connected}
@@ -214,16 +214,16 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
 
             <div className="flex items-center gap-0.5 shrink-0">
               <AICreditsDisplay />
-              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => navigate("/whatsapp/contatos")} title="Contatos">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex text-muted-foreground hover:text-foreground" onClick={() => navigate("/whatsapp/contatos")} title="Contatos">
                 <Users className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => navigate("/whatsapp/relatorio")} title="Relatório">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex text-muted-foreground hover:text-foreground" onClick={() => navigate("/whatsapp/relatorio")} title="Relatório">
                 <BarChart3 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => window.open("/whatsapp/full", "_blank")} title="Abrir em tela cheia">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex text-muted-foreground hover:text-foreground" onClick={() => window.open("/whatsapp/full", "_blank")} title="Abrir em tela cheia">
                 <Maximize2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/whatsapp/configuracoes")} title="Configurações">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => navigate("/whatsapp/configuracoes")} title="Configurações">
                 <Settings className="h-4 w-4" />
               </Button>
             </div>
@@ -236,7 +236,7 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Column 1: Conversation List */}
         <div
-          className={`w-full md:w-80 lg:w-[340px] border-r border-border/40 flex-shrink-0 ${
+          className={`w-full md:w-80 lg:w-[340px] border-r border-border/30 flex-shrink-0 ${
             selectedContactId ? "hidden md:flex" : "flex"
           } flex-col bg-card min-h-0`}
         >
@@ -330,43 +330,39 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
               }}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-muted/[0.02] to-muted/[0.08] relative overflow-hidden">
-              <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-primary/[0.03] blur-3xl pointer-events-none" />
-              <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-primary/[0.02] blur-2xl pointer-events-none" />
-              
-              <div className="text-center space-y-6 relative z-10 px-6 max-w-lg">
-                {/* Stats summary */}
+            <div className="flex-1 flex items-center justify-center bg-background relative overflow-hidden">
+              <div className="text-center space-y-5 relative z-10 px-6 max-w-md">
                 {contacts.length > 0 ? (
                   <>
-                    <div className="mx-auto w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/10">
-                      <MessageSquare className="h-9 w-9 text-primary/60" />
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/8 flex items-center justify-center">
+                      <MessageSquare className="h-7 w-7 text-primary/50" />
                     </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-foreground">
+                    <div className="space-y-1.5">
+                      <h3 className="text-base font-semibold text-foreground">
                         Selecione uma conversa
                       </h3>
-                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        Escolha uma conversa à esquerda para visualizar e responder.
+                      <p className="text-sm text-muted-foreground">
+                        Escolha uma conversa à esquerda para começar.
                       </p>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="mx-auto w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/10">
-                      <MessageSquare className="h-9 w-9 text-primary/60" />
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/8 flex items-center justify-center">
+                      <MessageSquare className="h-7 w-7 text-primary/50" />
                     </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-foreground">
+                    <div className="space-y-1.5">
+                      <h3 className="text-base font-semibold text-foreground">
                         Nenhuma conversa ainda
                       </h3>
-                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        Quando seus clientes enviarem mensagens pelo WhatsApp, elas aparecerão aqui automaticamente.
+                      <p className="text-sm text-muted-foreground">
+                        Quando seus clientes enviarem mensagens, elas aparecerão aqui.
                       </p>
                     </div>
                   </>
                 )}
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/[0.06] border border-primary/10 text-[12px] text-primary font-medium">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/30" />
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50 text-[12px] text-muted-foreground font-medium">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Pronto para receber mensagens
                 </div>
               </div>

@@ -772,19 +772,19 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {/* Header - compact on mobile simplified */}
-      <div className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 border-b border-border/60 bg-card shadow-sm shrink-0 sticky top-0 z-20`}>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack} title="Fechar conversa">
+      {/* Header */}
+      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 border-b border-border/50 bg-card shrink-0 sticky top-0 z-20">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={onBack} title="Fechar conversa">
           <ArrowLeft className="h-4 w-4 md:hidden" />
           <X className="h-4 w-4 hidden md:block" />
         </Button>
 
-        <button onClick={onToggleInfo} className="flex items-center gap-3 flex-1 min-w-0">
+        <button onClick={onToggleInfo} className="flex items-center gap-3 flex-1 min-w-0 group/header">
           {contact.profile_picture_url ? (
             <img
               src={contact.profile_picture_url}
               alt=""
-              className="h-9 w-9 rounded-full object-cover shrink-0 ring-2 ring-background"
+              className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-background shadow-sm"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
                 (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
@@ -792,7 +792,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             />
           ) : null}
           <div
-            className={`h-9 w-9 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm ${
+            className={`h-10 w-10 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm ${
               contact.profile_picture_url ? "hidden" : ""
             }`}
           >
@@ -801,9 +801,9 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             </span>
           </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">{linkedClientData?.name || contact.linked_client?.name || contact.name || contact.phone || "Contato"}</p>
+              <p className="text-sm font-semibold text-foreground truncate group-hover/header:text-primary transition-colors">{linkedClientData?.name || contact.linked_client?.name || contact.name || contact.phone || "Contato"}</p>
               {!isSimplified && (
-                <p className="text-xs text-muted-foreground/70 truncate flex items-center gap-1">
+                <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
                   {contact.source === "webchat" ? (
                     <>
                       <Globe className="h-3 w-3 text-primary/60" />
@@ -970,20 +970,21 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
         </div>
       </div>
 
-      {/* Assigned banner - hidden in simplified mode */}
+      {/* Assigned banner */}
       {!isSimplified && (
-        <div className="px-4 py-1.5 bg-muted/20 border-b border-border/40 text-[11px] text-muted-foreground flex items-center gap-1.5 shrink-0">
-          <UserCheck className="h-3 w-3" />
-          {assignedMember ? (
-            <>
-              Atendente responsável:{" "}
-              <span className="font-semibold text-foreground">{assignedMember.full_name}</span>
-            </>
-          ) : (
-            <span className="italic">Sem atendente definido</span>
-          )}
+        <div className="px-4 py-1.5 border-b border-border/30 bg-muted/10 flex items-center gap-2 overflow-x-auto shrink-0">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <UserCheck className="h-3 w-3" />
+            {assignedMember ? (
+              <>
+                <span className="font-medium text-foreground">{assignedMember.full_name}</span>
+              </>
+            ) : (
+              <span className="italic text-muted-foreground/60">Sem atendente</span>
+            )}
+          </div>
           {contact.is_private && (
-            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium bg-destructive/10 text-destructive rounded-full px-2 py-0.5">
+            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium bg-destructive/10 text-destructive rounded-md px-2 py-0.5">
               <EyeOff className="h-2.5 w-2.5" />
               Privada
             </span>
@@ -996,13 +997,13 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
         <ClientSummaryBar contact={contact} />
       )}
 
-      {/* Quick action bar - hidden in simplified mode */}
+      {/* Quick action bar */}
       {!isSimplified && (
-        <div className="px-3 py-1.5 border-b border-border bg-muted/20 flex items-center gap-1.5 overflow-x-auto shrink-0">
+        <div className="px-3 py-2 border-b border-border/30 bg-card flex items-center gap-1.5 overflow-x-auto shrink-0">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
-            className="h-7 text-[11px] gap-1 shrink-0 border-primary/30 text-primary hover:bg-primary/10"
+            className="h-7 text-[11px] gap-1.5 shrink-0 shadow-sm"
             onClick={() => onShowCreateOS?.()}
           >
             <Plus className="h-3 w-3" /> Criar OS
@@ -1010,29 +1011,29 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-[11px] gap-1 shrink-0"
+            className="h-7 text-[11px] gap-1.5 shrink-0"
             onClick={() => onShowCreateQuote?.()}
           >
-            <FileText className="h-3 w-3" /> Criar orçamento
+            <FileText className="h-3 w-3" /> Orçamento
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-[11px] gap-1 shrink-0"
+            className="h-7 text-[11px] gap-1.5 shrink-0"
             onClick={() => onShowScheduleVisit?.()}
           >
-            <CalendarPlus className="h-3 w-3" /> Agendar visita
+            <CalendarPlus className="h-3 w-3" /> Agendar
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-[11px] gap-1 shrink-0 border-primary/30 text-primary hover:bg-primary/10"
+            className="h-7 text-[11px] gap-1.5 shrink-0 border-primary/20 text-primary hover:bg-primary/5"
             onClick={() => onShowAnalyze?.()}
           >
-            <Sparkles className="h-3 w-3" /> Analisar conversa
+            <Sparkles className="h-3 w-3" /> Analisar
           </Button>
           {contact.linked_client_id && (
-            <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 shrink-0" onClick={onToggleInfo}>
+            <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 shrink-0" onClick={onToggleInfo}>
               <ClipboardList className="h-3 w-3" /> Histórico
             </Button>
           )}
@@ -1129,14 +1130,14 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       <div 
         ref={scrollRef} 
         className={cn(
-          "flex-1 min-h-0 overflow-y-auto p-3 md:p-4 bg-muted/[0.04] relative", 
+          "flex-1 min-h-0 overflow-y-auto p-3 md:p-5 bg-background relative", 
           isMobile && "overscroll-contain"
         )}
       >
-        {/* WhatsApp-like background pattern */}
-        <div className="absolute inset-0 bg-whatsapp-pattern opacity-[0.05] dark:opacity-[0.02] pointer-events-none" />
+        {/* Subtle pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--muted)/0.3)_1px,transparent_1px)] bg-[length:24px_24px] opacity-30 dark:opacity-10 pointer-events-none" />
         
-        <div className="relative z-10 space-y-2 md:space-y-2.5">
+        <div className="relative z-10 space-y-1.5 md:space-y-2">
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -1256,7 +1257,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
 
       {/* Input */}
       {!previewFile && !recording && (
-        <div className="relative px-2 py-1.5 border-t border-border/60 bg-card shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.375rem)]">
+        <div className="relative px-3 py-2 border-t border-border/40 bg-card shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
           {/* Slash command menu */}
           {showSlashMenu && canSend && filteredSlashReplies.length > 0 && (
             <div className="absolute bottom-full left-3 right-3 mb-1 bg-popover border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
@@ -1372,24 +1373,24 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                 </PopoverContent>
               </Popover>
 
-              {/* Text input - compact like WhatsApp */}
-              <div className="flex-1 flex items-end bg-muted/50 rounded-full border border-border/40 overflow-hidden">
+              {/* Text input */}
+              <div className="flex-1 flex items-end bg-muted/30 rounded-2xl border border-border/30 overflow-hidden focus-within:border-primary/30 focus-within:bg-background transition-all">
                 <Textarea
                   ref={textareaRef}
                   value={text}
                   onChange={(e) => handleTextChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onPaste={handlePaste}
-                  placeholder={isSimplified ? "Mensagem..." : "Mensagem..."}
+                  placeholder="Mensagem..."
                   className={cn(
-                    "flex-1 resize-none text-sm border-0 bg-transparent shadow-none focus-visible:ring-0 px-3 py-1.5",
-                    "min-h-[34px] max-h-[80px]"
+                    "flex-1 resize-none text-sm border-0 bg-transparent shadow-none focus-visible:ring-0 px-4 py-2",
+                    "min-h-[38px] max-h-[80px]"
                   )}
                   disabled={false}
                   rows={1}
                 />
 
-                {/* Quick replies button - inside input area */}
+                {/* Quick replies button */}
                 {!isSimplified && (
                   <QuickRepliesPopover onSelect={handleQuickReply} />
                 )}
@@ -1422,7 +1423,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                 <button
                   onClick={handleSend}
                   disabled={isSending}
-                  className="shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="shrink-0 h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all disabled:opacity-50 shadow-sm"
                 >
                   {isSending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1433,7 +1434,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
               ) : (
                 <button
                   onMouseDown={(e) => { e.preventDefault(); startRecording(); }}
-                  className="shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                  className="shrink-0 h-9 w-9 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80 hover:text-foreground transition-all"
                 >
                   <Mic className="h-4 w-4" />
                 </button>

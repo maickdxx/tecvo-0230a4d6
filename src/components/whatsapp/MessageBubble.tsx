@@ -396,12 +396,12 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
           {/* Bubble */}
           <div
             className={cn(
-              "rounded-2xl shadow-sm overflow-hidden transition-all duration-200",
+              "rounded-2xl overflow-hidden transition-all duration-200",
               isMe
-                ? "bg-primary text-primary-foreground rounded-br-none"
-                : "bg-card text-foreground rounded-bl-none border border-border/40",
+                ? "bg-primary text-primary-foreground rounded-br-sm shadow-sm"
+                : "bg-card text-foreground rounded-bl-sm border border-border/50 shadow-sm",
               message.status === "failed" && "opacity-70",
-              message.status === "pending" && "opacity-90"
+              message.status === "pending" && "opacity-80"
             )}
           >
             {/* Group sender name */}

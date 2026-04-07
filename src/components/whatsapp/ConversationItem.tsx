@@ -119,14 +119,14 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
         <button
           onClick={selectionMode ? (onToggleCheck || onClick) : onClick}
           className={cn(
-            "w-full flex items-start gap-3 px-4 py-3.5 text-left transition-all duration-150 border-l-[3px]",
+            "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-200 border-l-2",
             selectionMode && isChecked
-              ? "bg-primary/[0.08] border-l-primary/40"
+              ? "bg-primary/[0.06] border-l-primary"
               : isSelected
-                ? "bg-[hsl(222,70%,96%)] dark:bg-primary/[0.12] border-l-[hsl(222,69%,49%)] shadow-[inset_0_1px_0_0_hsl(222,69%,49%,0.08)]"
+                ? "bg-primary/[0.07] dark:bg-primary/[0.12] border-l-primary"
                 : contact.is_unread
-                  ? "bg-primary/[0.03] hover:bg-primary/[0.06] border-l-transparent"
-                  : "hover:bg-muted/50 border-l-transparent"
+                  ? "bg-primary/[0.02] hover:bg-muted/60 border-l-transparent"
+                  : "hover:bg-muted/40 border-l-transparent"
           )}
         >
           {/* Selection checkbox */}
@@ -146,7 +146,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               <img
                 src={contact.profile_picture_url}
                 alt=""
-                className="h-10 w-10 rounded-full object-cover ring-2 ring-background"
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-background shadow-sm"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                   (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
@@ -155,7 +155,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
             ) : null}
             <div
               className={cn(
-                "h-10 w-10 rounded-full flex items-center justify-center text-white shadow-sm",
+                "h-11 w-11 rounded-full flex items-center justify-center text-white shadow-sm",
                 avatarBg,
                 contact.profile_picture_url && "hidden"
               )}
@@ -163,11 +163,11 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               {contact.is_group ? (
                 <Users className="h-4.5 w-4.5" />
               ) : (
-                <span className="text-sm font-bold">{initial}</span>
+                <span className="text-[13px] font-bold">{initial}</span>
               )}
             </div>
             {contact.is_unread && (
-              <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[hsl(222,69%,49%)] border-2 border-card shadow-sm" />
+              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary border-2 border-card" />
             )}
           </div>
 
@@ -275,8 +275,8 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
 
           {/* Unread counter */}
           {(contact.unread_count > 0 || contact.is_unread) && (
-            <span className="bg-[hsl(222,69%,49%)] text-white text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1.5 shrink-0 mt-0.5 shadow-md shadow-primary/20">
-              {contact.unread_count > 0 ? (contact.unread_count > 99 ? "99+" : contact.unread_count) : "•"}
+            <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-[18px] min-w-[18px] flex items-center justify-center px-1.5 shrink-0 mt-1">
+              {contact.unread_count > 0 ? (contact.unread_count > 99 ? "99+" : contact.unread_count) : ""}
             </span>
           )}
         </button>
