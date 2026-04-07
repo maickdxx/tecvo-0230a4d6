@@ -2407,23 +2407,33 @@ const ADMIN_TOOLS = [
     function: {
       name: "send_service_pdf",
       description:
-        "Envia via WhatsApp o PDF oficial de uma OS ou Orçamento. Use target='self' para enviar ao próprio técnico (sem confirmação). Use target='client' para enviar ao cliente (sem confirmação neste canal). Nunca gere PDF novo.",
+        "Envia o PDF oficial de uma OS ou Orçamento via WhatsApp. Use target='self' para enviar ao próprio usuário (sem confirmação). Use target='client' para enviar ao cliente (exige confirmed=true).",
       parameters: {
         type: "object",
         properties: {
+          service_id: {
+            type: "string",
+            description:
+              "UUID COMPLETO do serviço. Use SEMPRE que tiver o ID (ex: após create_service). Tem prioridade absoluta sobre service_identifier.",
+          },
           service_identifier: {
             type: "string",
             description:
-              "Identificador do serviço: número da OS (ex: '0042'), nome do cliente, ou parte do ID.",
+              "Fallback: número da OS (ex: '0042') ou nome do cliente. Só use quando NÃO tiver o service_id UUID.",
           },
           target: {
             type: "string",
             enum: ["self", "client"],
             description:
-              "Destino: 'self'=envia para o próprio técnico que está pedindo. 'client'=envia para o cliente da OS. Default: 'client'.",
+              "Destino do envio. 'self'=envia para o próprio usuário que pediu (sem confirmação). 'client'=envia para o cliente da OS (exige confirmação). Default: 'client'.",
+          },
+          confirmed: {
+            type: "boolean",
+            description:
+              "Só obrigatório quando target='client'. Indica que o usuário CONFIRMOU explicitamente o envio para o cliente.",
           },
         },
-        required: ["service_identifier"],
+        required: [],
         additionalProperties: false,
       },
     },
@@ -4451,8 +4461,10 @@ Quando uma OS ou orçamento falhar porque o cliente não existe (resultado cont�
 DOIS MODOS DE ENVIO (parâmetro "target"):
   a) target="self" → envia o PDF para o PRÓPRIO TÉCNICO (quem está pedindo). Executa direto, sem confirmação.
      Frases: "me manda", "envia pra mim", "quero ver a OS", "me manda a OS", "manda aqui".
-  b) target="client" (padrão) → envia para o CLIENTE da OS. Também executa direto neste canal (WhatsApp).
+  b) target="client" (padrão) → envia para o CLIENTE da OS. EXIGE confirmed=true.
      Frases: "envia pro cliente", "manda pro cliente", "envia pra ele".
+     Quando target="client" e confirmed NÃO for true: o backend BLOQUEIA e retorna pedido de confirmação.
+     O sistema salva estado pendente e intercepta o "sim" do usuário automaticamente.
 
 Quando o usuário pedir para enviar, mandar, ver ou receber o PDF de uma OS ou orçamento:
 - Use o número da OS, nome do cliente ou ID informado
@@ -4469,7 +4481,8 @@ Quando o usuário pedir para enviar, mandar, ver ou receber o PDF de uma OS ou o
 
 ⚠️ REGRA CRÍTICA DE COMUNICAÇÃO EXTERNA:
 - NUNCA envie mensagens ou PDFs para clientes por conta própria.
-- Envio para cliente (target="client") EXIGE autorização explícita do usuário.
+- Envio para cliente (target="client") EXIGE autorização explícita do usuário E confirmed=true.
+- O backend VALIDA a confirmação via estado persistido. Não é possível burlar.
 - Se o usuário NÃO disse claramente "envie pro cliente", NÃO envie.
 - Na dúvida, pergunte: "Deseja que eu envie para o cliente?"
 
@@ -4669,6 +4682,28 @@ Você NÃO deve compartilhar:
               if (contactState?.awaiting_confirmation && contactState?.pending_action === "send_service_pdf" && contactState?.pending_service_id) {
                 console.log("[WEBHOOK-WHATSAPP] CONFIRMATION INTERCEPTED: Executing send_service_pdf directly for service:", contactState.pending_service_id);
                 
+                // ── HARD GUARD: Validate via central external send gate ──
+                const { checkExternalSendPermission } = await import("../_shared/externalSendGuard.ts");
+                const guardCheck = await checkExternalSendPermission(supabase, {
+                  source: "ai_tool_client",
+                  organizationId: targetOrganizationId,
+                  contactId,
+                  isInternal: false,
+                  confirmed: true, // User said "sim" — persisted state validates this
+                  persistedServiceId: contactState.pending_service_id,
+                  requestedServiceId: contactState.pending_service_id,
+                  messagePreview: `confirmation_intercept service=${contactState.pending_service_id}`,
+                  functionName: "webhook-whatsapp:confirmation_intercept",
+                });
+
+                if (!guardCheck.allowed) {
+                  console.warn("[WEBHOOK-WHATSAPP] External guard blocked confirmation:", guardCheck.reason);
+                  // Clear state and let AI handle naturally
+                  await supabase
+                    .from("whatsapp_contacts")
+                    .update({ pending_action: null, pending_service_id: null, awaiting_confirmation: false })
+                    .eq("id", contactId);
+                } else {
                 const directToolCall = {
                   id: `direct_confirm_${crypto.randomUUID()}`,
                   function: {
@@ -4736,6 +4771,7 @@ Você NÃO deve compartilhar:
                   durationMs: Date.now() - Date.now(),
                   status: "success",
                 });
+                } // end else (guard allowed)
               }
             } catch (interceptErr) {
               console.warn("[WEBHOOK-WHATSAPP] Confirmation interception error:", interceptErr);

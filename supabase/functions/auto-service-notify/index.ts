@@ -283,9 +283,21 @@ Deno.serve(async (req) => {
               if (!clientGuard.allowed) {
                 console.log(`[AUTO-SERVICE] Client notification blocked by send guard: ${clientGuard.reason}`);
               } else {
-                // Use client's org channel if available; otherwise fall back to platform instance.
-                // This is a ONE-SHOT notification (portal link), NOT a conversation reply.
-                // Using the platform instance here is acceptable and does NOT violate channel isolation.
+                // ── EXTERNAL SEND GUARD: Log client-facing auto notification ──
+                const { checkExternalSendPermission } = await import("../_shared/externalSendGuard.ts");
+                const extGuard = await checkExternalSendPermission(supabase, {
+                  source: "auto_notify",
+                  organizationId: organization_id,
+                  contactId: null,
+                  recipientPhone: normalizedPhone,
+                  isInternal: false,
+                  messagePreview: `auto_service_notify:client_portal_link service=${service_id}`,
+                  functionName: "auto-service-notify",
+                });
+
+                if (!extGuard.allowed) {
+                  console.log(`[AUTO-SERVICE] Client notification blocked by external guard: ${extGuard.reason}`);
+                } else {
                 const instanceToUse = clientInstanceName || TECVO_PLATFORM_INSTANCE;
                 const clientOk = await sendWhatsApp(normalizedPhone, clientMessage, instanceToUse);
                 if (clientOk) {
@@ -296,6 +308,7 @@ Deno.serve(async (req) => {
                     content: `[service:${service_id}] Portal link sent to client ${clientName}`,
                   });
                 }
+                } // end extGuard allowed
               }
             }
           } else {
