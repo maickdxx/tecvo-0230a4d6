@@ -1037,7 +1037,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
 
       {/* Quick action bar */}
       {!isSimplified && (
-        <div className="px-3 py-2 border-b border-border/30 bg-card flex items-center gap-1.5 overflow-x-auto shrink-0">
+        <div className="px-3 py-2 whatsapp-action-bar flex items-center gap-1.5 overflow-x-auto shrink-0">
           <Button
             variant="default"
             size="sm"
