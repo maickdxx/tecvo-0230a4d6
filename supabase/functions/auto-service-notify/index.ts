@@ -308,8 +308,8 @@ Deno.serve(async (req) => {
                     content: `[service:${service_id}] Portal link sent to client ${clientName}`,
                   });
                 }
+                } // end extGuard allowed
               }
-            }
           } else {
             console.log("[AUTO-SERVICE] Portal link already sent for service:", service_id);
           }
