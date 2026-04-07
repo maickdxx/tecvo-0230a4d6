@@ -1917,299 +1917,17 @@ const ADMIN_TOOLS = [
   },
 ];
 
+// ── executeAdminTool: unified via shared module (no duplication) ──
+// The webhook now delegates ALL tool execution to the shared lauraPrompt module,
+// which includes the Action Shield, degradation mode, verification, and audit logging.
 async function executeAdminTool(
   supabase: any,
   organizationId: string,
   toolCall: any,
   ctx?: any,
 ): Promise<string> {
-  const fnName = toolCall.function?.name;
-  let args: any;
-  try {
-    args = JSON.parse(toolCall.function?.arguments || "{}");
-  } catch {
-    return "Erro: argumentos inválidos.";
-  }
-
-  if (fnName === "register_transaction") {
-    const { type, amount, description, category, date, payment_method } = args;
-    if (!type || !amount || !description || !category || !date) {
-      return "Erro: campos obrigatórios faltando (type, amount, description, category, date).";
-    }
-    if (amount <= 0) return "Erro: valor deve ser positivo.";
-
-    // Check for default AI account configured on the organization
-    const { data: orgData } = await supabase
-      .from("organizations")
-      .select("default_ai_account_id")
-      .eq("id", organizationId)
-      .single();
-
-    let accountId: string | null = orgData?.default_ai_account_id || null;
-
-    // If no default AI account configured, block and warn the user
-    if (!accountId) {
-      return '⚠️ Você ainda não tem uma conta financeira padrão configurada para a IA.\n\nPara eu registrar transações corretamente, você precisa definir uma conta padrão nas configurações do sistema.\n\n👉 Acesse: https://tecvo.com.br/configuracoes\n\nOu, se preferir, posso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
-    }
-
-    // Expenses go as pending (contas a pagar) — manager approves later
-    // Income also goes as pending (contas a receber)
-    // No balance adjustment here — only on approval/reconciliation
-
-    // Capitalize first letter and add (Secretária) tag
-    const capitalizedDesc = description.charAt(0).toUpperCase() +
-      description.slice(1);
-    const taggedDesc = `${capitalizedDesc} (Secretária)`;
-
-    const { error } = await supabase.from("transactions").insert({
-      organization_id: organizationId,
-      type,
-      amount,
-      description: taggedDesc,
-      category,
-      date,
-      due_date: date,
-      status: "pending",
-      financial_account_id: accountId,
-      ...(payment_method ? { payment_method } : {}),
-    });
-
-    if (error) {
-      console.error("[WEBHOOK-WHATSAPP] Transaction insert error:", error);
-      return `Erro ao registrar: ${error.message}`;
-    }
-
-    const typeLabel = type === "income" ? "Receita" : "Despesa";
-    return `${typeLabel} registrada com sucesso: R$ ${
-      amount.toFixed(2)
-    } — ${description} (${category}) em ${date}.`;
-  }
-
-  if (fnName === "create_financial_account") {
-    const { name, account_type } = args;
-    if (!name) return "Erro: nome da conta é obrigatório.";
-
-    const finalType = account_type || "checking";
-
-    const { data: newAccount, error } = await supabase
-      .from("financial_accounts")
-      .insert({
-        organization_id: organizationId,
-        name,
-        account_type: finalType,
-        balance: 0,
-        is_active: true,
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error("[WEBHOOK-WHATSAPP] Create account error:", error);
-      return `Erro ao criar conta: ${error.message}`;
-    }
-
-    // Set as default AI account
-    await supabase
-      .from("organizations")
-      .update({ default_ai_account_id: newAccount.id })
-      .eq("id", organizationId);
-
-    return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! A partir de agora, todas as transações que eu registrar serão vinculadas a essa conta.`;
-  }
-
-  if (fnName === "create_service") {
-    const {
-      client_name,
-      scheduled_date,
-      service_type,
-      description,
-      value,
-      assigned_to_name,
-    } = args;
-    if (!client_name || !scheduled_date || !service_type || !description) {
-      return "Erro: campos obrigatórios faltando (client_name, scheduled_date, service_type, description).";
-    }
-
-    // Find client by partial name match
-    const { data: clientMatches } = await supabase
-      .from("clients")
-      .select("id, name")
-      .eq("organization_id", organizationId)
-      .is("deleted_at", null)
-      .ilike("name", `%${client_name}%`)
-      .limit(5);
-
-    if (!clientMatches || clientMatches.length === 0) {
-      return `CLIENT_NOT_FOUND:${client_name}|Cliente "${client_name}" não encontrado no cadastro. Posso cadastrar agora para continuar a criação da OS. Preciso do nome completo e telefone do cliente.`;
-    }
-    if (clientMatches.length > 1) {
-      const names = clientMatches.map((c: any) => c.name).join(", ");
-      return `Encontrei ${clientMatches.length} clientes: ${names}. Qual deles? Especifique melhor o nome.`;
-    }
-    const client = clientMatches[0];
-
-    // Find technician if specified
-    let assignedTo: string | null = null;
-    if (assigned_to_name) {
-      const profiles = ctx?.profiles || [];
-      const match = profiles.find((p: any) =>
-        p.full_name &&
-        p.full_name.toLowerCase().includes(assigned_to_name.toLowerCase())
-      );
-      if (match) {
-        assignedTo = match.user_id;
-      }
-    }
-
-    // Check service limit
-    const { data: canCreate } = await supabase.rpc("can_create_service", {
-      org_id: organizationId,
-    });
-    if (canCreate === false) {
-      return "Limite de serviços do plano atingido neste mês. Faça upgrade para criar mais.";
-    }
-
-    // Validate service type exists
-    const { data: typeExists } = await supabase
-      .from("service_types")
-      .select("slug")
-      .eq("organization_id", organizationId)
-      .eq("slug", service_type)
-      .limit(1);
-
-    const finalServiceType = (typeExists && typeExists.length > 0)
-      ? service_type
-      : "outro";
-
-    const { data: newService, error } = await supabase.from("services").insert({
-      organization_id: organizationId,
-      client_id: client.id,
-      scheduled_date,
-      service_type: finalServiceType,
-      description,
-      value: value || 0,
-      assigned_to: assignedTo,
-      status: "scheduled",
-      document_type: "service_order",
-    }).select("id").single();
-
-    if (error) {
-      console.error("[WEBHOOK-WHATSAPP] Service insert error:", error);
-      return `Erro ao criar OS: ${error.message}`;
-    }
-
-    const dateFormatted = new Date(scheduled_date).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `OS criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${
-      (value || 0).toFixed(2)
-    }\n• ID: ${newService.id.substring(0, 8)}`;
-  }
-
-  if (fnName === "create_quote") {
-    const { client_name, service_type, description, value, scheduled_date } =
-      args;
-    if (!client_name || !service_type || !description || !value) {
-      return "Erro: campos obrigatórios faltando (client_name, service_type, description, value).";
-    }
-
-    // Find client by partial name match
-    const { data: clientMatches } = await supabase
-      .from("clients")
-      .select("id, name")
-      .eq("organization_id", organizationId)
-      .is("deleted_at", null)
-      .ilike("name", `%${client_name}%`)
-      .limit(5);
-
-    if (!clientMatches || clientMatches.length === 0) {
-      return `CLIENT_NOT_FOUND:${client_name}|Cliente "${client_name}" não encontrado no cadastro. Posso cadastrar agora para continuar a criação do orçamento. Preciso do nome completo e telefone do cliente.`;
-    }
-    if (clientMatches.length > 1) {
-      const names = clientMatches.map((c: any) => c.name).join(", ");
-      return `Encontrei ${clientMatches.length} clientes: ${names}. Qual deles? Especifique melhor o nome.`;
-    }
-    const client = clientMatches[0];
-
-    const tz = ctx?.timezone || "America/Sao_Paulo";
-    const todayForQuote = getTodayInTz(tz);
-    const finalDate = scheduled_date || `${todayForQuote}T08:00:00`;
-
-    const { data: newQuote, error } = await supabase.from("services").insert({
-      organization_id: organizationId,
-      client_id: client.id,
-      scheduled_date: finalDate,
-      service_type: service_type || "outro",
-      description,
-      value: value || 0,
-      status: "scheduled",
-      document_type: "quote",
-    }).select("id").single();
-
-    if (error) {
-      console.error("[WEBHOOK-WHATSAPP] Quote insert error:", error);
-      return `Erro ao criar orçamento: ${error.message}`;
-    }
-
-    return `Orçamento criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${
-      value.toFixed(2)
-    }\n• ID: ${
-      newQuote.id.substring(0, 8)
-    }\n\nO orçamento está disponível no sistema. O gestor pode visualizar e enviar o PDF ao cliente pelo painel.`;
-  }
-
-  if (fnName === "create_client") {
-    const { name, phone, email, address } = args;
-    if (!name || !phone) {
-      return "Erro: nome e telefone são obrigatórios para cadastrar o cliente.";
-    }
-
-    // Check if client already exists by phone
-    const normalizedPhone = phone.replace(/\D/g, "");
-    const { data: existingByPhone } = await supabase
-      .from("clients")
-      .select("id, name")
-      .eq("organization_id", organizationId)
-      .is("deleted_at", null)
-      .eq("phone", normalizedPhone)
-      .maybeSingle();
-
-    if (existingByPhone) {
-      return `Cliente já existe com este telefone: "${existingByPhone.name}". Use o nome "${existingByPhone.name}" para criar a OS ou orçamento.`;
-    }
-
-    const { data: newClient, error } = await supabase
-      .from("clients")
-      .insert({
-        organization_id: organizationId,
-        name,
-        phone: normalizedPhone,
-        ...(email ? { email } : {}),
-        ...(address ? { address } : {}),
-        person_type: "fisica",
-      })
-      .select("id, name")
-      .single();
-
-    if (error) {
-      console.error("[WEBHOOK-WHATSAPP] Client insert error:", error);
-      return `Erro ao cadastrar cliente: ${error.message}`;
-    }
-
-    return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Agora pode continuar criando a OS ou orçamento usando o nome "${newClient.name}".`;
-  }
-
-  if (fnName === "send_service_pdf") {
-    // Delegate to the shared implementation from lauraPrompt which sends to CLIENT's phone
-    const { executeAdminTool: sharedExecute } = await import("../_shared/lauraPrompt.ts");
-    return sharedExecute(supabase, organizationId, toolCall, ctx);
-  }
-
-  return "Ferramenta desconhecida.";
+  const { executeAdminTool: sharedExecute } = await import("../_shared/lauraPrompt.ts");
+  return sharedExecute(supabase, organizationId, toolCall, ctx);
 }
 
 /**
@@ -4193,7 +3911,7 @@ Você NÃO deve compartilhar:
                   supabase,
                   targetOrganizationId,
                   directToolCall,
-                  { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id },
+                  { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
                 );
 
                 // Clear pending state
@@ -4331,7 +4049,7 @@ Você NÃO deve compartilhar:
                 supabase,
                 targetOrganizationId,
                 tc,
-                { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id },
+                { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
               );
 
               // ── Translate PENDING_CONFIRMATION into AI-friendly instruction ──
@@ -4450,7 +4168,7 @@ Você NÃO deve compartilhar:
               supabase,
               targetOrganizationId,
               forcedPdfToolCall,
-              { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id },
+              { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
             );
 
             if (

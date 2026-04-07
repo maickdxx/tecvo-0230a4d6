@@ -854,46 +854,13 @@ export const ADMIN_TOOLS = [
   },
 ];
 
-// ─────────────────── reliability layer ───────────────────
+// ─────────────────── reliability layer (via actionShield) ───────────────────
 
-const DEGRADATION_THRESHOLD = 3; // 3 errors in 10 min → degraded
-const DEGRADATION_WINDOW_MINUTES = 10;
-
-// Risk classification
-const ACTION_RISK: Record<string, "low" | "medium" | "high"> = {
-  register_transaction: "high",
-  create_service: "high",
-  create_quote: "medium",
-  create_client: "medium",
-  create_financial_account: "low",
-  send_service_pdf: "high",
-};
-
-/**
- * Checks degradation mode using PERSISTENT database state (ai_usage_logs).
- * Counts recent tool_error_* entries for the org in the last N minutes.
- */
-async function isDegradedMode(supabase: any, organizationId: string): Promise<boolean> {
-  try {
-    const cutoff = new Date(Date.now() - DEGRADATION_WINDOW_MINUTES * 60 * 1000).toISOString();
-    const { count, error } = await supabase
-      .from("ai_usage_logs")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organizationId)
-      .like("action_slug", "tool_error_%")
-      .eq("status", "error")
-      .gte("created_at", cutoff);
-    
-    if (error) {
-      console.error("[LAURA-DEGRADED] Failed to check degradation:", error.message);
-      return false; // Don't block on check failure
-    }
-    return (count || 0) >= DEGRADATION_THRESHOLD;
-  } catch (e) {
-    console.error("[LAURA-DEGRADED] Check exception:", e);
-    return false;
-  }
-}
+import {
+  enforceActionShield,
+  logToolSuccess,
+  type ShieldContext,
+} from "./actionShield.ts";
 
 /**
  * Logs a tool execution error to ai_usage_logs for diagnostics.
@@ -966,12 +933,22 @@ export async function executeAdminTool(
 
   try {
 
-  // Degradation mode check for high-risk actions
-  const risk = ACTION_RISK[fnName] || "medium";
-  if (await isDegradedMode(supabase, organizationId) && risk === "high") {
-    console.warn(`[LAURA-DEGRADED] Blocking high-risk action "${fnName}" due to repeated errors`);
-    await logToolError(supabase, organizationId, fnName, "blocked_degraded_mode", args);
-    return `⚠️ Detectei instabilidade recente no sistema. Por segurança, não vou executar "${fnName}" automaticamente agora. Por favor, faça essa ação diretamente no sistema ou tente novamente em alguns minutos.`;
+  // ── ACTION SHIELD: Central pre-execution gate ──
+  const shieldCtx: ShieldContext = {
+    supabase,
+    organizationId,
+    userId: ctx?.userId || null,
+    contextOrgId: ctx?.contextOrgId || organizationId,
+    channelId: ctx?.channelId || null,
+    channelType: ctx?.channelType || null,
+    contactId: ctx?.contactId || null,
+    source: ctx?.remoteJid ? "whatsapp" : "app",
+  };
+
+  const shieldResult = await enforceActionShield(fnName, args, shieldCtx);
+  if (!shieldResult.allowed) {
+    console.warn(`[LAURA-SHIELD] Action "${fnName}" BLOCKED: ${shieldResult.reason} — ${shieldResult.detail}`);
+    return shieldResult.detail || `⚠️ Ação bloqueada: ${shieldResult.reason}`;
   }
 
   if (fnName === "register_transaction") {
@@ -1019,6 +996,7 @@ export async function executeAdminTool(
     if (verifyErr) return verifyErr;
 
     const typeLabel = type === "income" ? "Receita" : "Despesa";
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}. ✅ Confirmado no sistema.`;
   }
 
@@ -1054,6 +1032,7 @@ export async function executeAdminTool(
     const verifyAccErr = await verifyInsert(supabase, "financial_accounts", newAccount.id, "FinancialAccount");
     if (verifyAccErr) return verifyAccErr;
 
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! Confirmado no sistema.`;
   }
 
@@ -1154,6 +1133,7 @@ export async function executeAdminTool(
     const pdfNote = pdfStatus === "ready"
       ? "\n📄 PDF oficial gerado com sucesso."
       : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `OS #${osNum} criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• service_id: ${newService.id}${pdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newService.id}" diretamente.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
   }
 
@@ -1233,6 +1213,7 @@ export async function executeAdminTool(
     const quotePdfNote = quotePdfStatus === "ready"
       ? "\n📄 PDF oficial gerado com sucesso."
       : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `Orçamento #${quoteNum} criado com sucesso!\n• Cliente: ${client.name}\n• Tipo: ${service_type}\n• Descrição: ${description}\n• Valor: R$ ${value.toFixed(2)}\n• service_id: ${newQuote.id}${quotePdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newQuote.id}" diretamente.`;
   }
 
@@ -1277,6 +1258,7 @@ export async function executeAdminTool(
     const verifyClientErr = await verifyInsert(supabase, "clients", newClient.id, "Client");
     if (verifyClientErr) return verifyClientErr;
 
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Confirmado no sistema.`;
   }
 
@@ -1468,6 +1450,8 @@ export async function executeAdminTool(
       console.error(`[LAURA] sendOfficialServicePdf failed: ${result.errorCode} — ${result.error}`);
       return result.error || `Não consegui enviar o PDF da ${docLabel} #${osNumber}.`;
     }
+
+    await logToolSuccess(supabase, organizationId, fnName, args);
 
     if (sendTarget === "self") {
       return `SILENT_PDF_SENT_SELF:${result.docType} #${result.osNumber} - ${result.clientName} enviado para você!`;
