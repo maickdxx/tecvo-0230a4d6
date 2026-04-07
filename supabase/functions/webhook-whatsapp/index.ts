@@ -4049,7 +4049,7 @@ Você NÃO deve compartilhar:
                 supabase,
                 targetOrganizationId,
                 tc,
-                { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id },
+                { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
               );
 
               // ── Translate PENDING_CONFIRMATION into AI-friendly instruction ──
