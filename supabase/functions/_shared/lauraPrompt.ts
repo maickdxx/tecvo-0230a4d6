@@ -1258,6 +1258,7 @@ export async function executeAdminTool(
     const verifyClientErr = await verifyInsert(supabase, "clients", newClient.id, "Client");
     if (verifyClientErr) return verifyClientErr;
 
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `✅ Cliente "${newClient.name}" cadastrado com sucesso! Confirmado no sistema.`;
   }
 
