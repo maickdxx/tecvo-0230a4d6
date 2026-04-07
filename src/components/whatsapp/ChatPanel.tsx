@@ -1436,7 +1436,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
               </Popover>
 
               {/* Text input */}
-              <div className="flex-1 flex items-end bg-muted/30 rounded-2xl border border-border/30 overflow-hidden focus-within:border-primary/30 focus-within:bg-background transition-all">
+              <div className="flex-1 flex items-end bg-muted/20 rounded-2xl border border-border/20 overflow-hidden focus-within:border-primary/30 focus-within:bg-background focus-within:shadow-sm transition-all">
                 <Textarea
                   ref={textareaRef}
                   value={text}
