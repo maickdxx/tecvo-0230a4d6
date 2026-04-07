@@ -324,7 +324,7 @@ export function ConversationList({
             placeholder="Buscar nome, telefone ou mensagem..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 h-10 text-sm bg-muted/30 border-transparent focus:bg-background focus:border-primary/20 transition-all rounded-lg"
+            className="pl-9 h-10 text-sm bg-muted/20 border-border/20 focus:bg-background focus:border-primary/30 focus:shadow-sm transition-all rounded-xl"
           />
         </div>
       </div>
