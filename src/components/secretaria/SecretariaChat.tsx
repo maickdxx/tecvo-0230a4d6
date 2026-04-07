@@ -55,7 +55,7 @@ export function SecretariaChat() {
           <Bot className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Assistente IA</h3>
+          <h3 className="text-sm font-semibold text-foreground">Laura</h3>
           <p className="text-xs text-muted-foreground">Assistente operacional inteligente</p>
         </div>
       </div>
@@ -72,7 +72,7 @@ export function SecretariaChat() {
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
             <h4 className="text-sm font-medium text-foreground mb-1">
-              Olá! Sou sua Assistente IA
+              Olá! Sou a Laura
             </h4>
             <p className="text-xs text-muted-foreground max-w-xs mb-4">
               Posso analisar sua agenda, faturamento, clientes e operações. Pergunte qualquer coisa!
@@ -171,7 +171,7 @@ export function SecretariaChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Pergunte à sua Assistente IA..."
+            placeholder="Pergunte à Laura..."
             className="min-h-[40px] max-h-[120px] resize-none text-sm"
             rows={1}
             disabled={isLoading}

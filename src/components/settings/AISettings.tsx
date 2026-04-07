@@ -86,8 +86,8 @@ export function AISettings({ onBack }: AISettingsProps) {
             <Bot className="h-5 w-5 text-primary" />
           </div>
           <div>
-             <h1 className="text-2xl font-bold text-foreground">Assistente IA</h1>
-             <p className="text-muted-foreground">Configure a IA e seu WhatsApp</p>
+             <h1 className="text-2xl font-bold text-foreground">Laura</h1>
+             <p className="text-muted-foreground">Configure sua assistente operacional</p>
           </div>
         </div>
       </div>

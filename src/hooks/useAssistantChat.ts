@@ -8,6 +8,50 @@ export interface ChatMessage {
   content: string;
 }
 
+/** Parse an SSE stream from the AI gateway, calling onChunk with accumulated text */
+async function consumeSSEStream(
+  body: ReadableStream<Uint8Array>,
+  onChunk: (accumulated: string) => void,
+  signal?: AbortSignal
+): Promise<string> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let accumulated = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let idx: number;
+    while ((idx = buffer.indexOf("\n")) !== -1) {
+      let line = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 1);
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (!line.startsWith("data: ")) continue;
+
+      const payload = line.slice(6).trim();
+      if (payload === "[DONE]") return accumulated;
+
+      try {
+        const parsed = JSON.parse(payload);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) {
+          accumulated += content;
+          onChunk(accumulated);
+        }
+      } catch {
+        // partial JSON — put it back and wait for more data
+        buffer = line + "\n" + buffer;
+        break;
+      }
+    }
+  }
+
+  return accumulated;
+}
+
 export function useAssistantChat() {
   const { session, organizationId } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -24,7 +68,6 @@ export function useAssistantChat() {
     const loadConversation = async () => {
       setIsLoadingHistory(true);
       try {
-        // Find existing conversation
         const { data: convs } = await supabase
           .from("assistant_conversations")
           .select("id")
@@ -47,7 +90,6 @@ export function useAssistantChat() {
         }
         setConversationId(convId);
 
-        // Load messages
         const { data: msgs } = await supabase
           .from("assistant_messages")
           .select("id, role, content, created_at")
@@ -72,12 +114,23 @@ export function useAssistantChat() {
     loadConversation();
   }, [session?.user?.id, organizationId]);
 
+  const updateStreamingMessage = useCallback((content: string) => {
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.role === "assistant" && !last.id) {
+        return prev.map((m, i) =>
+          i === prev.length - 1 ? { ...m, content } : m
+        );
+      }
+      return [...prev, { role: "assistant", content }];
+    });
+  }, []);
+
   const sendMessage = useCallback(
     async (input: string) => {
       if (!input.trim() || !organizationId || !session) return;
       setError(null);
 
-      // Refresh session if needed
       const { data: refreshed } = await supabase.auth.getSession();
       const token = refreshed?.session?.access_token || session.access_token;
 
@@ -85,7 +138,6 @@ export function useAssistantChat() {
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
 
-      // Persist user message
       if (conversationId) {
         await supabase.from("assistant_messages").insert({
           conversation_id: conversationId,
@@ -98,13 +150,11 @@ export function useAssistantChat() {
           .eq("id", conversationId);
       }
 
-      // Build messages for API (last 20 messages for context)
       const historyForApi = [...messages.slice(-20), userMsg].map((m) => ({
         role: m.role,
         content: m.content,
       }));
 
-      let assistantContent = "";
       const controller = new AbortController();
       abortRef.current = controller;
 
@@ -137,84 +187,12 @@ export function useAssistantChat() {
 
         if (!resp.body) throw new Error("No response body");
 
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let streamDone = false;
+        const assistantContent = await consumeSSEStream(
+          resp.body,
+          updateStreamingMessage,
+          controller.signal
+        );
 
-        while (!streamDone) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          let newlineIndex: number;
-          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, newlineIndex);
-            buffer = buffer.slice(newlineIndex + 1);
-
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-            if (line.startsWith(":") || line.trim() === "") continue;
-            if (!line.startsWith("data: ")) continue;
-
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === "[DONE]") {
-              streamDone = true;
-              break;
-            }
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-              if (content) {
-                assistantContent += content;
-                setMessages((prev) => {
-                  const last = prev[prev.length - 1];
-                  if (last?.role === "assistant" && !last.id) {
-                    return prev.map((m, i) =>
-                      i === prev.length - 1 ? { ...m, content: assistantContent } : m
-                    );
-                  }
-                  return [...prev, { role: "assistant", content: assistantContent }];
-                });
-              }
-            } catch {
-              buffer = line + "\n" + buffer;
-              break;
-            }
-          }
-        }
-
-        // Flush remaining
-        if (buffer.trim()) {
-          for (let raw of buffer.split("\n")) {
-            if (!raw) continue;
-            if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-            if (raw.startsWith(":") || raw.trim() === "") continue;
-            if (!raw.startsWith("data: ")) continue;
-            const jsonStr = raw.slice(6).trim();
-            if (jsonStr === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-              if (content) {
-                assistantContent += content;
-                setMessages((prev) => {
-                  const last = prev[prev.length - 1];
-                  if (last?.role === "assistant" && !last.id) {
-                    return prev.map((m, i) =>
-                      i === prev.length - 1 ? { ...m, content: assistantContent } : m
-                    );
-                  }
-                  return [...prev, { role: "assistant", content: assistantContent }];
-                });
-              }
-            } catch {
-              /* ignore */
-            }
-          }
-        }
-
-        // Persist assistant message
         if (conversationId && assistantContent) {
           await supabase.from("assistant_messages").insert({
             conversation_id: conversationId,
@@ -232,7 +210,7 @@ export function useAssistantChat() {
         abortRef.current = null;
       }
     },
-    [messages, organizationId, session, conversationId]
+    [messages, organizationId, session, conversationId, updateStreamingMessage]
   );
 
   const cancelStream = useCallback(() => {
@@ -242,7 +220,6 @@ export function useAssistantChat() {
   const sendProactiveTip = useCallback(async () => {
     if (!organizationId || !session || isLoading) return;
 
-    // Frequency control: 1 tip every 4 hours
     const storageKey = `tecvo_last_tip_${organizationId}`;
     const lastTip = localStorage.getItem(storageKey);
     const fourHours = 4 * 60 * 60 * 1000;
@@ -252,7 +229,6 @@ export function useAssistantChat() {
     const token = refreshed?.session?.access_token || session.access_token;
 
     setIsLoading(true);
-    let assistantContent = "";
 
     try {
       const resp = await fetch(
@@ -272,46 +248,8 @@ export function useAssistantChat() {
         return;
       }
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let streamDone = false;
+      const assistantContent = await consumeSSEStream(resp.body, updateStreamingMessage);
 
-      while (!streamDone) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") { streamDone = true; break; }
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              assistantContent += content;
-              setMessages((prev) => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant" && !last.id) {
-                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-                }
-                return [...prev, { role: "assistant", content: assistantContent }];
-              });
-            }
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
-      }
-
-      // Persist tip as assistant message
       if (conversationId && assistantContent) {
         await supabase.from("assistant_messages").insert({
           conversation_id: conversationId,
@@ -327,7 +265,7 @@ export function useAssistantChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [organizationId, session, isLoading, conversationId]);
+  }, [organizationId, session, isLoading, conversationId, updateStreamingMessage]);
 
   return { messages, isLoading, isLoadingHistory, error, sendMessage, cancelStream, sendProactiveTip };
 }

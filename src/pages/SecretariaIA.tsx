@@ -44,7 +44,7 @@ export default function SecretariaIA() {
           <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
             <Bot className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-muted-foreground text-sm">A Assistente IA está desativada.</p>
+          <p className="text-muted-foreground text-sm">A Laura está desativada.</p>
           <Button variant="outline" size="sm" onClick={() => navigate("/configuracoes")}>
             <Settings className="h-4 w-4 mr-2" />
             Ir para Configurações
@@ -66,9 +66,9 @@ export default function SecretariaIA() {
               <Bot className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Assistente IA</h1>
+              <h1 className="text-xl font-bold text-foreground">Laura</h1>
               <p className="text-sm text-muted-foreground">
-                Analista estratégico da empresa
+                Sua assistente operacional inteligente
               </p>
             </div>
           </div>
