@@ -55,7 +55,7 @@ export function SecretariaChat() {
           <Bot className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Assistente IA</h3>
+          <h3 className="text-sm font-semibold text-foreground">Laura</h3>
           <p className="text-xs text-muted-foreground">Assistente operacional inteligente</p>
         </div>
       </div>
