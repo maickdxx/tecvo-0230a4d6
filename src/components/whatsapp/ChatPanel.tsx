@@ -772,19 +772,19 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {/* Header - compact on mobile simplified */}
-      <div className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 border-b border-border/60 bg-card shadow-sm shrink-0 sticky top-0 z-20`}>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack} title="Fechar conversa">
+      {/* Header */}
+      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 border-b border-border/50 bg-card shrink-0 sticky top-0 z-20">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={onBack} title="Fechar conversa">
           <ArrowLeft className="h-4 w-4 md:hidden" />
           <X className="h-4 w-4 hidden md:block" />
         </Button>
 
-        <button onClick={onToggleInfo} className="flex items-center gap-3 flex-1 min-w-0">
+        <button onClick={onToggleInfo} className="flex items-center gap-3 flex-1 min-w-0 group/header">
           {contact.profile_picture_url ? (
             <img
               src={contact.profile_picture_url}
               alt=""
-              className="h-9 w-9 rounded-full object-cover shrink-0 ring-2 ring-background"
+              className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-background shadow-sm"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
                 (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
@@ -792,7 +792,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             />
           ) : null}
           <div
-            className={`h-9 w-9 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm ${
+            className={`h-10 w-10 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm ${
               contact.profile_picture_url ? "hidden" : ""
             }`}
           >
@@ -801,9 +801,9 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             </span>
           </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">{linkedClientData?.name || contact.linked_client?.name || contact.name || contact.phone || "Contato"}</p>
+              <p className="text-sm font-semibold text-foreground truncate group-hover/header:text-primary transition-colors">{linkedClientData?.name || contact.linked_client?.name || contact.name || contact.phone || "Contato"}</p>
               {!isSimplified && (
-                <p className="text-xs text-muted-foreground/70 truncate flex items-center gap-1">
+                <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
                   {contact.source === "webchat" ? (
                     <>
                       <Globe className="h-3 w-3 text-primary/60" />
