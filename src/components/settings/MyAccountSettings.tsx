@@ -3,7 +3,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { 
   ArrowLeft, 
   User, 
-  Bot, 
   Palette, 
   Check, 
   Sun, 
