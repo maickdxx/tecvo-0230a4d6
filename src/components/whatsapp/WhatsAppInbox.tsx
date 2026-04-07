@@ -195,7 +195,7 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       {/* Top bar */}
       {!isMobileChatFocused && !fullscreen && (
         <>
-          <div className="flex items-center justify-between px-4 border-b border-border/30 bg-card gap-3 shrink-0 py-3">
+          <div className="flex items-center justify-between px-4 whatsapp-topbar gap-3 shrink-0 py-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <h1 className="text-base font-bold tracking-tight text-foreground shrink-0">WhatsApp</h1>
               <ConnectionStatusPanel
