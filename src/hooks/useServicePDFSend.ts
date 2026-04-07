@@ -2,80 +2,83 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useWhatsAppChannels } from "@/hooks/useWhatsAppChannels";
-import { generateServiceOrderPDF } from "@/lib/generateServiceOrderPDF";
-import { formatDateInTz, formatTimeInTz } from "@/lib/timezone";
-import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import { toast } from "sonner";
-import type { Service } from "@/hooks/useServices";
 
+/**
+ * Sends the OFFICIAL OS PDF from storage via WhatsApp.
+ * 
+ * This hook does NOT generate a PDF — it fetches the same canonical file
+ * from storage that Laura and the panel use:
+ *   whatsapp-media/os-pdfs/{orgId}/{serviceId}.pdf
+ *
+ * If the PDF doesn't exist, it triggers backend materialization first.
+ */
 export function useServicePDFSend() {
   const [sending, setSending] = useState(false);
   const { organization } = useOrganization();
   const { channels } = useWhatsAppChannels();
-  const tz = useOrgTimezone();
 
-  const buildPDFData = useCallback(async (service: Service) => {
-    const org = organization;
+  /**
+   * Fetch the official PDF blob from storage.
+   * If not found, trigger backend materialization once and retry.
+   */
+  const fetchOfficialPDF = useCallback(async (
+    serviceId: string,
+    organizationId: string,
+  ): Promise<{ blob: Blob; storagePath: string } | null> => {
+    const storagePath = `os-pdfs/${organizationId}/${serviceId}.pdf`;
 
-    const { data: items } = await supabase
-      .from("service_items")
-      .select("*")
-      .eq("service_id", service.id)
-      .order("created_at");
+    // Try downloading the canonical file
+    const { data, error } = await supabase.storage
+      .from("whatsapp-media")
+      .download(storagePath);
 
-    const { data: equipmentRaw } = await supabase
-      .from("service_equipment")
-      .select("*")
-      .eq("service_id", service.id)
-      .order("created_at");
+    if (data && !error) {
+      console.log(`[PDF-SEND] Official PDF found: ${storagePath} (${data.size} bytes)`);
+      return { blob: data, storagePath };
+    }
 
-    const orderData = {
-      entryDate: service.entry_date ? formatDateInTz(service.entry_date, tz) : "",
-      entryTime: service.entry_date ? formatTimeInTz(service.entry_date, tz) : "",
-      exitDate: service.exit_date ? formatDateInTz(service.exit_date, tz) : "",
-      exitTime: service.exit_date ? formatTimeInTz(service.exit_date, tz) : "",
-      equipmentType: service.equipment_type || "",
-      equipmentBrand: service.equipment_brand || "",
-      equipmentModel: service.equipment_model || "",
-      solution: service.solution || service.description || "",
-      paymentMethod: service.payment_method || "",
-      paymentDueDate: service.payment_due_date ? formatDateInTz(service.payment_due_date, tz) : "",
-      paymentNotes: service.payment_notes || "",
-    };
+    // Not found — attempt one backend materialization
+    console.warn(`[PDF-SEND] PDF not in storage, triggering materialization for ${serviceId}`);
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const { data: { session } } = await supabase.auth.getSession();
 
-    const itemsTotal = (items || []).reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
-
-    // Fetch client signature
-    const { data: sigData } = await supabase
-      .from("service_signatures")
-      .select("signature_url")
-      .eq("service_id", service.id)
-      .maybeSingle();
-
-    return {
-      service: {
-        ...service,
-        value: itemsTotal > 0 ? itemsTotal : service.value,
+    const materializeResp = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/materialize-service-pdf`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({ serviceId, organizationId }),
       },
-      items: items || [],
-      equipmentList: equipmentRaw || [],
-      organizationName: org?.name || "Minha Empresa",
-      organizationCnpj: org?.cnpj_cpf || undefined,
-      organizationPhone: org?.phone || undefined,
-      organizationEmail: org?.email || undefined,
-      organizationAddress: org?.address || undefined,
-      organizationLogo: org?.logo_url || undefined,
-      organizationWebsite: org?.website || undefined,
-      organizationZipCode: org?.zip_code || undefined,
-      organizationCity: org?.city || undefined,
-      organizationState: org?.state || undefined,
-      organizationSignature: org?.signature_url || undefined,
-      autoSignatureOS: org?.auto_signature_os ?? false,
-      clientSignatureUrl: sigData?.signature_url || undefined,
-      orderData,
-      isFreePlan: false,
-    };
-  }, [organization, tz]);
+    );
+
+    if (!materializeResp.ok) {
+      console.error("[PDF-SEND] Materialization failed:", materializeResp.status);
+      return null;
+    }
+
+    const result = await materializeResp.json();
+    if (result.status !== "ready") {
+      console.error("[PDF-SEND] Materialization returned non-ready status:", result.status);
+      return null;
+    }
+
+    // Retry download after materialization
+    const { data: retryData, error: retryError } = await supabase.storage
+      .from("whatsapp-media")
+      .download(storagePath);
+
+    if (retryData && !retryError) {
+      console.log(`[PDF-SEND] PDF materialized and downloaded: ${storagePath} (${retryData.size} bytes)`);
+      return { blob: retryData, storagePath };
+    }
+
+    console.error("[PDF-SEND] PDF still not found after materialization");
+    return null;
+  }, []);
 
   const sendOSViaWhatsApp = useCallback(async (
     serviceId: string,
@@ -84,9 +87,9 @@ export function useServicePDFSend() {
     channelId?: string,
   ) => {
     setSending(true);
-    const loadingToastId = toast.loading("Gerando e enviando OS via WhatsApp...");
+    const loadingToastId = toast.loading("Enviando OS via WhatsApp...");
     try {
-      // Fetch the full service with client
+      // Fetch the service to get metadata
       const { data: service, error } = await supabase
         .from("services")
         .select("*, client:clients(*)")
@@ -95,18 +98,20 @@ export function useServicePDFSend() {
 
       if (error || !service) throw new Error("Serviço não encontrado");
 
-      const pdfData = await buildPDFData(service as Service);
-      const blob = await generateServiceOrderPDF({ ...pdfData, returnBlob: true } as any) as Blob;
+      // ── Fetch the OFFICIAL PDF from storage ──
+      const pdfResult = await fetchOfficialPDF(serviceId, service.organization_id);
+      if (!pdfResult) {
+        throw new Error("PDF oficial não encontrado. Gere o PDF pelo painel primeiro.");
+      }
 
-      if (!blob) throw new Error("Falha ao gerar PDF");
+      const { blob, storagePath } = pdfResult;
 
-      // Determine channel & contact
+      // ── Determine channel & contact ──
       let finalChannelId = channelId;
       let finalContactId = contactId;
       const phone = clientPhone || service.client?.phone || service.client?.whatsapp;
 
       if (!finalChannelId) {
-        // Use first connected channel
         const connected = channels.find(c => c.is_connected);
         if (!connected) {
           toast.error("Nenhum WhatsApp conectado. Conecte um número primeiro.");
@@ -116,23 +121,17 @@ export function useServicePDFSend() {
       }
 
       if (!finalContactId && phone) {
-        // Look up or create contact by phone
         let normalized = phone.replace(/\D/g, "");
-        // Ensure Brazilian country code prefix
         if (normalized.length === 10 || normalized.length === 11) {
           normalized = "55" + normalized;
         }
-        
-        // Try finding existing contact by normalized_phone or variants
-        // Some contacts may have the number stored with/without the 9th digit
+
         const variants = [normalized];
-        // If 55 + 2-digit DDD + 9 + 8 digits (13 chars), also try without the 9
         if (normalized.length === 13 && normalized.startsWith("55")) {
-          variants.push(normalized.slice(0, 4) + normalized.slice(5)); // remove 9th digit
+          variants.push(normalized.slice(0, 4) + normalized.slice(5));
         }
-        // If 55 + 2-digit DDD + 8 digits (12 chars), also try with 9
         if (normalized.length === 12 && normalized.startsWith("55")) {
-          variants.push(normalized.slice(0, 4) + "9" + normalized.slice(4)); // add 9th digit
+          variants.push(normalized.slice(0, 4) + "9" + normalized.slice(4));
         }
 
         const { data: existingContacts } = await supabase
@@ -144,12 +143,10 @@ export function useServicePDFSend() {
 
         if (existingContacts && existingContacts.length > 0) {
           finalContactId = existingContacts[0].id;
-          // Use the contact's channel if none specified
           if (!channelId && existingContacts[0].channel_id) {
             finalChannelId = existingContacts[0].channel_id;
           }
         } else {
-          // Create contact using the client name from the OS
           const { data: newContact, error: createErr } = await supabase
             .from("whatsapp_contacts")
             .insert({
@@ -173,8 +170,9 @@ export function useServicePDFSend() {
         return false;
       }
 
-      // Send PDF as document via whatsapp-media edge function
-      const fileName = `OS-${service.quote_number?.toString().padStart(4, "0") || "0001"}.pdf`;
+      // ── Send the OFFICIAL PDF as document ──
+      const osNumber = service.quote_number?.toString().padStart(4, "0") || "0001";
+      const fileName = `OS-${osNumber}.pdf`;
       const file = new File([blob], fileName, { type: "application/pdf" });
 
       const formData = new FormData();
@@ -182,7 +180,7 @@ export function useServicePDFSend() {
       formData.append("contact_id", finalContactId);
       formData.append("media_type", "document");
       formData.append("file", file);
-      formData.append("caption", `📋 Ordem de Serviço #${service.quote_number?.toString().padStart(4, "0")}`);
+      formData.append("caption", `📋 Ordem de Serviço #${osNumber}`);
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -197,13 +195,31 @@ export function useServicePDFSend() {
           method: "POST",
           headers: { Authorization: `Bearer ${session.access_token}` },
           body: formData,
-        }
+        },
       );
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.error || "Falha ao enviar PDF");
       }
+
+      // ── Audit log ──
+      try {
+        await supabase.from("data_audit_log").insert({
+          organization_id: service.organization_id,
+          table_name: "services",
+          operation: "PDF_SENT_MANUAL",
+          record_id: serviceId,
+          metadata: {
+            os_number: osNumber,
+            storage_path: storagePath,
+            file_size: blob.size,
+            client_name: service.client?.name,
+            sent_via: "manual_whatsapp_send",
+            sent_at: new Date().toISOString(),
+          },
+        });
+      } catch { /* logging should never block */ }
 
       toast.dismiss(loadingToastId);
       toast.success("✅ OS enviada via WhatsApp com sucesso!");
@@ -215,7 +231,7 @@ export function useServicePDFSend() {
     } finally {
       setSending(false);
     }
-  }, [buildPDFData, channels]);
+  }, [fetchOfficialPDF, channels]);
 
   return { sendOSViaWhatsApp, sending };
 }
