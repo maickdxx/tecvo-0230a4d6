@@ -1373,24 +1373,24 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                 </PopoverContent>
               </Popover>
 
-              {/* Text input - compact like WhatsApp */}
-              <div className="flex-1 flex items-end bg-muted/50 rounded-full border border-border/40 overflow-hidden">
+              {/* Text input */}
+              <div className="flex-1 flex items-end bg-muted/30 rounded-2xl border border-border/30 overflow-hidden focus-within:border-primary/30 focus-within:bg-background transition-all">
                 <Textarea
                   ref={textareaRef}
                   value={text}
                   onChange={(e) => handleTextChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onPaste={handlePaste}
-                  placeholder={isSimplified ? "Mensagem..." : "Mensagem..."}
+                  placeholder="Mensagem..."
                   className={cn(
-                    "flex-1 resize-none text-sm border-0 bg-transparent shadow-none focus-visible:ring-0 px-3 py-1.5",
-                    "min-h-[34px] max-h-[80px]"
+                    "flex-1 resize-none text-sm border-0 bg-transparent shadow-none focus-visible:ring-0 px-4 py-2",
+                    "min-h-[38px] max-h-[80px]"
                   )}
                   disabled={false}
                   rows={1}
                 />
 
-                {/* Quick replies button - inside input area */}
+                {/* Quick replies button */}
                 {!isSimplified && (
                   <QuickRepliesPopover onSelect={handleQuickReply} />
                 )}
