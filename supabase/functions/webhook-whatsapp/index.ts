@@ -4124,7 +4124,8 @@ Deno.serve(async (req) => {
           }
           // "novo" and "atendendo" stay as-is
         } else {
-          // Outgoing message echo: agent sent message
+          // Outgoing message echo: agent sent message — clear unread
+          unreadUpdate.unread_count = 0;
           // Only transition to "atendendo" if currently "novo" — do NOT reopen finalized conversations
           if (currentStatus === "novo") {
             unreadUpdate.conversation_status = "atendendo";
