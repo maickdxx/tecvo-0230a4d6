@@ -311,8 +311,8 @@ Deno.serve(async (req) => {
                 } // end extGuard allowed
               }
             }
+          } else {
             console.log("[AUTO-SERVICE] Portal link already sent for service:", service_id);
-          }
         }
       }
     }
