@@ -382,9 +382,34 @@ Deno.serve(async (req) => {
 
     console.log(`${LOG_PREFIX} Event: ${event} | Service: ${service_id} | Executor: ${executorUserId} (${executorName || "unknown"}) | Owner: ${owner.userId} (${owner.fullName}) | isSelf: ${isSelf}`);
 
+    // ── Check user notification preferences ──
+    const eventPrefMap: Record<string, string> = {
+      en_route: "service_en_route",
+      in_attendance: "service_started",
+      completed: "service_completed",
+    };
+    const prefKey = eventPrefMap[event];
+
+    let ownerPrefAllowed = true;
+    let ownerChannelWhatsapp = true;
+    if (owner.userId) {
+      const { data: userPref } = await supabase
+        .from("user_notification_preferences")
+        .select("*")
+        .eq("user_id", owner.userId)
+        .eq("organization_id", organization_id)
+        .maybeSingle();
+
+      if (userPref) {
+        ownerPrefAllowed = userPref[prefKey] !== false;
+        ownerChannelWhatsapp = userPref.channel_whatsapp !== false;
+      }
+      // If no preferences saved → defaults are all true
+    }
+
     // ── Build and send owner message ──
     let ownerSent = false;
-    if (owner.phone) {
+    if (owner.phone && ownerPrefAllowed && ownerChannelWhatsapp) {
       const message = buildOwnerMessage({
         event,
         isSelf,
@@ -412,15 +437,42 @@ Deno.serve(async (req) => {
         send_status: ownerSent ? "sent" : "failed",
       });
 
+      // Dispatch log
+      await supabase.from("notification_dispatch_log").insert({
+        user_id: owner.userId,
+        organization_id,
+        notification_type: prefKey,
+        channel: "whatsapp",
+        preference_value: true,
+        action: ownerSent ? "sent" : "failed",
+        reason: ownerSent ? "preference_allowed" : "send_failed",
+        service_id,
+        executor_user_id: executorUserId,
+      });
+
       console.log(`${LOG_PREFIX} Owner notification: ${ownerSent ? "SENT" : "FAILED"} | phone: ${owner.phone.slice(0, 6)}*** | msg_type: ${messageType}`);
     } else {
+      const blockReason = !owner.phone ? "no_phone" : !ownerPrefAllowed ? "preference_disabled" : "channel_whatsapp_off";
       // Log blocked notification
       await supabase.from("auto_message_log").insert({
         organization_id,
         service_id,
         message_type: messageType,
-        content: `[BLOCKED] No owner phone for event ${event}`,
+        content: `[BLOCKED] ${blockReason} for event ${event}`,
         send_status: "blocked",
+      });
+
+      // Dispatch log
+      await supabase.from("notification_dispatch_log").insert({
+        user_id: owner.userId,
+        organization_id,
+        notification_type: prefKey,
+        channel: "whatsapp",
+        preference_value: ownerPrefAllowed,
+        action: "blocked",
+        reason: blockReason,
+        service_id,
+        executor_user_id: executorUserId,
       });
     }
 
