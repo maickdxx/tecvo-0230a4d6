@@ -1461,103 +1461,148 @@ export async function executeAdminTool(
       return `O PDF oficial da ${docLabel} #${osNumber} não foi encontrado no sistema. Gere o PDF pelo painel antes de enviar.`;
     }
 
-    // ── Determinar número de destino ──
-    const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
-    const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
+    // ── Validação: tamanho mínimo do PDF (bloquear legados < 50KB) ──
+    try {
+      const headResp = await fetch(pdfFile.signedUrl, { method: "HEAD" });
+      const contentLength = parseInt(headResp.headers.get("content-length") || "0", 10);
+      if (contentLength > 0 && contentLength < 50_000) {
+        console.warn(`[LAURA] PDF too small (${contentLength} bytes), forcing rematerialization for ${serviceData.id}`);
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+          const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+          const rematResp = await fetch(`${supabaseUrl}/functions/v1/materialize-service-pdf`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
+            body: JSON.stringify({ serviceId: serviceData.id, organizationId, force: true }),
+          });
+          if (rematResp.ok) {
+            const rematResult = await rematResp.json();
+            if (rematResult.status === "ready") {
+              console.log(`[LAURA] Rematerialization succeeded for legacy PDF ${serviceData.id}`);
+              // Get fresh signed URL
+              const { data: freshPdf } = await storage.createSignedUrl(canonicalPath, 900);
+              if (freshPdf?.signedUrl) {
+                pdfFile.signedUrl = freshPdf.signedUrl;
+              }
+            }
+          }
+        } catch (rematErr: any) {
+          console.error("[LAURA] Legacy PDF rematerialization failed:", rematErr?.message);
+          return `O PDF da ${docLabel} #${osNumber} está desatualizado e a regeneração falhou. Gere novamente pelo painel.`;
+        }
+      }
+    } catch { /* HEAD check failed — proceed with existing URL */ }
 
-    const { data: channels } = await supabase
-      .from("whatsapp_channels")
-      .select("instance_name, status")
-      .eq("organization_id", organizationId)
-      .eq("status", "connected")
-      .limit(1);
+    // ── Resolve contact and channel for unified pipeline ──
+    const channelId = ctx?.channelId;
+    const contactId = ctx?.contactId;
 
-    const instance = channels?.[0]?.instance_name || ctx?.instance;
-
-    if (!vpsUrl || !apiKey || !instance) {
-      return `PDF da ${docLabel} #${osNumber} está pronto, mas o canal WhatsApp não está configurado. Envie pelo painel.`;
+    if (!channelId || !contactId) {
+      // Fallback: WhatsApp context not available (e.g., app chat). Try to resolve.
+      console.warn(`[LAURA] Missing channelId/contactId in ctx. Cannot use unified pipeline.`);
+      return `PDF da ${docLabel} #${osNumber} está pronto. Envie pelo painel do WhatsApp (o envio automático requer contexto de conversa).`;
     }
 
-    let whatsappNumber: string;
-    let recipientLabel: string;
+    // ── For target=self: resolve the correct contactId for the sender ──
+    let targetContactId = contactId;
+    let targetChannelId = channelId;
 
     if (sendTarget === "self") {
-      // Send to the user who is requesting (remoteJid from WhatsApp context)
-      const userJid = ctx?.remoteJid;
-      if (!userJid) {
-        return `Não foi possível identificar seu número para envio. Use o painel para baixar o PDF.`;
-      }
-      whatsappNumber = userJid.replace(/@.*$/, "").replace(/\D/g, "");
-      recipientLabel = "você";
+      // The sender is already the current contact in WhatsApp context
+      // contactId from ctx IS the sender's contact
+      targetContactId = contactId;
     } else {
-      // Send to the client
-      whatsappNumber = clientPhone!.replace(/\D/g, "");
-      if (!whatsappNumber.startsWith("55") && whatsappNumber.length <= 11) {
-        whatsappNumber = "55" + whatsappNumber;
+      // Sending to the client — need to resolve client's contact by phone + channel
+      const clientDigits = (clientPhone || "").replace(/\D/g, "");
+      const normalizedClientPhone = clientDigits.startsWith("55") ? clientDigits : `55${clientDigits}`;
+
+      // Find the client's whatsapp contact in the same channel
+      const { data: clientContact } = await supabase
+        .from("whatsapp_contacts")
+        .select("id, channel_id")
+        .eq("organization_id", organizationId)
+        .eq("channel_id", channelId)
+        .eq("normalized_phone", normalizedClientPhone)
+        .maybeSingle();
+
+      if (!clientContact) {
+        // Try without channel restriction but in same org
+        const { data: anyContact } = await supabase
+          .from("whatsapp_contacts")
+          .select("id, channel_id")
+          .eq("organization_id", organizationId)
+          .eq("normalized_phone", normalizedClientPhone)
+          .limit(1)
+          .maybeSingle();
+
+        if (anyContact) {
+          targetContactId = anyContact.id;
+          targetChannelId = anyContact.channel_id;
+        } else {
+          return `O cliente "${clientName}" não tem contato no WhatsApp. Envie pelo painel.`;
+        }
+      } else {
+        targetContactId = clientContact.id;
       }
-      recipientLabel = clientName;
     }
+
+    // ── UNIFIED PIPELINE: Use shared sendWhatsAppDocument ──
+    const { sendWhatsAppDocument } = await import("./sendWhatsAppDocument.ts");
 
     const fileName = `${docType.replace(/ /g, "_")}_${osNumber}.pdf`;
-    try {
-      const evoResp = await fetch(`${vpsUrl}/message/sendMedia/${instance}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: apiKey },
-        body: JSON.stringify({
-          number: whatsappNumber,
-          mediatype: "document",
-          media: pdfFile.signedUrl,
-          caption: `📋 ${docType} #${osNumber} - ${clientName}`,
-          fileName,
-        }),
-      });
+    const sendResult = await sendWhatsAppDocument({
+      supabase,
+      organizationId,
+      channelId: targetChannelId,
+      contactId: targetContactId,
+      mediaUrl: pdfFile.signedUrl,
+      mediaType: "document",
+      caption: `📋 ${docType} #${osNumber} - ${clientName}`,
+      fileName,
+      sentVia: "laura_ai",
+    });
 
-      if (!evoResp.ok) {
-        const errText = await evoResp.text();
-        console.error("[LAURA] PDF send error:", evoResp.status, errText);
-        return `PDF pronto, mas houve erro ao enviar para ${recipientLabel}. Tente pelo painel.`;
-      }
-
-      await evoResp.text();
-
-      // ── Registrar envio: last_pdf_sent_at + audit log ──
-      if (sendTarget === "client") {
-        await supabase
-          .from("services")
-          .update({ last_pdf_sent_at: new Date().toISOString() })
-          .eq("id", serviceData.id)
-          .eq("organization_id", organizationId);
-      }
-
-      try {
-        await supabase.from("data_audit_log").insert({
-          organization_id: organizationId,
-          table_name: "services",
-          operation: sendTarget === "self" ? "PDF_SENT_SELF" : "PDF_SENT",
-          record_id: serviceData.id,
-          metadata: {
-            os_number: osNumber,
-            doc_type: docType,
-            client_name: clientName,
-            target: sendTarget,
-            recipient_phone: whatsappNumber,
-            storage_path: canonicalPath,
-            sent_via: "laura_ai",
-            channel: ctx?.remoteJid ? "whatsapp_chat" : "app",
-            instance,
-            sent_at: new Date().toISOString(),
-          },
-        });
-      } catch { /* logging should never block */ }
-
-      if (sendTarget === "self") {
-        return `SILENT_PDF_SENT_SELF:${docType} #${osNumber} - ${clientName} enviado para você!`;
-      }
-      return `SILENT_PDF_SENT:${docType} #${osNumber} enviado com sucesso para ${clientName} (${clientPhone})!`;
-    } catch (sendErr: any) {
-      console.error("[LAURA] PDF send exception:", sendErr.message);
-      return `PDF pronto, mas houve erro ao enviar: ${sendErr.message}`;
+    if (!sendResult.ok) {
+      console.error(`[LAURA] Unified send failed: ${sendResult.errorCode} — ${sendResult.error}`);
+      return `PDF pronto, mas houve erro ao enviar: ${sendResult.error || "erro desconhecido"}. Tente pelo painel.`;
     }
+
+    // ── Registrar envio: last_pdf_sent_at + audit log ──
+    if (sendTarget === "client") {
+      await supabase
+        .from("services")
+        .update({ last_pdf_sent_at: new Date().toISOString() })
+        .eq("id", serviceData.id)
+        .eq("organization_id", organizationId);
+    }
+
+    try {
+      await supabase.from("data_audit_log").insert({
+        organization_id: organizationId,
+        table_name: "services",
+        operation: sendTarget === "self" ? "PDF_SENT_SELF" : "PDF_SENT",
+        record_id: serviceData.id,
+        metadata: {
+          os_number: osNumber,
+          doc_type: docType,
+          client_name: clientName,
+          target: sendTarget,
+          storage_path: canonicalPath,
+          sent_via: "laura_ai",
+          pipeline: "unified_sendWhatsAppDocument",
+          channel_id: targetChannelId,
+          contact_id: targetContactId,
+          message_id: sendResult.messageId,
+          channel: ctx?.remoteJid ? "whatsapp_chat" : "app",
+          sent_at: new Date().toISOString(),
+        },
+      });
+    } catch { /* logging should never block */ }
+
+    if (sendTarget === "self") {
+      return `SILENT_PDF_SENT_SELF:${docType} #${osNumber} - ${clientName} enviado para você!`;
+    }
+    return `SILENT_PDF_SENT:${docType} #${osNumber} enviado com sucesso para ${clientName} (${clientPhone})!`;
   }
 
     return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar OS, criar orçamento, criar conta financeira, cadastrar cliente e enviar PDF.`;
