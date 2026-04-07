@@ -1032,6 +1032,7 @@ export async function executeAdminTool(
     const verifyAccErr = await verifyInsert(supabase, "financial_accounts", newAccount.id, "FinancialAccount");
     if (verifyAccErr) return verifyAccErr;
 
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! Confirmado no sistema.`;
   }
 
