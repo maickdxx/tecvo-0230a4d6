@@ -4669,6 +4669,28 @@ Você NÃO deve compartilhar:
               if (contactState?.awaiting_confirmation && contactState?.pending_action === "send_service_pdf" && contactState?.pending_service_id) {
                 console.log("[WEBHOOK-WHATSAPP] CONFIRMATION INTERCEPTED: Executing send_service_pdf directly for service:", contactState.pending_service_id);
                 
+                // ── HARD GUARD: Validate via central external send gate ──
+                const { checkExternalSendPermission } = await import("../_shared/externalSendGuard.ts");
+                const guardCheck = await checkExternalSendPermission(supabase, {
+                  source: "ai_tool_client",
+                  organizationId: targetOrganizationId,
+                  contactId,
+                  isInternal: false,
+                  confirmed: true, // User said "sim" — persisted state validates this
+                  persistedServiceId: contactState.pending_service_id,
+                  requestedServiceId: contactState.pending_service_id,
+                  messagePreview: `confirmation_intercept service=${contactState.pending_service_id}`,
+                  functionName: "webhook-whatsapp:confirmation_intercept",
+                });
+
+                if (!guardCheck.allowed) {
+                  console.warn("[WEBHOOK-WHATSAPP] External guard blocked confirmation:", guardCheck.reason);
+                  // Clear state and let AI handle naturally
+                  await supabase
+                    .from("whatsapp_contacts")
+                    .update({ pending_action: null, pending_service_id: null, awaiting_confirmation: false })
+                    .eq("id", contactId);
+                } else {
                 const directToolCall = {
                   id: `direct_confirm_${crypto.randomUUID()}`,
                   function: {
