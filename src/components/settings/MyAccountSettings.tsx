@@ -157,7 +157,7 @@ export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   if (isLoadingRole || !role) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Bot className="h-12 w-12 animate-pulse text-primary/20" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary/20" />
         <p className="text-sm text-muted-foreground animate-pulse">Confirmando permissões de acesso...</p>
       </div>
     );
