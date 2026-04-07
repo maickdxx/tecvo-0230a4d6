@@ -3,19 +3,17 @@
  * Sends media (images, audio, documents, video) within customer conversations.
  * STRICT channel isolation: uses ONLY the contact's bound channel.
  * NO fallback to any other channel or instance. Disconnected channel → BLOCK.
+ * 
+ * Now delegates to the shared sendWhatsAppDocument pipeline for consistency.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { classifyEvoError } from "../_shared/evoErrorClassifier.ts";
+import { sendWhatsAppDocument } from "../_shared/sendWhatsAppDocument.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-function normalizePhone(input: string): string {
-  const beforeAt = input.split("@")[0];
-  return beforeAt.replace(/\D/g, "");
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -61,7 +59,7 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const channelId = formData.get("channel_id") as string;
     const contactId = formData.get("contact_id") as string;
-    const mediaType = formData.get("media_type") as string; // image, document, audio
+    const mediaType = formData.get("media_type") as string;
     const caption = (formData.get("caption") as string) || "";
     const file = formData.get("file") as File;
 
@@ -72,69 +70,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch channel
-    const orgId = profile.organization_id;
-    const { data: channel } = await supabase
-      .from("whatsapp_channels")
-      .select("id, instance_name, organization_id, is_connected, channel_status, phone_number")
-      .eq("id", channelId)
-      .eq("organization_id", orgId)
-      .single();
-
-    if (!channel) {
-      return new Response(JSON.stringify({ error: "Channel not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Block sending if channel is disconnected — no fallback
-    const activeChannel = channel;
-    if (!channel.is_connected || !channel.instance_name || channel.channel_status !== "connected") {
-      console.warn(`[WHATSAPP-MEDIA] Channel ${channel.id} disconnected. Blocking send.`);
-      return new Response(JSON.stringify({
-        error: "channel_disconnected",
-        message: "O canal está desconectado. Reconecte para enviar mídia.",
-      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    // Fetch contact
-    const { data: contact } = await supabase
-      .from("whatsapp_contacts")
-      .select("id, phone, whatsapp_id, normalized_phone")
-      .eq("id", contactId)
-      .eq("organization_id", profile.organization_id)
-      .single();
-
-    if (!contact) {
-      return new Response(JSON.stringify({ error: "Contact not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const digits = contact.normalized_phone || normalizePhone(contact.phone || contact.whatsapp_id || "");
-    if (!digits) {
-      return new Response(JSON.stringify({ error: "Cannot resolve phone number" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const recipientJid = `${digits}@s.whatsapp.net`;
-    const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
-    const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-
-    if (!vpsUrl || !apiKey) {
-      return new Response(JSON.stringify({ error: "WhatsApp API not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     // Upload file to Supabase storage first to get a public URL
+    const orgId = profile.organization_id;
     const fileExt = file.name.split(".").pop() || "bin";
-    const storagePath = `${profile.organization_id}/${crypto.randomUUID()}.${fileExt}`;
+    const storagePath = `${orgId}/${crypto.randomUUID()}.${fileExt}`;
     const fileBuffer = await file.arrayBuffer();
 
     const { error: uploadError } = await supabase.storage
@@ -159,105 +98,41 @@ Deno.serve(async (req) => {
     const mediaUrl = publicUrlData.publicUrl;
     console.log("[WHATSAPP-MEDIA] Uploaded to:", mediaUrl);
 
-    // Send via Evolution API
-    let evoEndpoint: string;
-    let evoBody: any;
-
-    if (mediaType === "audio") {
-      // Use sendWhatsAppAudio for audio files
-      evoEndpoint = `${vpsUrl}/message/sendWhatsAppAudio/${activeChannel.instance_name}`;
-      evoBody = {
-        number: recipientJid,
-        audio: mediaUrl,
-      };
-    } else {
-      // Use sendMedia for image, video, document
-      evoEndpoint = `${vpsUrl}/message/sendMedia/${activeChannel.instance_name}`;
-      evoBody = {
-        number: recipientJid,
-        mediatype: mediaType === "image" ? "image" : mediaType === "video" ? "video" : "document",
-        media: mediaUrl,
-        caption: caption || undefined,
-        fileName: mediaType === "document" ? file.name : undefined,
-      };
-    }
-
-    console.log("[WHATSAPP-MEDIA] Sending to:", evoEndpoint);
-
-    const evoResponse = await fetch(evoEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: apiKey,
-      },
-      body: JSON.stringify(evoBody),
+    // ── UNIFIED PIPELINE: Delegate to shared sendWhatsAppDocument ──
+    const result = await sendWhatsAppDocument({
+      supabase,
+      organizationId: orgId,
+      channelId,
+      contactId,
+      mediaUrl,
+      mediaType: mediaType as "image" | "audio" | "document" | "video",
+      caption: caption || undefined,
+      fileName: file.name,
+      sentVia: "manual_inbox",
     });
 
-    if (!evoResponse.ok) {
-      const errText = await evoResponse.text();
-      console.error("[WHATSAPP-MEDIA] Evolution API error:", evoResponse.status, errText);
-
-      const classified = classifyEvoError(evoResponse.status, errText);
-
-      if (classified.isDisconnection) {
-        await supabase
-          .from("whatsapp_channels")
-          .update({
-            is_connected: false,
-            channel_status: "disconnected",
-            disconnected_reason: classified.technicalReason.substring(0, 200),
-          })
-          .eq("id", activeChannel.id);
-
-        console.warn("[WHATSAPP-MEDIA] Channel auto-disconnected:", activeChannel.id);
-
-        return new Response(JSON.stringify({
-          error: "channel_disconnected",
-          message: classified.userMessage,
-          channel_id: activeChannel.id,
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    if (!result.ok) {
+      const statusCode = result.errorCode === "channel_disconnected" ? 400
+        : result.errorCode === "rate_limited" ? 429
+        : 502;
 
       return new Response(JSON.stringify({
-        error: classified.domainError,
-        message: classified.userMessage,
-        details: classified.technicalReason,
+        error: result.errorCode || "send_failed",
+        message: result.error,
+        ...(result.channelDisconnected ? { channel_id: channelId } : {}),
       }), {
-        status: classified.domainError === "rate_limited" ? 429 : 502,
+        status: statusCode,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Parse Evolution response to get real WhatsApp message ID
-    const evoData = await evoResponse.json();
-    const fallbackMessageId = `out_${crypto.randomUUID()}`;
-    const realMessageId = evoData?.key?.id || fallbackMessageId;
-    console.log("[WHATSAPP-MEDIA] Evolution response key.id:", realMessageId);
+    console.log("[WHATSAPP-MEDIA] Media sent and saved successfully via unified pipeline");
 
-    // Save outbound message with real WhatsApp message ID
-    await supabase.from("whatsapp_messages").insert({
-      organization_id: profile.organization_id,
-      contact_id: contact.id,
-      message_id: realMessageId,
-      content: caption || "",
+    return new Response(JSON.stringify({
+      ok: true,
+      message_id: result.messageId,
       media_url: mediaUrl,
-      media_type: mediaType,
-      is_from_me: true,
-      status: "sent",
-      channel_id: activeChannel.id,
-    });
-
-    await supabase
-      .from("whatsapp_contacts")
-      .update({ last_message_at: new Date().toISOString() })
-      .eq("id", contact.id);
-
-    console.log("[WHATSAPP-MEDIA] Media sent and saved successfully");
-
-    return new Response(JSON.stringify({ ok: true, message_id: realMessageId, media_url: mediaUrl }), {
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
