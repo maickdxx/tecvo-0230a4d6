@@ -27,8 +27,29 @@ const corsHeaders = {
 
 const LOG_PREFIX = "[AUTO-SERVICE-NOTIFY]";
 
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  installation: "Instalação",
+  maintenance: "Manutenção",
+  cleaning: "Limpeza",
+  repair: "Reparo",
+  inspection: "Vistoria",
+  removal: "Remoção",
+  relocation: "Remanejamento",
+  other: "Serviço",
+};
+
 function formatBRL(value: number): string {
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Build a compact, human-readable service label */
+function buildServiceLabel(description: string | null, serviceType: string | null): string {
+  const typeLabel = serviceType ? (SERVICE_TYPE_LABELS[serviceType] || serviceType) : null;
+  if (description && description.length > 2 && description.toLowerCase() !== serviceType) {
+    // Use description as primary — it's usually more specific
+    return description.length > 40 ? description.slice(0, 37) + "…" : description;
+  }
+  return typeLabel || "Serviço";
 }
 
 async function sendWhatsApp(phone: string, text: string, instanceName = TECVO_PLATFORM_INSTANCE): Promise<boolean> {
@@ -173,38 +194,52 @@ async function findClientChannelInstance(supabase: any, organizationId: string, 
   return channel?.instance_name || null;
 }
 
-// ── Message Templates ──
+// ── Message Templates (Premium) ──
 
 function buildOwnerMessage(params: {
   event: "en_route" | "in_attendance" | "completed";
   isSelf: boolean;
-  techName: string;
+  techName: string | null; // null = executor unknown
   clientName: string;
-  serviceDesc: string;
+  serviceLabel: string;
   scheduledTime: string;
   value: number | null;
 }): string {
-  const { event, isSelf, techName, clientName, serviceDesc, scheduledTime, value } = params;
+  const { event, isSelf, techName, clientName, serviceLabel, scheduledTime, value } = params;
+
+  // Context suffix — compact, inline, max 1 element per message
+  const timeCtx = scheduledTime ? ` • ${scheduledTime}` : "";
+  const valueCtx = value ? ` • ${formatBRL(value)}` : "";
 
   if (event === "en_route") {
     if (isSelf) {
-      return `🚗 Deslocamento iniciado para ${clientName}.${scheduledTime ? `\n⏰ ${scheduledTime}` : ""}\n\n— Laura`;
+      return `🚗 A caminho de *${clientName}*${timeCtx}\n${serviceLabel}\n\n— Laura`;
     }
-    return `🚗 ${techName} a caminho de ${clientName}.${scheduledTime ? `\n⏰ ${scheduledTime}` : ""}\n\n— Laura`;
+    if (techName) {
+      return `🚗 *${techName}* a caminho de *${clientName}*${timeCtx}\n${serviceLabel}\n\n— Laura`;
+    }
+    // Fallback: no executor name
+    return `🚗 Deslocamento iniciado — *${clientName}*${timeCtx}\n${serviceLabel}\n\n— Laura`;
   }
 
   if (event === "in_attendance") {
     if (isSelf) {
-      return `🔧 Atendimento iniciado — ${clientName}.\nServiço: ${serviceDesc}\n\n— Laura`;
+      return `🔧 Atendimento iniciado — *${clientName}*\n${serviceLabel}\n\n— Laura`;
     }
-    return `🔧 ${techName} iniciou o atendimento de ${clientName}.\nServiço: ${serviceDesc}\n\n— Laura`;
+    if (techName) {
+      return `🔧 *${techName}* iniciou — *${clientName}*\n${serviceLabel}\n\n— Laura`;
+    }
+    return `🔧 Atendimento iniciado — *${clientName}*\n${serviceLabel}\n\n— Laura`;
   }
 
   // completed
   if (isSelf) {
-    return `✅ Serviço finalizado — ${clientName}.${value ? `\nValor: ${formatBRL(value)}` : ""}\n\n— Laura`;
+    return `✅ Finalizado — *${clientName}*${valueCtx}\n${serviceLabel}\n\n— Laura`;
   }
-  return `✅ ${techName} finalizou o serviço de ${clientName}.${value ? `\nValor: ${formatBRL(value)}` : ""}\n\n— Laura`;
+  if (techName) {
+    return `✅ *${techName}* finalizou — *${clientName}*${valueCtx}\n${serviceLabel}\n\n— Laura`;
+  }
+  return `✅ Serviço finalizado — *${clientName}*${valueCtx}\n${serviceLabel}\n\n— Laura`;
 }
 
 // ── Main Handler ──
@@ -309,7 +344,7 @@ Deno.serve(async (req) => {
       .single();
 
     const clientName = client?.name || "Cliente";
-    const serviceDesc = service.description || service.service_type || "Serviço";
+    const serviceLabel = buildServiceLabel(service.description, service.service_type);
     const orgTimezone = org.timezone || "America/Sao_Paulo";
 
     // ── Scheduled time ──
@@ -325,11 +360,11 @@ Deno.serve(async (req) => {
     // ── Find executor (who triggered the action) ──
     const executor = await findExecutor(supabase, service_id, eventLogType);
     
-    // Fallback: if no execution log, use assigned_to
-    let executorName = "";
+    // Fallback: if no execution log, use assigned_to profile
+    let executorName: string | null = null;
     let executorUserId: string | null = null;
     if (executor) {
-      executorName = executor.fullName || "";
+      executorName = executor.fullName || null;
       executorUserId = executor.userId;
     } else if (service.assigned_to) {
       const { data: profile } = await supabase
@@ -337,14 +372,15 @@ Deno.serve(async (req) => {
         .select("full_name, user_id")
         .eq("user_id", service.assigned_to)
         .maybeSingle();
-      executorName = profile?.full_name || "";
+      executorName = profile?.full_name || null;
       executorUserId = service.assigned_to;
     }
+    // If executorName is still null → fallback messages will be used (no fake name)
 
     // ── Determine if owner is the executor (self-notification) ──
     const isSelf = !!(owner.userId && executorUserId && owner.userId === executorUserId);
 
-    console.log(`${LOG_PREFIX} Event: ${event} | Service: ${service_id} | Executor: ${executorUserId} (${executorName}) | Owner: ${owner.userId} (${owner.fullName}) | isSelf: ${isSelf}`);
+    console.log(`${LOG_PREFIX} Event: ${event} | Service: ${service_id} | Executor: ${executorUserId} (${executorName || "unknown"}) | Owner: ${owner.userId} (${owner.fullName}) | isSelf: ${isSelf}`);
 
     // ── Build and send owner message ──
     let ownerSent = false;
@@ -352,9 +388,9 @@ Deno.serve(async (req) => {
       const message = buildOwnerMessage({
         event,
         isSelf,
-        techName: executorName || "Técnico",
+        techName: executorName,
         clientName,
-        serviceDesc,
+        serviceLabel,
         scheduledTime,
         value: service.value,
       });
