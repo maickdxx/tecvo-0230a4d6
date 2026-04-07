@@ -1284,95 +1284,124 @@ export async function executeAdminTool(
     const { service_id, service_identifier, confirmed, target } = args;
     const sendTarget = target || "client";
 
-    // ── HARD GUARD: Central external send governance ──
-    const { checkExternalSendPermission } = await import("./externalSendGuard.ts");
+    // ── Resolve the exact service FIRST (before confirmation gate) ──
+    // This ensures pending confirmation always stores the real UUID,
+    // eliminating ambiguous re-lookups on the next "sim".
+    const normalizedIdentifier = typeof service_identifier === "string"
+      ? service_identifier.trim()
+      : "";
+    const explicitServiceId = typeof service_id === "string" && service_id.trim()
+      ? service_id.trim()
+      : null;
+    const isUuidIdentifier = /^[a-f0-9-]{36}$/i.test(normalizedIdentifier);
+    const identifierLower = normalizedIdentifier.toLowerCase();
+    const inferredDocumentType = identifierLower.includes("orçamento") || identifierLower.includes("orcamento") || identifierLower.includes("quote")
+      ? "quote"
+      : /(^|\b)(os|ordem de servi[cç]o)(\b|$)/i.test(identifierLower)
+        ? "service_order"
+        : null;
+    const cleanedClientSearch = normalizedIdentifier
+      .replace(/ordem de servi[cç]o/gi, " ")
+      .replace(/or[çc]amento/gi, " ")
+      .replace(/\bos\b/gi, " ")
+      .replace(/\b(pdf|n[uú]mero|numero|me|envie|manda|mandar|quero|a|o|do|da)\b/gi, " ")
+      .replace(/[#:_-]/g, " ")
+      .replace(/\d+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-    if (sendTarget === "client") {
-      // Validate confirmation via central gate
-      const sendCheck = await checkExternalSendPermission(supabase, {
-        source: "ai_tool_client",
-        organizationId,
-        contactId: null,
-        isInternal: false,
-        confirmed: confirmed === true,
-        persistedServiceId: null, // Will be validated by confirmation interception
-        requestedServiceId: service_id || null,
-        messagePreview: `send_service_pdf target=client service=${service_id || service_identifier || "?"}`,
-        functionName: "send_service_pdf",
-      });
+    let resolvedServiceId: string | null = explicitServiceId || (isUuidIdentifier ? normalizedIdentifier : null);
+    let conversationPendingServiceId: string | null = null;
 
-      if (!sendCheck.allowed) {
-        const pendingId = service_id || service_identifier || "desconhecido";
-        console.warn(`[LAURA] External send blocked: ${sendCheck.reason} — ${sendCheck.detail}`);
-        return `PENDING_CONFIRMATION:${pendingId}|Pergunte ao usuário se deseja enviar a OS para o cliente antes de prosseguir.`;
+    if (!resolvedServiceId && ctx?.contactId) {
+      try {
+        const { data: contactState } = await supabase
+          .from("whatsapp_contacts")
+          .select("pending_service_id")
+          .eq("id", ctx.contactId)
+          .maybeSingle();
+        conversationPendingServiceId = contactState?.pending_service_id || null;
+      } catch (ctxErr: any) {
+        console.warn("[LAURA] Failed to load conversation pending_service_id:", ctxErr?.message);
       }
-    } else if (sendTarget === "self") {
-      // Self sends are always allowed but logged
-      await checkExternalSendPermission(supabase, {
-        source: "ai_tool_self",
-        organizationId,
-        isInternal: true,
-        messagePreview: `send_service_pdf target=self service=${service_id || service_identifier || "?"}`,
-        functionName: "send_service_pdf",
-      });
     }
 
-    if (!service_id && !service_identifier) {
+    // If the user is acting on the current conversation context (especially target=self
+    // or confirmation follow-ups), prefer the exact pending_service_id instead of any lookup.
+    if (!resolvedServiceId && conversationPendingServiceId && (!normalizedIdentifier || confirmed === true)) {
+      resolvedServiceId = conversationPendingServiceId;
+    }
+
+    if (!resolvedServiceId && !normalizedIdentifier) {
       return "Erro: informe o service_id ou o identificador do serviço (número/nome).";
     }
 
     let serviceData: any = null;
 
-    // ── PRIORIDADE 1: Busca direta por UUID (contexto da OS recém-criada) ──
-    if (service_id) {
+    // ── PRIORIDADE 1: UUID exato (contexto da OS recém-criada / confirmação persistida) ──
+    if (resolvedServiceId) {
       const { data } = await supabase
         .from("services")
         .select("*, client:clients(name, phone, whatsapp)")
-        .eq("id", service_id)
+        .eq("id", resolvedServiceId)
         .eq("organization_id", organizationId)
         .is("deleted_at", null)
-        .single();
+        .maybeSingle();
       if (data) serviceData = data;
     }
 
-    // ── PRIORIDADE 2: Busca por identifier (fallback) ──
-    if (!serviceData && service_identifier) {
-      const identifier = service_identifier.trim();
+    // ── PRIORIDADE 2: Busca por identifier explícito (fallback) ──
+    if (!serviceData && normalizedIdentifier) {
+      const numericMatch = normalizedIdentifier.match(/\d+/);
+      const numericId = numericMatch ? parseInt(numericMatch[0], 10) : NaN;
 
-      // Search by quote_number
-      const numericId = parseInt(identifier, 10);
+      // Search by quote_number, accepting formats like "101", "0101", "OS 101", "#101"
       if (!isNaN(numericId)) {
-        const { data } = await supabase
+        let numericQuery = supabase
           .from("services")
           .select("*, client:clients(name, phone, whatsapp)")
           .eq("organization_id", organizationId)
           .eq("quote_number", numericId)
-          .is("deleted_at", null)
+          .is("deleted_at", null);
+
+        if (inferredDocumentType) {
+          numericQuery = numericQuery.eq("document_type", inferredDocumentType);
+        }
+
+        const { data } = await numericQuery
           .order("created_at", { ascending: false })
           .limit(1);
+
         if (data && data.length > 0) serviceData = data[0];
       }
 
-      // Search by client name
-      if (!serviceData) {
-        const { data } = await supabase
+      // Search by cleaned client name only when the identifier really contains a name
+      if (!serviceData && cleanedClientSearch.length >= 3) {
+        let clientQuery = supabase
           .from("services")
           .select("*, client:clients!inner(name, phone, whatsapp)")
           .eq("organization_id", organizationId)
-          .ilike("client.name", `%${identifier}%`)
-          .is("deleted_at", null)
+          .ilike("client.name", `%${cleanedClientSearch}%`)
+          .is("deleted_at", null);
+
+        if (inferredDocumentType) {
+          clientQuery = clientQuery.eq("document_type", inferredDocumentType);
+        }
+
+        const { data } = await clientQuery
           .order("created_at", { ascending: false })
           .limit(1);
+
         if (data && data.length > 0) serviceData = data[0];
       }
 
-      // Search by partial ID
-      if (!serviceData) {
+      // Search by partial UUID only if the identifier actually looks like one
+      if (!serviceData && /^[a-f0-9-]{6,}$/i.test(normalizedIdentifier)) {
         const { data } = await supabase
           .from("services")
           .select("*, client:clients(name, phone, whatsapp)")
           .eq("organization_id", organizationId)
-          .ilike("id", `${identifier}%`)
+          .ilike("id", `${normalizedIdentifier}%`)
           .is("deleted_at", null)
           .limit(1);
         if (data && data.length > 0) serviceData = data[0];
@@ -1382,6 +1411,16 @@ export async function executeAdminTool(
     if (!serviceData) {
       return `Não encontrei a OS informada. Verifique o número ou nome do cliente.`;
     }
+
+    console.log("[LAURA] send_service_pdf resolved service:", {
+      requested_service_id: explicitServiceId,
+      requested_identifier: normalizedIdentifier || null,
+      conversation_pending_service_id: conversationPendingServiceId,
+      resolved_service_id: serviceData.id,
+      resolved_quote_number: serviceData.quote_number,
+      target: sendTarget,
+      confirmed: confirmed === true,
+    });
 
     const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
     const docType = serviceData.document_type === "quote" ? "ORÇAMENTO" : "ORDEM DE SERVIÇO";
@@ -1402,6 +1441,37 @@ export async function executeAdminTool(
     // ── Validação: telefone do cliente (apenas para envio ao cliente) ──
     if (sendTarget === "client" && !clientPhone) {
       return `O cliente "${clientName}" não tem telefone cadastrado. Cadastre o telefone primeiro para enviar a ${docLabel}.`;
+    }
+
+    // ── HARD GUARD: external send governance now uses the RESOLVED service UUID ──
+    const { checkExternalSendPermission } = await import("./externalSendGuard.ts");
+
+    if (sendTarget === "client") {
+      const sendCheck = await checkExternalSendPermission(supabase, {
+        source: "ai_tool_client",
+        organizationId,
+        contactId: ctx?.contactId || null,
+        isInternal: false,
+        confirmed: confirmed === true,
+        persistedServiceId: conversationPendingServiceId,
+        requestedServiceId: serviceData.id,
+        messagePreview: `send_service_pdf target=client service=${serviceData.id}`,
+        functionName: "send_service_pdf",
+      });
+
+      if (!sendCheck.allowed) {
+        console.warn(`[LAURA] External send blocked: ${sendCheck.reason} — ${sendCheck.detail} — resolved_service=${serviceData.id}`);
+        return `PENDING_CONFIRMATION:${serviceData.id}|Pergunte ao usuário se deseja enviar a OS para o cliente antes de prosseguir.`;
+      }
+    } else if (sendTarget === "self") {
+      await checkExternalSendPermission(supabase, {
+        source: "ai_tool_self",
+        organizationId,
+        contactId: ctx?.contactId || null,
+        isInternal: true,
+        messagePreview: `send_service_pdf target=self service=${serviceData.id}`,
+        functionName: "send_service_pdf",
+      });
     }
 
     // ── Validação: pdf_status = ready (com re-materialização automática única) ──
