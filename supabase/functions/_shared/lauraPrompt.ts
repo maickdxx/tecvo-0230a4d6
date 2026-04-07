@@ -1315,8 +1315,8 @@ export async function executeAdminTool(
       return `A ${docLabel} #${osNumber} foi excluída e não pode ser enviada.`;
     }
 
-    // ── Validação: telefone do cliente ──
-    if (!clientPhone) {
+    // ── Validação: telefone do cliente (apenas para envio ao cliente) ──
+    if (sendTarget === "client" && !clientPhone) {
       return `O cliente "${clientName}" não tem telefone cadastrado. Cadastre o telefone primeiro para enviar a ${docLabel}.`;
     }
 
@@ -1330,8 +1330,8 @@ export async function executeAdminTool(
       return statusMessages[serviceData.pdf_status] || `A ${docLabel} #${osNumber} não está pronta para envio. Status do PDF: ${serviceData.pdf_status || "desconhecido"}.`;
     }
 
-    // ── Validação: proteção contra envio duplicado (30s) ──
-    if (serviceData.last_pdf_sent_at) {
+    // ── Validação: proteção contra envio duplicado (30s) — só para envio ao cliente ──
+    if (sendTarget === "client" && serviceData.last_pdf_sent_at) {
       const lastSent = new Date(serviceData.last_pdf_sent_at).getTime();
       const now = Date.now();
       const diffSeconds = (now - lastSent) / 1000;
@@ -1349,7 +1349,7 @@ export async function executeAdminTool(
       return `O PDF oficial da ${docLabel} #${osNumber} não foi encontrado no sistema. Gere o PDF pelo painel antes de enviar.`;
     }
 
-    // ── Enviar para o telefone do CLIENTE ──
+    // ── Determinar número de destino ──
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
     const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
 
@@ -1366,10 +1366,24 @@ export async function executeAdminTool(
       return `PDF da ${docLabel} #${osNumber} está pronto, mas o canal WhatsApp não está configurado. Envie pelo painel.`;
     }
 
-    // Normalize client phone
-    let whatsappNumber = clientPhone.replace(/\D/g, "");
-    if (!whatsappNumber.startsWith("55") && whatsappNumber.length <= 11) {
-      whatsappNumber = "55" + whatsappNumber;
+    let whatsappNumber: string;
+    let recipientLabel: string;
+
+    if (sendTarget === "self") {
+      // Send to the user who is requesting (remoteJid from WhatsApp context)
+      const userJid = ctx?.remoteJid;
+      if (!userJid) {
+        return `Não foi possível identificar seu número para envio. Use o painel para baixar o PDF.`;
+      }
+      whatsappNumber = userJid.replace(/@.*$/, "").replace(/\D/g, "");
+      recipientLabel = "você";
+    } else {
+      // Send to the client
+      whatsappNumber = clientPhone!.replace(/\D/g, "");
+      if (!whatsappNumber.startsWith("55") && whatsappNumber.length <= 11) {
+        whatsappNumber = "55" + whatsappNumber;
+      }
+      recipientLabel = clientName;
     }
 
     const fileName = `${docType.replace(/ /g, "_")}_${osNumber}.pdf`;
@@ -1389,29 +1403,32 @@ export async function executeAdminTool(
       if (!evoResp.ok) {
         const errText = await evoResp.text();
         console.error("[LAURA] PDF send error:", evoResp.status, errText);
-        return `PDF pronto, mas houve erro ao enviar para ${clientName}. Tente pelo painel.`;
+        return `PDF pronto, mas houve erro ao enviar para ${recipientLabel}. Tente pelo painel.`;
       }
 
       await evoResp.text();
 
       // ── Registrar envio: last_pdf_sent_at + audit log ──
-      await supabase
-        .from("services")
-        .update({ last_pdf_sent_at: new Date().toISOString() })
-        .eq("id", serviceData.id)
-        .eq("organization_id", organizationId);
+      if (sendTarget === "client") {
+        await supabase
+          .from("services")
+          .update({ last_pdf_sent_at: new Date().toISOString() })
+          .eq("id", serviceData.id)
+          .eq("organization_id", organizationId);
+      }
 
       try {
         await supabase.from("data_audit_log").insert({
           organization_id: organizationId,
           table_name: "services",
-          operation: "PDF_SENT",
+          operation: sendTarget === "self" ? "PDF_SENT_SELF" : "PDF_SENT",
           record_id: serviceData.id,
           metadata: {
             os_number: osNumber,
             doc_type: docType,
             client_name: clientName,
-            client_phone: whatsappNumber,
+            target: sendTarget,
+            recipient_phone: whatsappNumber,
             channel: ctx?.remoteJid ? "whatsapp_chat" : "app",
             instance,
             sent_at: new Date().toISOString(),
