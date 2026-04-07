@@ -275,7 +275,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
 
           {/* Unread counter */}
           {(contact.unread_count > 0 || contact.is_unread) && (
-            <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-[18px] min-w-[18px] flex items-center justify-center px-1.5 shrink-0 mt-1">
+            <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1.5 shrink-0 mt-1 shadow-sm shadow-primary/20">
               {contact.unread_count > 0 ? (contact.unread_count > 99 ? "99+" : contact.unread_count) : ""}
             </span>
           )}

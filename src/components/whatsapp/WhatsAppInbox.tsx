@@ -236,9 +236,9 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Column 1: Conversation List */}
         <div
-          className={`w-full md:w-80 lg:w-[340px] border-r border-border/30 flex-shrink-0 ${
+          className={`w-full md:w-80 lg:w-[340px] border-r border-border/20 flex-shrink-0 ${
             selectedContactId ? "hidden md:flex" : "flex"
-          } flex-col bg-card min-h-0`}
+          } flex-col whatsapp-sidebar min-h-0`}
         >
           <ConversationList
             contacts={contacts}
