@@ -313,6 +313,7 @@ Deno.serve(async (req) => {
             }
           } else {
             console.log("[AUTO-SERVICE] Portal link already sent for service:", service_id);
+          }
         }
       }
     }
