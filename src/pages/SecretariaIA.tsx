@@ -66,9 +66,9 @@ export default function SecretariaIA() {
               <Bot className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Assistente IA</h1>
+              <h1 className="text-xl font-bold text-foreground">Laura</h1>
               <p className="text-sm text-muted-foreground">
-                Analista estratégico da empresa
+                Sua assistente operacional inteligente
               </p>
             </div>
           </div>
