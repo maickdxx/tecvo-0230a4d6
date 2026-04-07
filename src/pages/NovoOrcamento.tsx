@@ -72,6 +72,24 @@ export default function NovoOrcamento() {
             warranty_terms: eq.warranty_terms,
           })));
       }
+      // Auto-materialize PDF in backend
+      try {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token && projectId) {
+          fetch(`https://${projectId}.supabase.co/functions/v1/materialize-service-pdf`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ serviceId: newService.id, organizationId: organization?.id }),
+          }).catch(err => console.warn("[NovoOrcamento] PDF materialization error:", err));
+        }
+      } catch (e) {
+        console.warn("[NovoOrcamento] PDF materialization skipped:", e);
+      }
+
       toast({
         title: "Orçamento criado",
         description: `Orçamento #${newService.quote_number} criado. Pronto para o próximo.`,
