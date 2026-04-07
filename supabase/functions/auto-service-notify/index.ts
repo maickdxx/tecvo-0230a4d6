@@ -27,8 +27,29 @@ const corsHeaders = {
 
 const LOG_PREFIX = "[AUTO-SERVICE-NOTIFY]";
 
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  installation: "Instalação",
+  maintenance: "Manutenção",
+  cleaning: "Limpeza",
+  repair: "Reparo",
+  inspection: "Vistoria",
+  removal: "Remoção",
+  relocation: "Remanejamento",
+  other: "Serviço",
+};
+
 function formatBRL(value: number): string {
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Build a compact, human-readable service label */
+function buildServiceLabel(description: string | null, serviceType: string | null): string {
+  const typeLabel = serviceType ? (SERVICE_TYPE_LABELS[serviceType] || serviceType) : null;
+  if (description && description.length > 2 && description.toLowerCase() !== serviceType) {
+    // Use description as primary — it's usually more specific
+    return description.length > 40 ? description.slice(0, 37) + "…" : description;
+  }
+  return typeLabel || "Serviço";
 }
 
 async function sendWhatsApp(phone: string, text: string, instanceName = TECVO_PLATFORM_INSTANCE): Promise<boolean> {
