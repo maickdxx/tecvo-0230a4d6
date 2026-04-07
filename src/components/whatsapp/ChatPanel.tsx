@@ -1177,23 +1177,50 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
         
         <div className="relative z-10 space-y-1.5 md:space-y-2">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="space-y-3 py-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className={cn("flex", i % 2 === 0 ? "justify-start" : "justify-end")}>
+                  <div className={cn(
+                    "rounded-2xl px-4 py-3 space-y-2 animate-pulse",
+                    i % 2 === 0 ? "bg-muted/60 rounded-bl-sm" : "bg-primary/20 rounded-br-sm"
+                  )} style={{ width: `${Math.random() * 30 + 30}%` }}>
+                    <div className="h-3 bg-muted-foreground/10 rounded-full w-full" />
+                    {i % 3 === 0 && <div className="h-3 bg-muted-foreground/10 rounded-full w-3/4" />}
+                    <div className="h-2 bg-muted-foreground/10 rounded-full w-1/4 ml-auto" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : messages.length === 0 ? (
-            <div className="text-center text-sm text-muted-foreground py-8">Nenhuma mensagem ainda</div>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="h-14 w-14 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+                <Send className="h-6 w-6 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">Nenhuma mensagem ainda</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Envie a primeira mensagem para iniciar a conversa</p>
+            </div>
           ) : (
             messages.map((msg, idx) => {
-            const msgDate = new Date(msg.created_at || msg.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-            const prevDate = idx > 0 ? new Date(messages[idx - 1].created_at || messages[idx - 1].timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null;
-            const showDateSeparator = idx === 0 || msgDate !== prevDate;
+            const msgDateObj = new Date(msg.created_at || msg.timestamp);
+            const today = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const isToday = msgDateObj.toDateString() === today.toDateString();
+            const isYesterday = msgDateObj.toDateString() === yesterday.toDateString();
+            const msgDate = isToday ? "Hoje" : isYesterday ? "Ontem" : msgDateObj.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+            
+            const prevDateObj = idx > 0 ? new Date(messages[idx - 1].created_at || messages[idx - 1].timestamp) : null;
+            const showDateSeparator = idx === 0 || (prevDateObj && msgDateObj.toDateString() !== prevDateObj.toDateString());
+            
             return (
               <div key={msg.id} data-message-id={msg.id}>
                 {showDateSeparator && (
-                  <div className="flex items-center justify-center my-3">
-                    <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-3 py-0.5 rounded-full">
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-border/40" />
+                    <span className="text-[11px] font-medium text-muted-foreground/70 bg-background px-2 py-0.5 rounded-full border border-border/30 shadow-sm">
                       {msgDate}
                     </span>
+                    <div className="flex-1 h-px bg-border/40" />
                   </div>
                 )}
                 <MessageBubble
