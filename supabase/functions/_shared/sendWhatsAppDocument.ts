@@ -71,16 +71,25 @@ export async function sendWhatsAppDocument(params: SendDocumentParams): Promise<
   const logPrefix = `[SEND-DOC:${sentVia}]`;
 
   // ── 1. Fetch and validate channel ──
+  // First fetch by ID only, then validate org access.
+  // TECVO_AI (system) channels are cross-org: they belong to the system admin org
+  // but serve users from any organization.
   const { data: channel, error: chErr } = await supabase
     .from("whatsapp_channels")
-    .select("id, instance_name, organization_id, is_connected, channel_status, phone_number")
+    .select("id, instance_name, organization_id, is_connected, channel_status, phone_number, channel_type")
     .eq("id", channelId)
-    .eq("organization_id", organizationId)
     .single();
 
   if (chErr || !channel) {
     console.error(`${logPrefix} Channel not found: ${channelId}`, chErr?.message);
     return { ok: false, error: "Canal não encontrado.", errorCode: "channel_not_found" };
+  }
+
+  // Validate org ownership — skip for system AI channels (cross-org by design)
+  const isSystemChannel = channel.channel_type === "TECVO_AI";
+  if (!isSystemChannel && channel.organization_id !== organizationId) {
+    console.error(`${logPrefix} Channel ${channelId} belongs to org ${channel.organization_id}, not ${organizationId}`);
+    return { ok: false, error: "Canal não pertence a esta organização.", errorCode: "channel_org_mismatch" };
   }
 
   if (!channel.is_connected || !channel.instance_name || channel.channel_status !== "connected") {
