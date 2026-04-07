@@ -970,20 +970,21 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
         </div>
       </div>
 
-      {/* Assigned banner - hidden in simplified mode */}
+      {/* Assigned banner */}
       {!isSimplified && (
-        <div className="px-4 py-1.5 bg-muted/20 border-b border-border/40 text-[11px] text-muted-foreground flex items-center gap-1.5 shrink-0">
-          <UserCheck className="h-3 w-3" />
-          {assignedMember ? (
-            <>
-              Atendente responsável:{" "}
-              <span className="font-semibold text-foreground">{assignedMember.full_name}</span>
-            </>
-          ) : (
-            <span className="italic">Sem atendente definido</span>
-          )}
+        <div className="px-4 py-1.5 border-b border-border/30 bg-muted/10 flex items-center gap-2 overflow-x-auto shrink-0">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <UserCheck className="h-3 w-3" />
+            {assignedMember ? (
+              <>
+                <span className="font-medium text-foreground">{assignedMember.full_name}</span>
+              </>
+            ) : (
+              <span className="italic text-muted-foreground/60">Sem atendente</span>
+            )}
+          </div>
           {contact.is_private && (
-            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium bg-destructive/10 text-destructive rounded-full px-2 py-0.5">
+            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium bg-destructive/10 text-destructive rounded-md px-2 py-0.5">
               <EyeOff className="h-2.5 w-2.5" />
               Privada
             </span>
