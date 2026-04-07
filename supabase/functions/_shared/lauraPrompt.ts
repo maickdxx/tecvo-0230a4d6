@@ -1436,6 +1436,9 @@ export async function executeAdminTool(
         });
       } catch { /* logging should never block */ }
 
+      if (sendTarget === "self") {
+        return `SILENT_PDF_SENT_SELF:${docType} #${osNumber} - ${clientName} enviado para você!`;
+      }
       return `SILENT_PDF_SENT:${docType} #${osNumber} enviado com sucesso para ${clientName} (${clientPhone})!`;
     } catch (sendErr: any) {
       console.error("[LAURA] PDF send exception:", sendErr.message);

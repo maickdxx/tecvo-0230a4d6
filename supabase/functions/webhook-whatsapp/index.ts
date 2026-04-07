@@ -2407,14 +2407,20 @@ const ADMIN_TOOLS = [
     function: {
       name: "send_service_pdf",
       description:
-        "Envia via WhatsApp apenas o PDF oficial já salvo de uma Ordem de Serviço ou Orçamento. Use quando o técnico pedir para enviar, mandar ou ver o PDF de uma OS ou orçamento. Nunca gere um PDF novo.",
+        "Envia via WhatsApp o PDF oficial de uma OS ou Orçamento. Use target='self' para enviar ao próprio técnico (sem confirmação). Use target='client' para enviar ao cliente (sem confirmação neste canal). Nunca gere PDF novo.",
       parameters: {
         type: "object",
         properties: {
           service_identifier: {
             type: "string",
             description:
-              "Identificador do serviço: pode ser o número da OS (ex: '0042'), nome do cliente, ou parte do ID. A busca é flexível.",
+              "Identificador do serviço: número da OS (ex: '0042'), nome do cliente, ou parte do ID.",
+          },
+          target: {
+            type: "string",
+            enum: ["self", "client"],
+            description:
+              "Destino: 'self'=envia para o próprio técnico que está pedindo. 'client'=envia para o cliente da OS. Default: 'client'.",
           },
         },
         required: ["service_identifier"],
