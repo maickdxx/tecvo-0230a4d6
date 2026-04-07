@@ -1423,7 +1423,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                 <button
                   onClick={handleSend}
                   disabled={isSending}
-                  className="shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="shrink-0 h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all disabled:opacity-50 shadow-sm"
                 >
                   {isSending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1434,7 +1434,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
               ) : (
                 <button
                   onMouseDown={(e) => { e.preventDefault(); startRecording(); }}
-                  className="shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                  className="shrink-0 h-9 w-9 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80 hover:text-foreground transition-all"
                 >
                   <Mic className="h-4 w-4" />
                 </button>
