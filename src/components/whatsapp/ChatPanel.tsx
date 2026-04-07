@@ -1130,14 +1130,14 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       <div 
         ref={scrollRef} 
         className={cn(
-          "flex-1 min-h-0 overflow-y-auto p-3 md:p-4 bg-muted/[0.04] relative", 
+          "flex-1 min-h-0 overflow-y-auto p-3 md:p-5 bg-background relative", 
           isMobile && "overscroll-contain"
         )}
       >
-        {/* WhatsApp-like background pattern */}
-        <div className="absolute inset-0 bg-whatsapp-pattern opacity-[0.05] dark:opacity-[0.02] pointer-events-none" />
+        {/* Subtle pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--muted)/0.3)_1px,transparent_1px)] bg-[length:24px_24px] opacity-30 dark:opacity-10 pointer-events-none" />
         
-        <div className="relative z-10 space-y-2 md:space-y-2.5">
+        <div className="relative z-10 space-y-1.5 md:space-y-2">
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
