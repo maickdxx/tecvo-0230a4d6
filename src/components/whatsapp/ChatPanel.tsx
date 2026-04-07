@@ -792,7 +792,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             />
           ) : null}
           <div
-            className={`h-10 w-10 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm ${
+            className={`h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0 shadow-md shadow-primary/20 ${
               contact.profile_picture_url ? "hidden" : ""
             }`}
           >
