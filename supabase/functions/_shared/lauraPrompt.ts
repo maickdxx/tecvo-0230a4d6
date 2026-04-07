@@ -647,18 +647,24 @@ Quando uma OS ou orçamento falhar porque o cliente não existe (resultado cont�
 - Quando o usuário fornecer os dados, use a ferramenta create_client para cadastrar
 - APÓS cadastrar com sucesso, continue AUTOMATICAMENTE criando a OS ou orçamento que estava pendente
 
-6. FERRAMENTA 'send_service_pdf' — enviar PDF de OS ou Orçamento para o cliente.
+6. FERRAMENTA 'send_service_pdf' — enviar PDF de OS ou Orçamento.
+DOIS MODOS DE ENVIO (parâmetro "target"):
+  a) target="self" → envia o PDF para o PRÓPRIO USUÁRIO (quem está pedindo). NÃO exige confirmação. Executa direto.
+     Frases que indicam target="self": "me manda", "envia pra mim", "quero ver a OS", "me manda a OS", "manda aqui".
+  b) target="client" (padrão) → envia para o CLIENTE da OS. EXIGE confirmação (confirmed=true). 
+     Frases que indicam target="client": "envia pro cliente", "manda pro cliente", "envia pra ele".
+
 Quando o usuário pedir para enviar o PDF de uma OS ou orçamento:
 - PRIORIDADE MÁXIMA: Se você ACABOU de criar uma OS nesta conversa, use o service_id (UUID completo) retornado na criação. NUNCA use ID parcial ou busca quando já tem o UUID.
 - Se o usuário responde "sim" após criação de OS, use IMEDIATAMENTE o service_id da OS recém-criada. Não faça busca.
 - Só use service_identifier (busca por nome/número) quando NÃO houver OS recém-criada no contexto.
 - A ferramenta busca e envia apenas o PDF OFICIAL já salvo no sistema
 - Ela NUNCA gera um PDF novo ou alternativo
-- OBRIGATÓRIO: Sempre pedir confirmação antes de enviar para o CLIENTE
-- O PDF é enviado para o TELEFONE DO CLIENTE DA OS (não para quem está falando)
+- Se target="client": OBRIGATÓRIO pedir confirmação antes de enviar
+- Se target="self": envie DIRETO, sem perguntar
 - Se o PDF oficial não existir, informe claramente. Nunca ofereça alternativa
-- Se o cliente não tiver telefone cadastrado, informe e não envie
-- Após envio com sucesso, confirme ao usuário com: cliente, número, OS enviada
+- Se target="client" e o cliente não tiver telefone cadastrado, informe e não envie
+- Após envio com sucesso, confirme ao usuário
 
 ══════════ FLUXO COMPLETO DE ATENDIMENTO ══════════
 
@@ -787,7 +793,7 @@ export const ADMIN_TOOLS = [
     function: {
       name: "send_service_pdf",
       description:
-        "Envia o PDF oficial de uma Ordem de Serviço ou Orçamento para o CLIENTE da OS via WhatsApp. NUNCA gera PDF novo. Requer confirmação EXPLÍCITA do usuário (confirmed=true). Só chame esta ferramenta APÓS o usuário dizer 'sim' ou equivalente.",
+        "Envia o PDF oficial de uma OS ou Orçamento via WhatsApp. Use target='self' para enviar ao próprio usuário (sem confirmação). Use target='client' para enviar ao cliente (exige confirmed=true).",
       parameters: {
         type: "object",
         properties: {
@@ -801,13 +807,19 @@ export const ADMIN_TOOLS = [
             description:
               "Fallback: número da OS (ex: '0042') ou nome do cliente. Só use quando NÃO tiver o service_id UUID.",
           },
+          target: {
+            type: "string",
+            enum: ["self", "client"],
+            description:
+              "Destino do envio. 'self'=envia para o próprio usuário que pediu (sem confirmação). 'client'=envia para o cliente da OS (exige confirmação). Default: 'client'.",
+          },
           confirmed: {
             type: "boolean",
             description:
-              "OBRIGATÓRIO: deve ser true. Indica que o usuário CONFIRMOU explicitamente o envio.",
+              "Só obrigatório quando target='client'. Indica que o usuário CONFIRMOU explicitamente o envio para o cliente.",
           },
         },
-        required: ["confirmed"],
+        required: [],
         additionalProperties: false,
       },
     },
@@ -1212,11 +1224,11 @@ export async function executeAdminTool(
   }
 
   if (fnName === "send_service_pdf") {
-    const { service_id, service_identifier, confirmed } = args;
+    const { service_id, service_identifier, confirmed, target } = args;
+    const sendTarget = target || "client";
 
-    // ── BLOQUEIO: confirmação obrigatória no backend ──
-    if (confirmed !== true) {
-      // Return a user-friendly message — NEVER expose technical instructions
+    // ── BLOQUEIO: confirmação obrigatória apenas para envio ao CLIENTE ──
+    if (sendTarget === "client" && confirmed !== true) {
       const pendingId = service_id || service_identifier || "desconhecido";
       return `PENDING_CONFIRMATION:${pendingId}|Pergunte ao usuário se deseja enviar a OS para o cliente antes de prosseguir.`;
     }
@@ -1303,8 +1315,8 @@ export async function executeAdminTool(
       return `A ${docLabel} #${osNumber} foi excluída e não pode ser enviada.`;
     }
 
-    // ── Validação: telefone do cliente ──
-    if (!clientPhone) {
+    // ── Validação: telefone do cliente (apenas para envio ao cliente) ──
+    if (sendTarget === "client" && !clientPhone) {
       return `O cliente "${clientName}" não tem telefone cadastrado. Cadastre o telefone primeiro para enviar a ${docLabel}.`;
     }
 
@@ -1318,8 +1330,8 @@ export async function executeAdminTool(
       return statusMessages[serviceData.pdf_status] || `A ${docLabel} #${osNumber} não está pronta para envio. Status do PDF: ${serviceData.pdf_status || "desconhecido"}.`;
     }
 
-    // ── Validação: proteção contra envio duplicado (30s) ──
-    if (serviceData.last_pdf_sent_at) {
+    // ── Validação: proteção contra envio duplicado (30s) — só para envio ao cliente ──
+    if (sendTarget === "client" && serviceData.last_pdf_sent_at) {
       const lastSent = new Date(serviceData.last_pdf_sent_at).getTime();
       const now = Date.now();
       const diffSeconds = (now - lastSent) / 1000;
@@ -1337,7 +1349,7 @@ export async function executeAdminTool(
       return `O PDF oficial da ${docLabel} #${osNumber} não foi encontrado no sistema. Gere o PDF pelo painel antes de enviar.`;
     }
 
-    // ── Enviar para o telefone do CLIENTE ──
+    // ── Determinar número de destino ──
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL")?.replace(/\/+$/, "");
     const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
 
@@ -1354,10 +1366,24 @@ export async function executeAdminTool(
       return `PDF da ${docLabel} #${osNumber} está pronto, mas o canal WhatsApp não está configurado. Envie pelo painel.`;
     }
 
-    // Normalize client phone
-    let whatsappNumber = clientPhone.replace(/\D/g, "");
-    if (!whatsappNumber.startsWith("55") && whatsappNumber.length <= 11) {
-      whatsappNumber = "55" + whatsappNumber;
+    let whatsappNumber: string;
+    let recipientLabel: string;
+
+    if (sendTarget === "self") {
+      // Send to the user who is requesting (remoteJid from WhatsApp context)
+      const userJid = ctx?.remoteJid;
+      if (!userJid) {
+        return `Não foi possível identificar seu número para envio. Use o painel para baixar o PDF.`;
+      }
+      whatsappNumber = userJid.replace(/@.*$/, "").replace(/\D/g, "");
+      recipientLabel = "você";
+    } else {
+      // Send to the client
+      whatsappNumber = clientPhone!.replace(/\D/g, "");
+      if (!whatsappNumber.startsWith("55") && whatsappNumber.length <= 11) {
+        whatsappNumber = "55" + whatsappNumber;
+      }
+      recipientLabel = clientName;
     }
 
     const fileName = `${docType.replace(/ /g, "_")}_${osNumber}.pdf`;
@@ -1377,29 +1403,32 @@ export async function executeAdminTool(
       if (!evoResp.ok) {
         const errText = await evoResp.text();
         console.error("[LAURA] PDF send error:", evoResp.status, errText);
-        return `PDF pronto, mas houve erro ao enviar para ${clientName}. Tente pelo painel.`;
+        return `PDF pronto, mas houve erro ao enviar para ${recipientLabel}. Tente pelo painel.`;
       }
 
       await evoResp.text();
 
       // ── Registrar envio: last_pdf_sent_at + audit log ──
-      await supabase
-        .from("services")
-        .update({ last_pdf_sent_at: new Date().toISOString() })
-        .eq("id", serviceData.id)
-        .eq("organization_id", organizationId);
+      if (sendTarget === "client") {
+        await supabase
+          .from("services")
+          .update({ last_pdf_sent_at: new Date().toISOString() })
+          .eq("id", serviceData.id)
+          .eq("organization_id", organizationId);
+      }
 
       try {
         await supabase.from("data_audit_log").insert({
           organization_id: organizationId,
           table_name: "services",
-          operation: "PDF_SENT",
+          operation: sendTarget === "self" ? "PDF_SENT_SELF" : "PDF_SENT",
           record_id: serviceData.id,
           metadata: {
             os_number: osNumber,
             doc_type: docType,
             client_name: clientName,
-            client_phone: whatsappNumber,
+            target: sendTarget,
+            recipient_phone: whatsappNumber,
             channel: ctx?.remoteJid ? "whatsapp_chat" : "app",
             instance,
             sent_at: new Date().toISOString(),
@@ -1407,6 +1436,9 @@ export async function executeAdminTool(
         });
       } catch { /* logging should never block */ }
 
+      if (sendTarget === "self") {
+        return `SILENT_PDF_SENT_SELF:${docType} #${osNumber} - ${clientName} enviado para você!`;
+      }
       return `SILENT_PDF_SENT:${docType} #${osNumber} enviado com sucesso para ${clientName} (${clientPhone})!`;
     } catch (sendErr: any) {
       console.error("[LAURA] PDF send exception:", sendErr.message);

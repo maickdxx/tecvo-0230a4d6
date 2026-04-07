@@ -183,7 +183,13 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
 
         // ── Translate PENDING_CONFIRMATION into AI-friendly instruction ──
         if (toolResult.startsWith("PENDING_CONFIRMATION:")) {
-          toolResult = "O envio da OS requer confirmação do usuário. Pergunte ao usuário se deseja enviar o PDF da OS para o cliente. Quando ele confirmar, chame send_service_pdf novamente com confirmed=true.";
+          toolResult = "O envio da OS requer confirmação do usuário. Pergunte ao usuário se deseja enviar o PDF da OS para o cliente. Quando ele confirmar, chame send_service_pdf novamente com confirmed=true e target='client'.";
+        }
+
+        // ── Handle SILENT_PDF_SENT_SELF — self-send completed ──
+        if (toolResult.startsWith("SILENT_PDF_SENT_SELF:")) {
+          const label = toolResult.replace("SILENT_PDF_SENT_SELF:", "").trim();
+          toolResult = `PDF enviado com sucesso para você: ${label}`;
         }
 
         console.log("[TECVO-CHAT] Tool result:", toolResult.slice(0, 200));
