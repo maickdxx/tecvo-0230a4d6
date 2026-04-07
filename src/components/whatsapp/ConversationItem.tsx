@@ -119,14 +119,14 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
         <button
           onClick={selectionMode ? (onToggleCheck || onClick) : onClick}
           className={cn(
-            "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-200 border-l-2",
+            "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-200 border-l-[3px]",
             selectionMode && isChecked
-              ? "bg-primary/[0.06] border-l-primary"
+              ? "whatsapp-conversation-active border-l-primary"
               : isSelected
-                ? "bg-primary/[0.07] dark:bg-primary/[0.12] border-l-primary"
+                ? "whatsapp-conversation-active border-l-primary"
                 : contact.is_unread
-                  ? "bg-primary/[0.02] hover:bg-muted/60 border-l-transparent"
-                  : "hover:bg-muted/40 border-l-transparent"
+                  ? "whatsapp-conversation-unread hover:bg-muted/40 border-l-transparent"
+                  : "hover:bg-muted/30 border-l-transparent"
           )}
         >
           {/* Selection checkbox */}
@@ -146,7 +146,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               <img
                 src={contact.profile_picture_url}
                 alt=""
-                className="h-11 w-11 rounded-full object-cover ring-2 ring-background shadow-sm"
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-background shadow-md"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                   (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
@@ -155,7 +155,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
             ) : null}
             <div
               className={cn(
-                "h-11 w-11 rounded-full flex items-center justify-center text-white shadow-sm",
+                "h-11 w-11 rounded-full flex items-center justify-center text-white shadow-md ring-2 ring-background",
                 avatarBg,
                 contact.profile_picture_url && "hidden"
               )}
@@ -275,7 +275,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
 
           {/* Unread counter */}
           {(contact.unread_count > 0 || contact.is_unread) && (
-            <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-[18px] min-w-[18px] flex items-center justify-center px-1.5 shrink-0 mt-1">
+            <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1.5 shrink-0 mt-1 shadow-sm shadow-primary/20">
               {contact.unread_count > 0 ? (contact.unread_count > 99 ? "99+" : contact.unread_count) : ""}
             </span>
           )}

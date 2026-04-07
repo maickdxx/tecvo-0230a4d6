@@ -253,7 +253,7 @@ export function ConversationList({
     <>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">
-        <h2 className="text-[13px] font-bold text-foreground tracking-tight uppercase">Conversas</h2>
+        <h2 className="text-[13px] font-bold text-foreground tracking-tight uppercase bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text">Conversas</h2>
         <div className="flex items-center gap-1">
           {!selectionMode ? (
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectionMode(true)} title="Selecionar">
@@ -324,7 +324,7 @@ export function ConversationList({
             placeholder="Buscar nome, telefone ou mensagem..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 h-10 text-sm bg-muted/30 border-transparent focus:bg-background focus:border-primary/20 transition-all rounded-lg"
+            className="pl-9 h-10 text-sm bg-muted/20 border-border/20 focus:bg-background focus:border-primary/30 focus:shadow-sm transition-all rounded-xl"
           />
         </div>
       </div>
@@ -437,7 +437,7 @@ export function ConversationList({
       />
 
       {/* Divider */}
-      <div className="border-b border-border/30" />
+      <div className="border-b border-border/15" />
 
       {/* List */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">

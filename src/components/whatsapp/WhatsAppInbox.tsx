@@ -195,9 +195,9 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       {/* Top bar */}
       {!isMobileChatFocused && !fullscreen && (
         <>
-          <div className="flex items-center justify-between px-4 border-b border-border/30 bg-card gap-3 shrink-0 py-3">
+          <div className="flex items-center justify-between px-4 whatsapp-topbar gap-3 shrink-0 py-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <h1 className="text-base font-bold tracking-tight text-foreground shrink-0">WhatsApp</h1>
+              <h1 className="text-base font-bold tracking-tight text-foreground shrink-0 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">WhatsApp</h1>
               <ConnectionStatusPanel
                 channelId={channel?.id || null}
                 isConnected={!!channel?.is_connected}
@@ -236,9 +236,9 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Column 1: Conversation List */}
         <div
-          className={`w-full md:w-80 lg:w-[340px] border-r border-border/30 flex-shrink-0 ${
+          className={`w-full md:w-80 lg:w-[340px] border-r border-border/20 flex-shrink-0 ${
             selectedContactId ? "hidden md:flex" : "flex"
-          } flex-col bg-card min-h-0`}
+          } flex-col whatsapp-sidebar min-h-0`}
         >
           <ConversationList
             contacts={contacts}
@@ -330,12 +330,12 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
               }}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-background relative overflow-hidden">
+            <div className="flex-1 flex items-center justify-center whatsapp-chat-bg relative overflow-hidden">
               <div className="text-center space-y-5 relative z-10 px-6 max-w-md">
                 {contacts.length > 0 ? (
                   <>
-                    <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/8 flex items-center justify-center">
-                      <MessageSquare className="h-7 w-7 text-primary/50" />
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center shadow-lg shadow-primary/5 border border-primary/10">
+                      <MessageSquare className="h-7 w-7 text-primary/60" />
                     </div>
                     <div className="space-y-1.5">
                       <h3 className="text-base font-semibold text-foreground">
@@ -348,8 +348,8 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
                   </>
                 ) : (
                   <>
-                    <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/8 flex items-center justify-center">
-                      <MessageSquare className="h-7 w-7 text-primary/50" />
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center shadow-lg shadow-primary/5 border border-primary/10">
+                      <MessageSquare className="h-7 w-7 text-primary/60" />
                     </div>
                     <div className="space-y-1.5">
                       <h3 className="text-base font-semibold text-foreground">
@@ -361,8 +361,8 @@ export function WhatsAppInbox({ fullscreen = false }: WhatsAppInboxProps) {
                     </div>
                   </>
                 )}
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50 text-[12px] text-muted-foreground font-medium">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border/30 text-[12px] text-muted-foreground font-medium shadow-card">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/30" />
                   Pronto para receber mensagens
                 </div>
               </div>

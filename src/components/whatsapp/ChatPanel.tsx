@@ -773,7 +773,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       onDrop={handleDrop}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 border-b border-border/40 bg-card/95 backdrop-blur-sm shrink-0 sticky top-0 z-20 shadow-[0_1px_3px_0_hsl(var(--foreground)/0.04)]">
+      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 whatsapp-topbar shrink-0 sticky top-0 z-20">
         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={onBack} title="Fechar conversa">
           <ArrowLeft className="h-4 w-4 md:hidden" />
           <X className="h-4 w-4 hidden md:block" />
@@ -792,7 +792,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             />
           ) : null}
           <div
-            className={`h-10 w-10 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm ${
+            className={`h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0 shadow-md shadow-primary/20 ${
               contact.profile_picture_url ? "hidden" : ""
             }`}
           >
@@ -988,7 +988,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
 
       {/* Status bar: attendant + channel status + AI indicator */}
       {!isSimplified && (
-        <div className="px-4 py-1.5 border-b border-border/20 bg-muted/5 flex items-center gap-3 overflow-x-auto shrink-0">
+        <div className="px-4 py-1.5 border-b border-border/15 bg-gradient-to-r from-muted/20 to-transparent flex items-center gap-3 overflow-x-auto shrink-0">
           {/* Attendant */}
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <UserCheck className="h-3 w-3" />
@@ -1037,7 +1037,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
 
       {/* Quick action bar */}
       {!isSimplified && (
-        <div className="px-3 py-2 border-b border-border/30 bg-card flex items-center gap-1.5 overflow-x-auto shrink-0">
+        <div className="px-3 py-2 whatsapp-action-bar flex items-center gap-1.5 overflow-x-auto shrink-0">
           <Button
             variant="default"
             size="sm"
@@ -1168,13 +1168,10 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       <div 
         ref={scrollRef} 
         className={cn(
-          "flex-1 min-h-0 overflow-y-auto p-3 md:p-5 bg-background relative", 
+          "flex-1 min-h-0 overflow-y-auto p-3 md:p-5 whatsapp-chat-bg relative", 
           isMobile && "overscroll-contain"
         )}
       >
-        {/* Subtle pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--muted)/0.3)_1px,transparent_1px)] bg-[length:24px_24px] opacity-30 dark:opacity-10 pointer-events-none" />
-        
         <div className="relative z-10 space-y-1.5 md:space-y-2">
           {loading ? (
             <div className="space-y-3 py-4">
@@ -1215,12 +1212,12 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             return (
               <div key={msg.id} data-message-id={msg.id}>
                 {showDateSeparator && (
-                  <div className="flex items-center gap-3 my-4">
-                    <div className="flex-1 h-px bg-border/40" />
-                    <span className="text-[11px] font-medium text-muted-foreground/70 bg-background px-2 py-0.5 rounded-full border border-border/30 shadow-sm">
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+                    <span className="text-[11px] font-semibold text-muted-foreground/60 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full border border-border/20 shadow-xs">
                       {msgDate}
                     </span>
-                    <div className="flex-1 h-px bg-border/40" />
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
                   </div>
                 )}
                 <MessageBubble
@@ -1322,7 +1319,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
 
       {/* Input */}
       {!previewFile && !recording && (
-        <div className="relative px-3 py-2 border-t border-border/40 bg-card shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+        <div className="relative px-3 py-2 whatsapp-input-bar border-t border-border/30 shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
           {/* Slash command menu */}
           {showSlashMenu && canSend && filteredSlashReplies.length > 0 && (
             <div className="absolute bottom-full left-3 right-3 mb-1 bg-popover border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
@@ -1439,7 +1436,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
               </Popover>
 
               {/* Text input */}
-              <div className="flex-1 flex items-end bg-muted/30 rounded-2xl border border-border/30 overflow-hidden focus-within:border-primary/30 focus-within:bg-background transition-all">
+              <div className="flex-1 flex items-end bg-muted/20 rounded-2xl border border-border/20 overflow-hidden focus-within:border-primary/30 focus-within:bg-background focus-within:shadow-sm transition-all">
                 <Textarea
                   ref={textareaRef}
                   value={text}
@@ -1488,7 +1485,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                 <button
                   onClick={handleSend}
                   disabled={isSending}
-                  className="shrink-0 h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all disabled:opacity-50 shadow-sm"
+                  className="shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-primary to-primary/85 text-primary-foreground flex items-center justify-center hover:from-primary/90 hover:to-primary/80 transition-all disabled:opacity-50 shadow-md shadow-primary/20"
                 >
                   {isSending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
