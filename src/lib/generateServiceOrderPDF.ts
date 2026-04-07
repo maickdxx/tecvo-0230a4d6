@@ -385,7 +385,7 @@ export async function generateServiceOrderPDF({
 
       details.forEach(section => {
         const sH = 4 + section.lines.length * 3.2 + 1;
-        if (sY + sH > usableHeight) { doc.addPage(); sY = margin; }
+        // No page break inside equipment block — ensureSpace was done for the whole block above
         doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
         doc.rect(margin, sY, contentWidth, sH, "S");
         doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(primary.r, primary.g, primary.b);
