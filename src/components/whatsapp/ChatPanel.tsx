@@ -988,7 +988,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
 
       {/* Status bar: attendant + channel status + AI indicator */}
       {!isSimplified && (
-        <div className="px-4 py-1.5 border-b border-border/20 bg-muted/5 flex items-center gap-3 overflow-x-auto shrink-0">
+        <div className="px-4 py-1.5 border-b border-border/15 bg-gradient-to-r from-muted/20 to-transparent flex items-center gap-3 overflow-x-auto shrink-0">
           {/* Attendant */}
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <UserCheck className="h-3 w-3" />
