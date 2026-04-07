@@ -33,7 +33,7 @@ export interface SendDocumentParams {
   /** Original file name (used for document type) */
   fileName?: string;
   /** Origin for audit trail */
-  sentVia: "laura_ai" | "manual_inbox" | "automation" | "bot_engine";
+  sentVia: "laura_ai" | "manual_inbox" | "manual_panel" | "automation" | "bot_engine";
 }
 
 export interface SendDocumentResult {
