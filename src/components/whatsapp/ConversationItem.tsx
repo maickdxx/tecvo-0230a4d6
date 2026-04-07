@@ -146,7 +146,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               <img
                 src={contact.profile_picture_url}
                 alt=""
-                className="h-11 w-11 rounded-full object-cover ring-2 ring-background shadow-sm"
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-background shadow-md"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                   (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
