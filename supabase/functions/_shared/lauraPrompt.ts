@@ -1133,6 +1133,7 @@ export async function executeAdminTool(
     const pdfNote = pdfStatus === "ready"
       ? "\n📄 PDF oficial gerado com sucesso."
       : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `OS #${osNum} criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• service_id: ${newService.id}${pdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newService.id}" diretamente.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
   }
 
