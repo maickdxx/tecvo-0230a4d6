@@ -399,8 +399,8 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
             className={cn(
               "rounded-2xl overflow-hidden transition-all duration-200",
               isMe
-                ? "bg-primary text-primary-foreground rounded-br-sm shadow-sm"
-                : "bg-card text-foreground rounded-bl-sm border border-border/50 shadow-sm",
+                ? "whatsapp-bubble-sent text-primary-foreground rounded-br-sm"
+                : "whatsapp-bubble-received text-foreground rounded-bl-sm",
               message.status === "failed" && "opacity-70",
               message.status === "pending" && "opacity-80"
             )}
