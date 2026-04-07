@@ -146,7 +146,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               <img
                 src={contact.profile_picture_url}
                 alt=""
-                className="h-10 w-10 rounded-full object-cover ring-2 ring-background"
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-background shadow-sm"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                   (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
@@ -155,7 +155,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
             ) : null}
             <div
               className={cn(
-                "h-10 w-10 rounded-full flex items-center justify-center text-white shadow-sm",
+                "h-11 w-11 rounded-full flex items-center justify-center text-white shadow-sm",
                 avatarBg,
                 contact.profile_picture_url && "hidden"
               )}
@@ -163,11 +163,11 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               {contact.is_group ? (
                 <Users className="h-4.5 w-4.5" />
               ) : (
-                <span className="text-sm font-bold">{initial}</span>
+                <span className="text-[13px] font-bold">{initial}</span>
               )}
             </div>
             {contact.is_unread && (
-              <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[hsl(222,69%,49%)] border-2 border-card shadow-sm" />
+              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary border-2 border-card" />
             )}
           </div>
 
