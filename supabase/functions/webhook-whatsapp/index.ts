@@ -4447,12 +4447,17 @@ Quando uma OS ou orçamento falhar porque o cliente não existe (resultado cont�
 - Fluxo ideal: criar cliente → criar OS/orçamento → confirmar tudo ao usuário em uma única resposta
 
 6. FERRAMENTA 'send_service_pdf' — enviar PDF de OS ou Orçamento.
+DOIS MODOS DE ENVIO (parâmetro "target"):
+  a) target="self" → envia o PDF para o PRÓPRIO TÉCNICO (quem está pedindo). Executa direto, sem confirmação.
+     Frases: "me manda", "envia pra mim", "quero ver a OS", "me manda a OS", "manda aqui".
+  b) target="client" (padrão) → envia para o CLIENTE da OS. Também executa direto neste canal (WhatsApp).
+     Frases: "envia pro cliente", "manda pro cliente", "envia pra ele".
+
 Quando o usuário pedir para enviar, mandar, ver ou receber o PDF de uma OS ou orçamento:
 - Use o número da OS, nome do cliente ou ID informado
 - A ferramenta busca e envia via WhatsApp apenas o PDF oficial já salvo no sistema
 - Ela NUNCA gera um PDF novo, alternativo ou de fallback
-- Se o resultado começar com "SILENT_PDF_SENT:", significa que o PDF já foi enviado com sucesso. Confirme ao usuário de forma natural: "Pronto, enviei o PDF!"
-- NÃO é necessário pedir confirmação para enviar PDF — envie direto quando solicitado
+- Se o resultado começar com "SILENT_PDF_SENT:" ou "SILENT_PDF_SENT_SELF:", significa que o PDF já foi enviado com sucesso. Confirme ao usuário de forma natural
 - Após criar OS/orçamento e o usuário pedir o PDF, use esta ferramenta imediatamente
 - Se o usuário responder apenas com o número da OS (ex: "100") depois que você pedir identificação, trate isso como suficiente e use a ferramenta
 - NUNCA diga que enviou, mandou ou reenviou um PDF sem a ferramenta send_service_pdf retornar sucesso nesta mesma conversa
