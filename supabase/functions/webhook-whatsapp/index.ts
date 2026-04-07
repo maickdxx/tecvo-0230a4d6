@@ -2407,23 +2407,33 @@ const ADMIN_TOOLS = [
     function: {
       name: "send_service_pdf",
       description:
-        "Envia via WhatsApp o PDF oficial de uma OS ou Orçamento. Use target='self' para enviar ao próprio técnico (sem confirmação). Use target='client' para enviar ao cliente (sem confirmação neste canal). Nunca gere PDF novo.",
+        "Envia o PDF oficial de uma OS ou Orçamento via WhatsApp. Use target='self' para enviar ao próprio usuário (sem confirmação). Use target='client' para enviar ao cliente (exige confirmed=true).",
       parameters: {
         type: "object",
         properties: {
+          service_id: {
+            type: "string",
+            description:
+              "UUID COMPLETO do serviço. Use SEMPRE que tiver o ID (ex: após create_service). Tem prioridade absoluta sobre service_identifier.",
+          },
           service_identifier: {
             type: "string",
             description:
-              "Identificador do serviço: número da OS (ex: '0042'), nome do cliente, ou parte do ID.",
+              "Fallback: número da OS (ex: '0042') ou nome do cliente. Só use quando NÃO tiver o service_id UUID.",
           },
           target: {
             type: "string",
             enum: ["self", "client"],
             description:
-              "Destino: 'self'=envia para o próprio técnico que está pedindo. 'client'=envia para o cliente da OS. Default: 'client'.",
+              "Destino do envio. 'self'=envia para o próprio usuário que pediu (sem confirmação). 'client'=envia para o cliente da OS (exige confirmação). Default: 'client'.",
+          },
+          confirmed: {
+            type: "boolean",
+            description:
+              "Só obrigatório quando target='client'. Indica que o usuário CONFIRMOU explicitamente o envio para o cliente.",
           },
         },
-        required: ["service_identifier"],
+        required: [],
         additionalProperties: false,
       },
     },
