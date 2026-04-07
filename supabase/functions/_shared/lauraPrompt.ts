@@ -1255,10 +1255,37 @@ export async function executeAdminTool(
     const { service_id, service_identifier, confirmed, target } = args;
     const sendTarget = target || "client";
 
-    // ── BLOQUEIO: confirmação obrigatória apenas para envio ao CLIENTE ──
-    if (sendTarget === "client" && confirmed !== true) {
-      const pendingId = service_id || service_identifier || "desconhecido";
-      return `PENDING_CONFIRMATION:${pendingId}|Pergunte ao usuário se deseja enviar a OS para o cliente antes de prosseguir.`;
+    // ── HARD GUARD: Central external send governance ──
+    const { checkExternalSendPermission } = await import("./externalSendGuard.ts");
+
+    if (sendTarget === "client") {
+      // Validate confirmation via central gate
+      const sendCheck = await checkExternalSendPermission(supabase, {
+        source: "ai_tool_client",
+        organizationId,
+        contactId: null,
+        isInternal: false,
+        confirmed: confirmed === true,
+        persistedServiceId: null, // Will be validated by confirmation interception
+        requestedServiceId: service_id || null,
+        messagePreview: `send_service_pdf target=client service=${service_id || service_identifier || "?"}`,
+        functionName: "send_service_pdf",
+      });
+
+      if (!sendCheck.allowed) {
+        const pendingId = service_id || service_identifier || "desconhecido";
+        console.warn(`[LAURA] External send blocked: ${sendCheck.reason} — ${sendCheck.detail}`);
+        return `PENDING_CONFIRMATION:${pendingId}|Pergunte ao usuário se deseja enviar a OS para o cliente antes de prosseguir.`;
+      }
+    } else if (sendTarget === "self") {
+      // Self sends are always allowed but logged
+      await checkExternalSendPermission(supabase, {
+        source: "ai_tool_self",
+        organizationId,
+        isInternal: true,
+        messagePreview: `send_service_pdf target=self service=${service_id || service_identifier || "?"}`,
+        functionName: "send_service_pdf",
+      });
     }
 
     if (!service_id && !service_identifier) {
