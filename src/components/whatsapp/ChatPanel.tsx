@@ -1257,7 +1257,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
 
       {/* Input */}
       {!previewFile && !recording && (
-        <div className="relative px-2 py-1.5 border-t border-border/60 bg-card shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.375rem)]">
+        <div className="relative px-3 py-2 border-t border-border/40 bg-card shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
           {/* Slash command menu */}
           {showSlashMenu && canSend && filteredSlashReplies.length > 0 && (
             <div className="absolute bottom-full left-3 right-3 mb-1 bg-popover border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
