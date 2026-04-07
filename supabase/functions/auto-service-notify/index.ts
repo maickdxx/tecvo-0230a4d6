@@ -194,38 +194,52 @@ async function findClientChannelInstance(supabase: any, organizationId: string, 
   return channel?.instance_name || null;
 }
 
-// ── Message Templates ──
+// ── Message Templates (Premium) ──
 
 function buildOwnerMessage(params: {
   event: "en_route" | "in_attendance" | "completed";
   isSelf: boolean;
-  techName: string;
+  techName: string | null; // null = executor unknown
   clientName: string;
-  serviceDesc: string;
+  serviceLabel: string;
   scheduledTime: string;
   value: number | null;
 }): string {
-  const { event, isSelf, techName, clientName, serviceDesc, scheduledTime, value } = params;
+  const { event, isSelf, techName, clientName, serviceLabel, scheduledTime, value } = params;
+
+  // Context suffix — compact, inline, max 1 element per message
+  const timeCtx = scheduledTime ? ` • ${scheduledTime}` : "";
+  const valueCtx = value ? ` • ${formatBRL(value)}` : "";
 
   if (event === "en_route") {
     if (isSelf) {
-      return `🚗 Deslocamento iniciado para ${clientName}.${scheduledTime ? `\n⏰ ${scheduledTime}` : ""}\n\n— Laura`;
+      return `🚗 A caminho de *${clientName}*${timeCtx}\n${serviceLabel}\n\n— Laura`;
     }
-    return `🚗 ${techName} a caminho de ${clientName}.${scheduledTime ? `\n⏰ ${scheduledTime}` : ""}\n\n— Laura`;
+    if (techName) {
+      return `🚗 *${techName}* a caminho de *${clientName}*${timeCtx}\n${serviceLabel}\n\n— Laura`;
+    }
+    // Fallback: no executor name
+    return `🚗 Deslocamento iniciado — *${clientName}*${timeCtx}\n${serviceLabel}\n\n— Laura`;
   }
 
   if (event === "in_attendance") {
     if (isSelf) {
-      return `🔧 Atendimento iniciado — ${clientName}.\nServiço: ${serviceDesc}\n\n— Laura`;
+      return `🔧 Atendimento iniciado — *${clientName}*\n${serviceLabel}\n\n— Laura`;
     }
-    return `🔧 ${techName} iniciou o atendimento de ${clientName}.\nServiço: ${serviceDesc}\n\n— Laura`;
+    if (techName) {
+      return `🔧 *${techName}* iniciou — *${clientName}*\n${serviceLabel}\n\n— Laura`;
+    }
+    return `🔧 Atendimento iniciado — *${clientName}*\n${serviceLabel}\n\n— Laura`;
   }
 
   // completed
   if (isSelf) {
-    return `✅ Serviço finalizado — ${clientName}.${value ? `\nValor: ${formatBRL(value)}` : ""}\n\n— Laura`;
+    return `✅ Finalizado — *${clientName}*${valueCtx}\n${serviceLabel}\n\n— Laura`;
   }
-  return `✅ ${techName} finalizou o serviço de ${clientName}.${value ? `\nValor: ${formatBRL(value)}` : ""}\n\n— Laura`;
+  if (techName) {
+    return `✅ *${techName}* finalizou — *${clientName}*${valueCtx}\n${serviceLabel}\n\n— Laura`;
+  }
+  return `✅ Serviço finalizado — *${clientName}*${valueCtx}\n${serviceLabel}\n\n— Laura`;
 }
 
 // ── Main Handler ──
