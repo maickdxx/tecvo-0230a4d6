@@ -1224,11 +1224,11 @@ export async function executeAdminTool(
   }
 
   if (fnName === "send_service_pdf") {
-    const { service_id, service_identifier, confirmed } = args;
+    const { service_id, service_identifier, confirmed, target } = args;
+    const sendTarget = target || "client";
 
-    // ── BLOQUEIO: confirmação obrigatória no backend ──
-    if (confirmed !== true) {
-      // Return a user-friendly message — NEVER expose technical instructions
+    // ── BLOQUEIO: confirmação obrigatória apenas para envio ao CLIENTE ──
+    if (sendTarget === "client" && confirmed !== true) {
       const pendingId = service_id || service_identifier || "desconhecido";
       return `PENDING_CONFIRMATION:${pendingId}|Pergunte ao usuário se deseja enviar a OS para o cliente antes de prosseguir.`;
     }
