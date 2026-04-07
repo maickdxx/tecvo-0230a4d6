@@ -996,6 +996,7 @@ export async function executeAdminTool(
     if (verifyErr) return verifyErr;
 
     const typeLabel = type === "income" ? "Receita" : "Despesa";
+    await logToolSuccess(supabase, organizationId, fnName, args);
     return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}. ✅ Confirmado no sistema.`;
   }
 
