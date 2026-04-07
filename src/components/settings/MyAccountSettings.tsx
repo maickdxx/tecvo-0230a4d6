@@ -19,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileSensitiveData } from "@/hooks/useProfileSensitiveData";
 import { useTheme } from "next-themes";
-import { useTheme } from "next-themes";
 import { useColorTheme, type ColorTheme } from "@/hooks/useColorTheme";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
