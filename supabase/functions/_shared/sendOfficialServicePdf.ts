@@ -215,11 +215,106 @@ export async function sendOfficialServicePdf(
   let targetContactId = target === "self" ? (contextContactId || null) : null;
 
   if (target === "self") {
+    const { data: connectedSelfChannels } = await supabase
+      .from("whatsapp_channels")
+      .select("id, created_at")
+      .eq("organization_id", organizationId)
+      .eq("channel_type", "CUSTOMER_INBOX")
+      .eq("is_connected", true)
+      .eq("channel_status", "connected")
+      .not("instance_name", "is", null)
+      .order("created_at", { ascending: true });
+
+    const connectedSelfChannelIds = (connectedSelfChannels || []).map((channel: any) => channel.id);
+
+    let selfPhone: string | null = null;
+    let selfName: string | null = null;
+
+    if (contextContactId) {
+      const { data: selfContextContact } = await supabase
+        .from("whatsapp_contacts")
+        .select("id, name, phone, normalized_phone, whatsapp_id, channel_id")
+        .eq("id", contextContactId)
+        .eq("organization_id", organizationId)
+        .maybeSingle();
+
+      if (selfContextContact) {
+        selfPhone = normalizePhone(
+          selfContextContact.normalized_phone ||
+          selfContextContact.phone ||
+          selfContextContact.whatsapp_id,
+        );
+        selfName = selfContextContact.name || null;
+
+        const currentChannelIsValid = !!(
+          selfContextContact.channel_id &&
+          connectedSelfChannelIds.includes(selfContextContact.channel_id)
+        );
+
+        if (currentChannelIsValid) {
+          targetChannelId = selfContextContact.channel_id;
+          targetContactId = selfContextContact.id;
+        }
+      }
+    }
+
+    if ((!targetChannelId || !targetContactId) && selfPhone && connectedSelfChannelIds.length > 0) {
+      const { data: existingSelfContact } = await supabase
+        .from("whatsapp_contacts")
+        .select("id, channel_id, last_message_at")
+        .eq("organization_id", organizationId)
+        .eq("normalized_phone", selfPhone)
+        .in("channel_id", connectedSelfChannelIds)
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingSelfContact) {
+        targetContactId = existingSelfContact.id;
+        targetChannelId = existingSelfContact.channel_id;
+      }
+    }
+
+    if ((!targetChannelId || !targetContactId) && selfPhone && connectedSelfChannelIds.length > 0) {
+      targetChannelId = connectedSelfChannelIds[0];
+
+      const { data: createdSelfContact, error: createSelfContactError } = await supabase
+        .from("whatsapp_contacts")
+        .insert({
+          organization_id: organizationId,
+          name: selfName || selfPhone,
+          phone: selfPhone,
+          normalized_phone: selfPhone,
+          whatsapp_id: `${selfPhone}@s.whatsapp.net`,
+          channel_id: targetChannelId,
+        })
+        .select("id")
+        .single();
+
+      if (createSelfContactError || !createdSelfContact) {
+        console.error(`${logPrefix} Failed to create self contact:`, createSelfContactError?.message);
+        return {
+          ok: false,
+          error: `Não consegui preparar seu contato do WhatsApp para enviar a ${docLabel} #${osNumber}.`,
+          errorCode: "self_contact_create_failed",
+          osNumber,
+          docType,
+          clientName,
+          clientPhone,
+          storagePath,
+        };
+      }
+
+      targetContactId = createdSelfContact.id;
+    }
+
     if (!targetChannelId || !targetContactId) {
       return {
         ok: false,
-        error: `PDF da ${docLabel} #${osNumber} está pronto, mas o envio para você exige uma conversa ativa no WhatsApp.`,
-        errorCode: "missing_whatsapp_context",
+        error: connectedSelfChannelIds.length === 0
+          ? `Não há um WhatsApp da sua empresa conectado para enviar a ${docLabel} #${osNumber} para você.`
+          : `PDF da ${docLabel} #${osNumber} está pronto, mas não consegui localizar o seu contato do WhatsApp na empresa.`,
+        errorCode: connectedSelfChannelIds.length === 0 ? "channel_unavailable" : "missing_whatsapp_context",
         osNumber,
         docType,
         clientName,
@@ -247,6 +342,7 @@ export async function sendOfficialServicePdf(
         .from("whatsapp_channels")
         .select("id")
         .eq("organization_id", organizationId)
+        .eq("channel_type", "CUSTOMER_INBOX")
         .eq("is_connected", true)
         .eq("channel_status", "connected")
         .order("created_at", { ascending: true })
