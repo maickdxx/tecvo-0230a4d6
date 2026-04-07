@@ -1541,6 +1541,8 @@ export async function executeAdminTool(
             client_name: clientName,
             target: sendTarget,
             recipient_phone: whatsappNumber,
+            storage_path: canonicalPath,
+            sent_via: "laura_ai",
             channel: ctx?.remoteJid ? "whatsapp_chat" : "app",
             instance,
             sent_at: new Date().toISOString(),
