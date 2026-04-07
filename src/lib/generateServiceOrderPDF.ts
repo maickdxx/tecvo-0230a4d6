@@ -150,8 +150,8 @@ export async function generateServiceOrderPDF({
   };
 
   // ── Helper: compact section title bar ──
-  const drawSectionTitle = (title: string) => {
-    ensureSpace(10);
+  const drawSectionTitle = (title: string, skipEnsureSpace = false) => {
+    if (!skipEnsureSpace) ensureSpace(10);
     yPos += 2;
     doc.setFillColor(primary.r, primary.g, primary.b);
     doc.rect(margin, yPos, 2.5, 7, "F");
