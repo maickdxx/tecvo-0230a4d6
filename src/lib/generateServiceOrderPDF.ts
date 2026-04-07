@@ -716,7 +716,8 @@ export async function generateServiceOrderPDF({
   // ── Output ──
   const fileName = `OS-${osNumber}-${(service.client?.name || "cliente").replace(/\s+/g, "_")}.pdf`;
 
-  // Always upload a copy to storage so Laura can send the exact same PDF
+  // Always upload the canonical PDF to storage — this is the SINGLE SOURCE OF TRUTH
+  // used by Laura, manual WhatsApp send, and panel download.
   try {
     const blob = doc.output("blob");
     const orgId = service.organization_id;
@@ -725,6 +726,12 @@ export async function generateServiceOrderPDF({
       await supabase.storage
         .from("whatsapp-media")
         .upload(storagePath, blob, { contentType: "application/pdf", upsert: true });
+      // Mark as ready so Laura knows this PDF is valid
+      await supabase
+        .from("services")
+        .update({ pdf_status: "ready", pdf_generated_at: new Date().toISOString() })
+        .eq("id", service.id);
+      console.log(`[PDF] Official PDF uploaded: ${storagePath} (${blob.size} bytes)`);
     }
   } catch (e) {
     console.warn("[PDF] Failed to upload PDF to storage:", e);
