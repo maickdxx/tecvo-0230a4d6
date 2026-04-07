@@ -215,6 +215,23 @@ export async function sendOfficialServicePdf(
   let targetContactId: string | null = null;
 
   if (target === "self") {
+    // If we already have context from the current conversation, use it directly
+    if (contextChannelId && contextContactId) {
+      const { data: selfContextContact } = await supabase
+        .from("whatsapp_contacts")
+        .select("id, channel_id")
+        .eq("id", contextContactId)
+        .eq("organization_id", organizationId)
+        .maybeSingle();
+
+      if (selfContextContact && selfContextContact.channel_id === contextChannelId) {
+        targetChannelId = contextChannelId;
+        targetContactId = contextContactId;
+      }
+    }
+
+    // Fallback: discover connected channels if context didn't resolve
+    if (!targetChannelId || !targetContactId) {
     const { data: connectedSelfChannels } = await supabase
       .from("whatsapp_channels")
       .select("id, created_at")
