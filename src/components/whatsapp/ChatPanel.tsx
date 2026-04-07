@@ -1212,12 +1212,12 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
             return (
               <div key={msg.id} data-message-id={msg.id}>
                 {showDateSeparator && (
-                  <div className="flex items-center gap-3 my-4">
-                    <div className="flex-1 h-px bg-border/40" />
-                    <span className="text-[11px] font-medium text-muted-foreground/70 bg-background px-2 py-0.5 rounded-full border border-border/30 shadow-sm">
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+                    <span className="text-[11px] font-semibold text-muted-foreground/60 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full border border-border/20 shadow-xs">
                       {msgDate}
                     </span>
-                    <div className="flex-1 h-px bg-border/40" />
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
                   </div>
                 )}
                 <MessageBubble

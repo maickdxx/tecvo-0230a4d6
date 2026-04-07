@@ -437,7 +437,7 @@ export function ConversationList({
       />
 
       {/* Divider */}
-      <div className="border-b border-border/30" />
+      <div className="border-b border-border/15" />
 
       {/* List */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
