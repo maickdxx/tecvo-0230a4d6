@@ -4692,7 +4692,10 @@ Você NÃO deve compartilhar:
 
                 // Format response
                 let directResponse: string;
-                if (directResult.startsWith("SILENT_PDF_SENT:")) {
+                if (directResult.startsWith("SILENT_PDF_SENT_SELF:")) {
+                  const sentLabel = directResult.replace("SILENT_PDF_SENT_SELF:", "").trim();
+                  directResponse = `Aqui está: ${sentLabel} ✅`;
+                } else if (directResult.startsWith("SILENT_PDF_SENT:")) {
                   const sentLabel = directResult.replace("SILENT_PDF_SENT:", "").replace(/\s+enviado com sucesso!?$/i, "").trim();
                   directResponse = `Pronto! Enviei o PDF da ${sentLabel} para o cliente. ✅`;
                 } else {
