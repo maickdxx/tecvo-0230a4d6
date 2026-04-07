@@ -1285,8 +1285,6 @@ export async function executeAdminTool(
     const sendTarget = target || "client";
 
     // ── Resolve the exact service FIRST (before confirmation gate) ──
-    // This ensures pending confirmation always stores the real UUID,
-    // eliminating ambiguous re-lookups on the next "sim".
     const normalizedIdentifier = typeof service_identifier === "string"
       ? service_identifier.trim()
       : "";
@@ -1326,8 +1324,6 @@ export async function executeAdminTool(
       }
     }
 
-    // If the user is acting on the current conversation context (especially target=self
-    // or confirmation follow-ups), prefer the exact pending_service_id instead of any lookup.
     if (!resolvedServiceId && conversationPendingServiceId && (!normalizedIdentifier || confirmed === true)) {
       resolvedServiceId = conversationPendingServiceId;
     }
@@ -1338,7 +1334,7 @@ export async function executeAdminTool(
 
     let serviceData: any = null;
 
-    // ── PRIORIDADE 1: UUID exato (contexto da OS recém-criada / confirmação persistida) ──
+    // ── PRIORIDADE 1: UUID exato ──
     if (resolvedServiceId) {
       const { data } = await supabase
         .from("services")
@@ -1350,12 +1346,11 @@ export async function executeAdminTool(
       if (data) serviceData = data;
     }
 
-    // ── PRIORIDADE 2: Busca por identifier explícito (fallback) ──
+    // ── PRIORIDADE 2: Busca por identifier explícito ──
     if (!serviceData && normalizedIdentifier) {
       const numericMatch = normalizedIdentifier.match(/\d+/);
       const numericId = numericMatch ? parseInt(numericMatch[0], 10) : NaN;
 
-      // Search by quote_number, accepting formats like "101", "0101", "OS 101", "#101"
       if (!isNaN(numericId)) {
         let numericQuery = supabase
           .from("services")
@@ -1375,7 +1370,6 @@ export async function executeAdminTool(
         if (data && data.length > 0) serviceData = data[0];
       }
 
-      // Search by cleaned client name only when the identifier really contains a name
       if (!serviceData && cleanedClientSearch.length >= 3) {
         let clientQuery = supabase
           .from("services")
@@ -1395,7 +1389,6 @@ export async function executeAdminTool(
         if (data && data.length > 0) serviceData = data[0];
       }
 
-      // Search by partial UUID only if the identifier actually looks like one
       if (!serviceData && /^[a-f0-9-]{6,}$/i.test(normalizedIdentifier)) {
         const { data } = await supabase
           .from("services")
@@ -1423,27 +1416,10 @@ export async function executeAdminTool(
     });
 
     const osNumber = String(serviceData.quote_number || 0).padStart(4, "0");
-    const docType = serviceData.document_type === "quote" ? "ORÇAMENTO" : "ORDEM DE SERVIÇO";
-    const clientName = serviceData.client?.name || "Cliente";
-    const clientPhone = serviceData.client?.phone || serviceData.client?.whatsapp;
     const docLabel = serviceData.document_type === "quote" ? "orçamento" : "OS";
+    const clientName = serviceData.client?.name || "Cliente";
 
-    // ── Validação: organização correta ──
-    if (serviceData.organization_id !== organizationId) {
-      return "Erro de segurança: essa OS não pertence à sua organização.";
-    }
-
-    // ── Validação: OS não deletada ──
-    if (serviceData.deleted_at) {
-      return `A ${docLabel} #${osNumber} foi excluída e não pode ser enviada.`;
-    }
-
-    // ── Validação: telefone do cliente (apenas para envio ao cliente) ──
-    if (sendTarget === "client" && !clientPhone) {
-      return `O cliente "${clientName}" não tem telefone cadastrado. Cadastre o telefone primeiro para enviar a ${docLabel}.`;
-    }
-
-    // ── HARD GUARD: external send governance now uses the RESOLVED service UUID ──
+    // ── HARD GUARD: external send governance ──
     const { checkExternalSendPermission } = await import("./externalSendGuard.ts");
 
     if (sendTarget === "client") {
@@ -1474,205 +1450,29 @@ export async function executeAdminTool(
       });
     }
 
-    // ── Validação: pdf_status = ready (com re-materialização automática única) ──
-    if (serviceData.pdf_status !== "ready") {
-      // Attempt one auto-rematerialization for pending/failed
-      if (serviceData.pdf_status === "pending" || serviceData.pdf_status === "failed" || !serviceData.pdf_status) {
-        console.log(`[LAURA] PDF not ready (${serviceData.pdf_status}), attempting auto-rematerialization for ${serviceData.id}`);
-        try {
-          const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-          const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-          const rematResp = await fetch(`${supabaseUrl}/functions/v1/materialize-service-pdf`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
-            body: JSON.stringify({ serviceId: serviceData.id, organizationId }),
-          });
-          if (rematResp.ok) {
-            const rematResult = await rematResp.json();
-            if (rematResult.status === "ready") {
-              console.log(`[LAURA] Auto-rematerialization succeeded for ${serviceData.id}`);
-              // Update local reference so the rest of the flow proceeds
-              serviceData.pdf_status = "ready";
-            } else {
-              return `A geração do PDF da ${docLabel} #${osNumber} falhou na tentativa automática. Tente gerar pelo painel.`;
-            }
-          } else {
-            const errText = await rematResp.text();
-            console.error("[LAURA] Auto-rematerialization failed:", rematResp.status, errText);
-            return `Não foi possível gerar o PDF da ${docLabel} #${osNumber} automaticamente. Tente gerar pelo painel.`;
-          }
-        } catch (rematErr: any) {
-          console.error("[LAURA] Auto-rematerialization error:", rematErr?.message);
-          return `Erro ao tentar gerar o PDF da ${docLabel} #${osNumber}. Tente gerar pelo painel.`;
-        }
-      } else if (serviceData.pdf_status === "generating") {
-        return `O PDF da ${docLabel} #${osNumber} está sendo gerado. Aguarde alguns segundos e tente novamente.`;
-      } else {
-        return `A ${docLabel} #${osNumber} não está pronta para envio. Status do PDF: ${serviceData.pdf_status || "desconhecido"}.`;
-      }
-    }
+    // ── UNIFIED PIPELINE: delegate to shared sendOfficialServicePdf ──
+    const { sendOfficialServicePdf } = await import("./sendOfficialServicePdf.ts");
 
-    // ── Validação: proteção contra envio duplicado (30s) — só para envio ao cliente ──
-    if (sendTarget === "client" && serviceData.last_pdf_sent_at) {
-      const lastSent = new Date(serviceData.last_pdf_sent_at).getTime();
-      const now = Date.now();
-      const diffSeconds = (now - lastSent) / 1000;
-      if (diffSeconds < 30) {
-        return `A ${docLabel} #${osNumber} já foi enviada há ${Math.round(diffSeconds)} segundos para ${clientName}. Aguarde antes de enviar novamente.`;
-      }
-    }
-
-    // ── Validação: PDF existe no storage (verificação real) ──
-    const storage = supabase.storage.from("whatsapp-media");
-    const canonicalPath = `os-pdfs/${organizationId}/${serviceData.id}.pdf`;
-    const { data: pdfFile, error: pdfError } = await storage.createSignedUrl(canonicalPath, 900);
-
-    if (!pdfFile?.signedUrl || pdfError) {
-      return `O PDF oficial da ${docLabel} #${osNumber} não foi encontrado no sistema. Gere o PDF pelo painel antes de enviar.`;
-    }
-
-    // ── Validação: tamanho mínimo do PDF (bloquear legados < 50KB) ──
-    try {
-      const headResp = await fetch(pdfFile.signedUrl, { method: "HEAD" });
-      const contentLength = parseInt(headResp.headers.get("content-length") || "0", 10);
-      if (contentLength > 0 && contentLength < 50_000) {
-        console.warn(`[LAURA] PDF too small (${contentLength} bytes), forcing rematerialization for ${serviceData.id}`);
-        try {
-          const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-          const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-          const rematResp = await fetch(`${supabaseUrl}/functions/v1/materialize-service-pdf`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
-            body: JSON.stringify({ serviceId: serviceData.id, organizationId, force: true }),
-          });
-          if (rematResp.ok) {
-            const rematResult = await rematResp.json();
-            if (rematResult.status === "ready") {
-              console.log(`[LAURA] Rematerialization succeeded for legacy PDF ${serviceData.id}`);
-              // Get fresh signed URL
-              const { data: freshPdf } = await storage.createSignedUrl(canonicalPath, 900);
-              if (freshPdf?.signedUrl) {
-                pdfFile.signedUrl = freshPdf.signedUrl;
-              }
-            }
-          }
-        } catch (rematErr: any) {
-          console.error("[LAURA] Legacy PDF rematerialization failed:", rematErr?.message);
-          return `O PDF da ${docLabel} #${osNumber} está desatualizado e a regeneração falhou. Gere novamente pelo painel.`;
-        }
-      }
-    } catch { /* HEAD check failed — proceed with existing URL */ }
-
-    // ── Resolve contact and channel for unified pipeline ──
-    const channelId = ctx?.channelId;
-    const contactId = ctx?.contactId;
-
-    if (!channelId || !contactId) {
-      // Fallback: WhatsApp context not available (e.g., app chat). Try to resolve.
-      console.warn(`[LAURA] Missing channelId/contactId in ctx. Cannot use unified pipeline.`);
-      return `PDF da ${docLabel} #${osNumber} está pronto. Envie pelo painel do WhatsApp (o envio automático requer contexto de conversa).`;
-    }
-
-    // ── For target=self: resolve the correct contactId for the sender ──
-    let targetContactId = contactId;
-    let targetChannelId = channelId;
-
-    if (sendTarget === "self") {
-      // The sender is already the current contact in WhatsApp context
-      // contactId from ctx IS the sender's contact
-      targetContactId = contactId;
-    } else {
-      // Sending to the client — need to resolve client's contact by phone + channel
-      const clientDigits = (clientPhone || "").replace(/\D/g, "");
-      const normalizedClientPhone = clientDigits.startsWith("55") ? clientDigits : `55${clientDigits}`;
-
-      // Find the client's whatsapp contact in the same channel
-      const { data: clientContact } = await supabase
-        .from("whatsapp_contacts")
-        .select("id, channel_id")
-        .eq("organization_id", organizationId)
-        .eq("channel_id", channelId)
-        .eq("normalized_phone", normalizedClientPhone)
-        .maybeSingle();
-
-      if (!clientContact) {
-        // Try without channel restriction but in same org
-        const { data: anyContact } = await supabase
-          .from("whatsapp_contacts")
-          .select("id, channel_id")
-          .eq("organization_id", organizationId)
-          .eq("normalized_phone", normalizedClientPhone)
-          .limit(1)
-          .maybeSingle();
-
-        if (anyContact) {
-          targetContactId = anyContact.id;
-          targetChannelId = anyContact.channel_id;
-        } else {
-          return `O cliente "${clientName}" não tem contato no WhatsApp. Envie pelo painel.`;
-        }
-      } else {
-        targetContactId = clientContact.id;
-      }
-    }
-
-    // ── UNIFIED PIPELINE: Use shared sendWhatsAppDocument ──
-    const { sendWhatsAppDocument } = await import("./sendWhatsAppDocument.ts");
-
-    const fileName = `${docType.replace(/ /g, "_")}_${osNumber}.pdf`;
-    const sendResult = await sendWhatsAppDocument({
+    const result = await sendOfficialServicePdf({
       supabase,
       organizationId,
-      channelId: targetChannelId,
-      contactId: targetContactId,
-      mediaUrl: pdfFile.signedUrl,
-      mediaType: "document",
-      caption: `📋 ${docType} #${osNumber} - ${clientName}`,
-      fileName,
+      serviceData,
+      target: sendTarget as "self" | "client",
       sentVia: "laura_ai",
+      channelSource: ctx?.remoteJid ? "whatsapp_chat" : "app",
+      contextChannelId: ctx?.channelId || null,
+      contextContactId: ctx?.contactId || null,
     });
 
-    if (!sendResult.ok) {
-      console.error(`[LAURA] Unified send failed: ${sendResult.errorCode} — ${sendResult.error}`);
-      return `PDF pronto, mas houve erro ao enviar: ${sendResult.error || "erro desconhecido"}. Tente pelo painel.`;
+    if (!result.ok) {
+      console.error(`[LAURA] sendOfficialServicePdf failed: ${result.errorCode} — ${result.error}`);
+      return result.error || `Não consegui enviar o PDF da ${docLabel} #${osNumber}.`;
     }
-
-    // ── Registrar envio: last_pdf_sent_at + audit log ──
-    if (sendTarget === "client") {
-      await supabase
-        .from("services")
-        .update({ last_pdf_sent_at: new Date().toISOString() })
-        .eq("id", serviceData.id)
-        .eq("organization_id", organizationId);
-    }
-
-    try {
-      await supabase.from("data_audit_log").insert({
-        organization_id: organizationId,
-        table_name: "services",
-        operation: sendTarget === "self" ? "PDF_SENT_SELF" : "PDF_SENT",
-        record_id: serviceData.id,
-        metadata: {
-          os_number: osNumber,
-          doc_type: docType,
-          client_name: clientName,
-          target: sendTarget,
-          storage_path: canonicalPath,
-          sent_via: "laura_ai",
-          pipeline: "unified_sendWhatsAppDocument",
-          channel_id: targetChannelId,
-          contact_id: targetContactId,
-          message_id: sendResult.messageId,
-          channel: ctx?.remoteJid ? "whatsapp_chat" : "app",
-          sent_at: new Date().toISOString(),
-        },
-      });
-    } catch { /* logging should never block */ }
 
     if (sendTarget === "self") {
-      return `SILENT_PDF_SENT_SELF:${docType} #${osNumber} - ${clientName} enviado para você!`;
+      return `SILENT_PDF_SENT_SELF:${result.docType} #${result.osNumber} - ${result.clientName} enviado para você!`;
     }
-    return `SILENT_PDF_SENT:${docType} #${osNumber} enviado com sucesso para ${clientName} (${clientPhone})!`;
+    return `SILENT_PDF_SENT:${result.docType} #${result.osNumber} enviado com sucesso para ${result.clientName} (${serviceData.client?.phone || serviceData.client?.whatsapp || ""})!`;
   }
 
     return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar OS, criar orçamento, criar conta financeira, cadastrar cliente e enviar PDF.`;
