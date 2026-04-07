@@ -66,7 +66,8 @@ const settingsGroups: SettingsGroup[] = [
       { id: "my-account", title: "Minha Conta", description: "Seu nome, telefone e WhatsApp pessoal", icon: UserCircle, enabled: true },
       { id: "security", title: "Segurança", description: "Senha, sessões e verificação", icon: Shield, enabled: true },
       { id: "appearance", title: "Aparência", description: "Tema e personalização", icon: Palette, enabled: true },
-      { id: "notifications", title: "Notificações", description: "Configure alertas e lembretes", icon: Bell, enabled: true },
+      { id: "laura", title: "Laura", description: "Preferências de notificações inteligentes", icon: Bot, enabled: true },
+      { id: "notifications", title: "Notificações Push", description: "Configure alertas do navegador", icon: Bell, enabled: true },
     ],
   },
 ];
