@@ -52,7 +52,6 @@ const colorThemes: { id: ColorTheme; name: string; hsl: string }[] = [
 export function MyAccountSettings({ onBack }: MyAccountSettingsProps) {
   const { profile, updateProfile, isUpdating } = useProfile();
   const { sensitiveData } = useProfileSensitiveData();
-  const { preferences, updatePreferences } = useNotifications();
   const { theme, setTheme } = useTheme();
   const { colorTheme, setColorTheme } = useColorTheme();
   const { role, isOwner, isAdmin, isSuperAdmin, isLoading: isLoadingRole } = useUserRole();
