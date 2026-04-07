@@ -110,6 +110,7 @@ export default function Configuracoes() {
     "financial-accounts": <FinancialAccountsSettings onBack={() => setCurrentView("main")} />,
     "operational-capacity": <OperationalCapacitySettings onBack={() => setCurrentView("main")} />,
     notifications: <NotificationSettings onBack={() => setCurrentView("main")} />,
+    laura: <LauraPreferencesSettings onBack={() => setCurrentView("main")} />,
     "time-clock": <TimeClockSettings onBack={() => setCurrentView("main")} />,
     "client-portal": <ClientPortalSettings onBack={() => setCurrentView("main")} />,
   };
