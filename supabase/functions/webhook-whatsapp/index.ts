@@ -4758,6 +4758,7 @@ Você NÃO deve compartilhar:
                   durationMs: Date.now() - Date.now(),
                   status: "success",
                 });
+                } // end else (guard allowed)
               }
             } catch (interceptErr) {
               console.warn("[WEBHOOK-WHATSAPP] Confirmation interception error:", interceptErr);
