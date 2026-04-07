@@ -1,37 +1,43 @@
 /**
- * ── SEND FLOW: ORG_AUTOMATION ──
- * Automated notifications triggered by service status changes.
- *
- * OWNER notification → uses TECVO_PLATFORM_INSTANCE ("tecvo").
- *   This is intentional: the owner receives updates from the platform, not from their own channel.
- *
- * CLIENT notification (portal link) → uses the client's org channel if found,
- *   falls back to TECVO_PLATFORM_INSTANCE if no channel exists.
- *   This is acceptable because portal link messages are one-shot notifications,
- *   NOT replies within a customer conversation thread.
- *   They do NOT create or participate in conversation history.
- *
- * ⚠️  This function must NEVER be used to send messages that appear as
- *     conversation replies in the WhatsApp inbox.
+ * ── AUTO-SERVICE-NOTIFY ──
+ * Automated operational notifications triggered by service status changes.
+ * 
+ * Fired by DB trigger on services table when:
+ *   - operational_status changes to 'en_route' or 'in_attendance'
+ *   - status changes to 'completed'
+ * 
+ * NOTIFICATIONS:
+ *   1. OWNER always receives notification (via Tecvo platform instance)
+ *   2. If owner IS the executor → self-notification with appropriate wording
+ *   3. If executor is a technician → owner receives "Técnico X fez Y"
+ *   4. Client portal link on completion (if enabled) → separate from owner notification
+ * 
+ * IDEMPOTENCY:
+ *   - Checks auto_message_log for duplicate (service_id + message_type + 5min window)
+ *   - Prevents re-sends on retry, reconnection, or reprocessing
  */
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { TECVO_PLATFORM_INSTANCE } from "../_shared/sendFlowTypes.ts";
-import { resolveOwnerPhone, logShieldBlocked } from "../_shared/resolveOwnerPhone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const LOG_PREFIX = "[AUTO-SERVICE-NOTIFY]";
+
 function formatBRL(value: number): string {
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-async function sendWhatsApp(phone: string, text: string, instanceName = TECVO_PLATFORM_INSTANCE) {
+async function sendWhatsApp(phone: string, text: string, instanceName = TECVO_PLATFORM_INSTANCE): Promise<boolean> {
   const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
   const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
-  if (!vpsUrl || !apiKey) return false;
+  if (!vpsUrl || !apiKey) {
+    console.warn(`${LOG_PREFIX} Missing VPS config, cannot send`);
+    return false;
+  }
 
   let cleanNumber = phone.replace(/\D/g, "");
   if (!cleanNumber.startsWith("55") && cleanNumber.length <= 11) {
@@ -46,18 +52,98 @@ async function sendWhatsApp(phone: string, text: string, instanceName = TECVO_PL
       body: JSON.stringify({ number: jid, text }),
     });
     if (!res.ok) {
-      console.error("[AUTO-SERVICE] Send failed:", res.status, await res.text());
+      console.error(`${LOG_PREFIX} Send failed: ${res.status} ${await res.text()}`);
       return false;
     }
     await res.text();
     return true;
   } catch (err) {
-    console.error("[AUTO-SERVICE] Send error:", err);
+    console.error(`${LOG_PREFIX} Send error:`, err);
     return false;
   }
 }
 
-// Find the WhatsApp channel instance the client is already talking on
+/**
+ * Resolve the owner's phone for operational notifications.
+ * Unlike resolveOwnerPhone, this does NOT require aiEnabled — 
+ * operational notifications are always sent to the owner.
+ */
+async function resolveOwnerForOperational(supabase: any, organizationId: string) {
+  const { data: roles } = await supabase
+    .from("user_roles")
+    .select("user_id, role")
+    .eq("organization_id", organizationId)
+    .eq("role", "owner");
+
+  if (!roles || roles.length === 0) {
+    return { userId: null, phone: null, fullName: null, reason: "no_owner_found" };
+  }
+
+  const ownerUserId = roles[0].user_id;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("phone, full_name")
+    .eq("user_id", ownerUserId)
+    .maybeSingle();
+
+  if (!profile?.phone) {
+    return { userId: ownerUserId, phone: null, fullName: profile?.full_name || null, reason: "no_phone" };
+  }
+
+  let phone = profile.phone.replace(/\D/g, "");
+  if (phone.length >= 10 && !phone.startsWith("55") && phone.length <= 11) {
+    phone = "55" + phone;
+  }
+
+  return { userId: ownerUserId, phone, fullName: profile.full_name || null, reason: null };
+}
+
+/**
+ * Check idempotency — prevent duplicate notifications for the same event
+ */
+async function isDuplicate(supabase: any, orgId: string, serviceId: string, messageType: string): Promise<boolean> {
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const { data } = await supabase
+    .from("auto_message_log")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("service_id", serviceId)
+    .eq("message_type", messageType)
+    .gte("sent_at", fiveMinAgo)
+    .limit(1);
+
+  return !!(data && data.length > 0);
+}
+
+/**
+ * Find the executor of the action by checking service_execution_logs
+ */
+async function findExecutor(supabase: any, serviceId: string, eventType: string) {
+  const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const { data } = await supabase
+    .from("service_execution_logs")
+    .select("user_id")
+    .eq("service_id", serviceId)
+    .eq("event_type", eventType)
+    .gte("recorded_at", twoMinAgo)
+    .order("recorded_at", { ascending: false })
+    .limit(1);
+
+  if (data && data.length > 0) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, user_id")
+      .eq("user_id", data[0].user_id)
+      .maybeSingle();
+    return { userId: data[0].user_id, fullName: profile?.full_name || null };
+  }
+  return null;
+}
+
+/**
+ * Find WhatsApp channel instance for client notifications
+ */
 async function findClientChannelInstance(supabase: any, organizationId: string, clientPhone: string): Promise<string | null> {
   const cleanPhone = clientPhone.replace(/\D/g, "");
   const phoneVariants = [cleanPhone];
@@ -65,7 +151,6 @@ async function findClientChannelInstance(supabase: any, organizationId: string, 
     phoneVariants.push("55" + cleanPhone);
   }
 
-  // Find whatsapp_contact matching this phone in the org
   const { data: contact } = await supabase
     .from("whatsapp_contacts")
     .select("id, channel_id")
@@ -78,7 +163,6 @@ async function findClientChannelInstance(supabase: any, organizationId: string, 
 
   if (!contact?.channel_id) return null;
 
-  // Get channel instance_name
   const { data: channel } = await supabase
     .from("whatsapp_channels")
     .select("instance_name, is_connected")
@@ -88,6 +172,42 @@ async function findClientChannelInstance(supabase: any, organizationId: string, 
 
   return channel?.instance_name || null;
 }
+
+// ── Message Templates ──
+
+function buildOwnerMessage(params: {
+  event: "en_route" | "in_attendance" | "completed";
+  isSelf: boolean;
+  techName: string;
+  clientName: string;
+  serviceDesc: string;
+  scheduledTime: string;
+  value: number | null;
+}): string {
+  const { event, isSelf, techName, clientName, serviceDesc, scheduledTime, value } = params;
+
+  if (event === "en_route") {
+    if (isSelf) {
+      return `🚗 Deslocamento iniciado para ${clientName}.${scheduledTime ? `\n⏰ ${scheduledTime}` : ""}\n\n— Laura`;
+    }
+    return `🚗 ${techName} a caminho de ${clientName}.${scheduledTime ? `\n⏰ ${scheduledTime}` : ""}\n\n— Laura`;
+  }
+
+  if (event === "in_attendance") {
+    if (isSelf) {
+      return `🔧 Atendimento iniciado — ${clientName}.\nServiço: ${serviceDesc}\n\n— Laura`;
+    }
+    return `🔧 ${techName} iniciou o atendimento de ${clientName}.\nServiço: ${serviceDesc}\n\n— Laura`;
+  }
+
+  // completed
+  if (isSelf) {
+    return `✅ Serviço finalizado — ${clientName}.${value ? `\nValor: ${formatBRL(value)}` : ""}\n\n— Laura`;
+  }
+  return `✅ ${techName} finalizou o serviço de ${clientName}.${value ? `\nValor: ${formatBRL(value)}` : ""}\n\n— Laura`;
+}
+
+// ── Main Handler ──
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -110,39 +230,63 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Only send for organizations with active paid plans
-    const { data: orgCheck } = await supabase
-      .from("organizations")
-      .select("plan, messaging_paused")
-      .eq("id", organization_id)
-      .single();
+    // Determine event type
+    let event: "en_route" | "in_attendance" | "completed" | null = null;
+    let eventLogType = "";
+    let messageType = "";
 
-    if (!orgCheck || orgCheck.plan === "free" || orgCheck.messaging_paused) {
-      console.log("[AUTO-SERVICE] Skipping org (free plan or paused):", organization_id);
-      return new Response(JSON.stringify({ ok: true, skipped: true }), {
+    if (new_operational_status === "en_route") {
+      event = "en_route";
+      eventLogType = "travel_start";
+      messageType = "service_en_route";
+    } else if (new_operational_status === "in_attendance") {
+      event = "in_attendance";
+      eventLogType = "attendance_start";
+      messageType = "service_in_attendance";
+    } else if (new_status === "completed" && old_status !== "completed") {
+      event = "completed";
+      eventLogType = "completion";
+      messageType = "service_completed";
+    }
+
+    if (!event) {
+      console.log(`${LOG_PREFIX} No relevant event for this status change`);
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: "no_relevant_event" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get org settings
+    // ── Idempotency check ──
+    const duplicate = await isDuplicate(supabase, organization_id, service_id, messageType);
+    if (duplicate) {
+      console.log(`${LOG_PREFIX} DUPLICATE blocked: ${messageType} for service ${service_id}`);
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: "duplicate" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Org check (paid plan, not paused) ──
     const { data: org } = await supabase
       .from("organizations")
-      .select("name, timezone, auto_notify_client_completion")
+      .select("name, plan, messaging_paused, timezone, auto_notify_client_completion")
       .eq("id", organization_id)
       .single();
 
-    // Resolve owner's personal phone via SHIELDED logic (only owner, no fallback)
-    const ownerPhone = await resolveOwnerPhone(supabase, organization_id);
-    if (!ownerPhone.phone) {
-      console.log(`[AUTO-SERVICE] No phone for org ${organization_id} owner (userId=${ownerPhone.userId} reason=${ownerPhone.blockedReason})`);
-      // Log shield block for owner notification
-      await logShieldBlocked(supabase, organization_id, ownerPhone, "auto_notify_owner", `Service event notification for: ${service_id}`);
-      // Note: we continue because we might still need to notify the client (operational)
+    if (!org || org.plan === "free" || org.messaging_paused) {
+      console.log(`${LOG_PREFIX} Skipping: org=${organization_id} plan=${org?.plan} paused=${org?.messaging_paused}`);
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: "org_ineligible" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log(`[AUTO-SERVICE] Shielded owner: org_id=${organization_id} user_id=${ownerPhone.userId} role=owner function=auto-service-notify`);
+    // ── Resolve owner ──
+    const owner = await resolveOwnerForOperational(supabase, organization_id);
+    if (!owner.phone) {
+      console.log(`${LOG_PREFIX} No owner phone: org=${organization_id} userId=${owner.userId} reason=${owner.reason}`);
+      // Log but don't fail - continue to client notification if applicable
+    }
 
-    // Get service details with client
+    // ── Get service details ──
     const { data: service } = await supabase
       .from("services")
       .select("id, description, service_type, value, scheduled_date, entry_date, status, operational_status, client_id, assigned_to")
@@ -150,13 +294,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (!service) {
+      console.log(`${LOG_PREFIX} Service not found: ${service_id}`);
       return new Response(JSON.stringify({ error: "Service not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get client info (name + phone/whatsapp)
+    // ── Get client name ──
     const { data: client } = await supabase
       .from("clients")
       .select("name, phone, whatsapp")
@@ -165,9 +310,9 @@ Deno.serve(async (req) => {
 
     const clientName = client?.name || "Cliente";
     const serviceDesc = service.description || service.service_type || "Serviço";
-    const orgTimezone = org?.timezone || "America/Sao_Paulo";
+    const orgTimezone = org.timezone || "America/Sao_Paulo";
 
-    // Use entry_date (actual service time) first, fallback to scheduled_date
+    // ── Scheduled time ──
     const timeSource = service.entry_date || service.scheduled_date;
     let scheduledTime = "";
     if (timeSource) {
@@ -177,80 +322,86 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get technician name
-    let techName = "";
-    if (service.assigned_to) {
+    // ── Find executor (who triggered the action) ──
+    const executor = await findExecutor(supabase, service_id, eventLogType);
+    
+    // Fallback: if no execution log, use assigned_to
+    let executorName = "";
+    let executorUserId: string | null = null;
+    if (executor) {
+      executorName = executor.fullName || "";
+      executorUserId = executor.userId;
+    } else if (service.assigned_to) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, user_id")
         .eq("user_id", service.assigned_to)
-        .single();
-      techName = profile?.full_name || "";
+        .maybeSingle();
+      executorName = profile?.full_name || "";
+      executorUserId = service.assigned_to;
     }
 
-    let message = "";
-    const isCompletion = new_status === "completed" && old_status !== "completed";
+    // ── Determine if owner is the executor (self-notification) ──
+    const isSelf = !!(owner.userId && executorUserId && owner.userId === executorUserId);
 
-    // Determine message based on status change
-    if (new_operational_status === "en_route") {
-      message = `🚗 Técnico${techName ? ` ${techName}` : ""} a caminho!\n\nCliente: ${clientName}\nServiço: ${serviceDesc}${scheduledTime ? `\nHorário: ${scheduledTime}` : ""}\n\n— Tecvo`;
-    } else if (new_operational_status === "in_attendance") {
-      message = `🔧 Atendimento iniciado!\n\nCliente: ${clientName}\nServiço: ${serviceDesc}${techName ? `\nTécnico: ${techName}` : ""}\n\n— Tecvo`;
-    } else if (isCompletion) {
-      message = `✅ Serviço finalizado!\n\nCliente: ${clientName}\nServiço: ${serviceDesc}${service.value ? `\nValor: ${formatBRL(service.value)}` : ""}${techName ? `\nTécnico: ${techName}` : ""}\n\n— Tecvo`;
-    }
+    console.log(`${LOG_PREFIX} Event: ${event} | Service: ${service_id} | Executor: ${executorUserId} (${executorName}) | Owner: ${owner.userId} (${owner.fullName}) | isSelf: ${isSelf}`);
 
-    if (!message) {
-      console.log("[AUTO-SERVICE] No message to send for this status change");
-      return new Response(JSON.stringify({ ok: true, skipped: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // ── Build and send owner message ──
+    let ownerSent = false;
+    if (owner.phone) {
+      const message = buildOwnerMessage({
+        event,
+        isSelf,
+        techName: executorName || "Técnico",
+        clientName,
+        serviceDesc,
+        scheduledTime,
+        value: service.value,
       });
-    }
 
-    // Send guard check for owner notification
-    const ownerGuard = await checkSendLimit(supabase, organization_id, null, "auto_notify");
-    let ok = false;
-    if (!ownerGuard.allowed) {
-      console.log(`[AUTO-SERVICE] Owner notification blocked by send guard: ${ownerGuard.reason}`);
-    } else {
-      // Send notification to org owner via Tecvo instance using their personal phone
-      ok = await sendWhatsApp(ownerPhone.phone, message, TECVO_PLATFORM_INSTANCE);
-    }
+      // Send guard
+      const guard = await checkSendLimit(supabase, organization_id, null, "auto_notify");
+      if (!guard.allowed) {
+        console.log(`${LOG_PREFIX} Owner notification blocked by send guard: ${guard.reason}`);
+      } else {
+        ownerSent = await sendWhatsApp(owner.phone, message, TECVO_PLATFORM_INSTANCE);
+      }
 
-    // Resolve the client's channel instance for client-facing messages
-    const clientPhone = client ? (client.whatsapp || client.phone) : null;
-    let clientInstanceName: string | null = null;
-    if (clientPhone) {
-      clientInstanceName = await findClientChannelInstance(supabase, organization_id, clientPhone);
-      console.log(`[AUTO-SERVICE] Client channel instance: ${clientInstanceName || "not found, will use tecvo"}`);
-    }
-    if (ok) {
+      // Log regardless of send success
       await supabase.from("auto_message_log").insert({
         organization_id,
-        message_type: "service_event",
+        service_id,
+        message_type: messageType,
         content: message,
+        send_status: ownerSent ? "sent" : "failed",
+      });
+
+      console.log(`${LOG_PREFIX} Owner notification: ${ownerSent ? "SENT" : "FAILED"} | phone: ${owner.phone.slice(0, 6)}*** | msg_type: ${messageType}`);
+    } else {
+      // Log blocked notification
+      await supabase.from("auto_message_log").insert({
+        organization_id,
+        service_id,
+        message_type: messageType,
+        content: `[BLOCKED] No owner phone for event ${event}`,
+        send_status: "blocked",
       });
     }
 
-    // On completion: also send portal link to the CLIENT (if enabled)
+    // ── Client portal link on completion (if enabled) ──
     let clientNotified = false;
-    const autoNotifyEnabled = org?.auto_notify_client_completion !== false;
-    if (isCompletion && client && autoNotifyEnabled) {
+    const autoNotifyClientEnabled = org.auto_notify_client_completion !== false;
+    if (event === "completed" && client && autoNotifyClientEnabled) {
       const clientPhone = client.whatsapp || client.phone;
       if (clientPhone) {
         const normalizedPhone = clientPhone.replace(/\D/g, "");
         if (normalizedPhone.length >= 10) {
-          // Check if we already sent a portal link for this service (prevent duplicates)
-          const { data: existingLog } = await supabase
-            .from("auto_message_log")
-            .select("id")
-            .eq("organization_id", organization_id)
-            .eq("message_type", "client_portal_link")
-            .ilike("content", `%${service_id}%`)
-            .limit(1);
-
-          if (!existingLog || existingLog.length === 0) {
-            // Create a portal session with a 24h token for direct access
+          // Check duplicate for client portal link
+          const clientDuplicate = await isDuplicate(supabase, organization_id, service_id, "client_portal_link");
+          if (clientDuplicate) {
+            console.log(`${LOG_PREFIX} Client portal link already sent for service: ${service_id}`);
+          } else {
+            // Create portal session
             const { data: portalSession } = await supabase
               .from("client_portal_sessions")
               .insert({
@@ -276,14 +427,13 @@ Deno.serve(async (req) => {
                 : `https://tecvo.com.br/portal/login?token=${portalSession.session_token}`;
               const orgNameDisplay = org.name || "nossa empresa";
 
-              const clientMessage = `Seu serviço foi concluído com sucesso! ✅\n\nVocê pode ver todos os detalhes, fotos e informações aqui:\n${portalUrl}\n\nSe precisar de algo, estamos à disposição.\n\n— ${orgNameDisplay}`;
+              const clientMessage = `Seu serviço foi concluído! ✅\n\nVeja os detalhes aqui:\n${portalUrl}\n\n— ${orgNameDisplay}`;
 
-              // Send guard check for client notification
+              // Send guard
               const clientGuard = await checkSendLimit(supabase, organization_id, null, "auto_notify");
               if (!clientGuard.allowed) {
-                console.log(`[AUTO-SERVICE] Client notification blocked by send guard: ${clientGuard.reason}`);
+                console.log(`${LOG_PREFIX} Client notification blocked by send guard: ${clientGuard.reason}`);
               } else {
-                // ── EXTERNAL SEND GUARD: Log client-facing auto notification ──
                 const { checkExternalSendPermission } = await import("../_shared/externalSendGuard.ts");
                 const extGuard = await checkExternalSendPermission(supabase, {
                   source: "auto_notify",
@@ -296,34 +446,33 @@ Deno.serve(async (req) => {
                 });
 
                 if (!extGuard.allowed) {
-                  console.log(`[AUTO-SERVICE] Client notification blocked by external guard: ${extGuard.reason}`);
+                  console.log(`${LOG_PREFIX} Client blocked by external guard: ${extGuard.reason}`);
                 } else {
-                const instanceToUse = clientInstanceName || TECVO_PLATFORM_INSTANCE;
-                const clientOk = await sendWhatsApp(normalizedPhone, clientMessage, instanceToUse);
-                if (clientOk) {
-                  clientNotified = true;
-                  await supabase.from("auto_message_log").insert({
-                    organization_id,
-                    message_type: "client_portal_link",
-                    content: `[service:${service_id}] Portal link sent to client ${clientName}`,
-                  });
+                  const clientInstance = await findClientChannelInstance(supabase, organization_id, clientPhone) || TECVO_PLATFORM_INSTANCE;
+                  clientNotified = await sendWhatsApp(normalizedPhone, clientMessage, clientInstance);
                 }
-                } // end extGuard allowed
               }
+
+              await supabase.from("auto_message_log").insert({
+                organization_id,
+                service_id,
+                message_type: "client_portal_link",
+                content: `Portal link → ${clientName}`,
+                send_status: clientNotified ? "sent" : "failed",
+              });
             }
-          } else {
-            console.log("[AUTO-SERVICE] Portal link already sent for service:", service_id);
           }
         }
       }
     }
 
-    console.log(`[AUTO-SERVICE] Owner: ${ok ? "sent" : "failed"}, Client: ${clientNotified ? "sent" : "skipped"} for service ${service_id}`);
-    return new Response(JSON.stringify({ ok, sent: ok, clientNotified }), {
+    console.log(`${LOG_PREFIX} DONE | event=${event} | owner=${ownerSent ? "sent" : "no"} | client=${clientNotified ? "sent" : "no"} | service=${service_id}`);
+
+    return new Response(JSON.stringify({ ok: true, ownerSent, clientNotified, event }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[AUTO-SERVICE] Error:", err);
+    console.error(`${LOG_PREFIX} ERROR:`, err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
