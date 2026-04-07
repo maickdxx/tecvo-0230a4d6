@@ -4861,7 +4861,7 @@ Você NÃO deve compartilhar:
 
               if (tc.function?.name === "send_service_pdf") {
                 pdfToolResult = toolResult;
-                if (toolResult.startsWith("SILENT_PDF_SENT:")) {
+                if (toolResult.startsWith("SILENT_PDF_SENT:") || toolResult.startsWith("SILENT_PDF_SENT_SELF:")) {
                   pdfToolSent = true;
                   // Clear pending state after successful send
                   try {
