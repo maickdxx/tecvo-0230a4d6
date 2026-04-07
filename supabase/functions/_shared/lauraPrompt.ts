@@ -1451,6 +1451,8 @@ export async function executeAdminTool(
       return result.error || `Não consegui enviar o PDF da ${docLabel} #${osNumber}.`;
     }
 
+    await logToolSuccess(supabase, organizationId, fnName, args);
+
     if (sendTarget === "self") {
       return `SILENT_PDF_SENT_SELF:${result.docType} #${result.osNumber} - ${result.clientName} enviado para você!`;
     }
