@@ -40,7 +40,7 @@ export function SecretariaStrategicAlerts() {
   if (alerts.length === 0) {
     return (
       <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-4">
-        <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
+        <CheckCircle className="h-5 w-5 text-primary shrink-0" />
         <p className="text-sm text-muted-foreground">
           Sem alertas estratégicos no momento.
         </p>
