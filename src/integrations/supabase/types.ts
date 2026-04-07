@@ -2389,6 +2389,7 @@ export type Database = {
           guided_onboarding_dismissed: boolean
           id: string
           is_demo_mode: boolean
+          is_system: boolean
           logo_url: string | null
           messaging_paused: boolean
           messaging_paused_at: string | null
@@ -2434,6 +2435,7 @@ export type Database = {
           guided_onboarding_dismissed?: boolean
           id?: string
           is_demo_mode?: boolean
+          is_system?: boolean
           logo_url?: string | null
           messaging_paused?: boolean
           messaging_paused_at?: string | null
@@ -2479,6 +2481,7 @@ export type Database = {
           guided_onboarding_dismissed?: boolean
           id?: string
           is_demo_mode?: boolean
+          is_system?: boolean
           logo_url?: string | null
           messaging_paused?: boolean
           messaging_paused_at?: string | null
