@@ -3911,7 +3911,7 @@ Você NÃO deve compartilhar:
                   supabase,
                   targetOrganizationId,
                   directToolCall,
-                  { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id },
+                  { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
                 );
 
                 // Clear pending state
