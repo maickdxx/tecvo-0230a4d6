@@ -155,7 +155,7 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
             ) : null}
             <div
               className={cn(
-                "h-11 w-11 rounded-full flex items-center justify-center text-white shadow-sm",
+                "h-11 w-11 rounded-full flex items-center justify-center text-white shadow-md ring-2 ring-background",
                 avatarBg,
                 contact.profile_picture_url && "hidden"
               )}
