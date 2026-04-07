@@ -773,7 +773,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
       onDrop={handleDrop}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 border-b border-border/40 bg-card/95 backdrop-blur-sm shrink-0 sticky top-0 z-20 shadow-[0_1px_3px_0_hsl(var(--foreground)/0.04)]">
+      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 whatsapp-topbar shrink-0 sticky top-0 z-20">
         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={onBack} title="Fechar conversa">
           <ArrowLeft className="h-4 w-4 md:hidden" />
           <X className="h-4 w-4 hidden md:block" />
