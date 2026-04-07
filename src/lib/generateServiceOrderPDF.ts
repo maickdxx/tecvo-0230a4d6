@@ -150,8 +150,8 @@ export async function generateServiceOrderPDF({
   };
 
   // ── Helper: compact section title bar ──
-  const drawSectionTitle = (title: string) => {
-    ensureSpace(10);
+  const drawSectionTitle = (title: string, skipEnsureSpace = false) => {
+    if (!skipEnsureSpace) ensureSpace(10);
     yPos += 2;
     doc.setFillColor(primary.r, primary.g, primary.b);
     doc.rect(margin, yPos, 2.5, 7, "F");
@@ -385,7 +385,7 @@ export async function generateServiceOrderPDF({
 
       details.forEach(section => {
         const sH = 4 + section.lines.length * 3.2 + 1;
-        if (sY + sH > usableHeight) { doc.addPage(); sY = margin; }
+        // No page break inside equipment block — ensureSpace was done for the whole block above
         doc.setDrawColor(borderLight.r, borderLight.g, borderLight.b);
         doc.rect(margin, sY, contentWidth, sH, "S");
         doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(primary.r, primary.g, primary.b);
@@ -585,7 +585,7 @@ export async function generateServiceOrderPDF({
 
   // ── Payment data ──
   if (hasPayment) {
-    drawSectionTitle("DADOS DO PAGAMENTO");
+    drawSectionTitle("DADOS DO PAGAMENTO", true);
     const payH = orderData.paymentNotes ? 16 : 10;
     doc.setFillColor(primaryLight.r, primaryLight.g, primaryLight.b);
     doc.setDrawColor(primary.r, primary.g, primary.b);
@@ -607,7 +607,7 @@ export async function generateServiceOrderPDF({
     doc.setFontSize(7.5);
     const noteLines = doc.splitTextToSize(notes, contentWidth - 10);
     const noteH = Math.max(noteLines.length * 3.5 + 6, 12);
-    drawSectionTitle("OBSERVAÇÕES");
+    drawSectionTitle("OBSERVAÇÕES", true);
     doc.setFillColor(255, 252, 240);
     doc.setDrawColor(230, 200, 100);
     doc.setLineWidth(0.3);
