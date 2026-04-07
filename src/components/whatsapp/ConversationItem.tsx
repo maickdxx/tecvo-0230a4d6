@@ -119,14 +119,14 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
         <button
           onClick={selectionMode ? (onToggleCheck || onClick) : onClick}
           className={cn(
-            "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-200 border-l-2",
+            "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-200 border-l-[3px]",
             selectionMode && isChecked
-              ? "bg-primary/[0.06] border-l-primary"
+              ? "whatsapp-conversation-active border-l-primary"
               : isSelected
-                ? "bg-primary/[0.07] dark:bg-primary/[0.12] border-l-primary"
+                ? "whatsapp-conversation-active border-l-primary"
                 : contact.is_unread
-                  ? "bg-primary/[0.02] hover:bg-muted/60 border-l-transparent"
-                  : "hover:bg-muted/40 border-l-transparent"
+                  ? "whatsapp-conversation-unread hover:bg-muted/40 border-l-transparent"
+                  : "hover:bg-muted/30 border-l-transparent"
           )}
         >
           {/* Selection checkbox */}
