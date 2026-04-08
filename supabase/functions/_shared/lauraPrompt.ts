@@ -1775,7 +1775,7 @@ export async function executeAdminTool(
     let query = supabase
       .from("transactions")
       .select(`
-        id, type, amount, description, date, category, origin,
+        id, type, amount, description, date, category, transaction_origin,
         supplier:suppliers(name),
         client:clients(name),
         service:services(id, service_type, quote_number)
@@ -1812,7 +1812,7 @@ export async function executeAdminTool(
       const typeLabel = t.type === "income" ? "📥 Receita" : "📤 Despesa";
       const clientName = t.client?.name ? ` — ${t.client.name}` : "";
       const serviceName = t.service?.quote_number ? ` — OS ${t.service.quote_number}` : "";
-      const origin = t.origin ? ` (${t.origin})` : "";
+      const origin = t.transaction_origin ? ` (${t.transaction_origin})` : "";
       return `${i + 1}. ${typeLabel}: R$ ${Number(t.amount).toFixed(2)}${clientName}${serviceName}\n   ${t.description || "Sem descrição"} • ${t.date}${origin}`;
     });
 
