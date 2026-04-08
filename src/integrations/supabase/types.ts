@@ -7620,37 +7620,21 @@ export type Database = {
         Args: { _action_slug: string; _org_id: string; _user_id?: string }
         Returns: boolean
       }
-      consume_ai_credits_with_log:
-        | {
-            Args: {
-              _action_slug: string
-              _completion_tokens?: number
-              _duration_ms?: number
-              _model?: string
-              _org_id: string
-              _prompt_tokens?: number
-              _request_id: string
-              _status?: string
-              _total_tokens?: number
-              _user_id?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _action_slug?: string
-              _completion_tokens?: number
-              _duration_ms?: number
-              _model?: string
-              _org_id?: string
-              _prompt_tokens?: number
-              _request_id?: string
-              _status?: string
-              _total_tokens?: number
-              _user_id?: string
-            }
-            Returns: Json
-          }
+      consume_ai_credits_with_log: {
+        Args: {
+          _action_slug: string
+          _completion_tokens?: number
+          _duration_ms?: number
+          _model?: string
+          _org_id: string
+          _prompt_tokens?: number
+          _request_id: string
+          _status?: string
+          _total_tokens?: number
+          _user_id?: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
