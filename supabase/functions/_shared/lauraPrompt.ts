@@ -224,6 +224,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
     financialAccounts,
     defaultAiAccountId,
     defaultAccount,
+    contactDecisions,
     // Data completeness metadata
     _meta: {
       servicePeriodDays: 180,
