@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, AlertTriangle, Loader2, Zap, Check } from "lucide-react";
+import { Sparkles, Loader2, Zap, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,94 +7,97 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAICredits, CREDIT_PACKAGES } from "@/hooks/useAICredits";
+import { Progress } from "@/components/ui/progress";
 
 function StatusDot({ isEmpty, isLow }: { isEmpty: boolean; isLow: boolean }) {
-  if (isEmpty) return <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />;
+  if (isEmpty) return <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />;
   if (isLow) return <span className="h-2 w-2 rounded-full bg-amber-500" />;
   return <span className="h-2 w-2 rounded-full bg-emerald-500" />;
 }
 
-function StatusLabel({ isEmpty, isLow }: { isEmpty: boolean; isLow: boolean }) {
-  if (isEmpty) return <span className="text-destructive">Pausada</span>;
-  if (isLow) return <span className="text-amber-600">Atenção</span>;
-  return <span className="text-emerald-600">Ativa</span>;
-}
-
 export function AICreditsDisplay() {
-  const { balance, isLow, isEmpty, isLoading, purchaseCredits, purchasing } = useAICredits();
-  const [showPurchase, setShowPurchase] = useState(false);
+  const {
+    isLow, isEmpty, isLoading, purchaseCredits, purchasing,
+    franchiseRemaining, franchiseTotal, creditsBalance, hasFranchise,
+  } = useAICredits();
+  const [showDialog, setShowDialog] = useState(false);
 
   if (isLoading) return null;
+
+  // For users with franchise: show simple active status, no numbers
+  const statusLabel = isEmpty ? "Pausada" : isLow ? "Atenção" : "Ativa";
+  const statusColor = isEmpty ? "text-amber-600" : isLow ? "text-amber-600" : "text-emerald-600";
+
+  const franchisePercent = franchiseTotal > 0
+    ? Math.round((franchiseRemaining / franchiseTotal) * 100)
+    : 0;
 
   return (
     <>
       <button
-        onClick={() => setShowPurchase(true)}
+        onClick={() => setShowDialog(true)}
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border/60 bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
       >
         <StatusDot isEmpty={isEmpty} isLow={isLow} />
         <span className="text-xs font-medium text-foreground">IA</span>
-        <StatusLabel isEmpty={isEmpty} isLow={isLow} />
+        <span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
       </button>
 
-      <Dialog open={showPurchase} onOpenChange={setShowPurchase}>
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Recursos de IA
+              Laura — Inteligência Artificial
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Status */}
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <StatusDot isEmpty={isEmpty} isLow={isLow} />
+            {/* Franchise status */}
+            {hasFranchise && (
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">Incluído no seu plano</p>
+                  <span className="text-xs text-muted-foreground">
+                    {franchisePercent}% disponível
+                  </span>
+                </div>
+                <Progress value={franchisePercent} className="h-2" />
                 <p className="text-xs text-muted-foreground">
-                  {isEmpty ? "Processamento pausado" : isLow ? "Capacidade reduzindo" : "Operando normalmente"}
-                </p>
-              </div>
-              <p className={`text-3xl font-bold ${isEmpty ? "text-destructive" : isLow ? "text-amber-600" : "text-foreground"}`}>
-                {balance.toLocaleString("pt-BR")}
-              </p>
-              <p className="text-xs text-muted-foreground">capacidade disponível</p>
-            </div>
-
-            {isEmpty && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                <p className="text-xs text-destructive">
-                  A Laura está temporariamente pausada. Amplie a capacidade para continuar usando todos os recursos inteligentes.
+                  A IA está funcionando normalmente dentro do seu plano.
                 </p>
               </div>
             )}
 
-            {isLow && !isEmpty && (
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+            {/* Extra credits (only show if they have some or no franchise) */}
+            {(creditsBalance > 0 || !hasFranchise) && (
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">
+                  {hasFranchise ? "Capacidade extra adquirida" : "Capacidade disponível"}
+                </p>
+                <p className="text-2xl font-bold text-foreground">
+                  {creditsBalance.toLocaleString("pt-BR")}
+                </p>
+                <p className="text-xs text-muted-foreground">interações extras</p>
+              </div>
+            )}
+
+            {/* Soft message when low */}
+            {isLow && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
                 <p className="text-xs text-amber-700">
-                  A capacidade está reduzindo. Amplie para manter tudo funcionando sem interrupção.
+                  {hasFranchise
+                    ? "A capacidade do mês está chegando ao fim. Adicione interações extras para garantir continuidade."
+                    : "A capacidade está reduzindo. Amplie para manter tudo funcionando."}
                 </p>
               </div>
             )}
-
-            {/* Usage reference */}
-            <div className="rounded-lg border border-border/40 p-3 space-y-1.5">
-              <p className="text-xs font-medium text-foreground">Consumo por recurso</p>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Resposta inteligente</span>
-                <span className="font-medium text-foreground">10 unidades</span>
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Análise completa / Criar OS</span>
-                <span className="font-medium text-foreground">30 unidades</span>
-              </div>
-            </div>
 
             {/* Packages */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-foreground">Ampliar capacidade</p>
+              <p className="text-xs font-medium text-foreground">
+                {hasFranchise ? "Adicionar interações extras" : "Ampliar capacidade"}
+              </p>
               {CREDIT_PACKAGES.map((pack, idx) => (
                 <button
                   key={pack.id}
