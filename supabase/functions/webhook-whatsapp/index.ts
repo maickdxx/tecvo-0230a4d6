@@ -3718,7 +3718,17 @@ Deno.serve(async (req) => {
                 if (isIncomingAudio && safeResponse.length <= 2000) {
                   let audioSent = false;
                   try {
-                    const audioBase64 = await generateTTSAudio(safeResponse);
+                    const ttsResult = await generateTTSAudio(safeResponse);
+                    // ── GOVERNANCE: Log TTS usage (currently subsidized, 0 credits) ──
+                    if (ttsResult.provider) {
+                      await logAIUsage(supabase, {
+                        organizationId: targetOrganizationId, userId: null,
+                        actionSlug: "tts_generation", model: ttsResult.provider,
+                        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                        durationMs: ttsResult.durationMs, status: ttsResult.audio ? "success" : "error",
+                      });
+                    }
+                    const audioBase64 = ttsResult.audio;
                     if (audioBase64) {
                       await supabase.from("whatsapp_messages").insert({
                         organization_id: targetOrganizationId,
