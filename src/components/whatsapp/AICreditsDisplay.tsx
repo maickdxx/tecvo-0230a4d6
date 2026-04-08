@@ -81,14 +81,14 @@ export function AICreditsDisplay() {
 
             {/* Usage reference */}
             <div className="rounded-lg border border-border/40 p-3 space-y-1.5">
-              <p className="text-xs font-medium text-foreground">Uso por recurso</p>
+              <p className="text-xs font-medium text-foreground">Consumo por recurso</p>
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Resposta inteligente</span>
-                <span className="font-medium text-foreground">1 interação</span>
+                <span className="font-medium text-foreground">10 unidades</span>
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Análise completa / Criar OS</span>
-                <span className="font-medium text-foreground">3 interações</span>
+                <span className="font-medium text-foreground">30 unidades</span>
               </div>
             </div>
 
