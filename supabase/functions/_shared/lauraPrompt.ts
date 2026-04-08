@@ -1831,13 +1831,15 @@ export async function executeAdminTool(
 
     result += `\n\nDeseja que eu:\n1️⃣ Aprove todas\n2️⃣ Mantenha pendente`;
 
-    // Save pending_choices for numeric interception
-    if (ctx?.contactId) {
+    // Save pending_choices for numeric interception (WhatsApp via contactId, App via conversationId)
+    const choiceId2 = ctx?.contactId || ctx?.conversationId;
+    if (choiceId2) {
       try {
-        await supabase.from("pending_choices").update({ status: "expired" }).eq("organization_id", organizationId).eq("contact_id", ctx.contactId).eq("status", "pending");
+        const filterCol2 = ctx?.contactId ? "contact_id" : "conversation_id";
+        await supabase.from("pending_choices").update({ status: "expired" }).eq("organization_id", organizationId).eq(filterCol2, choiceId2).eq("status", "pending");
         await supabase.from("pending_choices").insert({
           organization_id: organizationId,
-          contact_id: ctx.contactId,
+          ...(ctx?.contactId ? { contact_id: ctx.contactId } : { conversation_id: ctx?.conversationId }),
           options: [
             { key: "1", action: "approve_pending_transactions", args: { scope: "all_pending", confirmed: false } },
             { key: "2", action: "keep_pending", response: "Ok, as pendências serão mantidas. Quando quiser revisar, é só me chamar! 👍" },
