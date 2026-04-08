@@ -7860,7 +7860,10 @@ export type Database = {
         Returns: undefined
       }
       is_employee: { Args: { _user_id: string }; Returns: boolean }
-      is_org_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_org_admin_or_owner: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_root_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_same_organization: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
