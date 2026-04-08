@@ -299,7 +299,7 @@ export function useWhatsAppConversations() {
       if (missingIds.length > 0) {
         const { data: msgContacts } = await supabase
           .from("whatsapp_contacts")
-          .select("*, linked_client:linked_client_id(name), channel:channel_id(id, name, phone_number, is_connected, channel_status)")
+          .select("*, linked_client:linked_client_id(name), channel:channel_id(id, name, phone_number, is_connected, channel_status, channel_type)")
           .in("id", missingIds)
           .eq("is_blocked", false);
         if (msgContacts) {
