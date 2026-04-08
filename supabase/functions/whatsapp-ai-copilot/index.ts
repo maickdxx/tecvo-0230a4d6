@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage, extractUsageFromResponse } from "../_shared/aiUsageLogger.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 import { createSanitizedStream, validateAIOutput, logOutputViolation } from "../_shared/outputValidator.ts";
+import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
 import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 
 const corsHeaders = {
@@ -66,18 +67,10 @@ serve(async (req) => {
     const rateCheck = await checkAIRateLimit(supabaseAdmin, organizationId, corsHeaders);
     if (!rateCheck.allowed) return rateCheck.response!;
 
-    // Check and consume AI credits
-    const { data: hasCredits, error: creditError } = await supabaseAdmin.rpc("consume_ai_credits", {
-      _org_id: organizationId,
-      _action_slug: "copilot_response",
-      _user_id: userId,
-    });
-
-    if (creditError || !hasCredits) {
-      return new Response(JSON.stringify({ error: "Créditos de IA insuficientes. Recarregue seus créditos para continuar." }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ── CREDIT GUARD: debit before AI call ──
+    const creditCheck = await checkAndDebitCredits(supabaseAdmin, organizationId, userId, "copilot_response", corsHeaders);
+    if (!creditCheck.allowed) {
+      return creditCheck.response!;
     }
 
     // Fetch context data in parallel
