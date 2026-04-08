@@ -13,6 +13,11 @@ import {
   getDatePartInTz,
 } from "../_shared/timezone.ts";
 import {
+  fetchOrgContext as sharedFetchOrgContext,
+  buildSystemPrompt as sharedBuildSystemPrompt,
+  buildToolsInstruction,
+} from "../_shared/lauraPrompt.ts";
+import {
   normalizeDigits,
   normalizeJid,
   normalizePhone,
