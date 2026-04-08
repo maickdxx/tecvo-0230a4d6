@@ -170,7 +170,7 @@ export function useAssistantChat() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ messages: historyForApi, organizationId }),
+            body: JSON.stringify({ messages: historyForApi, organizationId, conversationId }),
             signal: controller.signal,
           }
         );

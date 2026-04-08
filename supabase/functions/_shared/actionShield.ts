@@ -33,6 +33,7 @@ export const ACTION_RISK_REGISTRY: Record<string, ActionRisk> = {
   create_client: "medium",
   create_quote: "medium",
   create_financial_account: "low",
+  set_default_account: "low",
 };
 
 export function getActionRisk(fnName: string, args?: any): ActionRisk {
