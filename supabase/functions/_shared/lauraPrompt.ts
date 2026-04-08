@@ -967,7 +967,32 @@ export async function executeAdminTool(
     let accountId: string | null = orgData?.default_ai_account_id || null;
 
     if (!accountId) {
-      return '⚠️ Você ainda não tem uma conta financeira padrão configurada para a IA.\n\nPosso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
+      // Check if org already has financial accounts
+      const { data: existingAccounts } = await supabase
+        .from("financial_accounts")
+        .select("id, name, account_type")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: true });
+
+      if (existingAccounts && existingAccounts.length > 0) {
+        if (existingAccounts.length === 1) {
+          // Auto-set as default
+          accountId = existingAccounts[0].id;
+          await supabase
+            .from("organizations")
+            .update({ default_ai_account_id: accountId })
+            .eq("id", organizationId);
+        } else {
+          // Multiple accounts — ask user to choose
+          const accountList = existingAccounts
+            .map((a, i) => `${i + 1}. ${a.name}`)
+            .join("\n");
+          return `Encontrei ${existingAccounts.length} contas financeiras cadastradas:\n\n${accountList}\n\nQual delas deseja usar como conta padrão para os registros da IA?`;
+        }
+      } else {
+        return '⚠️ Você ainda não tem uma conta financeira cadastrada.\n\nPosso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
+      }
     }
 
     const capitalizedDesc = description.charAt(0).toUpperCase() + description.slice(1);
