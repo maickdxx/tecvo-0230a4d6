@@ -3331,9 +3331,8 @@ Deno.serve(async (req) => {
           const creditCheck = await checkAndDebitCredits(supabase, targetOrganizationId, "", "laura_whatsapp");
           if (!creditCheck.allowed) {
             console.log("[WEBHOOK-WHATSAPP] Insufficient AI credits for org:", targetOrganizationId);
-            // Send a friendly message to the user instead of calling AI
             const noCreditsMsg = "⚠️ Os créditos de IA da sua empresa acabaram. A Laura não pode responder no momento. Recarregue seus créditos no painel da Tecvo para continuar usando a assistente.";
-            await sendWhatsAppMessage(supabase, targetOrganizationId, senderJid, noCreditsMsg, channel);
+            await sendWhatsAppReply(instance, remoteJid, noCreditsMsg);
             return new Response("OK", { status: 200 });
           }
 
