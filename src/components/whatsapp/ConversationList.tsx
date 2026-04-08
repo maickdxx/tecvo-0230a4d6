@@ -137,20 +137,48 @@ export function ConversationList({
     return () => { supabase.removeChannel(channel); };
   }, [organization?.id]);
 
-  // "Aguardando" is an attention layer: unread messages from client, across ALL statuses (except resolvido and agendado)
-  const isAguardando = (c: any) => {
+  // ── Canonical tab precedence (highest → lowest) ──
+  // 1. Finalizados: conversation resolved OR pipeline terminal
+  // 2. Agendados: active service pipeline (agendado/em_execucao/pos_atendimento)
+  // 3. Aguardando: unread from client OR pipeline aguardando_* stages
+  // 4. Novas: conversation_status = novo
+  // 5. Em atendimento: everything else active
+
+  const isFinalizado = (c: any) => {
     const s = c.conversation_status || "novo";
     const cs = c.conversion_status || "novo_contato";
-    // Exclude resolvido and agendados from aguardando
-    if (s === "resolvido") return false;
-    if (cs === "agendado" || cs === "em_execucao" || cs === "pos_atendimento") return false;
-    return (c.unread_count > 0 || c.is_unread) && c.last_message_is_from_me !== true;
+    return s === "resolvido" || cs === "concluido" || cs === "nao_convertido";
   };
 
   const isAgendado = (c: any) => {
+    if (isFinalizado(c)) return false;
     const cs = c.conversion_status || "novo_contato";
-    const s = c.conversation_status || "novo";
-    return s !== "resolvido" && (cs === "agendado" || cs === "em_execucao" || cs === "pos_atendimento");
+    return cs === "agendado" || cs === "em_execucao" || cs === "pos_atendimento";
+  };
+
+  const AGUARDANDO_PIPELINE = ["aguardando_cliente", "aguardando_aprovacao", "aguardando_pagamento"];
+
+  const isAguardando = (c: any) => {
+    if (isFinalizado(c)) return false;
+    if (isAgendado(c)) return false;
+    const cs = c.conversion_status || "novo_contato";
+    const hasUnreadFromClient = (c.unread_count > 0 || c.is_unread) && c.last_message_is_from_me !== true;
+    return hasUnreadFromClient || AGUARDANDO_PIPELINE.includes(cs);
+  };
+
+  const isNova = (c: any) => {
+    if (isFinalizado(c)) return false;
+    if (isAgendado(c)) return false;
+    if (isAguardando(c)) return false;
+    return (c.conversation_status || "novo") === "novo";
+  };
+
+  const isAtendendo = (c: any) => {
+    if (isFinalizado(c)) return false;
+    if (isAgendado(c)) return false;
+    if (isAguardando(c)) return false;
+    if (isNova(c)) return false;
+    return true;
   };
 
   const hasUnread = (c: any) => (c.unread_count > 0 || c.is_unread);
@@ -161,28 +189,20 @@ export function ConversationList({
     [contacts, advancedFilters]
   );
 
-  const novasCount = advancedFiltered.filter(c => {
-    const s = c.conversation_status || "novo";
-    return s === "novo" && hasUnread(c);
-  }).length;
-  const atendendoCount = advancedFiltered.filter(c => {
-    const s = c.conversation_status || "novo";
-    const cs = c.conversion_status || "novo_contato";
-    return s === "atendendo" && !isAgendado(c) && hasUnread(c);
-  }).length;
+  const novasCount = advancedFiltered.filter(c => isNova(c)).length;
+  const atendendoCount = advancedFiltered.filter(c => isAtendendo(c) && hasUnread(c)).length;
   const agendadosCount = advancedFiltered.filter(c => isAgendado(c)).length;
   const aguardandoCount = advancedFiltered.filter(c => isAguardando(c)).length;
-  const finalizadoCount = advancedFiltered.filter(c => c.conversation_status === "resolvido" && hasUnread(c)).length;
+  const finalizadoCount = advancedFiltered.filter(c => isFinalizado(c) && hasUnread(c)).length;
 
   const filtered = advancedFiltered.filter((c) => {
     // When searching, ignore status filter to show results across all tabs
     if (!searchTerm.trim()) {
-      const status = c.conversation_status || "novo";
-      if (statusFilter === "novas" && status !== "novo") return false;
-      if (statusFilter === "atendendo" && (status !== "atendendo" || isAgendado(c))) return false;
+      if (statusFilter === "novas" && !isNova(c)) return false;
+      if (statusFilter === "atendendo" && !isAtendendo(c)) return false;
       if (statusFilter === "agendados" && !isAgendado(c)) return false;
       if (statusFilter === "aguardando" && !isAguardando(c)) return false;
-      if (statusFilter === "finalizado" && status !== "resolvido") return false;
+      if (statusFilter === "finalizado" && !isFinalizado(c)) return false;
     }
     // Conversion pipeline filter
     if (conversionFilter) {
