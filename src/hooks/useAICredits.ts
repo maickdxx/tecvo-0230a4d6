@@ -13,9 +13,9 @@ export interface CreditPackage {
 }
 
 export const CREDIT_PACKAGES: CreditPackage[] = [
-  { id: "pack_100", credits: 100, price: 9.90, label: "100 interações", description: "Ideal para uso leve" },
-  { id: "pack_500", credits: 500, price: 39.90, label: "500 interações", description: "Mais popular" },
-  { id: "pack_1000", credits: 1000, price: 69.90, label: "1.000 interações", description: "Melhor custo-benefício" },
+  { id: "pack_1000", credits: 1000, price: 9.90, label: "1.000 interações", description: "Ideal para começar" },
+  { id: "pack_2000", credits: 2000, price: 19.90, label: "2.000 interações", description: "Mais popular" },
+  { id: "pack_5000", credits: 5000, price: 49.90, label: "5.000 interações", description: "Melhor custo-benefício" },
 ];
 
 export function useAICredits() {
@@ -69,7 +69,7 @@ export function useAICredits() {
   }, [organizationId, queryClient]);
 
   const balance = credits?.balance ?? 0;
-  const isLow = balance > 0 && balance <= 20;
+  const isLow = balance > 0 && balance <= 200;
   const isEmpty = balance <= 0;
 
   const purchaseCredits = async (packageId: string) => {

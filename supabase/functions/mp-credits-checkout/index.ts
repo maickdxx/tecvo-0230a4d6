@@ -6,11 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Credit packages with ~30% margin over AI cost
+// Credit packages with ~20% margin over AI cost
 const CREDIT_PACKAGES: Record<string, { credits: number; price: number; label: string }> = {
-  pack_100: { credits: 100, price: 9.90, label: "100 créditos de IA" },
-  pack_500: { credits: 500, price: 39.90, label: "500 créditos de IA" },
-  pack_1000: { credits: 1000, price: 69.90, label: "1000 créditos de IA" },
+  pack_1000: { credits: 1000, price: 9.90, label: "1.000 interações de IA" },
+  pack_2000: { credits: 2000, price: 19.90, label: "2.000 interações de IA" },
+  pack_5000: { credits: 5000, price: 49.90, label: "5.000 interações de IA" },
 };
 
 Deno.serve(async (req) => {
