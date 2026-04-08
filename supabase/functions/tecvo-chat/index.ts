@@ -66,6 +66,13 @@ serve(async (req) => {
       return accessDeniedResponse(corsHeaders);
     }
 
+    // ── CREDIT GUARD: debit before any AI call ──
+    const actionSlug = mode === "proactive_tip" ? "proactive_tip" : "tecvo_chat";
+    const creditCheck = await checkAndDebitCredits(supabaseAdmin, organizationId, userId, actionSlug, corsHeaders);
+    if (!creditCheck.allowed) {
+      return creditCheck.response!;
+    }
+
     // Fetch org context using shared module
     const orgContext = await fetchOrgContext(supabaseAdmin, organizationId);
     const orgTz = orgContext.timezone;
