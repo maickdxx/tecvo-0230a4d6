@@ -28,13 +28,18 @@ export async function checkAndDebitCredits(
   corsHeaders: Record<string, string> = CORS_HEADERS,
 ): Promise<CreditGuardResult> {
   try {
+    const rpcParams: Record<string, any> = {
+      _org_id: organizationId,
+      _action_slug: actionSlug,
+    };
+    // Only pass userId if it's a valid non-empty string
+    if (userId && userId.trim().length > 0) {
+      rpcParams._user_id = userId;
+    }
+
     const { data: hasCredits, error: creditError } = await supabaseAdmin.rpc(
       "consume_ai_credits",
-      {
-        _org_id: organizationId,
-        _action_slug: actionSlug,
-        _user_id: userId,
-      },
+      rpcParams,
     );
 
     if (creditError) {
