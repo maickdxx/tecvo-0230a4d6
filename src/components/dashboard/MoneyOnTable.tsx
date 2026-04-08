@@ -24,8 +24,8 @@ export function MoneyOnTable() {
     queryFn: async () => {
       if (!organizationId) return null;
 
-      // Services completed but not fully paid
-      // A service is "unpaid" if completed but has no confirmed payments >= value
+      // Source of truth: open receivable transactions linked to completed services.
+      // If the receivable is already paid (or no longer exists), the widget must not appear.
       let q = supabase
         .from("services")
         .select("id, value, completed_date, client:clients(name)")
@@ -44,45 +44,32 @@ export function MoneyOnTable() {
 
       const serviceIds = completedServices.map((s) => s.id);
 
-      // Get confirmed payments for these services
-      const { data: payments } = await supabase
-        .from("service_payments")
-        .select("service_id, amount, is_confirmed")
-        .in("service_id", serviceIds)
-        .eq("is_confirmed", true);
-
-      // Get fee expenses (taxa_pagamento) for these services — they cover the gap between gross and net
-      const { data: feeTransactions, error: feeTransactionsError } = await supabase
+      const { data: openReceivables, error: openReceivablesError } = await supabase
         .from("transactions")
-        .select("service_id, amount")
+        .select("service_id, amount, status, approval_status")
+        .eq("organization_id", organizationId)
+        .eq("type", "income")
         .in("service_id", serviceIds)
-        .eq("type", "expense" as any)
-        .eq("category", "taxa_pagamento")
-        .is("deleted_at", null);
+        .in("status", ["pending", "overdue"])
+        .is("deleted_at", null)
+        .or("approval_status.is.null,approval_status.eq.approved");
 
-      if (feeTransactionsError) throw feeTransactionsError;
+      if (openReceivablesError) throw openReceivablesError;
 
-      // Sum payments + fees per service (both represent covered value)
-      const paidMap = new Map<string, number>();
-      (payments || []).forEach((p) => {
-        paidMap.set(p.service_id, (paidMap.get(p.service_id) || 0) + Number(p.amount));
-      });
-      (feeTransactions || []).forEach((f) => {
-        if (f.service_id) {
-          paidMap.set(f.service_id, (paidMap.get(f.service_id) || 0) + Number(f.amount));
-        }
+      const openReceivableMap = new Map<string, number>();
+      (openReceivables || []).forEach((transaction) => {
+        if (!transaction.service_id) return;
+        openReceivableMap.set(
+          transaction.service_id,
+          (openReceivableMap.get(transaction.service_id) || 0) + Number(transaction.amount)
+        );
       });
 
-      // Find unpaid/partially paid services
       const unpaid = completedServices
-        .filter((s) => {
-          const paid = paidMap.get(s.id) || 0;
-          return paid < (Number(s.value) || 0) * 0.99; // 1% tolerance for rounding
-        })
-        .map((s) => ({
-          ...s,
-          paid: paidMap.get(s.id) || 0,
-          remaining: (Number(s.value) || 0) - (paidMap.get(s.id) || 0),
+        .filter((service) => (openReceivableMap.get(service.id) || 0) > 0)
+        .map((service) => ({
+          ...service,
+          remaining: openReceivableMap.get(service.id) || 0,
         }));
 
       const totalRemaining = unpaid.reduce((sum, s) => sum + s.remaining, 0);
