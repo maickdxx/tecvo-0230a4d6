@@ -1371,6 +1371,57 @@ export type Database = {
           },
         ]
       }
+      client_touchpoints: {
+        Row: {
+          category: string
+          client_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          organization_id: string
+          reference_id: string | null
+          source: string
+          status: string
+        }
+        Insert: {
+          category?: string
+          client_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          organization_id: string
+          reference_id?: string | null
+          source?: string
+          status?: string
+        }
+        Update: {
+          category?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          organization_id?: string
+          reference_id?: string | null
+          source?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_touchpoints_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_touchpoints_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -7467,6 +7518,10 @@ export type Database = {
       }
       can_create_service: { Args: { org_id: string }; Returns: boolean }
       can_modify: { Args: { _user_id: string }; Returns: boolean }
+      can_touch_client: {
+        Args: { _category?: string; _client_id: string; _org_id: string }
+        Returns: boolean
+      }
       check_analytics_anomalies: { Args: never; Returns: undefined }
       check_send_limit: {
         Args: { _contact_id?: string; _org_id: string; _source?: string }
@@ -7514,6 +7569,20 @@ export type Database = {
           trial_ends_at: string
           trial_started_at: string
           user_id: string
+        }[]
+      }
+      get_client_contact_decisions: {
+        Args: { _org_id: string }
+        Returns: {
+          block_reason: string
+          client_id: string
+          client_name: string
+          contact_status: string
+          has_active_recurrence: boolean
+          last_touch_category: string
+          last_touch_date: string
+          last_touch_source: string
+          next_allowed_date: string
         }[]
       }
       get_company_health_indicators: {

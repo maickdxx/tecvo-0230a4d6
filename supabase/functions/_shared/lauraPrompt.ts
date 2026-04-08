@@ -116,6 +116,35 @@ function smartCatalogMatch(
   return { match: null, matches: scored.map((s) => s.item), noMatch: false };
 }
 
+// ─────────────────── OAL: contact decisions summary ───────────────────
+
+function buildContactDecisionsSummary(decisions: any[]): string {
+  if (!decisions || decisions.length === 0) {
+    return "Nenhum dado de contato disponível — todos os clientes estão elegíveis por padrão.";
+  }
+
+  const blocked = decisions.filter((d: any) => d.contact_status !== "eligible_for_contact");
+  const eligible = decisions.filter((d: any) => d.contact_status === "eligible_for_contact");
+
+  const lines: string[] = [];
+
+  if (blocked.length > 0) {
+    lines.push(`⛔ BLOQUEADOS (${blocked.length}):`);
+    for (const d of blocked.slice(0, 20)) {
+      const reason = d.block_reason === "recurrence_active" ? "recorrência ativa"
+        : d.block_reason === "recent_contact" ? "contato recente"
+        : d.block_reason === "cooldown_period" ? `cooldown até ${d.next_allowed_date}`
+        : d.block_reason || "bloqueado";
+      lines.push(`  • ${d.client_name}: ${d.contact_status} (${reason})`);
+    }
+    if (blocked.length > 20) lines.push(`  ... e mais ${blocked.length - 20} clientes bloqueados`);
+  }
+
+  lines.push(`✅ ELEGÍVEIS para contato: ${eligible.length} clientes`);
+
+  return lines.join("\n");
+}
+
 // ─────────────────── context fetcher ───────────────────
 
 export async function fetchOrgContext(supabase: any, organizationId: string) {
@@ -128,7 +157,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
 
   const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes,
          servicesTotalRes, clientsTotalRes, transactionsTotalRes,
-         financialAccountsRes] = await Promise.all([
+         financialAccountsRes, contactDecisionsRes] = await Promise.all([
     supabase
       .from("services")
       .select("id, status, scheduled_date, completed_date, value, description, service_type, assigned_to, client_id, created_at, payment_method, document_type, operational_status")
@@ -193,6 +222,8 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .eq("organization_id", organizationId)
       .eq("is_active", true)
       .order("name"),
+    // OAL: Pre-computed contact decisions
+    supabase.rpc("get_client_contact_decisions", { _org_id: organizationId }),
   ]);
 
   const services = servicesRes.data || [];
@@ -204,6 +235,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const totalTransactionsAllTime = transactionsTotalRes.count ?? transactions.length;
 
   const financialAccounts = financialAccountsRes.data || [];
+  const contactDecisions = contactDecisionsRes.data || [];
   const defaultAiAccountId = orgRes.data?.default_ai_account_id || null;
   const defaultAccount = defaultAiAccountId
     ? financialAccounts.find((a: any) => a.id === defaultAiAccountId) || null
@@ -221,6 +253,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
     financialAccounts,
     defaultAiAccountId,
     defaultAccount,
+    contactDecisions,
     // Data completeness metadata
     _meta: {
       servicePeriodDays: 180,
@@ -253,7 +286,7 @@ export function buildSystemPrompt(ctx: any) {
   const { dateStr, timeStr } = getFormattedDateTimeInTz(tz);
   const currentMonth = getCurrentMonthInTz(tz);
 
-  const { services, clients, transactions, profiles, orgName, monthlyGoal, catalog, _meta, financialAccounts, defaultAccount } = ctx;
+  const { services, clients, transactions, profiles, orgName, monthlyGoal, catalog, _meta, financialAccounts, defaultAccount, contactDecisions } = ctx;
   const meta = _meta || {};
 
   const osServices = services.filter((s: any) => s.document_type !== "quote");
@@ -906,6 +939,22 @@ EXEMPLOS BOM vs RUIM:
 ❌ "Você deveria aumentar seu ticket médio" (genérico, sem ação)
 ❌ "Baseado em análises de mercado..." (inventado)
 ❌ "Recomendo diversificar serviços" (conselho de consultor formal)
+
+══════════ CONSCIÊNCIA OPERACIONAL (OAL) ══════════
+
+IMPORTANTE: O sistema já calculou o status de contato de cada cliente. Você NÃO deve recalcular.
+Respeite OBRIGATORIAMENTE os status abaixo. Se um cliente está bloqueado, NÃO sugira contato com ele.
+
+STATUS DE CONTATO DOS CLIENTES:
+${buildContactDecisionsSummary(contactDecisions || [])}
+
+REGRAS ABSOLUTAS DA OAL:
+- Se contact_status = "recently_contacted" → NÃO sugira novo contato
+- Se contact_status = "in_recurrence" → NÃO sugira reativação
+- Se contact_status = "cooldown_active" → NÃO sugira contato, informe quando será possível
+- Se contact_status = "eligible_for_contact" → pode sugerir normalmente
+- NUNCA tente sobrescrever um bloqueio. O backend impede a ação mesmo que você tente.
+- Se o usuário insistir em contatar um cliente bloqueado, explique o motivo do bloqueio.
 
 ══════════ REGRA DE OURO DA INTELIGÊNCIA ══════════
 
@@ -1861,6 +1910,18 @@ export async function executeAdminTool(
     const { checkExternalSendPermission } = await import("./externalSendGuard.ts");
 
     if (sendTarget === "client") {
+      // OAL: Backend blocking — check cooldown before allowing client contact
+      if (serviceData.client_id) {
+        const { data: canTouch } = await supabase.rpc("can_touch_client", {
+          _org_id: organizationId,
+          _client_id: serviceData.client_id,
+          _category: "service",
+        });
+        if (canTouch === false) {
+          return `⚠️ O cliente "${serviceData.client?.name || "selecionado"}" foi contatado recentemente. O sistema bloqueia contatos repetidos em curto intervalo para proteger a experiência do cliente. Tente novamente mais tarde.`;
+        }
+      }
+
       const sendCheck = await checkExternalSendPermission(supabase, {
         source: "ai_tool_client",
         organizationId,
@@ -1908,6 +1969,19 @@ export async function executeAdminTool(
     }
 
     await logToolSuccess(supabase, organizationId, fnName, args);
+
+    // OAL: Log touchpoint on successful client send
+    if (sendTarget === "client" && serviceData.client_id) {
+      await supabase.from("client_touchpoints").insert({
+        organization_id: organizationId,
+        client_id: serviceData.client_id,
+        source: "laura",
+        category: "service",
+        reference_id: serviceData.id,
+        status: "sent",
+        metadata: { action: "send_service_pdf", doc_type: result.docType, os_number: result.osNumber },
+      }).then(() => {}).catch((e: any) => console.warn("[OAL] Failed to log touchpoint:", e?.message));
+    }
 
     if (sendTarget === "self") {
       return `SILENT_PDF_SENT_SELF:${result.docType} #${result.osNumber} - ${result.clientName} enviado para você!`;
