@@ -11,7 +11,7 @@ interface FinanceSummaryProps {
   pendingCount?: number;
 }
 
-export function FinanceSummary({ income, expense, balance }: FinanceSummaryProps) {
+export function FinanceSummary({ income, expense, balance, pendingIncome, pendingExpense, pendingCount }: FinanceSummaryProps) {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
