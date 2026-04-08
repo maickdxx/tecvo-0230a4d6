@@ -26,6 +26,9 @@ export const ACTION_RISK_REGISTRY: Record<string, ActionRisk> = {
   register_transaction: "high",
   create_service: "high",
   send_service_pdf: "high", // only when target=client; self is medium
+  approve_pending_transactions: "high",
+  reject_pending_transactions: "high",
+  get_pending_summary: "low",
   create_client: "medium",
   create_quote: "medium",
   create_financial_account: "low",

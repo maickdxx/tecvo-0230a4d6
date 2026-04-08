@@ -16,6 +16,7 @@ import {
 import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useFinancialAccounts } from "@/hooks/useFinancialAccounts";
+import { usePendingApprovalSummary } from "@/hooks/useTransactionApproval";
 import { generateFinanceReportPDF } from "@/lib/generateFinanceReportPDF";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -35,6 +36,7 @@ export default function Financeiro() {
   const { transactions, totals, isLoading } = useTransactions({ startDate, endDate });
   const { organizationId } = useAuth();
   const { activeAccounts } = useFinancialAccounts();
+  const { data: pendingSummary } = usePendingApprovalSummary();
 
   const { data: organization } = useQuery({
     queryKey: ["organization", organizationId],
@@ -90,6 +92,9 @@ export default function Financeiro() {
         income={totals.income}
         expense={totals.expense}
         balance={totals.balance}
+        pendingIncome={pendingSummary?.pending_income_total}
+        pendingExpense={pendingSummary?.pending_expense_total}
+        pendingCount={pendingSummary?.total_pending}
       />
 
       {/* Tabs */}

@@ -137,6 +137,8 @@ export function useAccounts(options: UseAccountsOptions = {}) {
           financial_account_id: data.financial_account_id || null,
           compensation_date: data.compensation_date || null,
           organization_id: organizationId,
+          approval_status: "pending_approval",
+          transaction_origin: "panel",
         } as any)
         .select()
         .single();

@@ -12,6 +12,9 @@ export type TransactionCategory =
   | "material" | "labor" | "fuel" | "maintenance" | "rent" | "utilities" | "marketing" | "other_expense"
   | string; // Allow dynamic categories
 
+export type ApprovalStatus = "pending_approval" | "approved" | "rejected";
+export type TransactionOrigin = "laura" | "employee" | "panel" | "automation" | "system";
+
 export interface Transaction {
   id: string;
   organization_id: string;
@@ -32,6 +35,12 @@ export interface Transaction {
   payment_source_type: string | null;
   notes: string | null;
   recurrence: string | null;
+  approval_status: ApprovalStatus;
+  created_by_user_id: string | null;
+  approved_by_user_id: string | null;
+  approved_at: string | null;
+  rejection_reason: string | null;
+  transaction_origin: TransactionOrigin;
   created_at: string;
   updated_at: string;
 }

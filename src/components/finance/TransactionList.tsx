@@ -19,8 +19,15 @@ import type { FinancialAccount } from "@/hooks/useFinancialAccounts";
 function getOriginLabel(t: Transaction): { label: string; variant: "default" | "secondary" | "outline" } {
   if (t.category === "transfer") return { label: "Transferência", variant: "outline" };
   if (t.service_id) return { label: "OS", variant: "default" };
+  if (t.transaction_origin === "laura") return { label: "Laura", variant: "secondary" };
   return { label: "Manual", variant: "secondary" };
 }
+
+const APPROVAL_BADGE: Record<string, { label: string; className: string }> = {
+  pending_approval: { label: "Pendente", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200" },
+  approved: { label: "Aprovado", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200" },
+  rejected: { label: "Reprovado", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200" },
+};
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -80,6 +87,7 @@ export function TransactionList({
             <TableHead className="hidden sm:table-cell">Categoria</TableHead>
             <TableHead className="hidden md:table-cell">Conta</TableHead>
             <TableHead className="hidden lg:table-cell">Origem</TableHead>
+            <TableHead className="hidden lg:table-cell">Status</TableHead>
             <TableHead className="hidden md:table-cell">Data</TableHead>
             <TableHead className="text-right">Valor</TableHead>
           </TableRow>
@@ -122,6 +130,16 @@ export function TransactionList({
                   <Badge variant={origin.variant} className="font-normal">
                     {origin.label}
                   </Badge>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  {(() => {
+                    const badge = APPROVAL_BADGE[transaction.approval_status] || APPROVAL_BADGE.pending_approval;
+                    return (
+                      <Badge variant="outline" className={cn("font-normal text-xs", badge.className)}>
+                        {badge.label}
+                      </Badge>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground">
                   {formatDate(transaction.date)}

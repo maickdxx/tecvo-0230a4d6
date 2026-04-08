@@ -986,8 +986,17 @@ Categorias comuns de despesa: material, combustível, alimentação, aluguel, fo
 Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 - Despesas vão para CONTAS A PAGAR com status pendente. Receitas vão para CONTAS A RECEBER com status pendente.
 - NUNCA marque como pago automaticamente.
+- IMPORTANTE: Toda transação nasce como PENDENTE DE APROVAÇÃO FINANCEIRA. O saldo consolidado NÃO é afetado até o gestor aprovar.
+- Ao confirmar o registro, SEMPRE diga que ficou "pendente de aprovação financeira" ou "aguardando aprovação do gestor". NUNCA diga que foi consolidado ou confirmado no saldo.
 - Se o sistema informar que existem contas cadastradas mas nenhuma padrão, pergunte ao usuário qual conta deseja usar. Quando ele responder (ex: "a 1", "Nubank", "a primeira"), use a ferramenta 'set_default_account' com o account_id (UUID) correspondente da lista de CONTAS FINANCEIRAS do contexto e depois prossiga AUTOMATICAMENTE com o registro — NÃO peça ao usuário para repetir o pedido.
 - IMPORTANTE: O account_id DEVE ser o UUID da conta (ex: "abc123-..."), NUNCA o nome da conta.
+
+APROVAÇÃO FINANCEIRA:
+- Quando o gestor pedir para "aprovar tudo", "aprovar pendências", "aprovar transações" → use a ferramenta 'approve_pending_transactions'
+- Quando pedir para "reprovar", "rejeitar" → use a ferramenta 'reject_pending_transactions'
+- Quando pedir "resumo de pendências" ou "o que está pendente" → use 'get_pending_summary'
+- Ao aprovar: diga "Aprovado e consolidado no saldo financeiro."
+- Ao reprovar: diga "Reprovado. Não impactará o saldo consolidado."
 
 2. FERRAMENTA 'create_service' — criar Ordem de Serviço (OS).
 Quando o usuário pedir para criar/agendar um serviço ou OS:
@@ -1230,6 +1239,53 @@ export const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "approve_pending_transactions",
+      description: "Aprova transações financeiras pendentes, consolidando no saldo real. Apenas gestores podem usar.",
+      parameters: {
+        type: "object",
+        properties: {
+          scope: { type: "string", enum: ["all_today", "all_pending", "by_type"], description: "Escopo: all_today (tudo de hoje), all_pending (todas pendentes), by_type (por tipo)" },
+          type_filter: { type: "string", enum: ["income", "expense"], description: "Filtro por tipo, usado quando scope=by_type" },
+        },
+        required: ["scope"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "reject_pending_transactions",
+      description: "Reprova transações financeiras pendentes. Não impacta o saldo.",
+      parameters: {
+        type: "object",
+        properties: {
+          transaction_ids: { type: "array", items: { type: "string" }, description: "IDs das transações para reprovar" },
+          reason: { type: "string", description: "Motivo da reprovação" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_pending_summary",
+      description: "Retorna resumo das transações pendentes de aprovação financeira.",
+      parameters: {
+        type: "object",
+        properties: {
+          date: { type: "string", description: "Data no formato YYYY-MM-DD. Se não informada, mostra todas as pendentes." },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─────────────────── reliability layer (via actionShield) ───────────────────
@@ -1385,6 +1441,8 @@ export async function executeAdminTool(
       date,
       due_date: date,
       status: "pending",
+      approval_status: "pending_approval",
+      transaction_origin: "laura",
       financial_account_id: accountId,
       ...(payment_method ? { payment_method } : {}),
     }).select("id").single();
@@ -1400,7 +1458,88 @@ export async function executeAdminTool(
 
     const typeLabel = type === "income" ? "Receita" : "Despesa";
     await logToolSuccess(supabase, organizationId, fnName, args);
-    return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}. ✅ Confirmado no sistema.`;
+    return `${typeLabel} registrada como pendente de aprovação financeira: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}. ⏳ Aguardando aprovação do gestor para consolidar no saldo.`;
+  }
+
+  if (fnName === "approve_pending_transactions") {
+    const { scope, type_filter } = args;
+
+    // Fetch pending transactions
+    let query = supabase
+      .from("transactions")
+      .select("id, type, amount, date")
+      .eq("organization_id", organizationId)
+      .eq("approval_status", "pending_approval")
+      .is("deleted_at", null);
+
+    if (scope === "all_today") {
+      const todayStr = getTodayInTz("America/Sao_Paulo");
+      query = query.eq("date", todayStr);
+    }
+    if (scope === "by_type" && type_filter) {
+      query = query.eq("type", type_filter);
+    }
+
+    const { data: pendingTxns, error: fetchErr } = await query;
+    if (fetchErr) return `Erro ao buscar pendências: ${fetchErr.message}`;
+    if (!pendingTxns || pendingTxns.length === 0) return "Não há transações pendentes de aprovação no escopo solicitado.";
+
+    const ids = pendingTxns.map((t: any) => t.id);
+    const { data: result, error: approveErr } = await supabase.rpc("approve_transactions", {
+      _transaction_ids: ids,
+      _organization_id: organizationId,
+    });
+
+    if (approveErr) return `Erro ao aprovar: ${approveErr.message}`;
+
+    const totalIncome = pendingTxns.filter((t: any) => t.type === "income").reduce((s: number, t: any) => s + Number(t.amount), 0);
+    const totalExpense = pendingTxns.filter((t: any) => t.type === "expense").reduce((s: number, t: any) => s + Number(t.amount), 0);
+    const count = (result as any)?.approved_count || ids.length;
+
+    await logToolSuccess(supabase, organizationId, fnName, { scope, count });
+    return `✅ ${count} transação(ões) aprovada(s) e consolidada(s) no saldo financeiro.\n\nReceitas: R$ ${totalIncome.toFixed(2)}\nDespesas: R$ ${totalExpense.toFixed(2)}\nImpacto no saldo: R$ ${(totalIncome - totalExpense).toFixed(2)}`;
+  }
+
+  if (fnName === "reject_pending_transactions") {
+    const { transaction_ids, reason } = args;
+
+    if (!transaction_ids || transaction_ids.length === 0) {
+      return "Informe quais transações deseja reprovar. Use 'get_pending_summary' para ver as pendentes.";
+    }
+
+    const { data: result, error } = await supabase.rpc("reject_transactions", {
+      _transaction_ids: transaction_ids,
+      _organization_id: organizationId,
+      _reason: reason || null,
+    });
+
+    if (error) return `Erro ao reprovar: ${error.message}`;
+    const count = (result as any)?.rejected_count || 0;
+
+    await logToolSuccess(supabase, organizationId, fnName, { count, reason });
+    return `❌ ${count} transação(ões) reprovada(s). Não impactam o saldo consolidado.${reason ? `\nMotivo: ${reason}` : ""}`;
+  }
+
+  if (fnName === "get_pending_summary") {
+    const { date } = args;
+
+    const rpcArgs: any = { _organization_id: organizationId };
+    if (date) rpcArgs._date = date;
+
+    const { data, error } = await supabase.rpc("get_pending_approval_summary", rpcArgs);
+    if (error) return `Erro ao buscar resumo: ${error.message}`;
+
+    const s = data as any;
+    if (!s || s.total_pending === 0) {
+      return "✅ Não há transações pendentes de aprovação financeira.";
+    }
+
+    return `📊 Resumo de pendências${date ? ` (${date})` : ""}:\n\n` +
+      `• Receitas pendentes: ${s.pending_income_count} (R$ ${Number(s.pending_income_total).toFixed(2)})\n` +
+      `• Despesas pendentes: ${s.pending_expense_count} (R$ ${Number(s.pending_expense_total).toFixed(2)})\n` +
+      `• Saldo operacional pendente: R$ ${Number(s.pending_balance).toFixed(2)}\n` +
+      `• Total de transações: ${s.total_pending}\n\n` +
+      `Deseja que eu aprove todas, revise item por item ou mantenha pendente?`;
   }
 
   if (fnName === "create_financial_account") {
