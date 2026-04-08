@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
         .single();
       if (!channel) return json({ error: "Channel not found" }, 404);
 
-      if (!["disconnected", "error"].includes(channel.channel_status)) {
+      if (!["disconnected", "error", "qr_pending"].includes(channel.channel_status)) {
         return json({ error: `Cannot reconnect from status: ${channel.channel_status}` }, 400);
       }
 
