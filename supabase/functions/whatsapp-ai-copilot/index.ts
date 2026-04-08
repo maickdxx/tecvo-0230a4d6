@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage, extractUsageFromResponse } from "../_shared/aiUsageLogger.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 import { createSanitizedStream, validateAIOutput, logOutputViolation } from "../_shared/outputValidator.ts";
+import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,6 +61,10 @@ serve(async (req) => {
     if (!hasAccess) {
       return accessDeniedResponse(corsHeaders);
     }
+
+    // ── RATE LIMIT ──
+    const rateCheck = await checkAIRateLimit(supabaseAdmin, organizationId, corsHeaders);
+    if (!rateCheck.allowed) return rateCheck.response!;
 
     // Check and consume AI credits
     const { data: hasCredits, error: creditError } = await supabaseAdmin.rpc("consume_ai_credits", {

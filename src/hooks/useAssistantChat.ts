@@ -176,9 +176,11 @@ export function useAssistantChat() {
           const errData = await resp.json().catch(() => ({}));
           const errMsg =
             resp.status === 429
-              ? "Limite de requisições excedido. Aguarde um momento."
+              ? (errData.code === "DAILY_CAP_REACHED"
+                ? "Você atingiu o limite diário de uso de IA do seu plano."
+                : "Muitas solicitações. Aguarde alguns segundos.")
               : resp.status === 402
-              ? "Créditos de IA esgotados."
+              ? "Créditos de IA esgotados. Recarregue para continuar."
               : errData.error || "Erro ao processar resposta.";
           setError(errMsg);
           setIsLoading(false);

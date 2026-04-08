@@ -5,6 +5,7 @@ import { getTodayInTz, fetchOrgTimezone } from "../_shared/timezone.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 import { createSanitizedStream, logOutputViolation } from "../_shared/outputValidator.ts";
 import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
+import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 import {
   fetchOrgContext,
   buildSystemPrompt,
@@ -64,6 +65,12 @@ serve(async (req) => {
     const hasAccess = await validateUserOrgAccess(supabaseAdmin, userId, organizationId, "tecvo-chat");
     if (!hasAccess) {
       return accessDeniedResponse(corsHeaders);
+    }
+
+    // ── RATE LIMIT: check burst + daily cap ──
+    const rateCheck = await checkAIRateLimit(supabaseAdmin, organizationId, corsHeaders);
+    if (!rateCheck.allowed) {
+      return rateCheck.response!;
     }
 
     // ── CREDIT GUARD: debit before any AI call ──

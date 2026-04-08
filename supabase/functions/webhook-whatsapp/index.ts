@@ -5,6 +5,7 @@ import {
 } from "../_shared/aiUsageLogger.ts";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
+import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 import {
   getTodayInTz,
 } from "../_shared/timezone.ts";
@@ -3326,6 +3327,18 @@ Deno.serve(async (req) => {
             systemPrompt.length,
             "chars. Calling AI...",
           );
+
+          // ── CREDIT GUARD: debit before AI call ──
+          // ── RATE LIMIT: check burst + daily cap ──
+          const rateCheck = await checkAIRateLimit(supabase, targetOrganizationId);
+          if (!rateCheck.allowed) {
+            console.log("[WEBHOOK-WHATSAPP] Rate limited org:", targetOrganizationId, rateCheck.reason);
+            const rateLimitMsg = rateCheck.reason === "daily_cap"
+              ? "⚠️ Você atingiu o limite diário de uso de IA do seu plano. O limite será renovado amanhã."
+              : "⚠️ Muitas solicitações em sequência. Aguarde alguns segundos e tente novamente.";
+            await sendWhatsAppReply(instance, remoteJid, rateLimitMsg);
+            return new Response("OK", { status: 200 });
+          }
 
           // ── CREDIT GUARD: debit before AI call ──
           const creditCheck = await checkAndDebitCredits(supabase, targetOrganizationId, "", "laura_whatsapp");
