@@ -225,6 +225,12 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
               {lastMessage}
             </p>
             <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+              {/* Institutional channel badge */}
+              {contact.channel?.channel_type === "TECVO_AI" && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-medium rounded-full px-1.5 py-0.5 bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+                  🤖 Laura
+                </span>
+              )}
               {/* Conversion status badge */}
               {contact.conversion_status && contact.conversion_status !== "novo_contato" && (() => {
                 const step = getConversionStep(contact.conversion_status);
