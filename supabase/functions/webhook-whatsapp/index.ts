@@ -3055,6 +3055,7 @@ Deno.serve(async (req) => {
               if (matchedByPhone?.full_name) {
                 orgContext.currentUserName = matchedByPhone.full_name;
                 orgContext.currentUserRole = matchedByPhone.position || "proprietário";
+                orgContext.currentUserId = matchedByPhone.user_id;
               }
             }
           }
