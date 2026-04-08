@@ -452,6 +452,28 @@ ${catalogText}
 
 📇 CLIENTES: ${meta.clientTotalAllTime ?? clients.length} cadastrados no total${meta.clientsTruncated ? ` (mostrando ${meta.clientLoadedCount} mais recentes)` : ""}
 
+🔄 HISTÓRICO DE RECORRÊNCIA (clientes com último serviço há 3+ meses):
+${(() => {
+  const clientLastSvc: Record<string, { name: string; lastDate: string; lastType: string; daysSince: number }> = {};
+  const nowMs = now.getTime();
+  for (const s of osServices) {
+    if (s.status !== "completed" || !s.scheduled_date) continue;
+    const d = getDatePartInTz(s.scheduled_date, tz);
+    const existing = clientLastSvc[s.client_id];
+    if (!existing || d > existing.lastDate) {
+      const client = clients.find((c: any) => c.id === s.client_id);
+      const daysSince = Math.floor((nowMs - new Date(s.scheduled_date).getTime()) / (1000 * 60 * 60 * 24));
+      clientLastSvc[s.client_id] = { name: client?.name || "?", lastDate: d, lastType: s.service_type || "?", daysSince };
+    }
+  }
+  const inactive = Object.values(clientLastSvc)
+    .filter((c) => c.daysSince >= 90)
+    .sort((a, b) => b.daysSince - a.daysSince)
+    .slice(0, 15);
+  return inactive.length > 0
+    ? inactive.map((c) => \`  • \${c.name}: último serviço (\${c.lastType}) há \${c.daysSince} dias\`).join("\\n")
+    : "  Todos os clientes têm serviços recentes (< 3 meses)";
+})()}
 
 💳 CONTAS FINANCEIRAS:
 ${(financialAccounts && financialAccounts.length > 0)
