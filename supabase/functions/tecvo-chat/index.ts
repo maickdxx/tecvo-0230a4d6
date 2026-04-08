@@ -389,12 +389,32 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       estimatedCostUsd: estimatedCost,
     });
 
-    // Return as SSE stream format for frontend compatibility
+    // Stream response as real SSE chunks for smooth UX
     const encoder = new TextEncoder();
-    const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: finalContent } }] })}\n\ndata: [DONE]\n\n`;
+    const CHUNK_SIZE = 12; // characters per chunk
+    const CHUNK_DELAY_MS = 15; // ms between chunks
 
-    return new Response(encoder.encode(sseData), {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for (let i = 0; i < finalContent.length; i += CHUNK_SIZE) {
+            const chunk = finalContent.slice(i, i + CHUNK_SIZE);
+            const sseChunk = `data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`;
+            controller.enqueue(encoder.encode(sseChunk));
+            if (i + CHUNK_SIZE < finalContent.length) {
+              await new Promise((r) => setTimeout(r, CHUNK_DELAY_MS));
+            }
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch (e) {
+          controller.error(e);
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
     });
   } catch (e) {
     console.error("tecvo-chat error:", e);
