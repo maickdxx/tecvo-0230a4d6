@@ -1565,7 +1565,7 @@ export async function executeAdminTool(
       await supabase.from("pending_finance_actions").insert({
         organization_id: organizationId,
         action_type: "approve",
-        payload: { transaction_ids: ids, scope, type_filter },
+        payload: { transaction_ids: ids, scope, type_filter, total_income: totalIncome, total_expense: totalExpense },
         summary,
         contact_id: ctx?.contactId || null,
         conversation_id: ctx?.conversationId || null,
