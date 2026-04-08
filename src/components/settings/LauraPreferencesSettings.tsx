@@ -105,6 +105,7 @@ const CHANNEL_TOGGLES: PreferenceToggle[] = [
 
 export function LauraPreferencesSettings({ onBack }: LauraPreferencesSettingsProps) {
   const { preferences, loading, saving, updatePreference } = useLauraPreferences();
+  const { balance, isLow, isEmpty, isLoading: creditsLoading, purchaseCredits, purchasing } = useAICredits();
 
   if (loading) {
     return (
