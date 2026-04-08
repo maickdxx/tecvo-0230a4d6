@@ -45,12 +45,12 @@ function RechargeInlineCTA() {
           <div className="space-y-4">
             <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-center">
               <p className="text-xs text-muted-foreground mb-1">
-                {isEmpty ? "IA pausada" : isLow ? "Capacidade limitada" : "IA ativa"}
+                {isEmpty ? "Processamento pausado" : isLow ? "Capacidade reduzindo" : "Operando normalmente"}
               </p>
               <p className={`text-3xl font-bold ${isEmpty ? "text-destructive" : isLow ? "text-amber-600" : "text-foreground"}`}>
-                {balance}
+                {balance.toLocaleString("pt-BR")}
               </p>
-              <p className="text-xs text-muted-foreground">interações disponíveis</p>
+              <p className="text-xs text-muted-foreground">capacidade disponível</p>
             </div>
             <div className="space-y-2">
               {CREDIT_PACKAGES.map((pack) => (

@@ -93,7 +93,7 @@ export async function checkAndDebitCredits(
         remainingBalance: result.remaining_balance ?? 0,
         response: new Response(
           JSON.stringify({
-            error: "Seus créditos de IA acabaram. Recarregue para continuar usando a Laura.",
+            error: "A Laura está temporariamente pausada. Amplie a capacidade para continuar usando todos os recursos inteligentes.",
             code: "INSUFFICIENT_CREDITS",
           }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
