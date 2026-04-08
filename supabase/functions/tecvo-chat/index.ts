@@ -80,8 +80,21 @@ serve(async (req) => {
       return creditCheck.response!;
     }
 
-    // Fetch org context using shared module
-    const orgContext = await fetchOrgContext(supabaseAdmin, organizationId);
+    // Fetch org context and user profile in parallel
+    const [orgContext, userProfileRes] = await Promise.all([
+      fetchOrgContext(supabaseAdmin, organizationId),
+      supabaseAdmin
+        .from("profiles")
+        .select("full_name, position")
+        .eq("id", userId)
+        .single(),
+    ]);
+
+    // Inject current user identity into context
+    const userProfile = userProfileRes.data;
+    orgContext.currentUserName = userProfile?.full_name || null;
+    orgContext.currentUserRole = userProfile?.position || "proprietário";
+
     const orgTz = orgContext.timezone;
     const todayISO = getTodayInTz(orgTz);
 
