@@ -1361,11 +1361,11 @@ export async function executeAdminTool(
             .update({ default_ai_account_id: accountId })
             .eq("id", organizationId);
         } else {
-          // Multiple accounts — ask user to choose
+          // Multiple accounts — list with IDs so AI can call set_default_account
           const accountList = existingAccounts
-            .map((a, i) => `${i + 1}. ${a.name}`)
+            .map((a, i) => `${i + 1}. ${a.name} (ID: ${a.id})`)
             .join("\n");
-          return `Encontrei ${existingAccounts.length} contas financeiras cadastradas:\n\n${accountList}\n\nQual delas deseja usar como conta padrão para os registros da IA?`;
+          return `Encontrei ${existingAccounts.length} contas financeiras cadastradas:\n\n${accountList}\n\nQual delas deseja usar como conta padrão para os registros da IA?\n\n⚡ INSTRUÇÃO INTERNA: Quando o usuário escolher, use a ferramenta 'set_default_account' com o account_id correspondente e DEPOIS execute automaticamente a ferramenta 'register_transaction' com os mesmos dados originais. NÃO peça para o usuário repetir o pedido.`;
         }
       } else {
         return '⚠️ Você ainda não tem uma conta financeira cadastrada.\n\nPosso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
