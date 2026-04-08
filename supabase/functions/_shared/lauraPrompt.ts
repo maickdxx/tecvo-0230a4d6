@@ -975,6 +975,15 @@ export function buildToolsInstruction(todayISO: string): string {
 
 ⚠️ DATA DE REFERÊNCIA: Hoje é ${todayISO}. Use SEMPRE esta data como referência para "hoje". NÃO use o relógio interno do modelo.
 
+INTERPRETAÇÃO DE RESPOSTAS NUMÉRICAS:
+- Quando você apresentar opções numeradas (1️⃣, 2️⃣, 3️⃣ ou 1., 2., 3.) e o usuário responder apenas com um número ("1", "2", "3"), interprete como seleção da opção correspondente da SUA ÚLTIMA mensagem.
+- Exemplos: se você mostrou "1️⃣ Aprovar todas / 2️⃣ Mostrar item por item / 3️⃣ Manter pendente":
+  - Usuário diz "2" → execute 'list_pending_transactions'
+  - Usuário diz "1" → execute 'approve_pending_transactions' (com hard gate)
+  - Usuário diz "3" → responda confirmando que as pendências serão mantidas
+- Se o número não corresponder a nenhuma opção recente, peça esclarecimento.
+- NUNCA interprete um número como opção se você não apresentou opções numeradas na mensagem anterior.`;
+
 1. FERRAMENTA 'register_transaction' — registrar despesas e receitas.
 Quando o usuário pedir para registrar um gasto/despesa/receita:
 - Extraia os dados da mensagem (valor, descrição, categoria, data)
