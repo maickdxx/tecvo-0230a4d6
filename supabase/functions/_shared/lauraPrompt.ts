@@ -848,17 +848,7 @@ Ao criar serviço ou responder sobre preços:
 → NÃO invente popularidade — baseie-se apenas na contagem real de serviços com aquele service_type nos dados.
 
 DADOS DE POPULARIDADE DO CATÁLOGO:
-${(() => {
-  const typeCounts: Record<string, number> = {};
-  for (const s of osServices) {
-    const t = s.service_type || "outro";
-    typeCounts[t] = (typeCounts[t] || 0) + 1;
-  }
-  const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
-  return sorted.length > 0
-    ? sorted.slice(0, 5).map(([t, c]) => \`  • \${t}: \${c} serviços nos últimos 6 meses\`).join("\\n")
-    : "  Sem dados suficientes";
-})()}
+${popularityText}
 
 ── SUGESTÃO DE UPSELL (DURANTE CRIAÇÃO DE SERVIÇO) ──
 Ao criar um serviço, sugira complemento APENAS se fizer sentido:
