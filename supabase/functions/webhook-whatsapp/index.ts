@@ -4,6 +4,7 @@ import {
   logAIUsage,
 } from "../_shared/aiUsageLogger.ts";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
 import {
   getTodayInTz,
 } from "../_shared/timezone.ts";
@@ -3325,6 +3326,15 @@ Deno.serve(async (req) => {
             systemPrompt.length,
             "chars. Calling AI...",
           );
+
+          // ── CREDIT GUARD: debit before AI call ──
+          const creditCheck = await checkAndDebitCredits(supabase, targetOrganizationId, "", "laura_whatsapp");
+          if (!creditCheck.allowed) {
+            console.log("[WEBHOOK-WHATSAPP] Insufficient AI credits for org:", targetOrganizationId);
+            const noCreditsMsg = "⚠️ Os créditos de IA da sua empresa acabaram. A Laura não pode responder no momento. Recarregue seus créditos no painel da Tecvo para continuar usando a assistente.";
+            await sendWhatsAppReply(instance, remoteJid, noCreditsMsg);
+            return new Response("OK", { status: 200 });
+          }
 
           const startTime = Date.now();
           let aiResult = await callAI(

@@ -4,6 +4,7 @@ import { logAIUsage } from "../_shared/aiUsageLogger.ts";
 import { getTodayInTz, fetchOrgTimezone } from "../_shared/timezone.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 import { createSanitizedStream, logOutputViolation } from "../_shared/outputValidator.ts";
+import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
 import {
   fetchOrgContext,
   buildSystemPrompt,
@@ -63,6 +64,13 @@ serve(async (req) => {
     const hasAccess = await validateUserOrgAccess(supabaseAdmin, userId, organizationId, "tecvo-chat");
     if (!hasAccess) {
       return accessDeniedResponse(corsHeaders);
+    }
+
+    // ── CREDIT GUARD: debit before any AI call ──
+    const actionSlug = mode === "proactive_tip" ? "proactive_tip" : "tecvo_chat";
+    const creditCheck = await checkAndDebitCredits(supabaseAdmin, organizationId, userId, actionSlug, corsHeaders);
+    if (!creditCheck.allowed) {
+      return creditCheck.response!;
     }
 
     // Fetch org context using shared module
