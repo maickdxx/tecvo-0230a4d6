@@ -3920,6 +3920,13 @@ Cada "sim" aproxima o lead da decisão final.
 - Fora do tema → responda brevemente e redirecione para a Tecvo.
 - Em áudio: tom confiante e tranquilo, como secretária experiente. Sem parecer vendedora agressiva.`;
 
+          // ── CREDIT GUARD: debit before lead AI call ──
+          const leadCreditCheck = await checkAndDebitCredits(supabase, targetOrganizationId, "", "bot_lead_reply");
+          if (!leadCreditCheck.allowed) {
+            console.log("[WEBHOOK-WHATSAPP] Insufficient AI credits for lead reply, org:", targetOrganizationId);
+            // Silently skip AI reply for leads when no credits — don't expose error to lead
+          } else {
+
           const startTimeLead = Date.now();
           const aiResultLead = await callAI(systemPrompt, conversationHistory);
           let aiResponse = aiResultLead.content;
@@ -3940,12 +3947,25 @@ Cada "sim" aproxima o lead da decisão final.
             status: "success",
           });
 
-          // Retry once on empty response
+          // Retry once on empty response (no extra debit — already paid)
           if (!aiResponse) {
             console.warn("[WEBHOOK-WHATSAPP] Lead AI empty — retrying once...");
             try {
+              const retryStartTime = Date.now();
               const retryResult = await callAI(systemPrompt, conversationHistory);
               aiResponse = retryResult.content;
+              const retryUsage = extractUsageFromResponse({ usage: retryResult.usage });
+              await logAIUsage(supabase, {
+                organizationId: targetOrganizationId,
+                userId: null,
+                actionSlug: "bot_lead_reply",
+                model: "google/gemini-2.5-flash",
+                promptTokens: retryUsage.promptTokens,
+                completionTokens: retryUsage.completionTokens,
+                totalTokens: retryUsage.totalTokens,
+                durationMs: Date.now() - retryStartTime,
+                status: aiResponse ? "success" : "error",
+              });
             } catch (retryErr: any) {
               console.error("[WEBHOOK-WHATSAPP] Lead AI retry failed:", retryErr.message);
             }
