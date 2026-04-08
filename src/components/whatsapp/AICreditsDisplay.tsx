@@ -16,7 +16,7 @@ function StatusDot({ isEmpty, isLow }: { isEmpty: boolean; isLow: boolean }) {
 
 function StatusLabel({ isEmpty, isLow }: { isEmpty: boolean; isLow: boolean }) {
   if (isEmpty) return <span className="text-destructive">Pausada</span>;
-  if (isLow) return <span className="text-amber-600">Limitada</span>;
+  if (isLow) return <span className="text-amber-600">Atenção</span>;
   return <span className="text-emerald-600">Ativa</span>;
 }
 
@@ -52,11 +52,11 @@ export function AICreditsDisplay() {
               <div className="flex items-center justify-center gap-2 mb-1">
                 <StatusDot isEmpty={isEmpty} isLow={isLow} />
                 <p className="text-xs text-muted-foreground">
-                  {isEmpty ? "IA pausada" : isLow ? "Capacidade limitada" : "IA ativa"}
+                  {isEmpty ? "Processamento pausado" : isLow ? "Capacidade reduzindo" : "Operando normalmente"}
                 </p>
               </div>
               <p className={`text-3xl font-bold ${isEmpty ? "text-destructive" : isLow ? "text-amber-600" : "text-foreground"}`}>
-                {balance}
+                {balance.toLocaleString("pt-BR")}
               </p>
               <p className="text-xs text-muted-foreground">capacidade disponível</p>
             </div>
@@ -65,7 +65,7 @@ export function AICreditsDisplay() {
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                 <p className="text-xs text-destructive">
-                  A IA da Laura está pausada. Recarregue para continuar usando todos os recursos inteligentes do sistema.
+                  A Laura está temporariamente pausada. Amplie a capacidade para continuar usando todos os recursos inteligentes.
                 </p>
               </div>
             )}
@@ -74,7 +74,7 @@ export function AICreditsDisplay() {
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-700">
-                  Sua capacidade de IA está acabando. Recarregue para evitar interrupções.
+                  A capacidade está reduzindo. Amplie para manter tudo funcionando sem interrupção.
                 </p>
               </div>
             )}
