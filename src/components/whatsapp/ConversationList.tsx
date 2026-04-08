@@ -52,7 +52,7 @@ interface ConversationListProps {
   onLoadMore?: () => void;
 }
 
-type StatusFilter = "novas" | "atendendo" | "agendados" | "aguardando" | "finalizado";
+type StatusFilter = "novas" | "atendendo" | "agendados" | "aguardando" | "finalizado" | "laura";
 type ConversionFilter = string | null;
 
 function formatCount(count: number): string {
@@ -85,7 +85,7 @@ export function ConversationList({
   // Persist status filter
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
     const saved = localStorage.getItem("tecvo_whatsapp_status_filter");
-    if (saved === "novas" || saved === "atendendo" || saved === "agendados" || saved === "aguardando" || saved === "finalizado") {
+    if (saved === "novas" || saved === "atendendo" || saved === "agendados" || saved === "aguardando" || saved === "finalizado" || saved === "laura") {
       return saved as StatusFilter;
     }
     return "atendendo";
@@ -93,7 +93,7 @@ export function ConversationList({
 
   // Effect to ensure status is always valid and persisted
   useEffect(() => {
-    if (!statusFilter || !["novas", "atendendo", "agendados", "aguardando", "finalizado"].includes(statusFilter)) {
+    if (!statusFilter || !["novas", "atendendo", "agendados", "aguardando", "finalizado", "laura"].includes(statusFilter)) {
       setStatusFilter("atendendo");
       localStorage.setItem("tecvo_whatsapp_status_filter", "atendendo");
     } else {
@@ -137,7 +137,13 @@ export function ConversationList({
     return () => { supabase.removeChannel(channel); };
   }, [organization?.id]);
 
+  // ── Institutional channel detection ──
+  const isInstitutional = (c: any) => {
+    return c.channel?.channel_type === "TECVO_AI";
+  };
+
   // ── Canonical tab precedence (highest → lowest) ──
+  // 0. Laura/Institucional: contacts on TECVO_AI channel (always separate)
   // 1. Finalizados: conversation resolved OR pipeline terminal
   // 2. Agendados: active service pipeline (agendado/em_execucao/pos_atendimento)
   // 3. Aguardando: unread from client OR pipeline aguardando_* stages
@@ -145,12 +151,14 @@ export function ConversationList({
   // 5. Em atendimento: everything else active
 
   const isFinalizado = (c: any) => {
+    if (isInstitutional(c)) return false;
     const s = c.conversation_status || "novo";
     const cs = c.conversion_status || "novo_contato";
     return s === "resolvido" || cs === "concluido" || cs === "nao_convertido";
   };
 
   const isAgendado = (c: any) => {
+    if (isInstitutional(c)) return false;
     if (isFinalizado(c)) return false;
     const cs = c.conversion_status || "novo_contato";
     return cs === "agendado" || cs === "em_execucao" || cs === "pos_atendimento";
@@ -159,6 +167,7 @@ export function ConversationList({
   const AGUARDANDO_PIPELINE = ["aguardando_cliente", "aguardando_aprovacao", "aguardando_pagamento"];
 
   const isAguardando = (c: any) => {
+    if (isInstitutional(c)) return false;
     if (isFinalizado(c)) return false;
     if (isAgendado(c)) return false;
     const cs = c.conversion_status || "novo_contato";
@@ -167,6 +176,7 @@ export function ConversationList({
   };
 
   const isNova = (c: any) => {
+    if (isInstitutional(c)) return false;
     if (isFinalizado(c)) return false;
     if (isAgendado(c)) return false;
     if (isAguardando(c)) return false;
@@ -174,6 +184,7 @@ export function ConversationList({
   };
 
   const isAtendendo = (c: any) => {
+    if (isInstitutional(c)) return false;
     if (isFinalizado(c)) return false;
     if (isAgendado(c)) return false;
     if (isAguardando(c)) return false;
@@ -189,6 +200,7 @@ export function ConversationList({
     [contacts, advancedFilters]
   );
 
+  const lauraCount = advancedFiltered.filter(c => isInstitutional(c)).length;
   const novasCount = advancedFiltered.filter(c => isNova(c)).length;
   const atendendoCount = advancedFiltered.filter(c => isAtendendo(c) && hasUnread(c)).length;
   const agendadosCount = advancedFiltered.filter(c => isAgendado(c)).length;
@@ -198,6 +210,7 @@ export function ConversationList({
   const filtered = advancedFiltered.filter((c) => {
     // When searching, ignore status filter to show results across all tabs
     if (!searchTerm.trim()) {
+      if (statusFilter === "laura" && !isInstitutional(c)) return false;
       if (statusFilter === "novas" && !isNova(c)) return false;
       if (statusFilter === "atendendo" && !isAtendendo(c)) return false;
       if (statusFilter === "agendados" && !isAgendado(c)) return false;
@@ -275,6 +288,7 @@ export function ConversationList({
     { key: "aguardando", label: "Aguardando", count: aguardandoCount },
     { key: "agendados", label: "Agendados", count: agendadosCount },
     { key: "finalizado", label: "Finalizados", count: finalizadoCount },
+    ...(lauraCount > 0 ? [{ key: "laura" as StatusFilter, label: "🤖 Laura", count: lauraCount }] : []),
   ];
 
   const allSelected = filtered.length > 0 && selectedIds.size === filtered.length;
