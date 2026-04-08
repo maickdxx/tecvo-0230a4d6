@@ -137,10 +137,20 @@ export function ConversationList({
     return () => { supabase.removeChannel(channel); };
   }, [organization?.id]);
 
-  // "Aguardando" is an attention layer: unread messages from client, across ALL statuses (except resolvido)
+  // "Aguardando" is an attention layer: unread messages from client, across ALL statuses (except resolvido and agendado)
   const isAguardando = (c: any) => {
     const s = c.conversation_status || "novo";
-    return s !== "resolvido" && (c.unread_count > 0 || c.is_unread) && c.last_message_is_from_me !== true;
+    const cs = c.conversion_status || "novo_contato";
+    // Exclude resolvido and agendados from aguardando
+    if (s === "resolvido") return false;
+    if (cs === "agendado" || cs === "em_execucao" || cs === "pos_atendimento") return false;
+    return (c.unread_count > 0 || c.is_unread) && c.last_message_is_from_me !== true;
+  };
+
+  const isAgendado = (c: any) => {
+    const cs = c.conversion_status || "novo_contato";
+    const s = c.conversation_status || "novo";
+    return s !== "resolvido" && (cs === "agendado" || cs === "em_execucao" || cs === "pos_atendimento");
   };
 
   const hasUnread = (c: any) => (c.unread_count > 0 || c.is_unread);
@@ -155,9 +165,12 @@ export function ConversationList({
     const s = c.conversation_status || "novo";
     return s === "novo" && hasUnread(c);
   }).length;
-  const atendendoCount = advancedFiltered.filter(c =>
-    c.conversation_status === "atendendo" && hasUnread(c)
-  ).length;
+  const atendendoCount = advancedFiltered.filter(c => {
+    const s = c.conversation_status || "novo";
+    const cs = c.conversion_status || "novo_contato";
+    return s === "atendendo" && !isAgendado(c) && hasUnread(c);
+  }).length;
+  const agendadosCount = advancedFiltered.filter(c => isAgendado(c)).length;
   const aguardandoCount = advancedFiltered.filter(c => isAguardando(c)).length;
   const finalizadoCount = advancedFiltered.filter(c => c.conversation_status === "resolvido" && hasUnread(c)).length;
 
@@ -166,7 +179,8 @@ export function ConversationList({
     if (!searchTerm.trim()) {
       const status = c.conversation_status || "novo";
       if (statusFilter === "novas" && status !== "novo") return false;
-      if (statusFilter === "atendendo" && status !== "atendendo") return false;
+      if (statusFilter === "atendendo" && (status !== "atendendo" || isAgendado(c))) return false;
+      if (statusFilter === "agendados" && !isAgendado(c)) return false;
       if (statusFilter === "aguardando" && !isAguardando(c)) return false;
       if (statusFilter === "finalizado" && status !== "resolvido") return false;
     }
