@@ -127,9 +127,9 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
     if (!response.ok) {
       const durationMs = Date.now() - startTime;
       const errorStatus = response.status === 429 ? "rate_limited" : "error";
-      await logAIUsage(supabaseAdmin, {
-        organizationId, userId, actionSlug: "tecvo_chat", model: aiModel,
-        promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: errorStatus,
+      await finalizeAIUsage(supabaseAdmin, creditCheck.requestId, {
+        model: aiModel, promptTokens: 0, completionTokens: 0, totalTokens: 0,
+        durationMs, status: errorStatus,
       });
 
       if (response.status === 429) {
