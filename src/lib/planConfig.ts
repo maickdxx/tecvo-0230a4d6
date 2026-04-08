@@ -32,17 +32,18 @@ export interface PlanConfig {
   hasAI: boolean;
   hasAdvancedAI: boolean;
   hasTeamManagement: boolean;
-  hasWhatsAppFull: boolean; // full WhatsApp: conversations, tags, quick replies, chatbots
-  hasRecurrence: boolean; // recurrence automation
-  hasDigitalSignature: boolean; // digital signature on OS
+  hasWhatsAppFull: boolean;
+  hasRecurrence: boolean;
+  hasDigitalSignature: boolean;
   hasFinance: boolean;
-  hasAdvancedFinance: boolean; // advanced finance (Empresa only)
+  hasAdvancedFinance: boolean;
   hasCatalog: boolean;
   hasAgenda: boolean;
-  hasPermissions: boolean; // custom user permissions
-  hasTimeClock: boolean; // time clock module (ponto)
-  hasClientPortal: boolean; // client portal
-  mpValue: number; // Mercado Pago unit price in BRL
+  hasPermissions: boolean;
+  hasTimeClock: boolean;
+  hasClientPortal: boolean;
+  mpValue: number;
+  aiFranchise: number; // monthly AI interactions included in plan
 }
 
 export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
