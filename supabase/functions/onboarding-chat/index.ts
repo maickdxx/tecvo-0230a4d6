@@ -319,9 +319,19 @@ serve(async (req) => {
     let extractedData: ExtractedData = {};
     let finalContent = "";
     let lastNonEmptyContent = "";
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    let totalTokens = 0;
+    const startTime = Date.now();
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const result = await callAI(conversationMessages, systemPrompt);
+
+      // Accumulate usage across attempts
+      const usage = extractUsageFromResponse({ usage: result.usage });
+      totalPromptTokens += usage.promptTokens;
+      totalCompletionTokens += usage.completionTokens;
+      totalTokens += usage.totalTokens;
 
       if (result.content?.trim()) {
         lastNonEmptyContent = result.content.trim();
@@ -355,6 +365,31 @@ serve(async (req) => {
           content: JSON.stringify({ ok: true, saved: toolArgs }),
         });
       }
+    }
+
+    const durationMs = Date.now() - startTime;
+
+    // ── GOVERNANCE: Onboarding is EXPLICITLY FREE (0 credits) but always tracked ──
+    // Uses Supabase service-role to log usage without requiring user auth
+    try {
+      const { createClient } = await import("npm:@supabase/supabase-js@2.57.2");
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      await logAIUsage(supabaseAdmin, {
+        organizationId: null,
+        userId: null,
+        actionSlug: "onboarding_chat",
+        model: MODEL,
+        promptTokens: totalPromptTokens,
+        completionTokens: totalCompletionTokens,
+        totalTokens,
+        durationMs,
+        status: "success",
+      });
+    } catch (logErr) {
+      console.warn("[ONBOARDING-CHAT] Usage log failed (non-blocking):", logErr);
     }
 
     const contentToSend = finalContent || fallbackContent(conversationMessages, extractedData);
