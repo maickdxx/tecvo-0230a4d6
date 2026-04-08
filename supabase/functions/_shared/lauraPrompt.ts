@@ -982,7 +982,7 @@ INTERPRETAÇÃO DE RESPOSTAS NUMÉRICAS:
   - Usuário diz "1" → execute 'approve_pending_transactions' (com hard gate)
   - Usuário diz "3" → responda confirmando que as pendências serão mantidas
 - Se o número não corresponder a nenhuma opção recente, peça esclarecimento.
-- NUNCA interprete um número como opção se você não apresentou opções numeradas na mensagem anterior.`;
+- NUNCA interprete um número como opção se você não apresentou opções numeradas na mensagem anterior.
 
 1. FERRAMENTA 'register_transaction' — registrar despesas e receitas.
 Quando o usuário pedir para registrar um gasto/despesa/receita:
