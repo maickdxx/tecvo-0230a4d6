@@ -58,6 +58,7 @@ const Suporte = lazy(() => import("./pages/Suporte"));
 const Tutorial = lazy(() => import("./pages/Tutorial"));
 const Lixeira = lazy(() => import("./pages/Lixeira"));
 const Atualizacoes = lazy(() => import("./pages/Atualizacoes"));
+const AprovacaoFinanceira = lazy(() => import("./pages/AprovacaoFinanceira"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const IAClientesInativos = lazy(() => import("./pages/IAClientesInativos"));
 const IAPagamentosVencidos = lazy(() => import("./pages/IAPagamentosVencidos"));
