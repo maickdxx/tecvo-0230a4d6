@@ -67,18 +67,10 @@ serve(async (req) => {
     const rateCheck = await checkAIRateLimit(supabaseAdmin, organizationId, corsHeaders);
     if (!rateCheck.allowed) return rateCheck.response!;
 
-    // Check and consume AI credits
-    const { data: hasCredits, error: creditError } = await supabaseAdmin.rpc("consume_ai_credits", {
-      _org_id: organizationId,
-      _action_slug: "copilot_response",
-      _user_id: userId,
-    });
-
-    if (creditError || !hasCredits) {
-      return new Response(JSON.stringify({ error: "Créditos de IA insuficientes. Recarregue seus créditos para continuar." }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ── CREDIT GUARD: debit before AI call ──
+    const creditCheck = await checkAndDebitCredits(supabaseAdmin, organizationId, userId, "copilot_response", corsHeaders);
+    if (!creditCheck.allowed) {
+      return creditCheck.response!;
     }
 
     // Fetch context data in parallel
