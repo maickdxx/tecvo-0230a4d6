@@ -131,6 +131,16 @@ export function TransactionList({
                     {origin.label}
                   </Badge>
                 </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  {(() => {
+                    const badge = APPROVAL_BADGE[transaction.approval_status] || APPROVAL_BADGE.pending_approval;
+                    return (
+                      <Badge variant="outline" className={cn("font-normal text-xs", badge.className)}>
+                        {badge.label}
+                      </Badge>
+                    );
+                  })()}
+                </TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground">
                   {formatDate(transaction.date)}
                 </TableCell>
