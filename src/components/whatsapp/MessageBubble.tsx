@@ -158,23 +158,23 @@ function SharedContactCard({ content, isMe }: { content: string; isMe: boolean }
           className={cn(
             "rounded-lg border p-3 space-y-2",
             isMe
-              ? "border-primary-foreground/20 bg-primary-foreground/10"
+              ? "border-primary-foreground/20 bg-primary/10"
               : "border-border bg-muted/50"
           )}
         >
           <div className="flex items-center gap-2">
             <div className={cn(
               "h-8 w-8 rounded-full flex items-center justify-center",
-              isMe ? "bg-primary-foreground/20" : "bg-primary/10"
+              isMe ? "bg-primary/15" : "bg-primary/10"
             )}>
-              <User className={cn("h-4 w-4", isMe ? "text-primary-foreground" : "text-primary")} />
+              <User className={cn("h-4 w-4", isMe ? "text-foreground" : "text-primary")} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className={cn("text-sm font-medium truncate", isMe ? "text-primary-foreground" : "text-foreground")}>
+              <p className={cn("text-sm font-medium truncate", isMe ? "text-foreground" : "text-foreground")}>
                 {entry.name}
               </p>
               {entry.phone && (
-                <p className={cn("text-xs truncate", isMe ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                <p className={cn("text-xs truncate", isMe ? "text-foreground/70" : "text-muted-foreground")}>
                   <Phone className="h-3 w-3 inline mr-1" />
                   {entry.phone}
                 </p>
@@ -187,7 +187,7 @@ function SharedContactCard({ content, isMe }: { content: string; isMe: boolean }
               className={cn(
                 "w-full flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md transition-colors",
                 isMe
-                  ? "bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground"
+                  ? "bg-primary/15 hover:bg-primary/20 text-primary-foreground"
                   : "bg-primary/10 hover:bg-primary/20 text-primary"
               )}
             >
@@ -399,7 +399,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
             className={cn(
               "rounded-2xl overflow-hidden transition-all duration-200",
               isMe
-                ? "whatsapp-bubble-sent text-primary-foreground rounded-br-sm"
+                ? "whatsapp-bubble-sent text-foreground rounded-br-sm"
                 : "whatsapp-bubble-received text-foreground rounded-bl-sm",
               message.status === "failed" && "opacity-70",
               message.status === "pending" && "opacity-80"
@@ -423,19 +423,19 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                 className={cn(
                   "w-full text-left px-3 py-2 border-l-[3px] rounded-t-2xl cursor-pointer transition-colors",
                   isMe
-                    ? "bg-primary-foreground/10 border-blue-300 hover:bg-primary-foreground/15"
+                    ? "bg-primary/10 border-blue-300 hover:bg-primary/15"
                     : "bg-muted/50 border-primary/60 hover:bg-muted/70"
                 )}
               >
                 <p className={cn(
                   "text-[11px] font-semibold truncate",
-                  isMe ? "text-blue-200" : "text-primary"
+                  isMe ? "text-primary" : "text-primary"
                 )}>
                   {message.reply_to_sender || "Mensagem"}
                 </p>
                 <p className={cn(
                   "text-[11px] truncate leading-snug mt-0.5",
-                  isMe ? "text-primary-foreground/60" : "text-muted-foreground"
+                  isMe ? "text-muted-foreground/60" : "text-muted-foreground"
                 )}>
                   {message.reply_to_content.length > 120
                     ? message.reply_to_content.substring(0, 120) + "…"
@@ -503,25 +503,25 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                 <div className={cn(
                   "flex items-center gap-3 p-3 rounded-lg transition-colors",
                   isMe
-                    ? "bg-primary-foreground/10 hover:bg-primary-foreground/15"
+                    ? "bg-primary/10 hover:bg-primary/15"
                     : "bg-muted/50 hover:bg-muted/80"
                 )}>
                   <div className={cn(
                     "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-                    isMe ? "bg-primary-foreground/20" : "bg-red-100 dark:bg-red-900/30"
+                    isMe ? "bg-primary/15" : "bg-red-100 dark:bg-red-900/30"
                   )}>
-                    <MapPin className={cn("h-5 w-5", isMe ? "text-primary-foreground" : "text-red-600 dark:text-red-400")} />
+                    <MapPin className={cn("h-5 w-5", isMe ? "text-foreground" : "text-red-600 dark:text-red-400")} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={cn(
                       "text-xs font-medium truncate",
-                      isMe ? "text-primary-foreground" : "text-foreground"
+                      isMe ? "text-foreground" : "text-foreground"
                     )}>
                       {message.content || "Localização compartilhada"}
                     </p>
                     <p className={cn(
                       "text-[10px] flex items-center gap-1",
-                      isMe ? "text-primary-foreground/50" : "text-muted-foreground"
+                      isMe ? "text-muted-foreground" : "text-muted-foreground"
                     )}>
                       <ExternalLink className="h-3 w-3" />
                       Abrir no Google Maps
@@ -553,33 +553,33 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                     className={cn(
                       "flex items-center gap-2.5 p-2 rounded-lg transition-colors mb-1",
                       isMe
-                        ? "bg-primary-foreground/10 hover:bg-primary-foreground/15"
+                        ? "bg-primary/10 hover:bg-primary/15"
                         : "bg-muted/50 hover:bg-muted/80"
                     )}
                   >
                     <div className={cn(
                       "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-                      isMe ? "bg-primary-foreground/20" : "bg-primary/10"
+                      isMe ? "bg-primary/15" : "bg-primary/10"
                     )}>
-                      <FileText className={cn("h-5 w-5", isMe ? "text-primary-foreground" : "text-primary")} />
+                      <FileText className={cn("h-5 w-5", isMe ? "text-foreground" : "text-primary")} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={cn(
                         "text-xs font-medium truncate",
-                        isMe ? "text-primary-foreground" : "text-foreground"
+                        isMe ? "text-foreground" : "text-foreground"
                       )}>
                         {fileName}
                       </p>
                       <p className={cn(
                         "text-[10px]",
-                        isMe ? "text-primary-foreground/50" : "text-muted-foreground"
+                        isMe ? "text-muted-foreground" : "text-muted-foreground"
                       )}>
                         Toque para abrir
                       </p>
                     </div>
                     <Download className={cn(
                       "h-4 w-4 shrink-0",
-                      isMe ? "text-primary-foreground/50" : "text-muted-foreground"
+                      isMe ? "text-muted-foreground" : "text-muted-foreground"
                     )} />
                   </a>
                 );
@@ -659,7 +659,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                     </span>
                   )}
                   {isEdited && (
-                    <span className={cn("text-[10px] italic", isMe ? "text-primary-foreground/40" : "text-muted-foreground/40")}>
+                    <span className={cn("text-[10px] italic", isMe ? "text-muted-foreground/40" : "text-muted-foreground/40")}>
                       editada
                     </span>
                   )}
@@ -673,7 +673,7 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                       {onRetry && <RotateCcw className="h-2.5 w-2.5 ml-0.5" />}
                     </button>
                   )}
-                  <span className={cn("text-[10px]", isMe ? "text-primary-foreground/60" : "text-muted-foreground/60")}>
+                  <span className={cn("text-[10px]", isMe ? "text-muted-foreground/60" : "text-muted-foreground/60")}>
                     {time}
                   </span>
                   {isMe && message.status !== "failed" && (
@@ -682,13 +682,13 @@ export function MessageBubble({ message, isGroup, channelOwnerPhone, onDelete, o
                         <TooltipTrigger asChild>
                           <span className="inline-flex">
                             {message.status === "pending" ? (
-                              <Clock className={cn("h-3 w-3 animate-pulse", "text-primary-foreground/50")} />
+                              <Clock className={cn("h-3 w-3 animate-pulse", "text-primary/50")} />
                             ) : message.status === "read" ? (
-                              <CheckCheck className="h-3 w-3 text-blue-300" />
+                              <CheckCheck className="h-3 w-3 text-blue-500" />
                             ) : message.status === "delivered" ? (
-                              <CheckCheck className={cn("h-3 w-3", "text-primary-foreground/50")} />
+                              <CheckCheck className={cn("h-3 w-3", "text-primary/50")} />
                             ) : (
-                              <Check className={cn("h-3 w-3", "text-primary-foreground/50")} />
+                              <Check className={cn("h-3 w-3", "text-primary/50")} />
                             )}
                           </span>
                         </TooltipTrigger>
