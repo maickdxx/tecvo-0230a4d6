@@ -94,6 +94,7 @@ serve(async (req) => {
     const userProfile = userProfileRes.data;
     orgContext.currentUserName = userProfile?.full_name || null;
     orgContext.currentUserRole = userProfile?.position || "proprietário";
+    orgContext.currentUserId = userId;
 
     const orgTz = orgContext.timezone;
     const todayISO = getTodayInTz(orgTz);
