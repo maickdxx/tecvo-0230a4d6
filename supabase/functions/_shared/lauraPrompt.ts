@@ -20,6 +20,102 @@ function formatBRL(value: number) {
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// ─────────────────── catalog matching helpers ───────────────────
+
+/** Remove accents, lowercase, strip stopwords */
+function normalizeCatalogText(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b(de|do|da|dos|das|para|em|um|uma|o|a|os|as|e|com|no|na|nos|nas|por|que|se)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Synonym groups → canonical keyword */
+const CATALOG_SYNONYMS: Record<string, string[]> = {
+  limpeza: ["limpeza", "higienizacao", "lavagem", "limpar", "higienizar", "lavar"],
+  instalacao: ["instalacao", "instalar", "colocar", "montar", "montagem", "colocar ar"],
+  manutencao: ["manutencao", "conserto", "consertar", "arrumar", "reparo", "reparar", "manutenção preventiva"],
+  desinstalacao: ["desinstalacao", "desinstalar", "remover", "retirar", "remoção", "retirada"],
+  visita: ["visita", "visita tecnica", "avaliacao", "avaliar", "diagnostico"],
+  recarga: ["recarga", "gas", "recarregar", "fluido", "refrigerante"],
+};
+
+/** Expand user text with synonyms → returns canonical group or original */
+function expandSynonyms(normalized: string): string[] {
+  const groups: string[] = [];
+  for (const [canonical, synonyms] of Object.entries(CATALOG_SYNONYMS)) {
+    if (synonyms.some((s) => normalized.includes(s))) {
+      groups.push(canonical);
+    }
+  }
+  return groups.length > 0 ? groups : [normalized];
+}
+
+/** Score a catalog item against user input (higher = better match) */
+function catalogMatchScore(catalogName: string, userInput: string, userGroups: string[]): number {
+  const normCatalog = normalizeCatalogText(catalogName);
+  let score = 0;
+
+  // Exact normalized match
+  if (normCatalog === userInput) return 100;
+
+  // Contains full input
+  if (normCatalog.includes(userInput)) score += 50;
+
+  // Synonym group match
+  for (const group of userGroups) {
+    if (normCatalog.includes(group)) score += 30;
+  }
+
+  // Word overlap
+  const userWords = userInput.split(" ").filter((w) => w.length > 2);
+  const catalogWords = normCatalog.split(" ");
+  for (const w of userWords) {
+    if (catalogWords.some((cw) => cw.includes(w) || w.includes(cw))) score += 10;
+  }
+
+  // BTU number match (e.g., "12k" → "12.000", "12000")
+  const btuMatch = userInput.match(/(\d+)\s*k/i);
+  if (btuMatch) {
+    const btuNum = btuMatch[1];
+    if (normCatalog.includes(`${btuNum}.000`) || normCatalog.includes(`${btuNum}000`)) {
+      score += 40;
+    }
+  }
+
+  return score;
+}
+
+/** Smart catalog matching: returns { match, matches, noMatch } */
+function smartCatalogMatch(
+  catalogItems: any[],
+  userInput: string,
+): { match: any | null; matches: any[]; noMatch: boolean } {
+  if (!catalogItems || catalogItems.length === 0) return { match: null, matches: [], noMatch: true };
+
+  const normInput = normalizeCatalogText(userInput);
+  const groups = expandSynonyms(normInput);
+
+  const scored = catalogItems
+    .map((item) => ({ item, score: catalogMatchScore(item.name, normInput, groups) }))
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length === 0) return { match: null, matches: [], noMatch: true };
+  if (scored.length === 1) return { match: scored[0].item, matches: [scored[0].item], noMatch: false };
+
+  // If top score is significantly higher, auto-select
+  if (scored[0].score >= 50 && scored[0].score > scored[1].score * 1.5) {
+    return { match: scored[0].item, matches: scored.map((s) => s.item), noMatch: false };
+  }
+
+  // Multiple viable matches
+  return { match: null, matches: scored.map((s) => s.item), noMatch: false };
+}
+
 // ─────────────────── context fetcher ───────────────────
 
 export async function fetchOrgContext(supabase: any, organizationId: string) {
@@ -373,7 +469,7 @@ ANTES de registrar qualquer gasto ou receita:
 5. NUNCA mande criar conta se já existem contas cadastradas.
 6. NUNCA pergunte sobre conta se já existe uma padrão definida — use-a diretamente.
 
-══════════ REGRAS DE CATÁLOGO DE SERVIÇOS (OBRIGATÓRIO) ══════════
+══════════ REGRAS DE CATÁLOGO DE SERVIÇOS (OBRIGATÓRIO — PRIORIDADE MÁXIMA) ══════════
 
 ANTES de criar qualquer serviço ou OS:
 1. VERIFIQUE se existe item correspondente no catálogo acima.
@@ -384,11 +480,29 @@ ANTES de criar qualquer serviço ou OS:
 6. Se o usuário informar valor DIFERENTE do catálogo → use o valor do usuário (ele tem precedência).
 7. Ao usar o catálogo, passe o parâmetro catalog_service_name na ferramenta create_service para vincular automaticamente.
 
+⚠️ INTERPRETAÇÃO INTELIGENTE DE SINÔNIMOS:
+• "limpar", "higienizar", "lavagem" → tipo "limpeza"
+• "instalar", "colocar ar", "montar" → tipo "instalação"
+• "consertar", "arrumar", "reparo" → tipo "manutenção"
+• "desinstalar", "remover", "retirar" → tipo "desinstalação"
+• "visita", "avaliar", "diagnóstico" → tipo "visita técnica"
+• "gás", "recarga", "fluido" → tipo "recarga de gás"
+
+Interprete a intenção do usuário ANTES de buscar no catálogo.
+Ex: "limpar ar" = limpeza. "colocar split" = instalação. "arrumar ar" = manutenção.
+
+⚠️ BLOQUEIO ABSOLUTO:
+- É PROIBIDO criar serviço com valor R$ 0 quando existem itens de catálogo do mesmo tipo.
+- Se o sistema retornar CATALOG_MULTIPLE_MATCHES, você DEVE perguntar ao usuário qual item ele quer.
+- NUNCA ignore o retorno CATALOG_MULTIPLE_MATCHES.
+
 EXEMPLOS DE MATCH:
 • "limpeza" → verificar itens de limpeza no catálogo → se múltiplos BTUs, perguntar qual
 • "instalação de split 12k" → match direto com "Instalação de Ar Condicionado 12.000 BTUs" → usar R$ 850
 • "visita técnica" → match com "Visita Técnica" → usar R$ 100
 • "manutenção" → verificar se é "Recarga de Gás" ou "Troca de Capacitor" → perguntar qual
+• "higienizar split" → sinônimo de limpeza → buscar no catálogo → perguntar BTUs
+• "colocar ar 12k" → sinônimo de instalação → match com 12.000 BTUs
 
 ══════════ REGRAS DE DECISÃO INTELIGENTE (PRIORIDADE MÁXIMA) ══════════
 
@@ -1262,65 +1376,82 @@ export async function executeAdminTool(
 
     const finalServiceType = (typeExists && typeExists.length > 0) ? service_type : "outro";
 
-    // ── CATALOG MATCHING ──
+    // ── CATALOG MATCHING (HARDENED) ──
     let catalogMatch: any = null;
     let catalogServiceId: string | null = null;
     let finalValue = value ?? null; // null means "not provided by user"
     let finalDescription = description;
 
-    if (catalog_service_name) {
-      // Direct match by name provided by AI
-      const { data: catalogMatches } = await supabase
-        .from("catalog_services")
-        .select("id, name, unit_price, service_type, description")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .ilike("name", `%${catalog_service_name}%`)
-        .limit(5);
+    // Fetch ALL active catalog items for this org (usually <50)
+    const { data: allCatalog } = await supabase
+      .from("catalog_services")
+      .select("id, name, unit_price, service_type, description")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .limit(100);
 
-      if (catalogMatches && catalogMatches.length === 1) {
-        catalogMatch = catalogMatches[0];
-      } else if (catalogMatches && catalogMatches.length > 1) {
-        // Multiple matches — return options for Laura to ask user
-        const options = catalogMatches.map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
-        return `CATALOG_MULTIPLE_MATCHES:Encontrei ${catalogMatches.length} itens no catálogo:\n${options}\n\nQual deles é o correto? Informe o nome exato.`;
+    const catalogItems = allCatalog || [];
+
+    if (catalog_service_name) {
+      // Smart match using normalized text + synonyms
+      const result = smartCatalogMatch(catalogItems, catalog_service_name);
+
+      if (result.match) {
+        catalogMatch = result.match;
+      } else if (result.matches.length > 1) {
+        const options = result.matches.slice(0, 5).map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
+        return `CATALOG_MULTIPLE_MATCHES:Encontrei ${result.matches.length} itens no catálogo:\n${options}\n\nQual deles é o correto? Informe o nome exato.`;
       }
     }
 
-    // Fallback: try matching by service_type + keywords from description
-    if (!catalogMatch && !catalog_service_name) {
-      const { data: typeCatalog } = await supabase
-        .from("catalog_services")
-        .select("id, name, unit_price, service_type, description")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .eq("service_type", finalServiceType)
-        .limit(10);
+    // Fallback: smart match using description + service_type
+    if (!catalogMatch) {
+      const searchText = catalog_service_name || `${finalServiceType} ${description}`;
+      const result = smartCatalogMatch(catalogItems, searchText);
 
-      if (typeCatalog && typeCatalog.length === 1) {
-        catalogMatch = typeCatalog[0];
+      if (result.match) {
+        catalogMatch = result.match;
+      } else if (result.matches.length > 1 && !catalog_service_name) {
+        // Multiple matches on fallback — return options
+        const options = result.matches.slice(0, 5).map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
+        return `CATALOG_MULTIPLE_MATCHES:Encontrei ${result.matches.length} itens parecidos no catálogo:\n${options}\n\nQual deles é o correto?`;
       }
-      // If multiple, don't auto-match — Laura should have asked
     }
 
     if (catalogMatch) {
       catalogServiceId = catalogMatch.id;
-      // Use catalog price if user didn't provide one
       if (finalValue === null || finalValue === undefined) {
         finalValue = Number(catalogMatch.unit_price);
       }
-      // Enhance description with catalog name if it's generic
       if (description.length < 30) {
         finalDescription = catalogMatch.name;
       }
       console.log(`[LAURA] Catalog match: "${catalogMatch.name}" (R$ ${catalogMatch.unit_price}) → service`);
     }
 
-    // Final fallback: value = 0 only if truly no catalog and no user value
-    if (finalValue === null || finalValue === undefined) {
-      finalValue = 0;
+    // ── ZERO-VALUE BLOCKING ──
+    if (finalValue === null || finalValue === undefined || finalValue === 0) {
+      if (catalogItems.length > 0) {
+        // Check if any catalog item matches the service type
+        const typeMatches = catalogItems.filter((c: any) => c.service_type === finalServiceType);
+        if (typeMatches.length > 0 && !catalogMatch) {
+          // There ARE catalog items for this type but no match — block zero
+          const options = typeMatches.slice(0, 5).map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
+          console.warn(`[LAURA] BLOCKED zero-value service. Type "${finalServiceType}" has catalog items.`);
+          return `CATALOG_MULTIPLE_MATCHES:Não posso criar serviço sem valor quando existem itens no catálogo para "${finalServiceType}":\n${options}\n\nQual deles é o correto? Ou informe o valor manualmente.`;
+        }
+      }
+      // Truly no catalog match — allow zero but log it
+      if (finalValue === null || finalValue === undefined) finalValue = 0;
+      if (finalValue === 0) {
+        console.warn(`[LAURA] QUALITY LOG: Service created with value=0. Type="${finalServiceType}", desc="${description}", catalogMatch=${!!catalogMatch}`);
+      }
+    }
+
+    // Log quality metrics
+    if (!catalogServiceId) {
+      console.warn(`[LAURA] QUALITY LOG: Service WITHOUT catalog link. Type="${finalServiceType}", desc="${description}"`);
     }
 
     const { data: newService, error } = await supabase.from("services").insert({
