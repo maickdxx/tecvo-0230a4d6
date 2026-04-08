@@ -29,6 +29,7 @@ export const ACTION_RISK_REGISTRY: Record<string, ActionRisk> = {
   approve_pending_transactions: "high",
   reject_pending_transactions: "high",
   get_pending_summary: "low",
+  list_pending_transactions: "low",
   create_client: "medium",
   create_quote: "medium",
   create_financial_account: "low",
