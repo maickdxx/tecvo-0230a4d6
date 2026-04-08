@@ -1106,7 +1106,7 @@ export async function executeAdminTool(
     return `✅ Conta "${account.name}" definida como conta padrão da IA! Agora todos os registros financeiros serão vinculados a esta conta.`;
   }
 
-
+  if (fnName === "create_service") {
     const { client_name, scheduled_date, service_type, description, value, assigned_to_name } = args;
     if (!client_name || !scheduled_date || !service_type || !description) {
       return "Erro: campos obrigatórios faltando.";
