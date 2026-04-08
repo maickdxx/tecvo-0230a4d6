@@ -2993,10 +2993,7 @@ Deno.serve(async (req) => {
         const sttModel = sttResult.provider === "lovable_ai" ? "google/gemini-2.5-flash"
           : sttResult.provider === "gemini_direct" ? "google/gemini-2.5-flash"
           : "elevenlabs/scribe_v2";
-        await logAIUsage(supabase, {
-          organizationId: targetOrganizationId,
-          userId: null,
-          actionSlug: "audio_transcription",
+        await logFreeAIUsage(supabase, targetOrganizationId, null, "audio_transcription", {
           model: sttModel,
           promptTokens: 0,
           completionTokens: 0,
