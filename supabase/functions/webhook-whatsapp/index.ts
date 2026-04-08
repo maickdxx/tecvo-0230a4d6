@@ -3037,11 +3037,22 @@ Deno.serve(async (req) => {
             targetOrganizationId,
           );
 
-          // Inject current user identity — find owner profile by matching phone
-          const ownerProfile = (orgContext.profiles || []).find((p: any) => p.full_name);
-          if (ownerProfile) {
-            orgContext.currentUserName = ownerProfile.full_name;
-            orgContext.currentUserRole = ownerProfile.position || "proprietário";
+          // Better owner identification: find admin/owner role user's profile
+          if (!orgContext.currentUserName) {
+            const { data: ownerRoles } = await supabase
+              .from("user_roles")
+              .select("user_id, role")
+              .eq("organization_id", targetOrganizationId)
+              .in("role", ["owner", "admin"])
+              .limit(1);
+            if (ownerRoles && ownerRoles.length > 0) {
+              const ownerUserId = ownerRoles[0].user_id;
+              const matchedProfile = (orgContext.profiles || []).find((p: any) => p.user_id === ownerUserId);
+              if (matchedProfile) {
+                orgContext.currentUserName = matchedProfile.full_name;
+                orgContext.currentUserRole = matchedProfile.position || "proprietário";
+              }
+            }
           }
 
           systemPrompt = buildSystemPrompt(orgContext);
