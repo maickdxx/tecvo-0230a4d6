@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAssistantChat } from "@/hooks/useAssistantChat";
-import { AICreditsDisplay } from "@/components/whatsapp/AICreditsDisplay";
+import { useAICredits, CREDIT_PACKAGES } from "@/hooks/useAICredits";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
 
 const quickSuggestions = [
@@ -17,6 +23,7 @@ const quickSuggestions = [
 
 function RechargeInlineCTA() {
   const [open, setOpen] = useState(false);
+  const { balance, isLow, isEmpty, purchaseCredits, purchasing } = useAICredits();
 
   return (
     <>
@@ -27,60 +34,46 @@ function RechargeInlineCTA() {
         <Zap className="h-3.5 w-3.5" />
         Recarregar IA
       </button>
-      {open && <AIRechargeModal open={open} onOpenChange={setOpen} />}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Recursos de IA
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-1">
+                {isEmpty ? "IA pausada" : isLow ? "Capacidade limitada" : "IA ativa"}
+              </p>
+              <p className={`text-3xl font-bold ${isEmpty ? "text-destructive" : isLow ? "text-amber-600" : "text-foreground"}`}>
+                {balance}
+              </p>
+              <p className="text-xs text-muted-foreground">interações disponíveis</p>
+            </div>
+            <div className="space-y-2">
+              {CREDIT_PACKAGES.map((pack) => (
+                <button
+                  key={pack.id}
+                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border/60 bg-background hover:border-primary/40 hover:bg-primary/5 transition-all"
+                  onClick={() => purchaseCredits(pack.id)}
+                  disabled={purchasing}
+                >
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-foreground">{pack.label}</p>
+                    <p className="text-xs text-muted-foreground">{pack.description}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    R$ {pack.price.toFixed(2).replace(".", ",")}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
-  );
-}
-
-// Lazy wrapper for the recharge modal from AICreditsDisplay
-function AIRechargeModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  // We reuse the existing AICreditsDisplay dialog by rendering it hidden and programmatically opening
-  // For simplicity, just render the full component inline
-  const { balance, isLow, isEmpty, purchaseCredits, purchasing } = require("@/hooks/useAICredits").useAICredits();
-  const { CREDIT_PACKAGES } = require("@/hooks/useAICredits");
-  const { Dialog, DialogContent, DialogHeader, DialogTitle } = require("@/components/ui/dialog");
-  const { AlertTriangle } = require("lucide-react");
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Recursos de IA
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">
-              {isEmpty ? "IA pausada" : isLow ? "Capacidade limitada" : "IA ativa"}
-            </p>
-            <p className={`text-3xl font-bold ${isEmpty ? "text-destructive" : isLow ? "text-amber-600" : "text-foreground"}`}>
-              {balance}
-            </p>
-            <p className="text-xs text-muted-foreground">interações disponíveis</p>
-          </div>
-          <div className="space-y-2">
-            {CREDIT_PACKAGES.map((pack: any) => (
-              <button
-                key={pack.id}
-                className="w-full flex items-center justify-between p-3 rounded-xl border border-border/60 bg-background hover:border-primary/40 hover:bg-primary/5 transition-all"
-                onClick={() => purchaseCredits(pack.id)}
-                disabled={purchasing}
-              >
-                <div className="text-left">
-                  <p className="text-sm font-medium text-foreground">{pack.label}</p>
-                  <p className="text-xs text-muted-foreground">{pack.description}</p>
-                </div>
-                <span className="text-sm font-semibold text-foreground">
-                  R$ {pack.price.toFixed(2).replace(".", ",")}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 
