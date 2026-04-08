@@ -1820,6 +1820,22 @@ const ADMIN_TOOLS = [
   {
     type: "function",
     function: {
+      name: "set_default_account",
+      description: "Define uma conta financeira existente como conta padrão da IA para registros financeiros.",
+      parameters: {
+        type: "object",
+        properties: {
+          account_id: { type: "string", description: "ID da conta financeira a ser definida como padrão" },
+          account_name: { type: "string", description: "Nome da conta escolhida (para confirmação)" },
+        },
+        required: ["account_id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_quote",
       description:
         "Cria um Orçamento no sistema. Use quando o usuário pedir para criar, fazer ou registrar um orçamento para um cliente.",
