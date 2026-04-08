@@ -78,7 +78,7 @@ export function CurrentSituationBlock() {
 
   const { totalPayable, totalReceivable, projectedFlow, projectedBalance, forecastLevel } = useMemo(() => {
     const pending = (txs: typeof payables) =>
-      txs.filter((t) => t.status === "pending" || t.status === "overdue").reduce((s, t) => s + Number(t.amount), 0);
+      txs.filter((t) => (t.status === "pending" || t.status === "overdue") && (t.approval_status === 'approved' || !t.approval_status)).reduce((s, t) => s + Number(t.amount), 0);
 
     const tp = pending(payables);
     const tr = pending(receivables);

@@ -7859,10 +7859,9 @@ export type Database = {
           page_title: string
         }[]
       }
-      get_pending_approval_summary: {
-        Args: { _date?: string; _organization_id: string }
-        Returns: Json
-      }
+      get_pending_approval_summary:
+        | { Args: { _date?: string; _organization_id: string }; Returns: Json }
+        | { Args: { _date?: string; _organization_id: string }; Returns: Json }
       get_portal_config_by_slug: {
         Args: { _slug: string }
         Returns: {
