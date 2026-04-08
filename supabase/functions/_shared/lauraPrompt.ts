@@ -116,6 +116,35 @@ function smartCatalogMatch(
   return { match: null, matches: scored.map((s) => s.item), noMatch: false };
 }
 
+// ─────────────────── OAL: contact decisions summary ───────────────────
+
+function buildContactDecisionsSummary(decisions: any[]): string {
+  if (!decisions || decisions.length === 0) {
+    return "Nenhum dado de contato disponível — todos os clientes estão elegíveis por padrão.";
+  }
+
+  const blocked = decisions.filter((d: any) => d.contact_status !== "eligible_for_contact");
+  const eligible = decisions.filter((d: any) => d.contact_status === "eligible_for_contact");
+
+  const lines: string[] = [];
+
+  if (blocked.length > 0) {
+    lines.push(`⛔ BLOQUEADOS (${blocked.length}):`);
+    for (const d of blocked.slice(0, 20)) {
+      const reason = d.block_reason === "recurrence_active" ? "recorrência ativa"
+        : d.block_reason === "recent_contact" ? "contato recente"
+        : d.block_reason === "cooldown_period" ? `cooldown até ${d.next_allowed_date}`
+        : d.block_reason || "bloqueado";
+      lines.push(`  • ${d.client_name}: ${d.contact_status} (${reason})`);
+    }
+    if (blocked.length > 20) lines.push(`  ... e mais ${blocked.length - 20} clientes bloqueados`);
+  }
+
+  lines.push(`✅ ELEGÍVEIS para contato: ${eligible.length} clientes`);
+
+  return lines.join("\n");
+}
+
 // ─────────────────── context fetcher ───────────────────
 
 export async function fetchOrgContext(supabase: any, organizationId: string) {
