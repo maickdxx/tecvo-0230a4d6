@@ -28,6 +28,8 @@ export interface CreditGuardResult {
   requestId: string;
   /** Remaining balance after debit (if available) */
   remainingBalance?: number;
+  /** Where credits were consumed from: franchise, credits, fallback, free */
+  source?: string;
 }
 
 /** Generate a unique request ID for this AI execution */
@@ -85,30 +87,22 @@ export async function checkAndDebitCredits(
 
     const result = typeof data === "object" ? data : {};
 
-    if (result.allowed === false) {
-      console.log(`[CREDIT-GUARD] Insufficient credits for org=${organizationId} action=${actionSlug} reqId=${reqId}`);
-      return {
-        allowed: false,
-        requestId: reqId,
-        remainingBalance: result.remaining_balance ?? 0,
-        response: new Response(
-          JSON.stringify({
-            error: "A Laura está temporariamente pausada. Amplie a capacidade para continuar usando todos os recursos inteligentes.",
-            code: "INSUFFICIENT_CREDITS",
-          }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        ),
-      };
-    }
-
+    // The new RPC always returns allowed=true (franchise → credits → fallback)
+    // No more hard blocks — fallback mode uses cheaper/shorter responses
     if (result.deduplicated) {
       console.log(`[CREDIT-GUARD] Deduplicated request ${reqId} for org=${organizationId}`);
+    }
+
+    const source = result.source || "unknown";
+    if (source === "fallback") {
+      console.log(`[CREDIT-GUARD] Fallback mode for org=${organizationId} action=${actionSlug} reqId=${reqId}`);
     }
 
     return {
       allowed: true,
       requestId: reqId,
-      remainingBalance: result.remaining_balance,
+      remainingBalance: result.remaining_balance ?? 0,
+      source,
     };
   } catch (err: any) {
     console.error("[CREDIT-GUARD] Unexpected error:", err?.message || err);

@@ -18,37 +18,43 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
   { id: "pack_5000", credits: 5000, price: 49.90, label: "5.000 interações", description: "Melhor custo-benefício" },
 ];
 
+interface FranchiseStatus {
+  franchise_total: number;
+  franchise_used: number;
+  franchise_remaining: number;
+  credits_balance: number;
+  period_start: string;
+  plan_slug: string;
+}
+
 export function useAICredits() {
   const { organizationId } = useAuth();
   const queryClient = useQueryClient();
   const [purchasing, setPurchasing] = useState(false);
 
-  const { data: credits, isLoading } = useQuery({
-    queryKey: ["ai-credits", organizationId],
-    queryFn: async () => {
+  const { data: franchiseData, isLoading } = useQuery({
+    queryKey: ["ai-franchise", organizationId],
+    queryFn: async (): Promise<FranchiseStatus | null> => {
       if (!organizationId) return null;
-      const { data, error } = await supabase
-        .from("ai_credits")
-        .select("balance, updated_at")
-        .eq("organization_id", organizationId)
-        .single();
-
+      const { data, error } = await supabase.rpc("get_franchise_status", {
+        _org_id: organizationId,
+      });
       if (error) {
-        console.error("Error fetching AI credits:", error);
-        return { balance: 0, updated_at: null };
+        console.error("Error fetching franchise status:", error);
+        return null;
       }
-      return data;
+      return data as unknown as FranchiseStatus;
     },
     enabled: !!organizationId,
     refetchInterval: 120_000,
   });
 
-  // Realtime subscription — auto-refresh balance after purchase
+  // Realtime subscription — auto-refresh on franchise or credits changes
   useEffect(() => {
     if (!organizationId) return;
 
     const channel = supabase
-      .channel(`ai-credits-${organizationId}`)
+      .channel(`ai-status-${organizationId}`)
       .on(
         "postgres_changes",
         {
@@ -58,7 +64,19 @@ export function useAICredits() {
           filter: `organization_id=eq.${organizationId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["ai-credits", organizationId] });
+          queryClient.invalidateQueries({ queryKey: ["ai-franchise", organizationId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "ai_franchise",
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ai-franchise", organizationId] });
         }
       )
       .subscribe();
@@ -68,9 +86,19 @@ export function useAICredits() {
     };
   }, [organizationId, queryClient]);
 
-  const balance = credits?.balance ?? 0;
-  const isLow = balance > 0 && balance <= 200;
-  const isEmpty = balance <= 0;
+  const franchiseRemaining = franchiseData?.franchise_remaining ?? 0;
+  const franchiseTotal = franchiseData?.franchise_total ?? 0;
+  const creditsBalance = franchiseData?.credits_balance ?? 0;
+  const totalAvailable = franchiseRemaining + creditsBalance;
+  
+  // For display: show total available capacity
+  const balance = totalAvailable;
+  const hasFranchise = franchiseTotal > 0;
+  // Low = less than 10% of franchise remaining AND no extra credits
+  const isLow = hasFranchise
+    ? franchiseRemaining < franchiseTotal * 0.1 && creditsBalance < 200
+    : creditsBalance > 0 && creditsBalance <= 200;
+  const isEmpty = totalAvailable <= 0 && !hasFranchise;
 
   const purchaseCredits = async (packageId: string) => {
     setPurchasing(true);
@@ -108,7 +136,7 @@ export function useAICredits() {
   };
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["ai-credits"] });
+    queryClient.invalidateQueries({ queryKey: ["ai-franchise"] });
   };
 
   return {
@@ -119,5 +147,10 @@ export function useAICredits() {
     purchaseCredits,
     purchasing,
     refresh,
+    // Detailed info for advanced UI
+    franchiseRemaining,
+    franchiseTotal,
+    creditsBalance,
+    hasFranchise,
   };
 }

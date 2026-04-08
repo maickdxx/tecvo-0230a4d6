@@ -32,17 +32,18 @@ export interface PlanConfig {
   hasAI: boolean;
   hasAdvancedAI: boolean;
   hasTeamManagement: boolean;
-  hasWhatsAppFull: boolean; // full WhatsApp: conversations, tags, quick replies, chatbots
-  hasRecurrence: boolean; // recurrence automation
-  hasDigitalSignature: boolean; // digital signature on OS
+  hasWhatsAppFull: boolean;
+  hasRecurrence: boolean;
+  hasDigitalSignature: boolean;
   hasFinance: boolean;
-  hasAdvancedFinance: boolean; // advanced finance (Empresa only)
+  hasAdvancedFinance: boolean;
   hasCatalog: boolean;
   hasAgenda: boolean;
-  hasPermissions: boolean; // custom user permissions
-  hasTimeClock: boolean; // time clock module (ponto)
-  hasClientPortal: boolean; // client portal
-  mpValue: number; // Mercado Pago unit price in BRL
+  hasPermissions: boolean;
+  hasTimeClock: boolean;
+  hasClientPortal: boolean;
+  mpValue: number;
+  aiFranchise: number; // monthly AI interactions included in plan
 }
 
 export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
@@ -75,6 +76,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     hasTimeClock: false,
     hasClientPortal: true,
     mpValue: 1,
+    aiFranchise: 0,
   },
   starter: {
     slug: "starter",
@@ -115,6 +117,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     hasTimeClock: false,
     hasClientPortal: true,
     mpValue: 49,
+    aiFranchise: 0, // starter não inclui IA
   },
   essential: {
     slug: "essential",
@@ -133,7 +136,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
       { text: "Tudo do plano Start", included: true },
       { text: "WhatsApp completo (Inbox)", included: true },
       { text: "Chatbot", included: true },
-      { text: "IA no atendimento", included: true },
+      { text: "IA incluída (800 interações/mês)", included: true },
       { text: "Recorrência automática", included: true },
       { text: "Relatórios de conversão", included: true },
       { text: "Assinatura digital", included: true },
@@ -155,6 +158,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     hasTimeClock: false,
     hasClientPortal: true,
     mpValue: 119,
+    aiFranchise: 800, // ~800 interações/mês
   },
   pro: {
     slug: "pro",
@@ -194,6 +198,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     hasTimeClock: true,
     hasClientPortal: true,
     mpValue: 229,
+    aiFranchise: 2000, // ~2000 interações/mês
   },
 };
 
