@@ -2783,6 +2783,59 @@ export type Database = {
           },
         ]
       }
+      pending_finance_actions: {
+        Row: {
+          action_type: string
+          channel: string
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string
+          executed_at: string | null
+          expires_at: string
+          id: string
+          organization_id: string
+          payload: Json
+          status: string
+          summary: string
+        }
+        Insert: {
+          action_type: string
+          channel?: string
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          executed_at?: string | null
+          expires_at?: string
+          id?: string
+          organization_id: string
+          payload?: Json
+          status?: string
+          summary: string
+        }
+        Update: {
+          action_type?: string
+          channel?: string
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          executed_at?: string | null
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          payload?: Json
+          status?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_finance_actions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_admin_notifications: {
         Row: {
           body: string | null
