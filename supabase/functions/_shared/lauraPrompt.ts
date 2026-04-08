@@ -383,6 +383,38 @@ export function buildSystemPrompt(ctx: any) {
     ? catalog.map((c: any) => `  - ${c.name}: ${formatBRL(c.unit_price)} (${c.service_type})`).join("\n")
     : "Nenhum item no catálogo";
 
+  // ── Pre-compute client recurrence history ──
+  const clientLastSvc: Record<string, { name: string; lastDate: string; lastType: string; daysSince: number }> = {};
+  const nowMs = now.getTime();
+  for (const s of osServices) {
+    if (s.status !== "completed" || !s.scheduled_date) continue;
+    const d = getDatePartInTz(s.scheduled_date, tz);
+    const existing = clientLastSvc[s.client_id];
+    if (!existing || d > existing.lastDate) {
+      const client = clients.find((c: any) => c.id === s.client_id);
+      const daysSince = Math.floor((nowMs - new Date(s.scheduled_date).getTime()) / (1000 * 60 * 60 * 24));
+      clientLastSvc[s.client_id] = { name: client?.name || "?", lastDate: d, lastType: s.service_type || "?", daysSince };
+    }
+  }
+  const inactiveClients = Object.values(clientLastSvc)
+    .filter((c) => c.daysSince >= 90)
+    .sort((a, b) => b.daysSince - a.daysSince)
+    .slice(0, 15);
+  const recurrenceText = inactiveClients.length > 0
+    ? inactiveClients.map((c) => `  • ${c.name}: último serviço (${c.lastType}) há ${c.daysSince} dias`).join("\n")
+    : "  Todos os clientes têm serviços recentes (< 3 meses)";
+
+  // ── Pre-compute catalog popularity ──
+  const typeCounts: Record<string, number> = {};
+  for (const s of osServices) {
+    const t = s.service_type || "outro";
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  }
+  const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+  const popularityText = sortedTypes.length > 0
+    ? sortedTypes.slice(0, 5).map(([t, c]) => `  • ${t}: ${c} serviços nos últimos 6 meses`).join("\n")
+    : "  Sem dados suficientes";
+
   return `Você é a Laura, secretária inteligente da empresa ${orgName}. Você cuida da operação como uma secretária real — resolve, organiza e informa.
 
 📅 Agora: ${dateStr} às ${timeStr} (Brasília)
