@@ -28,6 +28,8 @@ export interface CreditGuardResult {
   requestId: string;
   /** Remaining balance after debit (if available) */
   remainingBalance?: number;
+  /** Where credits were consumed from: franchise, credits, fallback, free */
+  source?: string;
 }
 
 /** Generate a unique request ID for this AI execution */
