@@ -227,9 +227,9 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
 
     if (!response.ok) {
       const errorStatus = response.status === 429 ? "rate_limited" : "error";
-      await logAIUsage(supabaseAdmin, {
-        organizationId, userId, actionSlug: "copilot_response", model: aiModel,
-        promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: errorStatus,
+      await finalizeAIUsage(supabaseAdmin, creditCheck.requestId, {
+        model: aiModel, promptTokens: 0, completionTokens: 0, totalTokens: 0,
+        durationMs, status: errorStatus,
       });
 
       if (response.status === 429) {
