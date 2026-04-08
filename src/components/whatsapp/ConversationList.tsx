@@ -364,40 +364,63 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Status Filters */}
-      <div className="px-3 pb-2.5 flex items-center gap-1 overflow-x-auto no-scrollbar">
-        {filters.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => { 
-              if (statusFilter !== f.key) {
-                setStatusFilter(f.key); 
-                setSelectedIds(new Set()); 
-              }
-            }}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all whitespace-nowrap relative",
-              statusFilter === f.key
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            )}
-          >
-            {f.label}
-            {f.count > 0 && (
-              <span className={cn(
-                "text-[10px] rounded-full px-1.5 min-w-[16px] text-center font-semibold",
-                statusFilter === f.key
-                  ? "bg-primary-foreground/20 text-primary-foreground"
-                  : f.key !== "finalizado"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground"
-              )}>
-                {f.key !== "finalizado" ? formatCount(f.count) : `(${formatCount(f.count)})`}
+      {/* Status Filters — Carousel with active tab always centered */}
+      {(() => {
+        const activeIdx = filters.findIndex(f => f.key === statusFilter);
+        const leftIdx = activeIdx - 1;
+        const rightIdx = activeIdx + 1;
+        const leftTab = leftIdx >= 0 ? filters[leftIdx] : null;
+        const rightTab = rightIdx < filters.length ? filters[rightIdx] : null;
+        const centerTab = filters[activeIdx];
+
+        const handleTabClick = (key: StatusFilter) => {
+          if (statusFilter !== key) {
+            setStatusFilter(key);
+            setSelectedIds(new Set());
+          }
+        };
+
+        const renderTab = (tab: typeof filters[0] | null, position: "left" | "center" | "right") => {
+          if (!tab) return <div className="flex-1" />;
+          const isCenter = position === "center";
+          return (
+            <button
+              key={tab.key}
+              onClick={() => handleTabClick(tab.key)}
+              className={cn(
+                "inline-flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap relative transition-all duration-300 ease-in-out",
+                isCenter
+                  ? "flex-[1.4] bg-primary text-primary-foreground shadow-md scale-100"
+                  : "flex-1 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40 scale-95"
+              )}
+            >
+              <span className={cn("transition-opacity duration-300", isCenter ? "opacity-100" : "opacity-70")}>
+                {tab.label}
               </span>
-            )}
-          </button>
-        ))}
-      </div>
+              {tab.count > 0 && (
+                <span className={cn(
+                  "text-[10px] rounded-full px-1.5 min-w-[16px] text-center font-semibold transition-opacity duration-300",
+                  isCenter
+                    ? "bg-primary-foreground/20 text-primary-foreground opacity-100"
+                    : tab.key !== "finalizado"
+                      ? "bg-primary/10 text-primary opacity-60"
+                      : "text-muted-foreground opacity-50"
+                )}>
+                  {tab.key !== "finalizado" ? formatCount(tab.count) : `(${formatCount(tab.count)})`}
+                </span>
+              )}
+            </button>
+          );
+        };
+
+        return (
+          <div className="px-3 pb-2.5 flex items-center gap-1">
+            {renderTab(leftTab, "left")}
+            {renderTab(centerTab, "center")}
+            {renderTab(rightTab, "right")}
+          </div>
+        );
+      })()}
 
       {/* Pipeline + Advanced Filters */}
       <div className="px-3 pb-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar">
