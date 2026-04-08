@@ -220,14 +220,14 @@ export function useAdminDashboard() {
         });
       }
 
-      const lowBalanceOrgs = aiCredits.filter(c => c.balance <= 5);
+      const lowBalanceOrgs = aiCredits.filter(c => c.balance <= 50);
       if (lowBalanceOrgs.length > 0) {
         alerts.push({
           id: "ai-low-credits",
           type: "info",
-          title: `${lowBalanceOrgs.length} empresa${lowBalanceOrgs.length > 1 ? "s" : ""} com créditos IA baixos`,
-          description: "Saldo ≤ 5 créditos",
-          action: { label: "Ver créditos IA", tab: "ai-credits" },
+          title: `${lowBalanceOrgs.length} empresa${lowBalanceOrgs.length > 1 ? "s" : ""} com capacidade IA reduzida`,
+          description: "Capacidade baixa",
+          action: { label: "Ver capacidade IA", tab: "ai-credits" },
           count: lowBalanceOrgs.length,
         });
       }
