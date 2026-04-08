@@ -349,21 +349,24 @@ export function useWhatsAppConversations() {
     const currentConvStatus = contact.conversation_status || "novo";
     const currentPipelineStatus = contact.conversion_status || "novo_contato";
     
-    // Skip only if already "atendendo" and pipeline is past initial stage
+    // Skip if already "atendendo" and pipeline is past initial stage
     if (currentConvStatus === "atendendo" && currentPipelineStatus !== "novo_contato") return;
     
     const updates: Record<string, any> = {};
     const optimisticFields: Record<string, any> = {};
     
-    // Reopen resolved/finalized conversations or promote new ones
+    // Reopen resolved/finalized conversations — only change conversation_status, preserve pipeline
     if (currentConvStatus === "novo" || currentConvStatus === "resolvido" || currentConvStatus === "resolved") {
       updates.conversation_status = "atendendo";
       optimisticFields.conversation_status = "atendendo";
     }
+    
+    // Only promote pipeline if it's at the very first stage (novo_contato)
     if (currentPipelineStatus === "novo_contato") {
       updates.conversion_status = "qualificacao";
       optimisticFields.conversion_status = "qualificacao";
     }
+    // When reopening from resolvido, do NOT reset pipeline — preserve the existing stage
     
     if (Object.keys(updates).length === 0) return;
     
