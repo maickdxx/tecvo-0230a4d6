@@ -88,6 +88,48 @@ export function getDatePartInTz(isoString: string, tz: string): string {
 }
 
 /**
+ * Get the UTC offset string (e.g. "-03:00") for a given IANA timezone at a given moment.
+ */
+function getUtcOffset(tz: string, at: Date = new Date()): string {
+  const effectiveTz = tz || DEFAULT_TIMEZONE;
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: effectiveTz,
+    timeZoneName: "longOffset",
+  });
+  const parts = formatter.formatToParts(at);
+  const tzPart = parts.find((p) => p.type === "timeZoneName")?.value || "";
+  // tzPart looks like "GMT-03:00" or "GMT+05:30" or "GMT" (for UTC)
+  const match = tzPart.match(/GMT([+-]\d{2}:\d{2})/);
+  if (match) return match[1];
+  if (tzPart === "GMT") return "+00:00";
+  return "-03:00"; // fallback São Paulo
+}
+
+/**
+ * Build an ISO timestamp WITH correct UTC offset for the org timezone.
+ * Accepts a naive datetime string like "2026-04-09T14:00:00" or "2026-04-09 14:00"
+ * and appends the org timezone offset so PostgreSQL stores it correctly.
+ *
+ * Example: buildTimestampEdge("2026-04-09T14:00:00", "America/Sao_Paulo")
+ *          → "2026-04-09T14:00:00-03:00"
+ */
+export function buildTimestampEdge(naiveDatetime: string, tz: string): string {
+  // If already has offset (+XX:XX or -XX:XX or Z at end), return as-is
+  if (/[+-]\d{2}:\d{2}$/.test(naiveDatetime) || naiveDatetime.endsWith("Z")) {
+    return naiveDatetime;
+  }
+  // Normalize separators
+  let normalized = naiveDatetime.trim().replace(" ", "T");
+  // Ensure seconds
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalized)) {
+    normalized += ":00";
+  }
+  const offset = getUtcOffset(tz, new Date(normalized));
+  return `${normalized}${offset}`;
+}
+
+
+/**
  * Fetch the timezone for an organization from the database.
  * Returns the timezone string, defaulting to America/Sao_Paulo.
  */
