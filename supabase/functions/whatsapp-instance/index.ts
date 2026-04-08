@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   provisioning: ["qr_pending", "error", "deleted"],
-  qr_pending: ["connected", "disconnected", "error", "deleted"],
+  qr_pending: ["connected", "disconnected", "reconnecting", "error", "deleted"],
   connected: ["disconnected", "deleting", "error"],
   disconnected: ["reconnecting", "qr_pending", "deleting", "deleted", "error"],
   reconnecting: ["qr_pending", "connected", "disconnected", "error"],
@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
         .single();
       if (!channel) return json({ error: "Channel not found" }, 404);
 
-      if (!["disconnected", "error"].includes(channel.channel_status)) {
+      if (!["disconnected", "error", "qr_pending"].includes(channel.channel_status)) {
         return json({ error: `Cannot reconnect from status: ${channel.channel_status}` }, 400);
       }
 
