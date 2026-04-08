@@ -94,7 +94,7 @@ export function AICreditsDisplay() {
 
             {/* Packages */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-foreground">Recarregar capacidade</p>
+              <p className="text-xs font-medium text-foreground">Ampliar capacidade</p>
               {CREDIT_PACKAGES.map((pack, idx) => (
                 <button
                   key={pack.id}

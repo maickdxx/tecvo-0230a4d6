@@ -69,7 +69,7 @@ export function useAICredits() {
   }, [organizationId, queryClient]);
 
   const balance = credits?.balance ?? 0;
-  const isLow = balance > 0 && balance <= 20;
+  const isLow = balance > 0 && balance <= 200;
   const isEmpty = balance <= 0;
 
   const purchaseCredits = async (packageId: string) => {
