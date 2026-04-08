@@ -682,7 +682,7 @@ export function useServices(options?: UseServicesOptions | string) {
         if (count === 0) {
           await supabase
             .from("whatsapp_contacts")
-            .update({ conversion_status: "em_atendimento" })
+            .update({ conversion_status: "qualificacao" })
             .eq("linked_client_id", svc.client_id)
             .eq("conversion_status", "agendado");
         }
