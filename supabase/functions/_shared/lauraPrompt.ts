@@ -2116,7 +2116,8 @@ export async function executeAdminTool(
 
     const tz = ctx?.timezone || "America/Sao_Paulo";
     const todayForQuote = getTodayInTz(tz);
-    const finalDate = scheduled_date || `${todayForQuote}T08:00:00`;
+    const rawDate = scheduled_date || `${todayForQuote}T08:00:00`;
+    const finalDate = buildTimestampEdge(rawDate, tz);
 
     const { data: newQuote, error } = await supabase.from("services").insert({
       organization_id: organizationId,
