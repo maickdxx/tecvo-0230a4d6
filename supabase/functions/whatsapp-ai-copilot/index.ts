@@ -253,10 +253,10 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
     }
 
     if (mode === "chat") {
-      // Log streaming call (no token data available)
-      await logAIUsage(supabaseAdmin, {
-        organizationId, userId, actionSlug: "copilot_chat", model: aiModel,
-        promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: "success",
+      // Finalize streaming usage log (no token data available)
+      await finalizeAIUsage(supabaseAdmin, creditCheck.requestId, {
+        model: aiModel, promptTokens: 0, completionTokens: 0, totalTokens: 0,
+        durationMs, status: "success",
       });
 
       // Stream response with sanitization filter
