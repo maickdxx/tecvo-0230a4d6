@@ -364,14 +364,11 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Status Filters — Carousel with active tab always centered */}
+      {/* Status Filters — Pinned extremes + rotating center */}
       {(() => {
-        const activeIdx = filters.findIndex(f => f.key === statusFilter);
-        const leftIdx = activeIdx - 1;
-        const rightIdx = activeIdx + 1;
-        const leftTab = leftIdx >= 0 ? filters[leftIdx] : null;
-        const rightTab = rightIdx < filters.length ? filters[rightIdx] : null;
-        const centerTab = filters[activeIdx];
+        const novasTab = filters[0]; // "Novas" always left
+        const finalizadoTab = filters[4]; // "Finalizados" always right
+        const middleTabs = [filters[1], filters[2], filters[3]]; // Atendimento, Agendados, Aguardando
 
         const handleTabClick = (key: StatusFilter) => {
           if (statusFilter !== key) {
@@ -380,27 +377,33 @@ export function ConversationList({
           }
         };
 
-        const renderTab = (tab: typeof filters[0] | null, position: "left" | "center" | "right") => {
-          if (!tab) return <div className="flex-1" />;
-          const isCenter = position === "center";
+        // Determine which middle tab to show in center
+        const activeMiddleIdx = middleTabs.findIndex(f => f.key === statusFilter);
+        // If active is an extreme, default center to first middle tab
+        const centerMiddleIdx = activeMiddleIdx >= 0 ? activeMiddleIdx : 0;
+        const centerMiddleTab = middleTabs[centerMiddleIdx];
+
+        const renderTab = (tab: typeof filters[0], isActive: boolean, position: "pinned" | "center") => {
           return (
             <button
               key={tab.key}
               onClick={() => handleTabClick(tab.key)}
               className={cn(
                 "inline-flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap relative transition-all duration-300 ease-in-out",
-                isCenter
-                  ? "flex-[1.4] bg-primary text-primary-foreground shadow-md scale-100"
-                  : "flex-1 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40 scale-95"
+                isActive
+                  ? "flex-[1.3] bg-primary text-primary-foreground shadow-md scale-100"
+                  : position === "pinned"
+                    ? "flex-[0.8] text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40 scale-95"
+                    : "flex-1 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40 scale-95"
               )}
             >
-              <span className={cn("transition-opacity duration-300", isCenter ? "opacity-100" : "opacity-70")}>
+              <span className={cn("transition-opacity duration-300", isActive ? "opacity-100" : "opacity-70")}>
                 {tab.label}
               </span>
               {tab.count > 0 && (
                 <span className={cn(
                   "text-[10px] rounded-full px-1.5 min-w-[16px] text-center font-semibold transition-opacity duration-300",
-                  isCenter
+                  isActive
                     ? "bg-primary-foreground/20 text-primary-foreground opacity-100"
                     : tab.key !== "finalizado"
                       ? "bg-primary/10 text-primary opacity-60"
@@ -415,9 +418,9 @@ export function ConversationList({
 
         return (
           <div className="px-3 pb-2.5 flex items-center gap-1">
-            {renderTab(leftTab, "left")}
-            {renderTab(centerTab, "center")}
-            {renderTab(rightTab, "right")}
+            {renderTab(novasTab, statusFilter === "novas", "pinned")}
+            {renderTab(centerMiddleTab, statusFilter === centerMiddleTab.key, "center")}
+            {renderTab(finalizadoTab, statusFilter === "finalizado", "pinned")}
           </div>
         );
       })()}
