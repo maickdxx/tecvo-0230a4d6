@@ -7695,19 +7695,14 @@ export type Database = {
         Args: { _account_id: string; _delta: number }
         Returns: number
       }
-      approve_transactions:
-        | {
-            Args: { _organization_id: string; _transaction_ids: string[] }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _acting_user_id?: string
-              _organization_id: string
-              _transaction_ids: string[]
-            }
-            Returns: Json
-          }
+      approve_transactions: {
+        Args: {
+          _acting_user_id?: string
+          _organization_id: string
+          _transaction_ids: string[]
+        }
+        Returns: Json
+      }
       calculate_service_total_duration: {
         Args: { s_id: string }
         Returns: string
@@ -7996,24 +7991,15 @@ export type Database = {
           old_status: string
         }[]
       }
-      reject_transactions:
-        | {
-            Args: {
-              _organization_id: string
-              _reason?: string
-              _transaction_ids: string[]
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _acting_user_id?: string
-              _organization_id: string
-              _reason?: string
-              _transaction_ids: string[]
-            }
-            Returns: Json
-          }
+      reject_transactions: {
+        Args: {
+          _acting_user_id?: string
+          _organization_id: string
+          _reason?: string
+          _transaction_ids: string[]
+        }
+        Returns: Json
+      }
       sign_service_signature: {
         Args: {
           p_ip_address?: string
