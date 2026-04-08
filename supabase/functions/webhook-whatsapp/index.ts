@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   extractUsageFromResponse,
   logAIUsage,
+  calculateCostUSD,
 } from "../_shared/aiUsageLogger.ts";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
 import { checkAndDebitCredits, finalizeAIUsage, logFreeAIUsage } from "../_shared/creditGuard.ts";
