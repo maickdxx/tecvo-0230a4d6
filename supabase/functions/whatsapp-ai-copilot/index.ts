@@ -274,12 +274,13 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
       const result = await response.json();
       const content = result.choices?.[0]?.message?.content || "[]";
 
-      // Log usage with tokens
+      // Finalize usage with token data
       const usage = extractUsageFromResponse(result);
-      await logAIUsage(supabaseAdmin, {
-        organizationId, userId, actionSlug: "copilot_suggest", model: aiModel,
-        promptTokens: usage.promptTokens, completionTokens: usage.completionTokens,
+      const estimatedCost = calculateCostUSD(aiModel, usage.promptTokens, usage.completionTokens);
+      await finalizeAIUsage(supabaseAdmin, creditCheck.requestId, {
+        model: aiModel, promptTokens: usage.promptTokens, completionTokens: usage.completionTokens,
         totalTokens: usage.totalTokens, durationMs: Date.now() - startTime, status: "success",
+        estimatedCostUsd: estimatedCost,
       });
       
       // Extract JSON from the response
