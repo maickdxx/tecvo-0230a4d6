@@ -58,7 +58,7 @@ export function AICreditsDisplay() {
               <p className={`text-3xl font-bold ${isEmpty ? "text-destructive" : isLow ? "text-amber-600" : "text-foreground"}`}>
                 {balance}
               </p>
-              <p className="text-xs text-muted-foreground">interações disponíveis</p>
+              <p className="text-xs text-muted-foreground">capacidade disponível</p>
             </div>
 
             {isEmpty && (
