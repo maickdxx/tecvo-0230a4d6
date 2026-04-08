@@ -4,6 +4,7 @@ import {
   logAIUsage,
 } from "../_shared/aiUsageLogger.ts";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
+import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
 import {
   getTodayInTz,
 } from "../_shared/timezone.ts";
