@@ -1775,7 +1775,7 @@ export async function executeAdminTool(
     let query = supabase
       .from("transactions")
       .select(`
-        id, type, amount, description, date, category, origin,
+        id, type, amount, description, date, category, transaction_origin,
         supplier:suppliers(name),
         client:clients(name),
         service:services(id, service_type, quote_number)
