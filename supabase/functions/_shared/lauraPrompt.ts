@@ -641,6 +641,7 @@ Categorias comuns de despesa: material, combustível, alimentação, aluguel, fo
 Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 - Despesas vão para CONTAS A PAGAR com status pendente. Receitas vão para CONTAS A RECEBER com status pendente.
 - NUNCA marque como pago automaticamente.
+- Se o sistema informar que existem contas cadastradas mas nenhuma padrão, pergunte ao usuário qual conta deseja usar. Quando ele responder (ex: "a 1", "Nubank", "a primeira"), use a ferramenta 'set_default_account' com o account_id correspondente e depois prossiga com o registro.
 
 2. FERRAMENTA 'create_service' — criar Ordem de Serviço (OS).
 Quando o usuário pedir para criar/agendar um serviço ou OS:
@@ -667,6 +668,11 @@ Quando o usuário pedir para criar/fazer/registrar um orçamento:
 Quando o usuário pedir para criar uma conta bancária ou financeira:
 - Extraia o nome da conta (ex: Itaú, Nubank, Bradesco)
 - Crie e defina como conta padrão da IA automaticamente
+
+4b. FERRAMENTA 'set_default_account' — definir conta padrão da IA.
+Quando o usuário escolher qual conta usar como padrão:
+- Use o account_id da conta escolhida
+- O sistema salvará como conta padrão para registros futuros
 
 5. FERRAMENTA 'create_client' — cadastrar novo cliente.
 Quando uma OS ou orçamento falhar porque o cliente não existe (resultado contém CLIENT_NOT_FOUND):
@@ -775,6 +781,22 @@ export const ADMIN_TOOLS = [
           account_type: { type: "string", enum: ["checking", "savings", "cash", "digital"], description: "Tipo de conta" },
         },
         required: ["name"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_default_account",
+      description: "Define uma conta financeira existente como conta padrão da IA para registros financeiros.",
+      parameters: {
+        type: "object",
+        properties: {
+          account_id: { type: "string", description: "ID da conta financeira a ser definida como padrão" },
+          account_name: { type: "string", description: "Nome da conta escolhida (para confirmação)" },
+        },
+        required: ["account_id"],
         additionalProperties: false,
       },
     },
@@ -967,7 +989,32 @@ export async function executeAdminTool(
     let accountId: string | null = orgData?.default_ai_account_id || null;
 
     if (!accountId) {
-      return '⚠️ Você ainda não tem uma conta financeira padrão configurada para a IA.\n\nPosso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
+      // Check if org already has financial accounts
+      const { data: existingAccounts } = await supabase
+        .from("financial_accounts")
+        .select("id, name, account_type")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: true });
+
+      if (existingAccounts && existingAccounts.length > 0) {
+        if (existingAccounts.length === 1) {
+          // Auto-set as default
+          accountId = existingAccounts[0].id;
+          await supabase
+            .from("organizations")
+            .update({ default_ai_account_id: accountId })
+            .eq("id", organizationId);
+        } else {
+          // Multiple accounts — ask user to choose
+          const accountList = existingAccounts
+            .map((a, i) => `${i + 1}. ${a.name}`)
+            .join("\n");
+          return `Encontrei ${existingAccounts.length} contas financeiras cadastradas:\n\n${accountList}\n\nQual delas deseja usar como conta padrão para os registros da IA?`;
+        }
+      } else {
+        return '⚠️ Você ainda não tem uma conta financeira cadastrada.\n\nPosso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
+      }
     }
 
     const capitalizedDesc = description.charAt(0).toUpperCase() + description.slice(1);
@@ -1035,8 +1082,31 @@ export async function executeAdminTool(
     await logToolSuccess(supabase, organizationId, fnName, args);
     return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! Confirmado no sistema.`;
   }
+  if (fnName === "set_default_account") {
+    const { account_id, account_name } = args;
+    if (!account_id) return "Erro: account_id é obrigatório.";
 
-  if (fnName === "create_service") {
+    // Verify the account exists and belongs to this org
+    const { data: account } = await supabase
+      .from("financial_accounts")
+      .select("id, name")
+      .eq("id", account_id)
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .single();
+
+    if (!account) return "Erro: conta não encontrada ou não pertence a esta organização.";
+
+    await supabase
+      .from("organizations")
+      .update({ default_ai_account_id: account_id })
+      .eq("id", organizationId);
+
+    await logToolSuccess(supabase, organizationId, fnName, args);
+    return `✅ Conta "${account.name}" definida como conta padrão da IA! Agora todos os registros financeiros serão vinculados a esta conta.`;
+  }
+
+
     const { client_name, scheduled_date, service_type, description, value, assigned_to_name } = args;
     if (!client_name || !scheduled_date || !service_type || !description) {
       return "Erro: campos obrigatórios faltando.";

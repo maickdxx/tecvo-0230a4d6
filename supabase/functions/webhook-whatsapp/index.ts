@@ -1820,6 +1820,22 @@ const ADMIN_TOOLS = [
   {
     type: "function",
     function: {
+      name: "set_default_account",
+      description: "Define uma conta financeira existente como conta padrão da IA para registros financeiros.",
+      parameters: {
+        type: "object",
+        properties: {
+          account_id: { type: "string", description: "ID da conta financeira a ser definida como padrão" },
+          account_name: { type: "string", description: "Nome da conta escolhida (para confirmação)" },
+        },
+        required: ["account_id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_quote",
       description:
         "Cria um Orçamento no sistema. Use quando o usuário pedir para criar, fazer ou registrar um orçamento para um cliente.",
@@ -3651,6 +3667,7 @@ Categorias comuns de despesa: material, combustível, alimentação, aluguel, fo
 Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 - Despesas vão para CONTAS A PAGAR com status pendente. Receitas vão para CONTAS A RECEBER com status pendente.
 - NUNCA marque como pago automaticamente.
+- Se o sistema informar que existem contas cadastradas mas nenhuma padrão, pergunte ao usuário qual conta deseja usar. Quando ele responder, use a ferramenta 'set_default_account' com o account_id correspondente e depois prossiga com o registro.
 
 2. FERRAMENTA 'create_service' — criar Ordem de Serviço (OS).
 Quando o usuário pedir para criar/agendar um serviço ou OS:
@@ -3675,6 +3692,10 @@ Quando o usuário pedir para criar/fazer/registrar um orçamento:
 Quando o usuário pedir para criar uma conta bancária ou financeira:
 - Extraia o nome da conta (ex: Itaú, Nubank, Bradesco)
 - Crie e defina como conta padrão da IA automaticamente
+
+4b. FERRAMENTA 'set_default_account' — definir conta padrão da IA.
+Quando o usuário escolher qual conta usar como padrão:
+- Use o account_id da conta escolhida
 
 5. FERRAMENTA 'create_client' — cadastrar novo cliente.
 Quando uma OS ou orçamento falhar porque o cliente não existe (resultado contém CLIENT_NOT_FOUND):
