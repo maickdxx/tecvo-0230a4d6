@@ -80,6 +80,24 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
   const channelLabel = contact.channel?.phone_number || contact.channel?.name || null;
   const isChannelOffline = contact.channel ? (contact.channel.is_connected === false || ["disconnected", "deleted", "error", "deleting"].includes(contact.channel.channel_status)) : false;
 
+  // Activity indicator logic
+  const getActivityIndicator = () => {
+    if (!contact.last_message_at) return null;
+    const lastMsg = new Date(contact.last_message_at);
+    const now = new Date();
+    const hoursSince = (now.getTime() - lastMsg.getTime()) / (1000 * 60 * 60);
+    const convStatus = contact.conversion_status || "novo_contato";
+    
+    // "Agendado" with schedule info
+    if (convStatus === "agendado" || convStatus === "em_execucao") return null; // handled separately
+    
+    if (hoursSince < 2) return { label: "Ativo", dotColor: "bg-emerald-500", textColor: "text-emerald-600 dark:text-emerald-400" };
+    if (hoursSince < 24) return null; // normal - no indicator
+    if (hoursSince < 72) return { label: "Parado", dotColor: "bg-amber-500", textColor: "text-amber-600 dark:text-amber-400" };
+    return { label: "Inativo", dotColor: "bg-red-500", textColor: "text-red-500 dark:text-red-400" };
+  };
+  const activityIndicator = getActivityIndicator();
+
   const getColor = (name: string) => orgTags.find(t => t.name === name)?.color || "gray";
 
   /** Shared menu items for both dropdown and context menu */
