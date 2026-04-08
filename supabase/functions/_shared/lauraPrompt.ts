@@ -845,7 +845,7 @@ export const ADMIN_TOOLS = [
     type: "function",
     function: {
       name: "create_service",
-      description: "Cria uma Ordem de Serviço (OS) no sistema.",
+      description: "Cria uma Ordem de Serviço (OS) no sistema. Tenta vincular automaticamente ao catálogo de serviços para usar preço e descrição padronizados.",
       parameters: {
         type: "object",
         properties: {
@@ -853,8 +853,9 @@ export const ADMIN_TOOLS = [
           scheduled_date: { type: "string", description: "Data e hora no formato YYYY-MM-DDTHH:MM:SS." },
           service_type: { type: "string", description: "Tipo de serviço: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro" },
           description: { type: "string", description: "Descrição do serviço a ser realizado" },
-          value: { type: "number", description: "Valor do serviço em reais. Se não informado, pode ser 0." },
+          value: { type: "number", description: "Valor do serviço em reais. Se não informado, será preenchido pelo catálogo automaticamente." },
           assigned_to_name: { type: "string", description: "Nome do técnico responsável (busca parcial). Opcional." },
+          catalog_service_name: { type: "string", description: "Nome do item do catálogo a vincular (ex: 'Limpeza de Ar Condicionado 12.000 BTUs'). Busca parcial. Se informado, usa preço e descrição do catálogo." },
         },
         required: ["client_name", "scheduled_date", "service_type", "description"],
         additionalProperties: false,
