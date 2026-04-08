@@ -3036,6 +3036,14 @@ Deno.serve(async (req) => {
             supabase,
             targetOrganizationId,
           );
+
+          // Inject current user identity — find owner profile by matching phone
+          const ownerProfile = (orgContext.profiles || []).find((p: any) => p.full_name);
+          if (ownerProfile) {
+            orgContext.currentUserName = ownerProfile.full_name;
+            orgContext.currentUserRole = ownerProfile.position || "proprietário";
+          }
+
           systemPrompt = buildSystemPrompt(orgContext);
 
           // Add tools instruction from shared module
