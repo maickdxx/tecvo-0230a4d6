@@ -69,7 +69,7 @@ export function QuickRepliesPopover({ onSelect }: QuickRepliesPopoverProps) {
           <Zap className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start" side="top">
+      <PopoverContent className="w-72 p-0 z-[999]" align="start" side="top" sideOffset={8} avoidCollisions>
         <div className="p-2 border-b border-border flex items-center gap-2">
           <Search className="h-3.5 w-3.5 text-muted-foreground" />
           <Input

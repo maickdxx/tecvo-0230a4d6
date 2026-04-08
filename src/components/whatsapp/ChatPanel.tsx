@@ -1435,6 +1435,11 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                 </PopoverContent>
               </Popover>
 
+              {/* Quick replies button */}
+              {!isSimplified && (
+                <QuickRepliesPopover onSelect={handleQuickReply} />
+              )}
+
               {/* Text input */}
               <div className="flex-1 flex items-end bg-muted/20 rounded-2xl border border-border/20 overflow-hidden focus-within:border-primary/30 focus-within:bg-background focus-within:shadow-sm transition-all">
                 <Textarea
@@ -1451,11 +1456,6 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
                   disabled={false}
                   rows={1}
                 />
-
-                {/* Quick replies button */}
-                {!isSimplified && (
-                  <QuickRepliesPopover onSelect={handleQuickReply} />
-                )}
               </div>
 
               {/* Signature toggle - compact */}
