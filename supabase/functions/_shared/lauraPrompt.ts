@@ -1082,8 +1082,31 @@ export async function executeAdminTool(
     await logToolSuccess(supabase, organizationId, fnName, args);
     return `✅ Conta "${name}" criada com sucesso e definida como conta padrão da IA! Confirmado no sistema.`;
   }
+  if (fnName === "set_default_account") {
+    const { account_id, account_name } = args;
+    if (!account_id) return "Erro: account_id é obrigatório.";
 
-  if (fnName === "create_service") {
+    // Verify the account exists and belongs to this org
+    const { data: account } = await supabase
+      .from("financial_accounts")
+      .select("id, name")
+      .eq("id", account_id)
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .single();
+
+    if (!account) return "Erro: conta não encontrada ou não pertence a esta organização.";
+
+    await supabase
+      .from("organizations")
+      .update({ default_ai_account_id: account_id })
+      .eq("id", organizationId);
+
+    await logToolSuccess(supabase, organizationId, fnName, args);
+    return `✅ Conta "${account.name}" definida como conta padrão da IA! Agora todos os registros financeiros serão vinculados a esta conta.`;
+  }
+
+
     const { client_name, scheduled_date, service_type, description, value, assigned_to_name } = args;
     if (!client_name || !scheduled_date || !service_type || !description) {
       return "Erro: campos obrigatórios faltando.";
