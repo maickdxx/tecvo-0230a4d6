@@ -1,4 +1,4 @@
-import { ArrowLeft, Bot, Truck, Wrench, CheckCircle2, Calendar, AlertTriangle, Sparkles, MessageSquare, Smartphone } from "lucide-react";
+import { ArrowLeft, Bot, Truck, Wrench, CheckCircle2, Calendar, AlertTriangle, Sparkles, MessageSquare, Smartphone, Zap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLauraPreferences, type LauraPreferences } from "@/hooks/useLauraPreferences";
+import { useAICredits, CREDIT_PACKAGES } from "@/hooks/useAICredits";
 
 interface LauraPreferencesSettingsProps {
   onBack: () => void;
