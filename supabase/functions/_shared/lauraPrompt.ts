@@ -998,6 +998,8 @@ APROVAÇÃO FINANCEIRA:
 - NUNCA interprete "ok", "pode fazer", "sim", "beleza" como confirmação para aprovar/reprovar. Apenas "CONFIRMAR" ou "confirmar".
 - Quando pedir para "reprovar", "rejeitar" → use a ferramenta 'reject_pending_transactions' SEM confirmed=true
 - Quando pedir "resumo de pendências" ou "o que está pendente" → use 'get_pending_summary'
+- Quando pedir "liste as pendências", "mostra item por item", "quais são as pendências", "detalha as pendências" → use 'list_pending_transactions'
+- Se o resumo mostrar pendências e o gestor quiser detalhes, use 'list_pending_transactions' automaticamente
 - Ao aprovar (após confirmação): diga "Aprovado e consolidado no saldo financeiro."
 - Ao reprovar (após confirmação): diga "Reprovado. Não impactará o saldo consolidado."
 
