@@ -136,7 +136,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
       { text: "Tudo do plano Start", included: true },
       { text: "WhatsApp completo (Inbox)", included: true },
       { text: "Chatbot", included: true },
-      { text: "IA no atendimento", included: true },
+      { text: "IA incluída (800 interações/mês)", included: true },
       { text: "Recorrência automática", included: true },
       { text: "Relatórios de conversão", included: true },
       { text: "Assinatura digital", included: true },
