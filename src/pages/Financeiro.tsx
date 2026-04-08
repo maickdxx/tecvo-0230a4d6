@@ -16,6 +16,7 @@ import {
 import { PaymentFeeReport } from "@/components/finance/PaymentFeeReport";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useFinancialAccounts } from "@/hooks/useFinancialAccounts";
+import { usePendingApprovalSummary } from "@/hooks/useTransactionApproval";
 import { generateFinanceReportPDF } from "@/lib/generateFinanceReportPDF";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
