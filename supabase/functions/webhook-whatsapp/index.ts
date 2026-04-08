@@ -4055,7 +4055,16 @@ Cada "sim" aproxima o lead da decisão final.
                 if (isIncomingAudio && safeResponseLead.length <= 2000) {
                   let audioSent = false;
                   try {
-                    const audioBase64 = await generateTTSAudio(safeResponseLead);
+                    const ttsResultLead = await generateTTSAudio(safeResponseLead);
+                    if (ttsResultLead.provider) {
+                      await logAIUsage(supabase, {
+                        organizationId: targetOrganizationId, userId: null,
+                        actionSlug: "tts_generation", model: ttsResultLead.provider,
+                        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                        durationMs: ttsResultLead.durationMs, status: ttsResultLead.audio ? "success" : "error",
+                      });
+                    }
+                    const audioBase64 = ttsResultLead.audio;
                     if (audioBase64) {
                       await supabase.from("whatsapp_messages").insert({
                         organization_id: targetOrganizationId,
