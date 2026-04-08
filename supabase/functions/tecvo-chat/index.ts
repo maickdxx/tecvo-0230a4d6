@@ -67,6 +67,12 @@ serve(async (req) => {
       return accessDeniedResponse(corsHeaders);
     }
 
+    // ── RATE LIMIT: check burst + daily cap ──
+    const rateCheck = await checkAIRateLimit(supabaseAdmin, organizationId, corsHeaders);
+    if (!rateCheck.allowed) {
+      return rateCheck.response!;
+    }
+
     // ── CREDIT GUARD: debit before any AI call ──
     const actionSlug = mode === "proactive_tip" ? "proactive_tip" : "tecvo_chat";
     const creditCheck = await checkAndDebitCredits(supabaseAdmin, organizationId, userId, actionSlug, corsHeaders);
