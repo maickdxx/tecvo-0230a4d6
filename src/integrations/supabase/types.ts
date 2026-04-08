@@ -405,6 +405,7 @@ export type Database = {
           description: string | null
           id: string
           organization_id: string
+          request_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -414,6 +415,7 @@ export type Database = {
           description?: string | null
           id?: string
           organization_id: string
+          request_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -423,6 +425,7 @@ export type Database = {
           description?: string | null
           id?: string
           organization_id?: string
+          request_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -567,6 +570,7 @@ export type Database = {
           model: string | null
           organization_id: string | null
           prompt_tokens: number | null
+          request_id: string | null
           status: string
           total_tokens: number | null
           user_id: string | null
@@ -581,6 +585,7 @@ export type Database = {
           model?: string | null
           organization_id?: string | null
           prompt_tokens?: number | null
+          request_id?: string | null
           status?: string
           total_tokens?: number | null
           user_id?: string | null
@@ -595,6 +600,7 @@ export type Database = {
           model?: string | null
           organization_id?: string | null
           prompt_tokens?: number | null
+          request_id?: string | null
           status?: string
           total_tokens?: number | null
           user_id?: string | null
@@ -7572,6 +7578,21 @@ export type Database = {
       consume_ai_credits: {
         Args: { _action_slug: string; _org_id: string; _user_id?: string }
         Returns: boolean
+      }
+      consume_ai_credits_with_log: {
+        Args: {
+          _action_slug: string
+          _completion_tokens?: number
+          _duration_ms?: number
+          _model?: string
+          _org_id: string
+          _prompt_tokens?: number
+          _request_id: string
+          _status?: string
+          _total_tokens?: number
+          _user_id?: string
+        }
+        Returns: Json
       }
       delete_email: {
         Args: { message_id: number; queue_name: string }
