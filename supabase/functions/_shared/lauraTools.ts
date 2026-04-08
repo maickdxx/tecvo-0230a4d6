@@ -24,6 +24,7 @@ export const ADMIN_TOOLS = [
           category: { type: "string", description: "Categoria: material, combustível, alimentação, aluguel, fornecedor, serviço, outro" },
           date: { type: "string", description: "Data no formato YYYY-MM-DD." },
           payment_method: { type: "string", enum: ["pix", "dinheiro", "cartao_credito", "cartao_debito", "boleto", "transferencia", "outro"], description: "Forma de pagamento" },
+          account_id: { type: "string", description: "UUID da conta financeira a ser usada. Obrigatório quando há múltiplas contas. Se a organização tem apenas 1 conta, pode omitir." },
         },
         required: ["type", "amount", "description", "category", "date"],
         additionalProperties: false,
