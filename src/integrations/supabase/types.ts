@@ -7704,7 +7704,9 @@ export type Database = {
         Returns: string
       }
       can_create_service: { Args: { org_id: string }; Returns: boolean }
-      can_modify: { Args: { _user_id: string }; Returns: boolean }
+      can_modify:
+        | { Args: { _user_id: string }; Returns: boolean }
+        | { Args: { _org_id: string; _user_id: string }; Returns: boolean }
       can_touch_client: {
         Args: { _category?: string; _client_id: string; _org_id: string }
         Returns: boolean
