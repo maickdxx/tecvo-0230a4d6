@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         _org_id: organizationId,
         _amount: creditsAmount,
         _action_type: "purchase",
-        _description: `Compra de ${creditsAmount} créditos de IA`,
+        _description: `Ampliação de capacidade: +${creditsAmount} unidades`,
       });
 
       if (error) {

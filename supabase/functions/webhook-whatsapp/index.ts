@@ -3366,7 +3366,7 @@ Deno.serve(async (req) => {
           const creditCheck = await checkAndDebitCredits(supabase, targetOrganizationId, "", "laura_whatsapp");
           if (!creditCheck.allowed) {
             console.log("[WEBHOOK-WHATSAPP] Insufficient AI credits for org:", targetOrganizationId);
-            const noCreditsMsg = "Oi! No momento estou com a capacidade de IA pausada. Para que eu volte a te ajudar, peça ao responsável para recarregar os recursos de IA no painel da Tecvo. 😊";
+            const noCreditsMsg = "Oi! Minha capacidade de processamento está temporariamente pausada. Para que eu volte a operar normalmente, peça ao responsável para ampliar os recursos no painel da Tecvo. 😊";
             await sendWhatsAppReply(instance, remoteJid, noCreditsMsg);
             return new Response("OK", { status: 200 });
           }
