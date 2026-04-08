@@ -110,10 +110,10 @@ export function validateChannelLock(
 // ─────────────── 3. Anti-Duplication ───────────────
 
 /**
- * Generates a deterministic hash for an action based on its key parameters.
+ * Generates a strong deterministic hash for an action using SHA-256.
  * Used to detect duplicate executions within a time window.
  */
-function generateActionHash(fnName: string, orgId: string, args: any): string {
+async function generateActionHash(fnName: string, orgId: string, args: any): Promise<string> {
   const keyParts: string[] = [fnName, orgId];
 
   switch (fnName) {
@@ -130,17 +130,22 @@ function generateActionHash(fnName: string, orgId: string, args: any): string {
     case "send_service_pdf":
       keyParts.push(args.service_id || args.service_identifier || "", args.target || "");
       break;
-    default:
-      keyParts.push(JSON.stringify(args).slice(0, 200));
+    default: {
+      // Stable serialization: sort keys to avoid order-dependent hashes
+      const sorted = args && typeof args === "object"
+        ? JSON.stringify(args, Object.keys(args).sort())
+        : JSON.stringify(args);
+      keyParts.push(sorted.slice(0, 300));
+    }
   }
 
-  // Simple hash: sum of char codes
   const raw = keyParts.join("|");
-  let hash = 0;
-  for (let i = 0; i < raw.length; i++) {
-    hash = ((hash << 5) - hash + raw.charCodeAt(i)) | 0;
-  }
-  return `shield_${Math.abs(hash).toString(36)}`;
+  const encoded = new TextEncoder().encode(raw);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  // Use first 16 hex chars (64 bits) — sufficient for dedup in short windows
+  return `shield_${hashHex.slice(0, 16)}`;
 }
 
 const DEDUP_WINDOW_MINUTES = 3;
@@ -155,7 +160,7 @@ export async function checkAntiDuplication(
   const risk = getActionRisk(fnName, args);
   if (risk === "low") return { allowed: true, reason: "low_risk_skip_dedup" };
 
-  const actionHash = generateActionHash(fnName, orgId, args);
+  const actionHash = await generateActionHash(fnName, orgId, args);
   const cutoff = new Date(Date.now() - DEDUP_WINDOW_MINUTES * 60 * 1000).toISOString();
 
   try {
@@ -244,7 +249,7 @@ export async function logToolSuccess(
   fnName: string,
   args: any,
 ): Promise<void> {
-  const actionHash = generateActionHash(fnName, orgId, args);
+  const actionHash = await generateActionHash(fnName, orgId, args);
   try {
     await supabase.from("ai_usage_logs").insert({
       organization_id: orgId,
