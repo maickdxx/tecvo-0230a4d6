@@ -3807,6 +3807,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           attendance_started_at: string | null
+          catalog_service_id: string | null
           client_id: string
           completed_date: string | null
           created_at: string
@@ -3853,6 +3854,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           attendance_started_at?: string | null
+          catalog_service_id?: string | null
           client_id: string
           completed_date?: string | null
           created_at?: string
@@ -3899,6 +3901,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           attendance_started_at?: string | null
+          catalog_service_id?: string | null
           client_id?: string
           completed_date?: string | null
           created_at?: string
@@ -3943,6 +3946,13 @@ export type Database = {
           value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "services_catalog_service_id_fkey"
+            columns: ["catalog_service_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_services"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "services_client_id_fkey"
             columns: ["client_id"]
