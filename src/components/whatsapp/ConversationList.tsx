@@ -52,7 +52,7 @@ interface ConversationListProps {
   onLoadMore?: () => void;
 }
 
-type StatusFilter = "novas" | "atendendo" | "aguardando" | "finalizado";
+type StatusFilter = "novas" | "atendendo" | "agendados" | "aguardando" | "finalizado";
 type ConversionFilter = string | null;
 
 function formatCount(count: number): string {
