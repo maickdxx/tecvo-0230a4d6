@@ -796,7 +796,7 @@ export function ChatPanel({ contact, channelId, onBack, onToggleInfo, onContactU
               contact.profile_picture_url ? "hidden" : ""
             }`}
           >
-            <span className="text-sm font-bold text-primary-foreground">
+            <span className="text-sm font-bold text-primary">
               {(linkedClientData?.name || contact.linked_client?.name || contact.name || contact.phone || "?").charAt(0).toUpperCase()}
             </span>
           </div>
