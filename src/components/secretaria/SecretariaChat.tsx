@@ -32,7 +32,7 @@ function RechargeInlineCTA() {
         className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
       >
         <Zap className="h-3.5 w-3.5" />
-        Recarregar IA
+        Ampliar capacidade
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
