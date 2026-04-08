@@ -31,7 +31,8 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const TRANSACTION_LIMIT = 2000;
 
   const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes,
-         servicesTotalRes, clientsTotalRes, transactionsTotalRes] = await Promise.all([
+         servicesTotalRes, clientsTotalRes, transactionsTotalRes,
+         financialAccountsRes] = await Promise.all([
     supabase
       .from("services")
       .select("id, status, scheduled_date, completed_date, value, description, service_type, assigned_to, client_id, created_at, payment_method, document_type, operational_status")
@@ -62,7 +63,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .limit(50),
     supabase
       .from("organizations")
-      .select("name, monthly_goal, timezone")
+      .select("name, monthly_goal, timezone, default_ai_account_id")
       .eq("id", organizationId)
       .single(),
     supabase
@@ -89,6 +90,13 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .select("id", { count: "exact", head: true })
       .eq("organization_id", organizationId)
       .is("deleted_at", null),
+    // Financial accounts — essential for Laura's financial decisions
+    supabase
+      .from("financial_accounts")
+      .select("id, name, account_type, balance, is_active")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .order("name"),
   ]);
 
   const services = servicesRes.data || [];
