@@ -31,7 +31,8 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const TRANSACTION_LIMIT = 2000;
 
   const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes,
-         servicesTotalRes, clientsTotalRes, transactionsTotalRes] = await Promise.all([
+         servicesTotalRes, clientsTotalRes, transactionsTotalRes,
+         financialAccountsRes] = await Promise.all([
     supabase
       .from("services")
       .select("id, status, scheduled_date, completed_date, value, description, service_type, assigned_to, client_id, created_at, payment_method, document_type, operational_status")
@@ -62,7 +63,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .limit(50),
     supabase
       .from("organizations")
-      .select("name, monthly_goal, timezone")
+      .select("name, monthly_goal, timezone, default_ai_account_id")
       .eq("id", organizationId)
       .single(),
     supabase
@@ -89,6 +90,13 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .select("id", { count: "exact", head: true })
       .eq("organization_id", organizationId)
       .is("deleted_at", null),
+    // Financial accounts — essential for Laura's financial decisions
+    supabase
+      .from("financial_accounts")
+      .select("id, name, account_type, balance, is_active")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .order("name"),
   ]);
 
   const services = servicesRes.data || [];
@@ -99,6 +107,12 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const totalClientsAllTime = clientsTotalRes.count ?? clients.length;
   const totalTransactionsAllTime = transactionsTotalRes.count ?? transactions.length;
 
+  const financialAccounts = financialAccountsRes.data || [];
+  const defaultAiAccountId = orgRes.data?.default_ai_account_id || null;
+  const defaultAccount = defaultAiAccountId
+    ? financialAccounts.find((a: any) => a.id === defaultAiAccountId) || null
+    : null;
+
   return {
     services,
     clients,
@@ -108,6 +122,9 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
     monthlyGoal: orgRes.data?.monthly_goal || null,
     catalog: catalogRes.data || [],
     timezone: orgRes.data?.timezone || "America/Sao_Paulo",
+    financialAccounts,
+    defaultAiAccountId,
+    defaultAccount,
     // Data completeness metadata
     _meta: {
       servicePeriodDays: 180,
@@ -124,6 +141,8 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       transactionLoadedCount: transactions.length,
       transactionTotalAllTime: totalTransactionsAllTime,
       transactionsTruncated: transactions.length >= TRANSACTION_LIMIT,
+      financialAccountsCount: financialAccounts.length,
+      hasDefaultAccount: !!defaultAccount,
     },
   };
 }
@@ -138,7 +157,7 @@ export function buildSystemPrompt(ctx: any) {
   const { dateStr, timeStr } = getFormattedDateTimeInTz(tz);
   const currentMonth = getCurrentMonthInTz(tz);
 
-  const { services, clients, transactions, profiles, orgName, monthlyGoal, catalog, _meta } = ctx;
+  const { services, clients, transactions, profiles, orgName, monthlyGoal, catalog, _meta, financialAccounts, defaultAccount } = ctx;
   const meta = _meta || {};
 
   const osServices = services.filter((s: any) => s.document_type !== "quote");
@@ -336,6 +355,23 @@ ${profiles.map((p: any) => `  - ${p.full_name || "?"} (${p.position || "Técnico
 ${catalogText}
 
 📇 CLIENTES: ${meta.clientTotalAllTime ?? clients.length} cadastrados no total${meta.clientsTruncated ? ` (mostrando ${meta.clientLoadedCount} mais recentes)` : ""}
+
+
+💳 CONTAS FINANCEIRAS:
+${(financialAccounts && financialAccounts.length > 0)
+  ? financialAccounts.map((a: any) => `  - ${a.name} (${a.account_type || "geral"}) | Saldo: ${formatBRL(a.balance || 0)}${defaultAccount && defaultAccount.id === a.id ? " ⭐ CONTA PADRÃO DA IA" : ""}`).join("\n")
+  : "  Nenhuma conta financeira cadastrada."}
+${defaultAccount ? `• Conta padrão para registros da IA: ${defaultAccount.name}` : "• ⚠️ Nenhuma conta padrão definida para a IA."}
+
+══════════ REGRAS FINANCEIRAS (OBRIGATÓRIO) ══════════
+
+ANTES de registrar qualquer gasto ou receita:
+1. VERIFIQUE se existem contas financeiras listadas acima.
+2. Se existe conta padrão (⭐), USE-A automaticamente sem perguntar.
+3. Se existem múltiplas contas mas nenhuma padrão, PERGUNTE qual usar e sugira definir uma como padrão.
+4. Se NÃO existem contas, aí sim oriente o usuário a criar uma.
+5. NUNCA mande criar conta se já existem contas cadastradas.
+6. NUNCA pergunte sobre conta se já existe uma padrão definida — use-a diretamente.
 
 ══════════ COMPLETUDE DOS DADOS (INTERNO — NÃO MOSTRAR ESTA SEÇÃO AO USUÁRIO) ══════════
 
