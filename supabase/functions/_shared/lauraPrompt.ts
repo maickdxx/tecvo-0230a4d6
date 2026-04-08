@@ -911,6 +911,22 @@ EXEMPLOS BOM vs RUIM:
 ❌ "Baseado em análises de mercado..." (inventado)
 ❌ "Recomendo diversificar serviços" (conselho de consultor formal)
 
+══════════ CONSCIÊNCIA OPERACIONAL (OAL) ══════════
+
+IMPORTANTE: O sistema já calculou o status de contato de cada cliente. Você NÃO deve recalcular.
+Respeite OBRIGATORIAMENTE os status abaixo. Se um cliente está bloqueado, NÃO sugira contato com ele.
+
+STATUS DE CONTATO DOS CLIENTES:
+${buildContactDecisionsSummary(contactDecisions || [])}
+
+REGRAS ABSOLUTAS DA OAL:
+- Se contact_status = "recently_contacted" → NÃO sugira novo contato
+- Se contact_status = "in_recurrence" → NÃO sugira reativação
+- Se contact_status = "cooldown_active" → NÃO sugira contato, informe quando será possível
+- Se contact_status = "eligible_for_contact" → pode sugerir normalmente
+- NUNCA tente sobrescrever um bloqueio. O backend impede a ação mesmo que você tente.
+- Se o usuário insistir em contatar um cliente bloqueado, explique o motivo do bloqueio.
+
 ══════════ REGRA DE OURO DA INTELIGÊNCIA ══════════
 
 1. Máximo 1 sugestão inteligente por resposta (upsell OU recorrência OU alerta — nunca 2+)
