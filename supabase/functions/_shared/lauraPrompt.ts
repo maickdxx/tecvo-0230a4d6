@@ -1246,12 +1246,13 @@ export const ADMIN_TOOLS = [
     type: "function",
     function: {
       name: "approve_pending_transactions",
-      description: "Aprova transações financeiras pendentes, consolidando no saldo real. Apenas gestores podem usar.",
+      description: "Aprova transações financeiras pendentes, consolidando no saldo real. Apenas gestores podem usar. PRIMEIRA chamada (sem confirmed): retorna resumo e pede confirmação. SEGUNDA chamada (com confirmed=true): executa a aprovação.",
       parameters: {
         type: "object",
         properties: {
           scope: { type: "string", enum: ["all_today", "all_pending", "by_type"], description: "Escopo: all_today (tudo de hoje), all_pending (todas pendentes), by_type (por tipo)" },
           type_filter: { type: "string", enum: ["income", "expense"], description: "Filtro por tipo, usado quando scope=by_type" },
+          confirmed: { type: "boolean", description: "true SOMENTE após o usuário responder CONFIRMAR. Não use na primeira chamada." },
         },
         required: ["scope"],
         additionalProperties: false,
