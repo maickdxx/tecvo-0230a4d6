@@ -121,10 +121,60 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       ? [{ role: "system", content: systemPrompt }, { role: "user", content: "Me dê uma dica proativa baseada nos dados da minha empresa." }]
       : [{ role: "system", content: systemPrompt }, ...messages];
 
+    // ── NUMERIC CHOICE INTERCEPTION (App channel) ──
+    const lastUserMsg = messages?.[messages.length - 1]?.content?.trim();
+    const numChoiceMatch = lastUserMsg?.match(/^([1-9])\.?\s*$/);
+    if (numChoiceMatch && conversationId && mode !== "proactive_tip") {
+      const chosenKey = numChoiceMatch[1];
+      const { data: pendingChoice } = await supabaseAdmin
+        .from("pending_choices")
+        .select("id, options")
+        .eq("organization_id", organizationId)
+        .eq("conversation_id", conversationId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingChoice?.options) {
+        const options = Array.isArray(pendingChoice.options) ? pendingChoice.options : [];
+        const chosen = options.find((o: any) => o.key === chosenKey);
+        if (chosen) {
+          // Mark as executed
+          await supabaseAdmin
+            .from("pending_choices")
+            .update({ status: "executed" })
+            .eq("id", pendingChoice.id);
+
+          // If it's a static response, return directly
+          if (chosen.response) {
+            const encoder = new TextEncoder();
+            const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: chosen.response } }] })}\n\ndata: [DONE]\n\n`;
+            return new Response(encoder.encode(sseData), {
+              headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+            });
+          }
+
+          // If it's a tool action, execute it directly
+          if (chosen.action) {
+            const toolResult = await executeAdminTool(
+              supabaseAdmin,
+              organizationId,
+              { function: { name: chosen.action, arguments: JSON.stringify(chosen.args || {}) }, id: `choice_${chosenKey}` },
+              orgContext,
+            );
+
+            // Let AI format the tool result nicely
+            chatMessages.push({ role: "user", content: lastUserMsg });
+            chatMessages.push({ role: "assistant", content: "", tool_calls: [{ id: `choice_${chosenKey}`, type: "function", function: { name: chosen.action, arguments: JSON.stringify(chosen.args || {}) } }] });
+            chatMessages.push({ role: "tool", tool_call_id: `choice_${chosenKey}`, content: toolResult });
+          }
+        }
+      }
+    }
+
     const aiModel = "google/gemini-2.5-flash";
     const startTime = Date.now();
-
-    // Non-streaming call with tools support
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
