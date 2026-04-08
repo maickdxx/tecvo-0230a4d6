@@ -87,6 +87,7 @@ export function TransactionList({
             <TableHead className="hidden sm:table-cell">Categoria</TableHead>
             <TableHead className="hidden md:table-cell">Conta</TableHead>
             <TableHead className="hidden lg:table-cell">Origem</TableHead>
+            <TableHead className="hidden lg:table-cell">Status</TableHead>
             <TableHead className="hidden md:table-cell">Data</TableHead>
             <TableHead className="text-right">Valor</TableHead>
           </TableRow>
