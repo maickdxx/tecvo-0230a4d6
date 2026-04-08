@@ -2,19 +2,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface CreditPackage {
   id: string;
   credits: number;
   price: number;
   label: string;
+  description: string;
 }
 
 export const CREDIT_PACKAGES: CreditPackage[] = [
-  { id: "pack_100", credits: 100, price: 9.90, label: "100 créditos" },
-  { id: "pack_500", credits: 500, price: 39.90, label: "500 créditos" },
-  { id: "pack_1000", credits: 1000, price: 69.90, label: "1.000 créditos" },
+  { id: "pack_100", credits: 100, price: 9.90, label: "100 interações", description: "Ideal para uso leve" },
+  { id: "pack_500", credits: 500, price: 39.90, label: "500 interações", description: "Mais popular" },
+  { id: "pack_1000", credits: 1000, price: 69.90, label: "1.000 interações", description: "Melhor custo-benefício" },
 ];
 
 export function useAICredits() {
@@ -39,8 +40,33 @@ export function useAICredits() {
       return data;
     },
     enabled: !!organizationId,
-    refetchInterval: 120_000, // refresh every 2min
+    refetchInterval: 120_000,
   });
+
+  // Realtime subscription — auto-refresh balance after purchase
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const channel = supabase
+      .channel(`ai-credits-${organizationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "ai_credits",
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ai-credits", organizationId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, queryClient]);
 
   const balance = credits?.balance ?? 0;
   const isLow = balance > 0 && balance <= 20;

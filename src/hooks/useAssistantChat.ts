@@ -8,6 +8,8 @@ export interface ChatMessage {
   content: string;
 }
 
+export type ChatErrorType = "credits_empty" | "rate_limit" | "daily_cap" | "generic" | null;
+
 /** Parse an SSE stream from the AI gateway, calling onChunk with accumulated text */
 async function consumeSSEStream(
   body: ReadableStream<Uint8Array>,
@@ -42,7 +44,6 @@ async function consumeSSEStream(
           onChunk(accumulated);
         }
       } catch {
-        // partial JSON — put it back and wait for more data
         buffer = line + "\n" + buffer;
         break;
       }
@@ -59,6 +60,7 @@ export function useAssistantChat() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<ChatErrorType>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // Load or create conversation
@@ -130,6 +132,7 @@ export function useAssistantChat() {
     async (input: string) => {
       if (!input.trim() || !organizationId || !session) return;
       setError(null);
+      setErrorType(null);
 
       const { data: refreshed } = await supabase.auth.getSession();
       const token = refreshed?.session?.access_token || session.access_token;
@@ -174,15 +177,23 @@ export function useAssistantChat() {
 
         if (!resp.ok) {
           const errData = await resp.json().catch(() => ({}));
-          const errMsg =
-            resp.status === 429
-              ? (errData.code === "DAILY_CAP_REACHED"
-                ? "Você atingiu o limite diário de uso de IA do seu plano."
-                : "Muitas solicitações. Aguarde alguns segundos.")
-              : resp.status === 402
-              ? "Créditos de IA esgotados. Recarregue para continuar."
-              : errData.error || "Erro ao processar resposta.";
+          let errMsg: string;
+          let errKind: ChatErrorType = "generic";
+
+          if (resp.status === 429) {
+            errKind = errData.code === "DAILY_CAP_REACHED" ? "daily_cap" : "rate_limit";
+            errMsg = errKind === "daily_cap"
+              ? "Você atingiu o limite diário de uso de IA do seu plano."
+              : "Muitas solicitações. Aguarde alguns segundos.";
+          } else if (resp.status === 402) {
+            errKind = "credits_empty";
+            errMsg = "A Laura está pausada. Recarregue a capacidade de IA para continuar usando todos os recursos inteligentes.";
+          } else {
+            errMsg = errData.error || "Erro ao processar resposta.";
+          }
+
           setError(errMsg);
+          setErrorType(errKind);
           setIsLoading(false);
           return;
         }
@@ -206,6 +217,7 @@ export function useAssistantChat() {
         if (err.name !== "AbortError") {
           console.error("Chat stream error:", err);
           setError("Erro de conexão. Tente novamente.");
+          setErrorType("generic");
         }
       } finally {
         setIsLoading(false);
@@ -269,5 +281,5 @@ export function useAssistantChat() {
     }
   }, [organizationId, session, isLoading, conversationId, updateStreamingMessage]);
 
-  return { messages, isLoading, isLoadingHistory, error, sendMessage, cancelStream, sendProactiveTip };
+  return { messages, isLoading, isLoadingHistory, error, errorType, sendMessage, cancelStream, sendProactiveTip };
 }
