@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   provisioning: ["qr_pending", "error", "deleted"],
-  qr_pending: ["connected", "disconnected", "error", "deleted"],
+  qr_pending: ["connected", "disconnected", "reconnecting", "error", "deleted"],
   connected: ["disconnected", "deleting", "error"],
   disconnected: ["reconnecting", "qr_pending", "deleting", "deleted", "error"],
   reconnecting: ["qr_pending", "connected", "disconnected", "error"],
