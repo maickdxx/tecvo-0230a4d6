@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
           .eq("approval_status", "pending_approval")
           .is("deleted_at", null);
 
-        const totalPending = allPending?.total_pending || summary?.total_pending || 0;
+        const totalPending = allPendingCount || summary.total_pending || 0;
 
         // Resolve owner contact
         const owner = await resolveOwnerContact(supabase, org.id);
