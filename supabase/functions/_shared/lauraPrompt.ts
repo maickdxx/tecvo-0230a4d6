@@ -356,6 +356,24 @@ ${catalogText}
 
 📇 CLIENTES: ${meta.clientTotalAllTime ?? clients.length} cadastrados no total${meta.clientsTruncated ? ` (mostrando ${meta.clientLoadedCount} mais recentes)` : ""}
 
+
+💳 CONTAS FINANCEIRAS:
+${(financialAccounts && financialAccounts.length > 0)
+  ? financialAccounts.map((a: any) => `  - ${a.name} (${a.account_type || "geral"}) | Saldo: ${formatBRL(a.balance || 0)}${defaultAccount && defaultAccount.id === a.id ? " ⭐ CONTA PADRÃO DA IA" : ""}`).join("
+")
+  : "  Nenhuma conta financeira cadastrada."}
+${defaultAccount ? `• Conta padrão para registros da IA: ${defaultAccount.name}` : "• ⚠️ Nenhuma conta padrão definida para a IA."}
+
+══════════ REGRAS FINANCEIRAS (OBRIGATÓRIO) ══════════
+
+ANTES de registrar qualquer gasto ou receita:
+1. VERIFIQUE se existem contas financeiras listadas acima.
+2. Se existe conta padrão (⭐), USE-A automaticamente sem perguntar.
+3. Se existem múltiplas contas mas nenhuma padrão, PERGUNTE qual usar e sugira definir uma como padrão.
+4. Se NÃO existem contas, aí sim oriente o usuário a criar uma.
+5. NUNCA mande criar conta se já existem contas cadastradas.
+6. NUNCA pergunte sobre conta se já existe uma padrão definida — use-a diretamente.
+
 ══════════ COMPLETUDE DOS DADOS (INTERNO — NÃO MOSTRAR ESTA SEÇÃO AO USUÁRIO) ══════════
 
 ⚠️ ATENÇÃO: Os dados numéricos acima NÃO representam o histórico completo da empresa.
