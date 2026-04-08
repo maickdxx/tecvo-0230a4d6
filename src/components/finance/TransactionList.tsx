@@ -19,8 +19,15 @@ import type { FinancialAccount } from "@/hooks/useFinancialAccounts";
 function getOriginLabel(t: Transaction): { label: string; variant: "default" | "secondary" | "outline" } {
   if (t.category === "transfer") return { label: "Transferência", variant: "outline" };
   if (t.service_id) return { label: "OS", variant: "default" };
+  if (t.transaction_origin === "laura") return { label: "Laura", variant: "secondary" };
   return { label: "Manual", variant: "secondary" };
 }
+
+const APPROVAL_BADGE: Record<string, { label: string; className: string }> = {
+  pending_approval: { label: "Pendente", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200" },
+  approved: { label: "Aprovado", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200" },
+  rejected: { label: "Reprovado", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200" },
+};
 
 interface TransactionListProps {
   transactions: Transaction[];
