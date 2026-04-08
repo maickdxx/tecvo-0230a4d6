@@ -2,9 +2,10 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   extractUsageFromResponse,
   logAIUsage,
+  calculateCostUSD,
 } from "../_shared/aiUsageLogger.ts";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
-import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
+import { checkAndDebitCredits, finalizeAIUsage, logFreeAIUsage } from "../_shared/creditGuard.ts";
 import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 import {
   getTodayInTz,
@@ -2993,10 +2994,7 @@ Deno.serve(async (req) => {
         const sttModel = sttResult.provider === "lovable_ai" ? "google/gemini-2.5-flash"
           : sttResult.provider === "gemini_direct" ? "google/gemini-2.5-flash"
           : "elevenlabs/scribe_v2";
-        await logAIUsage(supabase, {
-          organizationId: targetOrganizationId,
-          userId: null,
-          actionSlug: "audio_transcription",
+        await logFreeAIUsage(supabase, targetOrganizationId, null, "audio_transcription", {
           model: sttModel,
           promptTokens: 0,
           completionTokens: 0,
@@ -3589,18 +3587,17 @@ Deno.serve(async (req) => {
               : "Para eu enviar o PDF de verdade, preciso do número da OS ou do orçamento.";
           }
 
-          // Log AI usage with CORRECT model name
+          // Finalize AI usage (correlates with credit debit via requestId)
           const aiUsage = extractUsageFromResponse({ usage: aiResult.usage });
-          await logAIUsage(supabase, {
-            organizationId: targetOrganizationId,
-            userId: null,
-            actionSlug: "bot_auto_reply",
+          const estimatedCost = calculateCostUSD("google/gemini-2.5-flash", aiUsage.promptTokens, aiUsage.completionTokens);
+          await finalizeAIUsage(supabase, creditCheck.requestId, {
             model: "google/gemini-2.5-flash",
             promptTokens: aiUsage.promptTokens,
             completionTokens: aiUsage.completionTokens,
             totalTokens: aiUsage.totalTokens,
             durationMs: aiDuration,
             status: "success",
+            estimatedCostUsd: estimatedCost,
           });
 
           // Retry once on empty response
@@ -3721,10 +3718,8 @@ Deno.serve(async (req) => {
                     const ttsResult = await generateTTSAudio(safeResponse);
                     // ── GOVERNANCE: Log TTS usage (currently subsidized, 0 credits) ──
                     if (ttsResult.provider) {
-                      await logAIUsage(supabase, {
-                        organizationId: targetOrganizationId, userId: null,
-                        actionSlug: "tts_generation", model: ttsResult.provider,
-                        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                      await logFreeAIUsage(supabase, targetOrganizationId, null, "tts_generation", {
+                        model: ttsResult.provider, promptTokens: 0, completionTokens: 0, totalTokens: 0,
                         durationMs: ttsResult.durationMs, status: ttsResult.audio ? "success" : "error",
                       });
                     }
@@ -3969,16 +3964,15 @@ Cada "sim" aproxima o lead da decisão final.
           const aiUsageLead = extractUsageFromResponse({
             usage: aiResultLead.usage,
           });
-          await logAIUsage(supabase, {
-            organizationId: targetOrganizationId,
-            userId: null,
-            actionSlug: "bot_lead_reply",
+          const leadEstCost = calculateCostUSD("google/gemini-2.5-flash", aiUsageLead.promptTokens, aiUsageLead.completionTokens);
+          await finalizeAIUsage(supabase, leadCreditCheck.requestId, {
             model: "google/gemini-2.5-flash",
             promptTokens: aiUsageLead.promptTokens,
             completionTokens: aiUsageLead.completionTokens,
             totalTokens: aiUsageLead.totalTokens,
             durationMs: aiDurationLead,
             status: "success",
+            estimatedCostUsd: leadEstCost,
           });
 
           // Retry once on empty response (no extra debit — already paid)
@@ -3989,10 +3983,8 @@ Cada "sim" aproxima o lead da decisão final.
               const retryResult = await callAI(systemPrompt, conversationHistory);
               aiResponse = retryResult.content;
               const retryUsage = extractUsageFromResponse({ usage: retryResult.usage });
-              await logAIUsage(supabase, {
-                organizationId: targetOrganizationId,
-                userId: null,
-                actionSlug: "bot_lead_reply",
+              // Log retry as separate free entry (debit already happened)
+              await logFreeAIUsage(supabase, targetOrganizationId, null, "bot_lead_reply", {
                 model: "google/gemini-2.5-flash",
                 promptTokens: retryUsage.promptTokens,
                 completionTokens: retryUsage.completionTokens,
@@ -4057,10 +4049,8 @@ Cada "sim" aproxima o lead da decisão final.
                   try {
                     const ttsResultLead = await generateTTSAudio(safeResponseLead);
                     if (ttsResultLead.provider) {
-                      await logAIUsage(supabase, {
-                        organizationId: targetOrganizationId, userId: null,
-                        actionSlug: "tts_generation", model: ttsResultLead.provider,
-                        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                      await logFreeAIUsage(supabase, targetOrganizationId, null, "tts_generation", {
+                        model: ttsResultLead.provider, promptTokens: 0, completionTokens: 0, totalTokens: 0,
                         durationMs: ttsResultLead.durationMs, status: ttsResultLead.audio ? "success" : "error",
                       });
                     }

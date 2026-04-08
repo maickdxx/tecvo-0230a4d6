@@ -1,9 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { logAIUsage, extractUsageFromResponse } from "../_shared/aiUsageLogger.ts";
+import { logAIUsage, extractUsageFromResponse, calculateCostUSD } from "../_shared/aiUsageLogger.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 import { createSanitizedStream, validateAIOutput, logOutputViolation } from "../_shared/outputValidator.ts";
-import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
+import { checkAndDebitCredits, finalizeAIUsage } from "../_shared/creditGuard.ts";
 import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 
 const corsHeaders = {
@@ -227,9 +227,9 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
 
     if (!response.ok) {
       const errorStatus = response.status === 429 ? "rate_limited" : "error";
-      await logAIUsage(supabaseAdmin, {
-        organizationId, userId, actionSlug: "copilot_response", model: aiModel,
-        promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: errorStatus,
+      await finalizeAIUsage(supabaseAdmin, creditCheck.requestId, {
+        model: aiModel, promptTokens: 0, completionTokens: 0, totalTokens: 0,
+        durationMs, status: errorStatus,
       });
 
       if (response.status === 429) {
@@ -253,10 +253,10 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
     }
 
     if (mode === "chat") {
-      // Log streaming call (no token data available)
-      await logAIUsage(supabaseAdmin, {
-        organizationId, userId, actionSlug: "copilot_chat", model: aiModel,
-        promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, status: "success",
+      // Finalize streaming usage log (no token data available)
+      await finalizeAIUsage(supabaseAdmin, creditCheck.requestId, {
+        model: aiModel, promptTokens: 0, completionTokens: 0, totalTokens: 0,
+        durationMs, status: "success",
       });
 
       // Stream response with sanitization filter
@@ -274,12 +274,13 @@ Seja direto e útil. Pode citar preços, sugerir abordagens ou dar informações
       const result = await response.json();
       const content = result.choices?.[0]?.message?.content || "[]";
 
-      // Log usage with tokens
+      // Finalize usage with token data
       const usage = extractUsageFromResponse(result);
-      await logAIUsage(supabaseAdmin, {
-        organizationId, userId, actionSlug: "copilot_suggest", model: aiModel,
-        promptTokens: usage.promptTokens, completionTokens: usage.completionTokens,
+      const estimatedCost = calculateCostUSD(aiModel, usage.promptTokens, usage.completionTokens);
+      await finalizeAIUsage(supabaseAdmin, creditCheck.requestId, {
+        model: aiModel, promptTokens: usage.promptTokens, completionTokens: usage.completionTokens,
         totalTokens: usage.totalTokens, durationMs: Date.now() - startTime, status: "success",
+        estimatedCostUsd: estimatedCost,
       });
       
       // Extract JSON from the response
