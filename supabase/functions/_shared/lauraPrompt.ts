@@ -1910,6 +1910,18 @@ export async function executeAdminTool(
     const { checkExternalSendPermission } = await import("./externalSendGuard.ts");
 
     if (sendTarget === "client") {
+      // OAL: Backend blocking — check cooldown before allowing client contact
+      if (serviceData.client_id) {
+        const { data: canTouch } = await supabase.rpc("can_touch_client", {
+          _org_id: organizationId,
+          _client_id: serviceData.client_id,
+          _category: "service",
+        });
+        if (canTouch === false) {
+          return `⚠️ O cliente "${serviceData.client?.name || "selecionado"}" foi contatado recentemente. O sistema bloqueia contatos repetidos em curto intervalo para proteger a experiência do cliente. Tente novamente mais tarde.`;
+        }
+      }
+
       const sendCheck = await checkExternalSendPermission(supabase, {
         source: "ai_tool_client",
         organizationId,
