@@ -157,7 +157,7 @@ export function buildSystemPrompt(ctx: any) {
   const { dateStr, timeStr } = getFormattedDateTimeInTz(tz);
   const currentMonth = getCurrentMonthInTz(tz);
 
-  const { services, clients, transactions, profiles, orgName, monthlyGoal, catalog, _meta } = ctx;
+  const { services, clients, transactions, profiles, orgName, monthlyGoal, catalog, _meta, financialAccounts, defaultAccount } = ctx;
   const meta = _meta || {};
 
   const osServices = services.filter((s: any) => s.document_type !== "quote");
