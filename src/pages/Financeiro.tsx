@@ -36,6 +36,7 @@ export default function Financeiro() {
   const { transactions, totals, isLoading } = useTransactions({ startDate, endDate });
   const { organizationId } = useAuth();
   const { activeAccounts } = useFinancialAccounts();
+  const { data: pendingSummary } = usePendingApprovalSummary();
 
   const { data: organization } = useQuery({
     queryKey: ["organization", organizationId],
