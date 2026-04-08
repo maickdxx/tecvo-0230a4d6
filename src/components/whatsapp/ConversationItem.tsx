@@ -235,10 +235,20 @@ export const ConversationItem = memo(function ConversationItem({ contact, isSele
                     step.bgColor, step.color
                   )}>
                     <StepIcon className="h-2.5 w-2.5" />
-                    {step.label}
+                    {step.shortLabel || step.label}
                   </span>
                 );
               })()}
+              {/* Activity indicator */}
+              {activityIndicator && (
+                <span className={cn(
+                  "inline-flex items-center gap-1 text-[9px] font-medium rounded-full px-1.5 py-0.5",
+                  activityIndicator.textColor
+                )}>
+                  <span className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", activityIndicator.dotColor)} />
+                  {activityIndicator.label}
+                </span>
+              )}
               {hasScheduledMessage && (
                 <span className="inline-flex items-center gap-0.5 text-[9px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-1.5 py-0.5 border border-amber-500/20">
                   <Clock className="h-2.5 w-2.5" />
