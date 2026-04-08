@@ -43,7 +43,7 @@ export function useAICredits() {
         console.error("Error fetching franchise status:", error);
         return null;
       }
-      return data as FranchiseStatus;
+      return data as unknown as FranchiseStatus;
     },
     enabled: !!organizationId,
     refetchInterval: 120_000,
