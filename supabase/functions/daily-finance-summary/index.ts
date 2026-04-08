@@ -134,22 +134,36 @@ Deno.serve(async (req) => {
           continue; // Already sent today
         }
 
-        // Get pending approval summary for today
-        const { data: summary, error: summaryErr } = await supabase.rpc(
-          "get_pending_approval_summary",
-          { _organization_id: org.id, _date: todayStr },
-        );
+        // Direct query: pending approval summary for today (no auth.uid() dependency)
+        const { data: todayTxns, error: todayErr } = await supabase
+          .from("transactions")
+          .select("type, amount")
+          .eq("organization_id", org.id)
+          .eq("approval_status", "pending_approval")
+          .eq("date", todayStr)
+          .is("deleted_at", null);
 
-        if (summaryErr) {
-          console.error(`[FINANCE-SUMMARY] RPC error for org ${org.id}:`, summaryErr);
+        if (todayErr) {
+          console.error(`[FINANCE-SUMMARY] Query error for org ${org.id}:`, todayErr.message);
+          results.push({ org: org.id, status: "error", error: todayErr.message });
           continue;
         }
 
-        // Also check ALL pending (not just today) for context
-        const { data: allPending } = await supabase.rpc(
-          "get_pending_approval_summary",
-          { _organization_id: org.id },
-        );
+        const summary = {
+          total_pending: todayTxns?.length ?? 0,
+          pending_income_count: todayTxns?.filter((t: any) => t.type === "income").length ?? 0,
+          pending_expense_count: todayTxns?.filter((t: any) => t.type === "expense").length ?? 0,
+          pending_income_total: todayTxns?.filter((t: any) => t.type === "income").reduce((s: number, t: any) => s + Number(t.amount), 0) ?? 0,
+          pending_expense_total: todayTxns?.filter((t: any) => t.type === "expense").reduce((s: number, t: any) => s + Number(t.amount), 0) ?? 0,
+        };
+
+        // Also check ALL pending (not just today) for context — direct query
+        const { count: allPendingCount } = await supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", org.id)
+          .eq("approval_status", "pending_approval")
+          .is("deleted_at", null);
 
         const totalPending = allPending?.total_pending || summary?.total_pending || 0;
 
