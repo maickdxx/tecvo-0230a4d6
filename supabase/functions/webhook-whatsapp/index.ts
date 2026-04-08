@@ -3257,11 +3257,31 @@ Deno.serve(async (req) => {
               (currentLooksLikeNameIdentifier ? currentUserText : null))
             : null;
           // ── FINANCE CONFIRMATION INTERCEPTION: Check for CONFIRMAR/CANCELAR before AI call ──
-          const FINANCE_CONFIRM_PATTERN = /^(confirmar|confirmar tudo)\s*[.!]?$/i;
-          const FINANCE_CANCEL_PATTERN = /^(cancelar|cancela)\s*[.!]?$/i;
+          const FINANCE_CONFIRM_PATTERN = /^(confirmar|confirmar tudo|pode aprovar|aprovado|aprova|pode consolidar|consolida|sim,?\s*(pode)?\s*aprov|aprov[ae]\s*tudo|autorizo|autorizado|pode confirmar|confirmado)\s*[.!?]?$/i;
+          const FINANCE_CONFIRM_LOOSE = /\b(aprovar?|aprovado|confirmar?|consolidar?|autorizo)\b/i;
+          const FINANCE_CANCEL_PATTERN = /^(cancelar|cancela|não\s*aprov|nao\s*aprov|rejeitar?|nega[r]?|não|nao)\s*[.!?]?$/i;
           let confirmationIntercepted = false;
 
-          if (FINANCE_CONFIRM_PATTERN.test(normalizedCurrentUserText) || FINANCE_CANCEL_PATTERN.test(normalizedCurrentUserText)) {
+          // Check if there's a pending finance action first, then match broader patterns
+          const hasPendingFinanceAction = async () => {
+            const { data } = await supabase
+              .from("pending_finance_actions")
+              .select("id")
+              .eq("organization_id", targetOrganizationId)
+              .eq("status", "pending")
+              .gt("expires_at", new Date().toISOString())
+              .limit(1)
+              .maybeSingle();
+            return !!data;
+          };
+
+          const isFinanceConfirm = FINANCE_CONFIRM_PATTERN.test(normalizedCurrentUserText);
+          const isFinanceCancel = FINANCE_CANCEL_PATTERN.test(normalizedCurrentUserText);
+          const isLooseConfirm = !isFinanceConfirm && !isFinanceCancel && FINANCE_CONFIRM_LOOSE.test(normalizedCurrentUserText);
+          
+          const shouldCheckFinance = isFinanceConfirm || isFinanceCancel || isLooseConfirm;
+
+          if (shouldCheckFinance && (isFinanceConfirm || isFinanceCancel || await hasPendingFinanceAction())) {
             try {
               const { data: pendingFinance } = await supabase
                 .from("pending_finance_actions")
