@@ -1358,65 +1358,82 @@ export async function executeAdminTool(
 
     const finalServiceType = (typeExists && typeExists.length > 0) ? service_type : "outro";
 
-    // ── CATALOG MATCHING ──
+    // ── CATALOG MATCHING (HARDENED) ──
     let catalogMatch: any = null;
     let catalogServiceId: string | null = null;
     let finalValue = value ?? null; // null means "not provided by user"
     let finalDescription = description;
 
-    if (catalog_service_name) {
-      // Direct match by name provided by AI
-      const { data: catalogMatches } = await supabase
-        .from("catalog_services")
-        .select("id, name, unit_price, service_type, description")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .ilike("name", `%${catalog_service_name}%`)
-        .limit(5);
+    // Fetch ALL active catalog items for this org (usually <50)
+    const { data: allCatalog } = await supabase
+      .from("catalog_services")
+      .select("id, name, unit_price, service_type, description")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .limit(100);
 
-      if (catalogMatches && catalogMatches.length === 1) {
-        catalogMatch = catalogMatches[0];
-      } else if (catalogMatches && catalogMatches.length > 1) {
-        // Multiple matches — return options for Laura to ask user
-        const options = catalogMatches.map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
-        return `CATALOG_MULTIPLE_MATCHES:Encontrei ${catalogMatches.length} itens no catálogo:\n${options}\n\nQual deles é o correto? Informe o nome exato.`;
+    const catalogItems = allCatalog || [];
+
+    if (catalog_service_name) {
+      // Smart match using normalized text + synonyms
+      const result = smartCatalogMatch(catalogItems, catalog_service_name);
+
+      if (result.match) {
+        catalogMatch = result.match;
+      } else if (result.matches.length > 1) {
+        const options = result.matches.slice(0, 5).map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
+        return `CATALOG_MULTIPLE_MATCHES:Encontrei ${result.matches.length} itens no catálogo:\n${options}\n\nQual deles é o correto? Informe o nome exato.`;
       }
     }
 
-    // Fallback: try matching by service_type + keywords from description
-    if (!catalogMatch && !catalog_service_name) {
-      const { data: typeCatalog } = await supabase
-        .from("catalog_services")
-        .select("id, name, unit_price, service_type, description")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .eq("service_type", finalServiceType)
-        .limit(10);
+    // Fallback: smart match using description + service_type
+    if (!catalogMatch) {
+      const searchText = catalog_service_name || `${finalServiceType} ${description}`;
+      const result = smartCatalogMatch(catalogItems, searchText);
 
-      if (typeCatalog && typeCatalog.length === 1) {
-        catalogMatch = typeCatalog[0];
+      if (result.match) {
+        catalogMatch = result.match;
+      } else if (result.matches.length > 1 && !catalog_service_name) {
+        // Multiple matches on fallback — return options
+        const options = result.matches.slice(0, 5).map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
+        return `CATALOG_MULTIPLE_MATCHES:Encontrei ${result.matches.length} itens parecidos no catálogo:\n${options}\n\nQual deles é o correto?`;
       }
-      // If multiple, don't auto-match — Laura should have asked
     }
 
     if (catalogMatch) {
       catalogServiceId = catalogMatch.id;
-      // Use catalog price if user didn't provide one
       if (finalValue === null || finalValue === undefined) {
         finalValue = Number(catalogMatch.unit_price);
       }
-      // Enhance description with catalog name if it's generic
       if (description.length < 30) {
         finalDescription = catalogMatch.name;
       }
       console.log(`[LAURA] Catalog match: "${catalogMatch.name}" (R$ ${catalogMatch.unit_price}) → service`);
     }
 
-    // Final fallback: value = 0 only if truly no catalog and no user value
-    if (finalValue === null || finalValue === undefined) {
-      finalValue = 0;
+    // ── ZERO-VALUE BLOCKING ──
+    if (finalValue === null || finalValue === undefined || finalValue === 0) {
+      if (catalogItems.length > 0) {
+        // Check if any catalog item matches the service type
+        const typeMatches = catalogItems.filter((c: any) => c.service_type === finalServiceType);
+        if (typeMatches.length > 0 && !catalogMatch) {
+          // There ARE catalog items for this type but no match — block zero
+          const options = typeMatches.slice(0, 5).map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
+          console.warn(`[LAURA] BLOCKED zero-value service. Type "${finalServiceType}" has catalog items.`);
+          return `CATALOG_MULTIPLE_MATCHES:Não posso criar serviço sem valor quando existem itens no catálogo para "${finalServiceType}":\n${options}\n\nQual deles é o correto? Ou informe o valor manualmente.`;
+        }
+      }
+      // Truly no catalog match — allow zero but log it
+      if (finalValue === null || finalValue === undefined) finalValue = 0;
+      if (finalValue === 0) {
+        console.warn(`[LAURA] QUALITY LOG: Service created with value=0. Type="${finalServiceType}", desc="${description}", catalogMatch=${!!catalogMatch}`);
+      }
+    }
+
+    // Log quality metrics
+    if (!catalogServiceId) {
+      console.warn(`[LAURA] QUALITY LOG: Service WITHOUT catalog link. Type="${finalServiceType}", desc="${description}"`);
     }
 
     const { data: newService, error } = await supabase.from("services").insert({
