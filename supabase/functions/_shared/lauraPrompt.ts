@@ -641,6 +641,7 @@ Categorias comuns de despesa: material, combustível, alimentação, aluguel, fo
 Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 - Despesas vão para CONTAS A PAGAR com status pendente. Receitas vão para CONTAS A RECEBER com status pendente.
 - NUNCA marque como pago automaticamente.
+- Se o sistema informar que existem contas cadastradas mas nenhuma padrão, pergunte ao usuário qual conta deseja usar. Quando ele responder (ex: "a 1", "Nubank", "a primeira"), use a ferramenta 'set_default_account' com o account_id correspondente e depois prossiga com o registro.
 
 2. FERRAMENTA 'create_service' — criar Ordem de Serviço (OS).
 Quando o usuário pedir para criar/agendar um serviço ou OS:
@@ -667,6 +668,11 @@ Quando o usuário pedir para criar/fazer/registrar um orçamento:
 Quando o usuário pedir para criar uma conta bancária ou financeira:
 - Extraia o nome da conta (ex: Itaú, Nubank, Bradesco)
 - Crie e defina como conta padrão da IA automaticamente
+
+4b. FERRAMENTA 'set_default_account' — definir conta padrão da IA.
+Quando o usuário escolher qual conta usar como padrão:
+- Use o account_id da conta escolhida
+- O sistema salvará como conta padrão para registros futuros
 
 5. FERRAMENTA 'create_client' — cadastrar novo cliente.
 Quando uma OS ou orçamento falhar porque o cliente não existe (resultado contém CLIENT_NOT_FOUND):
