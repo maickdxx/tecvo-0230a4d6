@@ -888,8 +888,13 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 - NUNCA marque como pago automaticamente.
 - IMPORTANTE: Toda transação nasce como PENDENTE DE APROVAÇÃO FINANCEIRA. O saldo consolidado NÃO é afetado até o gestor aprovar.
 - Ao confirmar o registro, SEMPRE diga que ficou "pendente de aprovação financeira" ou "aguardando aprovação do gestor". NUNCA diga que foi consolidado ou confirmado no saldo.
-- Se o sistema informar que existem contas cadastradas mas nenhuma padrão, pergunte ao usuário qual conta deseja usar. Quando ele responder (ex: "a 1", "Nubank", "a primeira"), use a ferramenta 'set_default_account' com o account_id (UUID) correspondente da lista de CONTAS FINANCEIRAS do contexto e depois prossiga AUTOMATICAMENTE com o registro — NÃO peça ao usuário para repetir o pedido.
-- IMPORTANTE: O account_id DEVE ser o UUID da conta (ex: "abc123-..."), NUNCA o nome da conta.
+- REGRA DE CONTA FINANCEIRA (OBRIGATÓRIA):
+  • Consulte a seção "CONTAS FINANCEIRAS" do contexto para ver as contas disponíveis.
+  • Se a organização tem **apenas 1 conta**: use-a automaticamente sem perguntar. Passe o account_id na ferramenta.
+  • Se a organização tem **múltiplas contas**: ANTES de registrar, pergunte ao usuário "Em qual conta deseja registrar?" e liste as opções disponíveis (nome e tipo). Depois que o usuário escolher, passe o account_id correspondente na ferramenta 'register_transaction'.
+  • SEMPRE inclua a conta escolhida no resumo de confirmação antes de executar (ex: "💳 Conta: Bradesco PJ").
+  • O account_id DEVE ser o UUID da conta (ex: "abc123-..."), NUNCA o nome da conta.
+  • Se não houver nenhuma conta cadastrada, siga o fluxo de criação de conta.
 
 APROVAÇÃO FINANCEIRA:
 - Quando o gestor pedir para "aprovar tudo", "aprovar pendências", "aprovar transações" → use a ferramenta 'approve_pending_transactions' SEM confirmed=true
@@ -1122,47 +1127,45 @@ export async function executeAdminTool(
   }
 
   if (fnName === "register_transaction") {
-    const { type, amount, description, category, date, payment_method } = args;
+    const { type, amount, description, category, date, payment_method, account_id: argAccountId } = args;
     if (!type || !amount || !description || !category || !date) {
       return "Erro: campos obrigatórios faltando (type, amount, description, category, date).";
     }
     if (amount <= 0) return "Erro: valor deve ser positivo.";
 
-    const { data: orgData } = await supabase
-      .from("organizations")
-      .select("default_ai_account_id")
-      .eq("id", organizationId)
-      .single();
+    // Fetch all active accounts for the org
+    const { data: existingAccounts } = await supabase
+      .from("financial_accounts")
+      .select("id, name, account_type")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
 
-    let accountId: string | null = orgData?.default_ai_account_id || null;
+    if (!existingAccounts || existingAccounts.length === 0) {
+      return '⚠️ Você ainda não tem uma conta financeira cadastrada.\n\nPosso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
+    }
 
-    if (!accountId) {
-      // Check if org already has financial accounts
-      const { data: existingAccounts } = await supabase
-        .from("financial_accounts")
-        .select("id, name, account_type")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .order("created_at", { ascending: true });
+    let accountId: string | null = null;
 
-      if (existingAccounts && existingAccounts.length > 0) {
-        if (existingAccounts.length === 1) {
-          // Auto-set as default
-          accountId = existingAccounts[0].id;
-          await supabase
-            .from("organizations")
-            .update({ default_ai_account_id: accountId })
-            .eq("id", organizationId);
-        } else {
-          // Multiple accounts — list with IDs so AI can call set_default_account
-          const accountList = existingAccounts
-            .map((a, i) => `${i + 1}. ${a.name} (ID: ${a.id})`)
-            .join("\n");
-          return `Encontrei ${existingAccounts.length} contas financeiras cadastradas:\n\n${accountList}\n\nQual delas deseja usar como conta padrão para os registros da IA?\n\n⚡ INSTRUÇÃO INTERNA: Quando o usuário escolher, use a ferramenta 'set_default_account' com o account_id correspondente e DEPOIS execute automaticamente a ferramenta 'register_transaction' com os mesmos dados originais. NÃO peça para o usuário repetir o pedido.`;
-        }
-      } else {
-        return '⚠️ Você ainda não tem uma conta financeira cadastrada.\n\nPosso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
+    if (argAccountId) {
+      // Validate that the provided account_id belongs to this org
+      const match = existingAccounts.find((a: any) => a.id === argAccountId);
+      if (!match) {
+        const accountList = existingAccounts
+          .map((a: any, i: number) => `${i + 1}. ${a.name} (${a.account_type}) — ID: ${a.id}`)
+          .join("\n");
+        return `❌ Conta informada não encontrada. Contas disponíveis:\n\n${accountList}\n\n⚡ INSTRUÇÃO INTERNA: Pergunte ao usuário qual conta usar e chame 'register_transaction' novamente com o account_id correto.`;
       }
+      accountId = match.id;
+    } else if (existingAccounts.length === 1) {
+      // Only one account — use it automatically
+      accountId = existingAccounts[0].id;
+    } else {
+      // Multiple accounts and no account_id provided — ask the user
+      const accountList = existingAccounts
+        .map((a: any, i: number) => `${i + 1}. ${a.name} (${a.account_type}) — ID: ${a.id}`)
+        .join("\n");
+      return `Você tem ${existingAccounts.length} contas cadastradas:\n\n${accountList}\n\n⚡ INSTRUÇÃO INTERNA: Pergunte ao usuário "Em qual conta deseja registrar?" e quando ele responder, chame 'register_transaction' novamente incluindo o account_id correspondente. NÃO peça para repetir o pedido.`;
     }
 
     const capitalizedDesc = description.charAt(0).toUpperCase() + description.slice(1);
