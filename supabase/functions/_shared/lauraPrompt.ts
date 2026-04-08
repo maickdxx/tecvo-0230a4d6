@@ -1698,10 +1698,12 @@ export async function executeAdminTool(
     }
     const confirmedReason = pendingAction.payload?.reason ?? null;
 
+    const rejectActingUserId = ctx?.currentUserId || null;
     const { data: result, error } = await supabase.rpc("reject_transactions", {
       _transaction_ids: confirmedIds,
       _organization_id: organizationId,
       _reason: confirmedReason,
+      _acting_user_id: rejectActingUserId,
     });
 
     if (error) return `Erro ao reprovar: ${error.message}`;
