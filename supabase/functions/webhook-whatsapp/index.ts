@@ -661,12 +661,14 @@ async function transcribeAudio(
 /**
  * Generate TTS audio using Gemini first, with ElevenLabs fallback.
  */
-async function generateTTSAudio(text: string): Promise<string | null> {
+async function generateTTSAudio(text: string): Promise<{ audio: string | null; provider: string | null; durationMs: number }> {
+  const startTime = Date.now();
   const geminiAudio = await generateTTSAudioWithGemini(text);
   if (geminiAudio) {
-    return geminiAudio;
+    return { audio: geminiAudio, provider: "gemini_tts", durationMs: Date.now() - startTime };
   }
-  return await generateTTSAudioWithElevenLabs(text);
+  const elevenLabsAudio = await generateTTSAudioWithElevenLabs(text);
+  return { audio: elevenLabsAudio, provider: elevenLabsAudio ? "elevenlabs_tts" : null, durationMs: Date.now() - startTime };
 }
 
 async function generateTTSAudioWithGemini(
