@@ -585,14 +585,15 @@ async function transcribeAudio(
   instance: string,
   messageKey: any,
   mimeType: string | null,
-): Promise<string | null> {
+): Promise<{ text: string | null; provider: string | null; durationMs: number }> {
+  const startTime = Date.now();
   try {
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
     const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
 
     if (!vpsUrl || !apiKey) {
       console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: missing VPS config");
-      return null;
+      return { text: null, provider: null, durationMs: Date.now() - startTime };
     }
 
     // 1. Download audio base64 from Evolution API
@@ -614,7 +615,7 @@ async function transcribeAudio(
         "[WEBHOOK-WHATSAPP] transcribeAudio: getBase64 failed",
         resp.status,
       );
-      return null;
+      return { text: null, provider: null, durationMs: Date.now() - startTime };
     }
 
     const result = await resp.json();
@@ -624,7 +625,7 @@ async function transcribeAudio(
 
     if (!base64Data || typeof base64Data !== "string") {
       console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: no base64 data");
-      return null;
+      return { text: null, provider: null, durationMs: Date.now() - startTime };
     }
 
     const baseMime = (returnedMime || "audio/ogg").split(";")[0].trim()
@@ -637,7 +638,7 @@ async function transcribeAudio(
       bytes.length,
     );
     if (lovableTranscription) {
-      return lovableTranscription;
+      return { text: lovableTranscription, provider: "lovable_ai", durationMs: Date.now() - startTime };
     }
 
     const geminiTranscription = await transcribeAudioWithGemini(
@@ -646,13 +647,14 @@ async function transcribeAudio(
       bytes.length,
     );
     if (geminiTranscription) {
-      return geminiTranscription;
+      return { text: geminiTranscription, provider: "gemini_direct", durationMs: Date.now() - startTime };
     }
 
-    return await transcribeAudioWithElevenLabs(bytes, baseMime);
+    const elevenLabsResult = await transcribeAudioWithElevenLabs(bytes, baseMime);
+    return { text: elevenLabsResult, provider: elevenLabsResult ? "elevenlabs" : null, durationMs: Date.now() - startTime };
   } catch (err: any) {
     console.error("[WEBHOOK-WHATSAPP] transcribeAudio: exception", err.message);
-    return null;
+    return { text: null, provider: null, durationMs: Date.now() - startTime };
   }
 }
 
