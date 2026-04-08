@@ -2785,7 +2785,8 @@ export type Database = {
       }
       pending_choices: {
         Row: {
-          contact_id: string
+          contact_id: string | null
+          conversation_id: string | null
           created_at: string
           expires_at: string
           id: string
@@ -2794,7 +2795,8 @@ export type Database = {
           status: string
         }
         Insert: {
-          contact_id: string
+          contact_id?: string | null
+          conversation_id?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -2803,7 +2805,8 @@ export type Database = {
           status?: string
         }
         Update: {
-          contact_id?: string
+          contact_id?: string | null
+          conversation_id?: string | null
           created_at?: string
           expires_at?: string
           id?: string
