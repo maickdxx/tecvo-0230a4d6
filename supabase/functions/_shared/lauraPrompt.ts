@@ -1715,12 +1715,30 @@ export async function executeAdminTool(
     const expenseTotal = expenseItems.reduce((s: number, t: any) => s + Number(t.amount), 0);
     const balance = incomeTotal - expenseTotal;
 
-    return `📊 Resumo de pendências${date ? ` (${date})` : ""}:\n\n` +
+    const summaryResult = `📊 Resumo de pendências${date ? ` (${date})` : ""}:\n\n` +
       `• Receitas pendentes: ${incomeItems.length} (R$ ${incomeTotal.toFixed(2)})\n` +
       `• Despesas pendentes: ${expenseItems.length} (R$ ${expenseTotal.toFixed(2)})\n` +
       `• Saldo operacional pendente: R$ ${balance.toFixed(2)}\n` +
       `• Total de transações: ${txns.length}\n\n` +
-      `Deseja que eu aprove todas, revise item por item ou mantenha pendente?`;
+      `Deseja que eu:\n1️⃣ Aprove todas\n2️⃣ Mostre item por item\n3️⃣ Mantenha pendente`;
+
+    // Save pending_choices for numeric interception
+    if (ctx?.contactId) {
+      try {
+        await supabase.from("pending_choices").update({ status: "expired" }).eq("organization_id", organizationId).eq("contact_id", ctx.contactId).eq("status", "pending");
+        await supabase.from("pending_choices").insert({
+          organization_id: organizationId,
+          contact_id: ctx.contactId,
+          options: [
+            { key: "1", action: "approve_pending_transactions", args: { scope: "all_pending", confirmed: false } },
+            { key: "2", action: "list_pending_transactions", args: { date: date || undefined } },
+            { key: "3", action: "keep_pending", response: "Ok, as pendências serão mantidas. Quando quiser revisar, é só me chamar! 👍" },
+          ],
+        });
+      } catch (e: any) { console.warn("[LAURA] Failed to save pending_choices:", e?.message); }
+    }
+
+    return summaryResult;
   }
 
   if (fnName === "list_pending_transactions") {
@@ -1777,7 +1795,22 @@ export async function executeAdminTool(
       result += `\n\n_Mostrando ${txns.length} de ${totalCount} pendências. Peça para ver mais se necessário._`;
     }
 
-    result += `\n\nDeseja aprovar todas, aprovar/reprovar alguma específica ou manter pendente?`;
+    result += `\n\nDeseja que eu:\n1️⃣ Aprove todas\n2️⃣ Mantenha pendente`;
+
+    // Save pending_choices for numeric interception
+    if (ctx?.contactId) {
+      try {
+        await supabase.from("pending_choices").update({ status: "expired" }).eq("organization_id", organizationId).eq("contact_id", ctx.contactId).eq("status", "pending");
+        await supabase.from("pending_choices").insert({
+          organization_id: organizationId,
+          contact_id: ctx.contactId,
+          options: [
+            { key: "1", action: "approve_pending_transactions", args: { scope: "all_pending", confirmed: false } },
+            { key: "2", action: "keep_pending", response: "Ok, as pendências serão mantidas. Quando quiser revisar, é só me chamar! 👍" },
+          ],
+        });
+      } catch (e: any) { console.warn("[LAURA] Failed to save pending_choices:", e?.message); }
+    }
 
     await logToolSuccess(supabase, organizationId, fnName, { count: txns.length, date, type_filter });
     return result;

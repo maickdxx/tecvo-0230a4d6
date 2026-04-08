@@ -2783,6 +2783,44 @@ export type Database = {
           },
         ]
       }
+      pending_choices: {
+        Row: {
+          contact_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          options: Json
+          organization_id: string
+          status: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          options?: Json
+          organization_id: string
+          status?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          options?: Json
+          organization_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_choices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_finance_actions: {
         Row: {
           action_type: string

@@ -3298,6 +3298,92 @@ Deno.serve(async (req) => {
             }
           }
 
+          // ── NUMERIC CHOICE INTERCEPTION: Check for "1", "2", "3" against pending_choices ──
+          const NUMERIC_CHOICE_PATTERN = /^([1-9])\.?\s*$/;
+          const numericMatch = normalizedCurrentUserText.match(NUMERIC_CHOICE_PATTERN);
+
+          if (!confirmationIntercepted && numericMatch) {
+            try {
+              const chosenKey = numericMatch[1];
+              const { data: pendingChoice } = await supabase
+                .from("pending_choices")
+                .select("id, options")
+                .eq("organization_id", targetOrganizationId)
+                .eq("contact_id", contactId)
+                .eq("status", "pending")
+                .gt("expires_at", new Date().toISOString())
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              if (pendingChoice && pendingChoice.options) {
+                const options = pendingChoice.options as Array<{ key: string; action: string; args?: any; response?: string }>;
+                const selected = options.find((o: any) => o.key === chosenKey);
+
+                if (selected) {
+                  // Mark as executed
+                  await supabase
+                    .from("pending_choices")
+                    .update({ status: "executed" })
+                    .eq("id", pendingChoice.id);
+
+                  if (selected.action === "keep_pending") {
+                    // Simple text response — no tool call needed
+                    confirmationIntercepted = true;
+                    const keepMsg = selected.response || "Ok, as pendências serão mantidas. Quando quiser revisar, é só me chamar! 👍";
+                    const keepMsgId = `ai_choice_${crypto.randomUUID()}`;
+                    await supabase.from("whatsapp_messages").insert({
+                      organization_id: targetOrganizationId,
+                      contact_id: contactId,
+                      message_id: keepMsgId,
+                      content: keepMsg,
+                      is_from_me: true,
+                      status: "sent",
+                      channel_id: channel.id,
+                      ai_generated: true,
+                    });
+                    await sendWhatsAppReply(instance, remoteJid, keepMsg);
+                    console.log(`[WEBHOOK-WHATSAPP] NUMERIC CHOICE: "${chosenKey}" → keep_pending for org ${targetOrganizationId.slice(0, 8)}`);
+                  } else {
+                    // Execute tool call
+                    const toolCall = {
+                      id: `choice_${crypto.randomUUID()}`,
+                      function: {
+                        name: selected.action,
+                        arguments: JSON.stringify(selected.args || {}),
+                      },
+                    };
+
+                    const toolResult = await executeAdminTool(
+                      supabase,
+                      targetOrganizationId,
+                      toolCall,
+                      { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
+                    );
+
+                    confirmationIntercepted = true;
+                    const safeResult = markdownToWhatsApp(toolResult);
+                    const choiceMsgId = `ai_choice_${crypto.randomUUID()}`;
+                    await supabase.from("whatsapp_messages").insert({
+                      organization_id: targetOrganizationId,
+                      contact_id: contactId,
+                      message_id: choiceMsgId,
+                      content: safeResult,
+                      is_from_me: true,
+                      status: "sent",
+                      channel_id: channel.id,
+                      ai_generated: true,
+                    });
+                    await sendWhatsAppReply(instance, remoteJid, safeResult);
+                    console.log(`[WEBHOOK-WHATSAPP] NUMERIC CHOICE: "${chosenKey}" → ${selected.action} for org ${targetOrganizationId.slice(0, 8)}`);
+                  }
+                }
+              }
+            } catch (choiceErr) {
+              console.warn("[WEBHOOK-WHATSAPP] Numeric choice interception error:", choiceErr);
+            }
+          }
+
           // ── CONFIRMATION INTERCEPTION: Check pending action before AI call (PDF sends) ──
           const AFFIRMATIVE_PATTERNS = /^(sim|s|pode|pode enviar|envia|enviar|confirmado|manda|ok|pode mandar|isso|positivo|com certeza|claro|bora|vai|perfeito|beleza|manda bala|pode ser)\s*[.!]?$/i;
 
