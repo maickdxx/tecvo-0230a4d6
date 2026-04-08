@@ -289,8 +289,8 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
   // Calculate totals - only count paid transactions for actual cash flow
   const totals = query.data?.reduce(
     (acc, t) => {
-      // Only count transactions that are actually paid/received
-      if (t.status === "paid") {
+      // Only count transactions that are actually paid/received AND approved (not pending_approval)
+      if (t.status === "paid" && (t.approval_status === 'approved' || !t.approval_status)) {
         if (t.type === "income") {
           acc.income += Number(t.amount);
         } else {
