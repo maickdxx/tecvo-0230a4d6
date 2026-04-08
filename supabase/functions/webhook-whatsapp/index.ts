@@ -3211,9 +3211,95 @@ Deno.serve(async (req) => {
             ? (currentStrongIdentifier ||
               (currentLooksLikeNameIdentifier ? currentUserText : null))
             : null;
-          // ── CONFIRMATION INTERCEPTION: Check pending action before AI call ──
-          const AFFIRMATIVE_PATTERNS = /^(sim|s|pode|pode enviar|envia|enviar|confirmado|manda|ok|pode mandar|isso|positivo|com certeza|claro|bora|vai|perfeito|beleza|manda bala|pode ser)\s*[.!]?$/i;
+          // ── FINANCE CONFIRMATION INTERCEPTION: Check for CONFIRMAR/CANCELAR before AI call ──
+          const FINANCE_CONFIRM_PATTERN = /^(confirmar|confirmar tudo)\s*[.!]?$/i;
+          const FINANCE_CANCEL_PATTERN = /^(cancelar|cancela)\s*[.!]?$/i;
           let confirmationIntercepted = false;
+
+          if (FINANCE_CONFIRM_PATTERN.test(normalizedCurrentUserText) || FINANCE_CANCEL_PATTERN.test(normalizedCurrentUserText)) {
+            try {
+              const { data: pendingFinance } = await supabase
+                .from("pending_finance_actions")
+                .select("id, action_type, payload, summary")
+                .eq("organization_id", targetOrganizationId)
+                .eq("status", "pending")
+                .gt("expires_at", new Date().toISOString())
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              if (pendingFinance) {
+                if (FINANCE_CANCEL_PATTERN.test(normalizedCurrentUserText)) {
+                  // Cancel the pending action
+                  await supabase
+                    .from("pending_finance_actions")
+                    .update({ status: "cancelled" })
+                    .eq("id", pendingFinance.id);
+
+                  confirmationIntercepted = true;
+                  const cancelMsg = "Ação cancelada. As transações permanecem pendentes de aprovação.";
+                  const cancelMsgId = `ai_fincancel_${crypto.randomUUID()}`;
+                  await supabase.from("whatsapp_messages").insert({
+                    organization_id: targetOrganizationId,
+                    contact_id: contactId,
+                    message_id: cancelMsgId,
+                    content: cancelMsg,
+                    is_from_me: true,
+                    status: "sent",
+                    channel_id: channel.id,
+                    ai_generated: true,
+                  });
+                  await sendWhatsAppReply(instance, remoteJid, cancelMsg);
+                } else {
+                  // Execute the confirmed financial action
+                  const toolName = pendingFinance.action_type === "approve" 
+                    ? "approve_pending_transactions" 
+                    : "reject_pending_transactions";
+                  
+                  const toolArgs = pendingFinance.action_type === "approve"
+                    ? { scope: pendingFinance.payload?.scope || "all_pending", type_filter: pendingFinance.payload?.type_filter, confirmed: true }
+                    : { transaction_ids: pendingFinance.payload?.transaction_ids, reason: pendingFinance.payload?.reason, confirmed: true };
+
+                  const directToolCall = {
+                    id: `finance_confirm_${crypto.randomUUID()}`,
+                    function: {
+                      name: toolName,
+                      arguments: JSON.stringify(toolArgs),
+                    },
+                  };
+
+                  const directResult = await executeAdminTool(
+                    supabase,
+                    targetOrganizationId,
+                    directToolCall,
+                    { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
+                  );
+
+                  confirmationIntercepted = true;
+                  const safeDirect = markdownToWhatsApp(directResult);
+                  const directMsgId = `ai_finconfirm_${crypto.randomUUID()}`;
+                  await supabase.from("whatsapp_messages").insert({
+                    organization_id: targetOrganizationId,
+                    contact_id: contactId,
+                    message_id: directMsgId,
+                    content: safeDirect,
+                    is_from_me: true,
+                    status: "sent",
+                    channel_id: channel.id,
+                    ai_generated: true,
+                  });
+                  await sendWhatsAppReply(instance, remoteJid, safeDirect);
+
+                  console.log(`[WEBHOOK-WHATSAPP] FINANCE CONFIRMATION EXECUTED: ${toolName} for org ${targetOrganizationId.slice(0, 8)}`);
+                }
+              }
+            } catch (finErr) {
+              console.warn("[WEBHOOK-WHATSAPP] Finance confirmation interception error:", finErr);
+            }
+          }
+
+          // ── CONFIRMATION INTERCEPTION: Check pending action before AI call (PDF sends) ──
+          const AFFIRMATIVE_PATTERNS = /^(sim|s|pode|pode enviar|envia|enviar|confirmado|manda|ok|pode mandar|isso|positivo|com certeza|claro|bora|vai|perfeito|beleza|manda bala|pode ser)\s*[.!]?$/i;
 
           if (AFFIRMATIVE_PATTERNS.test(normalizedCurrentUserText)) {
             try {
