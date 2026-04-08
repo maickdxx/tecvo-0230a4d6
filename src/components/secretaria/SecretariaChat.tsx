@@ -1,9 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { Send, Bot, User, Loader2, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAssistantChat } from "@/hooks/useAssistantChat";
+import { useAICredits, CREDIT_PACKAGES } from "@/hooks/useAICredits";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
 
 const quickSuggestions = [
@@ -14,8 +21,64 @@ const quickSuggestions = [
   "Quem não faz manutenção há 6 meses?",
 ];
 
+function RechargeInlineCTA() {
+  const [open, setOpen] = useState(false);
+  const { balance, isLow, isEmpty, purchaseCredits, purchasing } = useAICredits();
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+      >
+        <Zap className="h-3.5 w-3.5" />
+        Recarregar IA
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Recursos de IA
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-1">
+                {isEmpty ? "IA pausada" : isLow ? "Capacidade limitada" : "IA ativa"}
+              </p>
+              <p className={`text-3xl font-bold ${isEmpty ? "text-destructive" : isLow ? "text-amber-600" : "text-foreground"}`}>
+                {balance}
+              </p>
+              <p className="text-xs text-muted-foreground">interações disponíveis</p>
+            </div>
+            <div className="space-y-2">
+              {CREDIT_PACKAGES.map((pack) => (
+                <button
+                  key={pack.id}
+                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border/60 bg-background hover:border-primary/40 hover:bg-primary/5 transition-all"
+                  onClick={() => purchaseCredits(pack.id)}
+                  disabled={purchasing}
+                >
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-foreground">{pack.label}</p>
+                    <p className="text-xs text-muted-foreground">{pack.description}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    R$ {pack.price.toFixed(2).replace(".", ",")}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export function SecretariaChat() {
-  const { messages, isLoading, isLoadingHistory, error, sendMessage, sendProactiveTip } = useAssistantChat();
+  const { messages, isLoading, isLoadingHistory, error, errorType, sendMessage, sendProactiveTip } = useAssistantChat();
   const proactiveSentRef = useRef(false);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -25,7 +88,6 @@ export function SecretariaChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Trigger proactive tip once after history loads
   useEffect(() => {
     if (!isLoadingHistory && !proactiveSentRef.current) {
       proactiveSentRef.current = true;
@@ -141,7 +203,10 @@ export function SecretariaChat() {
           </div>
         )}
         {error && (
-          <div className="text-xs text-destructive text-center py-2">{error}</div>
+          <div className="flex flex-col items-center py-2 gap-1">
+            <p className="text-xs text-destructive text-center">{error}</p>
+            {errorType === "credits_empty" && <RechargeInlineCTA />}
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>
