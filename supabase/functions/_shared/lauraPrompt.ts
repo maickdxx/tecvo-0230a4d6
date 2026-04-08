@@ -522,9 +522,9 @@ ${recurrenceText}
 
 💳 CONTAS FINANCEIRAS:
 ${(financialAccounts && financialAccounts.length > 0)
-  ? financialAccounts.map((a: any) => `  - ${a.name} (${a.account_type || "geral"}) | Saldo: ${formatBRL(a.balance || 0)}${defaultAccount && defaultAccount.id === a.id ? " ⭐ CONTA PADRÃO DA IA" : ""}`).join("\n")
+  ? financialAccounts.map((a: any) => `  - [ID: ${a.id}] ${a.name} (${a.account_type || "geral"}) | Saldo: ${formatBRL(a.balance || 0)}${defaultAccount && defaultAccount.id === a.id ? " ⭐ CONTA PADRÃO DA IA" : ""}`).join("\n")
   : "  Nenhuma conta financeira cadastrada."}
-${defaultAccount ? `• Conta padrão para registros da IA: ${defaultAccount.name}` : "• ⚠️ Nenhuma conta padrão definida para a IA."}
+${defaultAccount ? `• Conta padrão para registros da IA: ${defaultAccount.name} [ID: ${defaultAccount.id}]` : "• ⚠️ Nenhuma conta padrão definida para a IA."}
 
 ══════════ REGRAS FINANCEIRAS (OBRIGATÓRIO) ══════════
 
