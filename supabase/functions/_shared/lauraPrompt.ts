@@ -373,6 +373,23 @@ ANTES de registrar qualquer gasto ou receita:
 5. NUNCA mande criar conta se já existem contas cadastradas.
 6. NUNCA pergunte sobre conta se já existe uma padrão definida — use-a diretamente.
 
+══════════ REGRAS DE CATÁLOGO DE SERVIÇOS (OBRIGATÓRIO) ══════════
+
+ANTES de criar qualquer serviço ou OS:
+1. VERIFIQUE se existe item correspondente no catálogo acima.
+2. Se match ÚNICO → use o preço e descrição do catálogo automaticamente. Informe ao usuário: "Usando preço do catálogo: R$ X".
+3. Se match MÚLTIPLO (ex: limpeza 9k, 12k, 18k) → PERGUNTE qual com lista de opções e preços.
+4. Se SEM match → use descrição livre (fallback permitido).
+5. NUNCA crie serviço com valor R$ 0 se houver item correspondente no catálogo.
+6. Se o usuário informar valor DIFERENTE do catálogo → use o valor do usuário (ele tem precedência).
+7. Ao usar o catálogo, passe o parâmetro catalog_service_name na ferramenta create_service para vincular automaticamente.
+
+EXEMPLOS DE MATCH:
+• "limpeza" → verificar itens de limpeza no catálogo → se múltiplos BTUs, perguntar qual
+• "instalação de split 12k" → match direto com "Instalação de Ar Condicionado 12.000 BTUs" → usar R$ 850
+• "visita técnica" → match com "Visita Técnica" → usar R$ 100
+• "manutenção" → verificar se é "Recarga de Gás" ou "Troca de Capacitor" → perguntar qual
+
 ══════════ REGRAS DE DECISÃO INTELIGENTE (PRIORIDADE MÁXIMA) ══════════
 
 HIERARQUIA DE AÇÃO (seguir SEMPRE nesta ordem):
@@ -740,6 +757,15 @@ Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro
   "Você quer que eu envie essa ordem de serviço para o cliente [Nome]?"
 - NUNCA envie automaticamente. Só envie após o usuário confirmar explicitamente.
 
+⚠️ REGRA DE CATÁLOGO (OBRIGATÓRIA):
+- SEMPRE use o parâmetro catalog_service_name para informar o serviço do catálogo mais próximo.
+- Se o usuário diz "limpeza" → busque no catálogo acima qual item de limpeza corresponde.
+- Se existem múltiplas opções (ex: 9k, 12k, 18k) → PERGUNTE qual antes de criar.
+- Se match único → use automaticamente e informe o preço do catálogo na confirmação.
+- Se o usuário NÃO informou valor → o sistema usará o preço do catálogo automaticamente. NUNCA crie com valor 0 se houver item no catálogo.
+- Se o serviço NÃO existe no catálogo → use descrição livre normalmente (fallback).
+- Se o usuário informou valor diferente do catálogo → use o valor do usuário (ele tem precedência).
+
 3. FERRAMENTA 'create_quote' — criar Orçamento.
 Quando o usuário pedir para criar/fazer/registrar um orçamento:
 - Extraia: nome do cliente, tipo de serviço, descrição, valor estimado
@@ -836,7 +862,7 @@ export const ADMIN_TOOLS = [
     type: "function",
     function: {
       name: "create_service",
-      description: "Cria uma Ordem de Serviço (OS) no sistema.",
+      description: "Cria uma Ordem de Serviço (OS) no sistema. Tenta vincular automaticamente ao catálogo de serviços para usar preço e descrição padronizados.",
       parameters: {
         type: "object",
         properties: {
@@ -844,8 +870,9 @@ export const ADMIN_TOOLS = [
           scheduled_date: { type: "string", description: "Data e hora no formato YYYY-MM-DDTHH:MM:SS." },
           service_type: { type: "string", description: "Tipo de serviço: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro" },
           description: { type: "string", description: "Descrição do serviço a ser realizado" },
-          value: { type: "number", description: "Valor do serviço em reais. Se não informado, pode ser 0." },
+          value: { type: "number", description: "Valor do serviço em reais. Se não informado, será preenchido pelo catálogo automaticamente." },
           assigned_to_name: { type: "string", description: "Nome do técnico responsável (busca parcial). Opcional." },
+          catalog_service_name: { type: "string", description: "Nome do item do catálogo a vincular (ex: 'Limpeza de Ar Condicionado 12.000 BTUs'). Busca parcial. Se informado, usa preço e descrição do catálogo." },
         },
         required: ["client_name", "scheduled_date", "service_type", "description"],
         additionalProperties: false,
@@ -1190,7 +1217,7 @@ export async function executeAdminTool(
   }
 
   if (fnName === "create_service") {
-    const { client_name, scheduled_date, service_type, description, value, assigned_to_name } = args;
+    const { client_name, scheduled_date, service_type, description, value, assigned_to_name, catalog_service_name } = args;
     if (!client_name || !scheduled_date || !service_type || !description) {
       return "Erro: campos obrigatórios faltando.";
     }
@@ -1235,17 +1262,79 @@ export async function executeAdminTool(
 
     const finalServiceType = (typeExists && typeExists.length > 0) ? service_type : "outro";
 
+    // ── CATALOG MATCHING ──
+    let catalogMatch: any = null;
+    let catalogServiceId: string | null = null;
+    let finalValue = value ?? null; // null means "not provided by user"
+    let finalDescription = description;
+
+    if (catalog_service_name) {
+      // Direct match by name provided by AI
+      const { data: catalogMatches } = await supabase
+        .from("catalog_services")
+        .select("id, name, unit_price, service_type, description")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .ilike("name", `%${catalog_service_name}%`)
+        .limit(5);
+
+      if (catalogMatches && catalogMatches.length === 1) {
+        catalogMatch = catalogMatches[0];
+      } else if (catalogMatches && catalogMatches.length > 1) {
+        // Multiple matches — return options for Laura to ask user
+        const options = catalogMatches.map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
+        return `CATALOG_MULTIPLE_MATCHES:Encontrei ${catalogMatches.length} itens no catálogo:\n${options}\n\nQual deles é o correto? Informe o nome exato.`;
+      }
+    }
+
+    // Fallback: try matching by service_type + keywords from description
+    if (!catalogMatch && !catalog_service_name) {
+      const { data: typeCatalog } = await supabase
+        .from("catalog_services")
+        .select("id, name, unit_price, service_type, description")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .eq("service_type", finalServiceType)
+        .limit(10);
+
+      if (typeCatalog && typeCatalog.length === 1) {
+        catalogMatch = typeCatalog[0];
+      }
+      // If multiple, don't auto-match — Laura should have asked
+    }
+
+    if (catalogMatch) {
+      catalogServiceId = catalogMatch.id;
+      // Use catalog price if user didn't provide one
+      if (finalValue === null || finalValue === undefined) {
+        finalValue = Number(catalogMatch.unit_price);
+      }
+      // Enhance description with catalog name if it's generic
+      if (description.length < 30) {
+        finalDescription = catalogMatch.name;
+      }
+      console.log(`[LAURA] Catalog match: "${catalogMatch.name}" (R$ ${catalogMatch.unit_price}) → service`);
+    }
+
+    // Final fallback: value = 0 only if truly no catalog and no user value
+    if (finalValue === null || finalValue === undefined) {
+      finalValue = 0;
+    }
+
     const { data: newService, error } = await supabase.from("services").insert({
       organization_id: organizationId,
       client_id: client.id,
       scheduled_date,
       service_type: finalServiceType,
-      description,
-      value: value || 0,
+      description: finalDescription,
+      value: finalValue,
       assigned_to: assignedTo,
       status: "scheduled",
       document_type: "service_order",
       pdf_status: "pending",
+      catalog_service_id: catalogServiceId,
     }).select("id").single();
 
     if (error) {
@@ -1286,8 +1375,9 @@ export async function executeAdminTool(
     const pdfNote = pdfStatus === "ready"
       ? "\n📄 PDF oficial gerado com sucesso."
       : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
+    const catalogNote = catalogMatch ? `\n📋 Vinculado ao catálogo: "${catalogMatch.name}" (preço padrão: R$ ${Number(catalogMatch.unit_price).toFixed(2)})` : "";
     await logToolSuccess(supabase, organizationId, fnName, args);
-    return `OS #${osNum} criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• service_id: ${newService.id}${pdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newService.id}" diretamente.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
+    return `OS #${osNum} criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Serviço: ${finalDescription}\n• Valor: R$ ${Number(finalValue).toFixed(2)}${catalogNote}\n• service_id: ${newService.id}${pdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newService.id}" diretamente.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
   }
 
   if (fnName === "create_quote") {
