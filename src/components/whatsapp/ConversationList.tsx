@@ -364,12 +364,9 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Status Filters — Pinned anchors + dynamic center carousel */}
+      {/* Status Filters — Sliding window: always exactly 3 tabs visible */}
       {(() => {
-        const novasTab = filters[0];
-        const finalizadoTab = filters[4];
-        const middleTabs = [filters[1], filters[2], filters[3]]; // Atendimento, Agendados, Aguardando
-
+        // All 5 tabs in order: Novos(0), Atendimento(1), Agendados(2), Aguardando(3), Finalizados(4)
         const handleTabClick = (key: StatusFilter) => {
           if (statusFilter !== key) {
             setStatusFilter(key);
@@ -377,49 +374,33 @@ export function ConversationList({
           }
         };
 
-        // Determine visible middle tabs based on active selection
-        const activeMiddleIdx = middleTabs.findIndex(f => f.key === statusFilter);
-        // If a pinned tab is active, show all 3 middle tabs compactly
-        // If a middle tab is active, show it centered with neighbors
-        let visibleMiddle: { tab: typeof filters[0]; pos: "left" | "center" | "right" }[];
-        if (activeMiddleIdx === 0) {
-          // Atendimento active: center + right neighbor
-          visibleMiddle = [
-            { tab: middleTabs[0], pos: "center" },
-            { tab: middleTabs[1], pos: "right" },
-          ];
-        } else if (activeMiddleIdx === 2) {
-          // Aguardando active: left neighbor + center
-          visibleMiddle = [
-            { tab: middleTabs[1], pos: "left" },
-            { tab: middleTabs[2], pos: "center" },
-          ];
-        } else if (activeMiddleIdx === 1) {
-          // Agendados active: left + center + right
-          visibleMiddle = [
-            { tab: middleTabs[0], pos: "left" },
-            { tab: middleTabs[1], pos: "center" },
-            { tab: middleTabs[2], pos: "right" },
-          ];
-        } else {
-          // A pinned tab is active — show all 3 middle tabs equally
-          visibleMiddle = middleTabs.map(t => ({ tab: t, pos: "left" as const }));
-        }
+        // Determine the 3-tab window based on active tab
+        // Active is always center; edges clamp
+        const activeIdx = filters.findIndex(f => f.key === statusFilter);
+        // Clamp so window stays within [0..4] and always has 3 items
+        const centerIdx = Math.max(1, Math.min(activeIdx, filters.length - 2));
+        const windowTabs = [
+          { tab: filters[centerIdx - 1], pos: "left" as const },
+          { tab: filters[centerIdx], pos: "center" as const },
+          { tab: filters[centerIdx + 1], pos: "right" as const },
+        ];
 
-        const renderPinned = (tab: typeof filters[0]) => {
+        const renderTab = (tab: typeof filters[0], pos: "left" | "center" | "right") => {
           const isActive = statusFilter === tab.key;
           return (
             <button
               key={tab.key}
               onClick={() => handleTabClick(tab.key)}
               className={cn(
-                "inline-flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all duration-300 ease-in-out shrink-0",
+                "inline-flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all duration-300 ease-in-out",
                 isActive
-                  ? "min-w-[72px] bg-primary text-primary-foreground shadow-md"
-                  : "min-w-[52px] text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40 scale-95"
+                  ? "flex-[1.4] bg-primary text-primary-foreground shadow-md"
+                  : pos === "center"
+                    ? "flex-1 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40"
+                    : "flex-[0.8] text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40 scale-95"
               )}
             >
-              <span className={cn("transition-opacity duration-300", isActive ? "opacity-100" : "opacity-70")}>
+              <span className={cn("transition-opacity duration-300 truncate", isActive ? "opacity-100" : "opacity-70")}>
                 {tab.label}
               </span>
               {tab.count > 0 && (
@@ -438,46 +419,9 @@ export function ConversationList({
           );
         };
 
-        const renderMiddle = (tab: typeof filters[0], pos: "left" | "center" | "right") => {
-          const isActive = statusFilter === tab.key;
-          const isCenter = pos === "center";
-          return (
-            <button
-              key={tab.key}
-              onClick={() => handleTabClick(tab.key)}
-              className={cn(
-                "inline-flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all duration-300 ease-in-out",
-                isActive
-                  ? "flex-[1.4] bg-primary text-primary-foreground shadow-md"
-                  : isCenter
-                    ? "flex-1 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40"
-                    : "flex-[0.8] text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40 scale-95 opacity-80"
-              )}
-            >
-              <span className={cn("transition-opacity duration-300 truncate", isActive ? "opacity-100" : "opacity-70")}>
-                {tab.label}
-              </span>
-              {tab.count > 0 && (
-                <span className={cn(
-                  "text-[9px] rounded-full px-1 min-w-[14px] text-center font-semibold shrink-0",
-                  isActive
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-primary/10 text-primary opacity-60"
-                )}>
-                  {formatCount(tab.count)}
-                </span>
-              )}
-            </button>
-          );
-        };
-
         return (
           <div className="px-3 pb-2.5 flex items-center gap-1">
-            {renderPinned(novasTab)}
-            <div className="flex-1 flex items-center gap-1">
-              {visibleMiddle.map(({ tab, pos }) => renderMiddle(tab, pos))}
-            </div>
-            {renderPinned(finalizadoTab)}
+            {windowTabs.map(({ tab, pos }) => renderTab(tab, pos))}
           </div>
         );
       })()}
