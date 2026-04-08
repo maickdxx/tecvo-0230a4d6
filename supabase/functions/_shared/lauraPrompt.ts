@@ -1534,7 +1534,7 @@ export async function executeAdminTool(
       .is("deleted_at", null);
 
     if (scope === "all_today") {
-      const todayStr = getTodayInTz("America/Sao_Paulo");
+      const todayStr = getTodayInTz(ctx?.timezone || "America/Sao_Paulo");
       query = query.eq("date", todayStr);
     }
     if (scope === "by_type" && type_filter) {
