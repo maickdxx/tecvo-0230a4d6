@@ -585,14 +585,15 @@ async function transcribeAudio(
   instance: string,
   messageKey: any,
   mimeType: string | null,
-): Promise<string | null> {
+): Promise<{ text: string | null; provider: string | null; durationMs: number }> {
+  const startTime = Date.now();
   try {
     const vpsUrl = Deno.env.get("WHATSAPP_VPS_URL");
     const apiKey = Deno.env.get("WHATSAPP_BRIDGE_API_KEY");
 
     if (!vpsUrl || !apiKey) {
       console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: missing VPS config");
-      return null;
+      return { text: null, provider: null, durationMs: Date.now() - startTime };
     }
 
     // 1. Download audio base64 from Evolution API
@@ -614,7 +615,7 @@ async function transcribeAudio(
         "[WEBHOOK-WHATSAPP] transcribeAudio: getBase64 failed",
         resp.status,
       );
-      return null;
+      return { text: null, provider: null, durationMs: Date.now() - startTime };
     }
 
     const result = await resp.json();
@@ -624,7 +625,7 @@ async function transcribeAudio(
 
     if (!base64Data || typeof base64Data !== "string") {
       console.warn("[WEBHOOK-WHATSAPP] transcribeAudio: no base64 data");
-      return null;
+      return { text: null, provider: null, durationMs: Date.now() - startTime };
     }
 
     const baseMime = (returnedMime || "audio/ogg").split(";")[0].trim()
@@ -637,7 +638,7 @@ async function transcribeAudio(
       bytes.length,
     );
     if (lovableTranscription) {
-      return lovableTranscription;
+      return { text: lovableTranscription, provider: "lovable_ai", durationMs: Date.now() - startTime };
     }
 
     const geminiTranscription = await transcribeAudioWithGemini(
@@ -646,25 +647,28 @@ async function transcribeAudio(
       bytes.length,
     );
     if (geminiTranscription) {
-      return geminiTranscription;
+      return { text: geminiTranscription, provider: "gemini_direct", durationMs: Date.now() - startTime };
     }
 
-    return await transcribeAudioWithElevenLabs(bytes, baseMime);
+    const elevenLabsResult = await transcribeAudioWithElevenLabs(bytes, baseMime);
+    return { text: elevenLabsResult, provider: elevenLabsResult ? "elevenlabs" : null, durationMs: Date.now() - startTime };
   } catch (err: any) {
     console.error("[WEBHOOK-WHATSAPP] transcribeAudio: exception", err.message);
-    return null;
+    return { text: null, provider: null, durationMs: Date.now() - startTime };
   }
 }
 
 /**
  * Generate TTS audio using Gemini first, with ElevenLabs fallback.
  */
-async function generateTTSAudio(text: string): Promise<string | null> {
+async function generateTTSAudio(text: string): Promise<{ audio: string | null; provider: string | null; durationMs: number }> {
+  const startTime = Date.now();
   const geminiAudio = await generateTTSAudioWithGemini(text);
   if (geminiAudio) {
-    return geminiAudio;
+    return { audio: geminiAudio, provider: "gemini_tts", durationMs: Date.now() - startTime };
   }
-  return await generateTTSAudioWithElevenLabs(text);
+  const elevenLabsAudio = await generateTTSAudioWithElevenLabs(text);
+  return { audio: elevenLabsAudio, provider: elevenLabsAudio ? "elevenlabs_tts" : null, durationMs: Date.now() - startTime };
 }
 
 async function generateTTSAudioWithGemini(
@@ -2977,11 +2981,31 @@ Deno.serve(async (req) => {
       );
       const msg = data.message || {};
       const audioMime = msg.audioMessage?.mimetype || "audio/ogg";
-      const transcription = await transcribeAudio(
+      const sttResult = await transcribeAudio(
         instance,
         data.key,
         audioMime,
       );
+      const transcription = sttResult.text;
+
+      // ── GOVERNANCE: Log audio transcription usage (currently subsidized, 0 credits) ──
+      if (sttResult.provider) {
+        const sttModel = sttResult.provider === "lovable_ai" ? "google/gemini-2.5-flash"
+          : sttResult.provider === "gemini_direct" ? "google/gemini-2.5-flash"
+          : "elevenlabs/scribe_v2";
+        await logAIUsage(supabase, {
+          organizationId: targetOrganizationId,
+          userId: null,
+          actionSlug: "audio_transcription",
+          model: sttModel,
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          durationMs: sttResult.durationMs,
+          status: transcription ? "success" : "error",
+        });
+      }
+
       if (transcription) {
         content = transcription;
         // Update the saved message content with transcription
@@ -3694,7 +3718,17 @@ Deno.serve(async (req) => {
                 if (isIncomingAudio && safeResponse.length <= 2000) {
                   let audioSent = false;
                   try {
-                    const audioBase64 = await generateTTSAudio(safeResponse);
+                    const ttsResult = await generateTTSAudio(safeResponse);
+                    // ── GOVERNANCE: Log TTS usage (currently subsidized, 0 credits) ──
+                    if (ttsResult.provider) {
+                      await logAIUsage(supabase, {
+                        organizationId: targetOrganizationId, userId: null,
+                        actionSlug: "tts_generation", model: ttsResult.provider,
+                        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                        durationMs: ttsResult.durationMs, status: ttsResult.audio ? "success" : "error",
+                      });
+                    }
+                    const audioBase64 = ttsResult.audio;
                     if (audioBase64) {
                       await supabase.from("whatsapp_messages").insert({
                         organization_id: targetOrganizationId,
@@ -3920,6 +3954,13 @@ Cada "sim" aproxima o lead da decisão final.
 - Fora do tema → responda brevemente e redirecione para a Tecvo.
 - Em áudio: tom confiante e tranquilo, como secretária experiente. Sem parecer vendedora agressiva.`;
 
+          // ── CREDIT GUARD: debit before lead AI call ──
+          const leadCreditCheck = await checkAndDebitCredits(supabase, targetOrganizationId, "", "bot_lead_reply");
+          if (!leadCreditCheck.allowed) {
+            console.log("[WEBHOOK-WHATSAPP] Insufficient AI credits for lead reply, org:", targetOrganizationId);
+            // Silently skip AI reply for leads when no credits — don't expose error to lead
+          } else {
+
           const startTimeLead = Date.now();
           const aiResultLead = await callAI(systemPrompt, conversationHistory);
           let aiResponse = aiResultLead.content;
@@ -3940,12 +3981,25 @@ Cada "sim" aproxima o lead da decisão final.
             status: "success",
           });
 
-          // Retry once on empty response
+          // Retry once on empty response (no extra debit — already paid)
           if (!aiResponse) {
             console.warn("[WEBHOOK-WHATSAPP] Lead AI empty — retrying once...");
             try {
+              const retryStartTime = Date.now();
               const retryResult = await callAI(systemPrompt, conversationHistory);
               aiResponse = retryResult.content;
+              const retryUsage = extractUsageFromResponse({ usage: retryResult.usage });
+              await logAIUsage(supabase, {
+                organizationId: targetOrganizationId,
+                userId: null,
+                actionSlug: "bot_lead_reply",
+                model: "google/gemini-2.5-flash",
+                promptTokens: retryUsage.promptTokens,
+                completionTokens: retryUsage.completionTokens,
+                totalTokens: retryUsage.totalTokens,
+                durationMs: Date.now() - retryStartTime,
+                status: aiResponse ? "success" : "error",
+              });
             } catch (retryErr: any) {
               console.error("[WEBHOOK-WHATSAPP] Lead AI retry failed:", retryErr.message);
             }
@@ -4001,7 +4055,16 @@ Cada "sim" aproxima o lead da decisão final.
                 if (isIncomingAudio && safeResponseLead.length <= 2000) {
                   let audioSent = false;
                   try {
-                    const audioBase64 = await generateTTSAudio(safeResponseLead);
+                    const ttsResultLead = await generateTTSAudio(safeResponseLead);
+                    if (ttsResultLead.provider) {
+                      await logAIUsage(supabase, {
+                        organizationId: targetOrganizationId, userId: null,
+                        actionSlug: "tts_generation", model: ttsResultLead.provider,
+                        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                        durationMs: ttsResultLead.durationMs, status: ttsResultLead.audio ? "success" : "error",
+                      });
+                    }
+                    const audioBase64 = ttsResultLead.audio;
                     if (audioBase64) {
                       await supabase.from("whatsapp_messages").insert({
                         organization_id: targetOrganizationId,
@@ -4096,6 +4159,7 @@ Cada "sim" aproxima o lead da decisão final.
               }
             }
           }
+          } // end creditGuard else block
         }
       } catch (aiError) {
         console.error("[WEBHOOK-WHATSAPP] AI processing error:", aiError);
