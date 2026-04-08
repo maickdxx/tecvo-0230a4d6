@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage, extractUsageFromResponse } from "../_shared/aiUsageLogger.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 import { validateAIOutput, logOutputViolation } from "../_shared/outputValidator.ts";
+import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
