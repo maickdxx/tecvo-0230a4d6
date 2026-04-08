@@ -249,7 +249,7 @@ export async function logToolSuccess(
   fnName: string,
   args: any,
 ): Promise<void> {
-  const actionHash = generateActionHash(fnName, orgId, args);
+  const actionHash = await generateActionHash(fnName, orgId, args);
   try {
     await supabase.from("ai_usage_logs").insert({
       organization_id: orgId,
