@@ -252,6 +252,7 @@ export function ConversationList({
   const filters: { key: StatusFilter; label: string; count: number }[] = [
     { key: "novas", label: "Novas", count: novasCount },
     { key: "atendendo", label: "Em atendimento", count: atendendoCount },
+    { key: "agendados", label: "Agendados", count: agendadosCount },
     { key: "aguardando", label: "Aguardando", count: aguardandoCount },
     { key: "finalizado", label: "Finalizados", count: finalizadoCount },
   ];
