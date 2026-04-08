@@ -301,6 +301,14 @@ const App = () => (
               }
             />
             <Route
+              path="/financeiro/aprovacoes"
+              element={
+                <ProtectedRoute>
+                  <AprovacaoFinanceira />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/servicos"
               element={
                 <ProtectedRoute>
