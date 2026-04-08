@@ -4,7 +4,7 @@ import {
   logAIUsage,
 } from "../_shared/aiUsageLogger.ts";
 import { checkSendLimit } from "../_shared/sendGuard.ts";
-import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
+import { checkAndDebitCredits, finalizeAIUsage, logFreeAIUsage } from "../_shared/creditGuard.ts";
 import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 import {
   getTodayInTz,
