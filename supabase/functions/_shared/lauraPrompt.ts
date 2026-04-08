@@ -1630,13 +1630,21 @@ export async function executeAdminTool(
       return "⚠️ Não há ação de reprovação pendente ou ela expirou. Solicite novamente para gerar um novo resumo.";
     }
 
-    const confirmedIds = pendingAction.payload?.transaction_ids || transaction_ids;
-    const confirmedReason = pendingAction.payload?.reason || reason;
+    // SECURITY: Use ONLY data from the persisted pending action — never from the new call
+    const confirmedIds = pendingAction.payload?.transaction_ids;
+    if (!confirmedIds || !Array.isArray(confirmedIds) || confirmedIds.length === 0) {
+      await supabase
+        .from("pending_finance_actions")
+        .update({ status: "expired" })
+        .eq("id", pendingAction.id);
+      return "⚠️ Não foi possível concluir a ação porque os dados da confirmação estão incompletos. Solicite novamente a reprovação.";
+    }
+    const confirmedReason = pendingAction.payload?.reason ?? null;
 
     const { data: result, error } = await supabase.rpc("reject_transactions", {
       _transaction_ids: confirmedIds,
       _organization_id: organizationId,
-      _reason: confirmedReason || null,
+      _reason: confirmedReason,
     });
 
     if (error) return `Erro ao reprovar: ${error.message}`;
