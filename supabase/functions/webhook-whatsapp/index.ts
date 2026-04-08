@@ -2979,11 +2979,31 @@ Deno.serve(async (req) => {
       );
       const msg = data.message || {};
       const audioMime = msg.audioMessage?.mimetype || "audio/ogg";
-      const transcription = await transcribeAudio(
+      const sttResult = await transcribeAudio(
         instance,
         data.key,
         audioMime,
       );
+      const transcription = sttResult.text;
+
+      // ── GOVERNANCE: Log audio transcription usage (currently subsidized, 0 credits) ──
+      if (sttResult.provider) {
+        const sttModel = sttResult.provider === "lovable_ai" ? "google/gemini-2.5-flash"
+          : sttResult.provider === "gemini_direct" ? "google/gemini-2.5-flash"
+          : "elevenlabs/scribe_v2";
+        await logAIUsage(supabase, {
+          organizationId: targetOrganizationId,
+          userId: null,
+          actionSlug: "audio_transcription",
+          model: sttModel,
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          durationMs: sttResult.durationMs,
+          status: transcription ? "success" : "error",
+        });
+      }
+
       if (transcription) {
         content = transcription;
         // Update the saved message content with transcription
