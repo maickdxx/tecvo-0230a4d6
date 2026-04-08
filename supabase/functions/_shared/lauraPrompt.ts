@@ -107,6 +107,12 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const totalClientsAllTime = clientsTotalRes.count ?? clients.length;
   const totalTransactionsAllTime = transactionsTotalRes.count ?? transactions.length;
 
+  const financialAccounts = financialAccountsRes.data || [];
+  const defaultAiAccountId = orgRes.data?.default_ai_account_id || null;
+  const defaultAccount = defaultAiAccountId
+    ? financialAccounts.find((a: any) => a.id === defaultAiAccountId) || null
+    : null;
+
   return {
     services,
     clients,
@@ -116,6 +122,9 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
     monthlyGoal: orgRes.data?.monthly_goal || null,
     catalog: catalogRes.data || [],
     timezone: orgRes.data?.timezone || "America/Sao_Paulo",
+    financialAccounts,
+    defaultAiAccountId,
+    defaultAccount,
     // Data completeness metadata
     _meta: {
       servicePeriodDays: 180,
@@ -132,6 +141,8 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       transactionLoadedCount: transactions.length,
       transactionTotalAllTime: totalTransactionsAllTime,
       transactionsTruncated: transactions.length >= TRANSACTION_LIMIT,
+      financialAccountsCount: financialAccounts.length,
+      hasDefaultAccount: !!defaultAccount,
     },
   };
 }
