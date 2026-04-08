@@ -198,6 +198,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     hasTimeClock: true,
     hasClientPortal: true,
     mpValue: 229,
+    aiFranchise: 2000, // ~2000 interações/mês
   },
 };
 
