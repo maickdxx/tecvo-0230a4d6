@@ -2118,7 +2118,15 @@ export async function executeAdminTool(
     return `SILENT_PDF_SENT:${result.docType} #${result.osNumber} enviado com sucesso para ${result.clientName} (${serviceData.client?.phone || serviceData.client?.whatsapp || ""})!`;
   }
 
-    return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar OS, criar orçamento, criar conta financeira, cadastrar cliente e enviar PDF.`;
+  // ── NEW TOOLS: delegated to lauraNewTools.ts ──
+  if (fnName === "edit_service") return await handleEditService(supabase, organizationId, args, ctx);
+  if (fnName === "cancel_service") return await handleCancelService(supabase, organizationId, args, ctx);
+  if (fnName === "update_client") return await handleUpdateClient(supabase, organizationId, args);
+  if (fnName === "search_services") return await handleSearchServices(supabase, organizationId, args, ctx);
+  if (fnName === "search_clients") return await handleSearchClients(supabase, organizationId, args);
+  if (fnName === "get_service_equipment") return await handleGetServiceEquipment(supabase, organizationId, args);
+
+    return `Ferramenta "${fnName}" não reconhecida. As ferramentas disponíveis são: registrar transação, criar/editar/cancelar OS, criar orçamento, criar conta financeira, cadastrar/atualizar cliente, enviar PDF, buscar serviços/clientes e ver equipamentos.`;
   } catch (err: any) {
     const errorMsg = err?.message || String(err);
     await logToolError(supabase, organizationId, fnName, errorMsg, args);
