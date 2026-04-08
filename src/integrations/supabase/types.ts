@@ -467,6 +467,33 @@ export type Database = {
           },
         ]
       }
+      ai_rate_limits: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          request_count: number
+          updated_at: string
+          window_key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          request_count?: number
+          updated_at?: string
+          window_key: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          request_count?: number
+          updated_at?: string
+          window_key?: string
+        }
+        Relationships: []
+      }
       ai_response_audit: {
         Row: {
           ai_response: string
@@ -7522,11 +7549,16 @@ export type Database = {
         Args: { _category?: string; _client_id: string; _org_id: string }
         Returns: boolean
       }
+      check_ai_rate_limit: {
+        Args: { _max_requests: number; _org_id: string; _window_key: string }
+        Returns: Json
+      }
       check_analytics_anomalies: { Args: never; Returns: undefined }
       check_send_limit: {
         Args: { _contact_id?: string; _org_id: string; _source?: string }
         Returns: Json
       }
+      cleanup_ai_rate_limits: { Args: never; Returns: number }
       cleanup_soft_deleted_records: { Args: never; Returns: undefined }
       complete_service_with_payments: {
         Args: {
@@ -7550,6 +7582,10 @@ export type Database = {
         Returns: number
       }
       generate_demo_data: { Args: { _org_id: string }; Returns: undefined }
+      get_ai_daily_usage: {
+        Args: { _org_id: string; _today?: string }
+        Returns: number
+      }
       get_all_platform_users: {
         Args: never
         Returns: {
