@@ -7696,7 +7696,11 @@ export type Database = {
         Returns: number
       }
       approve_transactions: {
-        Args: { _organization_id: string; _transaction_ids: string[] }
+        Args: {
+          _acting_user_id?: string
+          _organization_id: string
+          _transaction_ids: string[]
+        }
         Returns: Json
       }
       calculate_service_total_duration: {
@@ -7989,6 +7993,7 @@ export type Database = {
       }
       reject_transactions: {
         Args: {
+          _acting_user_id?: string
           _organization_id: string
           _reason?: string
           _transaction_ids: string[]

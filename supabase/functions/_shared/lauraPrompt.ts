@@ -1604,9 +1604,11 @@ export async function executeAdminTool(
       return "⚠️ Não foi possível concluir a ação porque os dados da confirmação estão incompletos. Solicite novamente a aprovação.";
     }
 
+    const actingUserId = ctx?.currentUserId || null;
     const { data: result, error: approveErr } = await supabase.rpc("approve_transactions", {
       _transaction_ids: confirmedIds,
       _organization_id: organizationId,
+      _acting_user_id: actingUserId,
     });
 
     if (approveErr) return `Erro ao aprovar: ${approveErr.message}`;
@@ -1696,10 +1698,12 @@ export async function executeAdminTool(
     }
     const confirmedReason = pendingAction.payload?.reason ?? null;
 
+    const rejectActingUserId = ctx?.currentUserId || null;
     const { data: result, error } = await supabase.rpc("reject_transactions", {
       _transaction_ids: confirmedIds,
       _organization_id: organizationId,
       _reason: confirmedReason,
+      _acting_user_id: rejectActingUserId,
     });
 
     if (error) return `Erro ao reprovar: ${error.message}`;
