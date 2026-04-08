@@ -76,6 +76,7 @@ export const PLAN_CONFIG: Record<Exclude<PlanSlug, "free">, PlanConfig> = {
     hasTimeClock: false,
     hasClientPortal: true,
     mpValue: 1,
+    aiFranchise: 0,
   },
   starter: {
     slug: "starter",
