@@ -160,7 +160,7 @@ export async function checkAntiDuplication(
   const risk = getActionRisk(fnName, args);
   if (risk === "low") return { allowed: true, reason: "low_risk_skip_dedup" };
 
-  const actionHash = generateActionHash(fnName, orgId, args);
+  const actionHash = await generateActionHash(fnName, orgId, args);
   const cutoff = new Date(Date.now() - DEDUP_WINDOW_MINUTES * 60 * 1000).toISOString();
 
   try {
