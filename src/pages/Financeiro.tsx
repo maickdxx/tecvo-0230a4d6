@@ -92,6 +92,9 @@ export default function Financeiro() {
         income={totals.income}
         expense={totals.expense}
         balance={totals.balance}
+        pendingIncome={pendingSummary?.pending_income_total}
+        pendingExpense={pendingSummary?.pending_expense_total}
+        pendingCount={pendingSummary?.total_pending}
       />
 
       {/* Tabs */}
