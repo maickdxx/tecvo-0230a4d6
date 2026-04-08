@@ -269,7 +269,7 @@ export function useWhatsAppConversations() {
       // Search contacts directly in DB (all contacts with message history, regardless of status)
       const contactSearchPromise = supabase
         .from("whatsapp_contacts")
-        .select("*, linked_client:linked_client_id(name), channel:channel_id(id, name, phone_number, is_connected, channel_status)")
+        .select("*, linked_client:linked_client_id(name), channel:channel_id(id, name, phone_number, is_connected, channel_status, channel_type)")
         .eq("organization_id", organization?.id || "")
         .eq("is_blocked", false)
         .not("last_message_at", "is", null)
