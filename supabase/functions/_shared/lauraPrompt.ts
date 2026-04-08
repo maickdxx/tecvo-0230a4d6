@@ -1385,6 +1385,8 @@ export async function executeAdminTool(
       date,
       due_date: date,
       status: "pending",
+      approval_status: "pending_approval",
+      transaction_origin: "laura",
       financial_account_id: accountId,
       ...(payment_method ? { payment_method } : {}),
     }).select("id").single();
@@ -1400,7 +1402,7 @@ export async function executeAdminTool(
 
     const typeLabel = type === "income" ? "Receita" : "Despesa";
     await logToolSuccess(supabase, organizationId, fnName, args);
-    return `${typeLabel} registrada com sucesso: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}. ✅ Confirmado no sistema.`;
+    return `${typeLabel} registrada como pendente de aprovação financeira: R$ ${amount.toFixed(2)} — ${description} (${category}) em ${date}. ⏳ Aguardando aprovação do gestor para consolidar no saldo.`;
   }
 
   if (fnName === "create_financial_account") {
