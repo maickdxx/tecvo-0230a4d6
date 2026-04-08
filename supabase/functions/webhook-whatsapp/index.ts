@@ -3589,18 +3589,17 @@ Deno.serve(async (req) => {
               : "Para eu enviar o PDF de verdade, preciso do número da OS ou do orçamento.";
           }
 
-          // Log AI usage with CORRECT model name
+          // Finalize AI usage (correlates with credit debit via requestId)
           const aiUsage = extractUsageFromResponse({ usage: aiResult.usage });
-          await logAIUsage(supabase, {
-            organizationId: targetOrganizationId,
-            userId: null,
-            actionSlug: "bot_auto_reply",
+          const estimatedCost = calculateCostUSD("google/gemini-2.5-flash", aiUsage.promptTokens, aiUsage.completionTokens);
+          await finalizeAIUsage(supabase, creditCheck.requestId, {
             model: "google/gemini-2.5-flash",
             promptTokens: aiUsage.promptTokens,
             completionTokens: aiUsage.completionTokens,
             totalTokens: aiUsage.totalTokens,
             durationMs: aiDuration,
             status: "success",
+            estimatedCostUsd: estimatedCost,
           });
 
           // Retry once on empty response
