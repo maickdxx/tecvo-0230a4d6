@@ -1293,6 +1293,23 @@ export const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "list_pending_transactions",
+      description: "Lista detalhadamente as transações pendentes de aprovação financeira, item por item. Use quando o gestor pedir para ver, listar ou detalhar as pendências.",
+      parameters: {
+        type: "object",
+        properties: {
+          date: { type: "string", description: "Data no formato YYYY-MM-DD para filtrar pendências de um dia específico." },
+          type_filter: { type: "string", enum: ["income", "expense"], description: "Filtrar apenas receitas ou despesas." },
+          limit: { type: "number", description: "Quantidade máxima de itens a retornar. Padrão: 20." },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─────────────────── reliability layer (via actionShield) ───────────────────
