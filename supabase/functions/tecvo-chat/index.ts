@@ -5,6 +5,7 @@ import { getTodayInTz, fetchOrgTimezone } from "../_shared/timezone.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 import { createSanitizedStream, logOutputViolation } from "../_shared/outputValidator.ts";
 import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
+import { checkAIRateLimit } from "../_shared/aiRateLimit.ts";
 import {
   fetchOrgContext,
   buildSystemPrompt,
