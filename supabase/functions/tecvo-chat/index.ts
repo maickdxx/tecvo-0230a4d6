@@ -4,6 +4,7 @@ import { logAIUsage } from "../_shared/aiUsageLogger.ts";
 import { getTodayInTz, fetchOrgTimezone } from "../_shared/timezone.ts";
 import { validateUserOrgAccess, accessDeniedResponse } from "../_shared/validateOrgAccess.ts";
 import { createSanitizedStream, logOutputViolation } from "../_shared/outputValidator.ts";
+import { checkAndDebitCredits } from "../_shared/creditGuard.ts";
 import {
   fetchOrgContext,
   buildSystemPrompt,
