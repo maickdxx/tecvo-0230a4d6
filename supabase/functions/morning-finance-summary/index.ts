@@ -205,8 +205,10 @@ Deno.serve(async (req) => {
           .from("services")
           .select("id", { count: "exact", head: true })
           .eq("organization_id", org.id)
-          .eq("scheduled_date", yesterdayStr)
-          .is("deleted_at", null);
+          .gte("scheduled_date", `${yesterdayStr}T00:00:00`)
+          .lt("scheduled_date", `${todayStr}T00:00:00`)
+          .is("deleted_at", null)
+          .neq("status", "cancelled");
 
         // Total pending across all time
         const { count: totalPendingAll } = await supabase
