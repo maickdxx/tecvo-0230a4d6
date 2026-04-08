@@ -3257,11 +3257,31 @@ Deno.serve(async (req) => {
               (currentLooksLikeNameIdentifier ? currentUserText : null))
             : null;
           // ── FINANCE CONFIRMATION INTERCEPTION: Check for CONFIRMAR/CANCELAR before AI call ──
-          const FINANCE_CONFIRM_PATTERN = /^(confirmar|confirmar tudo)\s*[.!]?$/i;
-          const FINANCE_CANCEL_PATTERN = /^(cancelar|cancela)\s*[.!]?$/i;
+          const FINANCE_CONFIRM_PATTERN = /^(confirmar|confirmar tudo|pode aprovar|aprovado|aprova|pode consolidar|consolida|sim,?\s*(pode)?\s*aprov|aprov[ae]\s*tudo|autorizo|autorizado|pode confirmar|confirmado)\s*[.!?]?$/i;
+          const FINANCE_CONFIRM_LOOSE = /\b(aprovar?|aprovado|confirmar?|consolidar?|autorizo)\b/i;
+          const FINANCE_CANCEL_PATTERN = /^(cancelar|cancela|não\s*aprov|nao\s*aprov|rejeitar?|nega[r]?|não|nao)\s*[.!?]?$/i;
           let confirmationIntercepted = false;
 
-          if (FINANCE_CONFIRM_PATTERN.test(normalizedCurrentUserText) || FINANCE_CANCEL_PATTERN.test(normalizedCurrentUserText)) {
+          // Check if there's a pending finance action first, then match broader patterns
+          const hasPendingFinanceAction = async () => {
+            const { data } = await supabase
+              .from("pending_finance_actions")
+              .select("id")
+              .eq("organization_id", targetOrganizationId)
+              .eq("status", "pending")
+              .gt("expires_at", new Date().toISOString())
+              .limit(1)
+              .maybeSingle();
+            return !!data;
+          };
+
+          const isFinanceConfirm = FINANCE_CONFIRM_PATTERN.test(normalizedCurrentUserText);
+          const isFinanceCancel = FINANCE_CANCEL_PATTERN.test(normalizedCurrentUserText);
+          const isLooseConfirm = !isFinanceConfirm && !isFinanceCancel && FINANCE_CONFIRM_LOOSE.test(normalizedCurrentUserText);
+          
+          const shouldCheckFinance = isFinanceConfirm || isFinanceCancel || isLooseConfirm;
+
+          if (shouldCheckFinance && (isFinanceConfirm || isFinanceCancel || await hasPendingFinanceAction())) {
             try {
               const { data: pendingFinance } = await supabase
                 .from("pending_finance_actions")
@@ -3432,7 +3452,66 @@ Deno.serve(async (req) => {
           // ── CONFIRMATION INTERCEPTION: Check pending action before AI call (PDF sends) ──
           const AFFIRMATIVE_PATTERNS = /^(sim|s|pode|pode enviar|envia|enviar|confirmado|manda|ok|pode mandar|isso|positivo|com certeza|claro|bora|vai|perfeito|beleza|manda bala|pode ser)\s*[.!]?$/i;
 
-          if (AFFIRMATIVE_PATTERNS.test(normalizedCurrentUserText)) {
+          if (!confirmationIntercepted && AFFIRMATIVE_PATTERNS.test(normalizedCurrentUserText)) {
+            // Check if there's a pending FINANCE action first — affirmative responses should also confirm financial operations
+            try {
+              const { data: pendingFinanceAffirm } = await supabase
+                .from("pending_finance_actions")
+                .select("id, action_type, payload, summary")
+                .eq("organization_id", targetOrganizationId)
+                .eq("status", "pending")
+                .gt("expires_at", new Date().toISOString())
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              if (pendingFinanceAffirm) {
+                // Execute the confirmed financial action via affirmative response
+                const toolName = pendingFinanceAffirm.action_type === "approve" 
+                  ? "approve_pending_transactions" 
+                  : "reject_pending_transactions";
+                
+                const toolArgs = pendingFinanceAffirm.action_type === "approve"
+                  ? { scope: pendingFinanceAffirm.payload?.scope || "all_pending", type_filter: pendingFinanceAffirm.payload?.type_filter, confirmed: true }
+                  : { transaction_ids: pendingFinanceAffirm.payload?.transaction_ids, reason: pendingFinanceAffirm.payload?.reason, confirmed: true };
+
+                const directToolCall = {
+                  id: `finance_affirm_${crypto.randomUUID()}`,
+                  function: {
+                    name: toolName,
+                    arguments: JSON.stringify(toolArgs),
+                  },
+                };
+
+                const directResult = await executeAdminTool(
+                  supabase,
+                  targetOrganizationId,
+                  directToolCall,
+                  { ...orgContext, instance, remoteJid, contactId, channelId: channel?.id, contextOrgId: targetOrganizationId, channelType: channel?.channel_type },
+                );
+
+                confirmationIntercepted = true;
+                const safeDirect = markdownToWhatsApp(directResult);
+                const directMsgId = `ai_finaffirm_${crypto.randomUUID()}`;
+                await supabase.from("whatsapp_messages").insert({
+                  organization_id: targetOrganizationId,
+                  contact_id: contactId,
+                  message_id: directMsgId,
+                  content: safeDirect,
+                  is_from_me: true,
+                  status: "sent",
+                  channel_id: channel.id,
+                  ai_generated: true,
+                });
+                await sendWhatsAppReply(instance, remoteJid, safeDirect);
+                console.log(`[WEBHOOK-WHATSAPP] FINANCE AFFIRM CONFIRMATION EXECUTED: ${toolName} for org ${targetOrganizationId.slice(0, 8)}`);
+              }
+            } catch (finAffirmErr) {
+              console.warn("[WEBHOOK-WHATSAPP] Finance affirmative confirmation error:", finAffirmErr);
+            }
+          }
+
+          if (!confirmationIntercepted && AFFIRMATIVE_PATTERNS.test(normalizedCurrentUserText)) {
             try {
               const { data: contactState } = await supabase
                 .from("whatsapp_contacts")
