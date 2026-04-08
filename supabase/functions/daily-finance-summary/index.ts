@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
 
         // Build message
         let messageText: string;
-        if (totalPending === 0 && (!summary || summary.total_pending === 0)) {
+        if (totalPending === 0 && summary.total_pending === 0) {
           // No pending transactions at all - send short confirmation
           messageText = buildNoPendingMessage(firstName);
         } else {
