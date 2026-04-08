@@ -998,6 +998,8 @@ APROVAÇÃO FINANCEIRA:
 - NUNCA interprete "ok", "pode fazer", "sim", "beleza" como confirmação para aprovar/reprovar. Apenas "CONFIRMAR" ou "confirmar".
 - Quando pedir para "reprovar", "rejeitar" → use a ferramenta 'reject_pending_transactions' SEM confirmed=true
 - Quando pedir "resumo de pendências" ou "o que está pendente" → use 'get_pending_summary'
+- Quando pedir "liste as pendências", "mostra item por item", "quais são as pendências", "detalha as pendências" → use 'list_pending_transactions'
+- Se o resumo mostrar pendências e o gestor quiser detalhes, use 'list_pending_transactions' automaticamente
 - Ao aprovar (após confirmação): diga "Aprovado e consolidado no saldo financeiro."
 - Ao reprovar (após confirmação): diga "Reprovado. Não impactará o saldo consolidado."
 
@@ -1285,6 +1287,23 @@ export const ADMIN_TOOLS = [
         type: "object",
         properties: {
           date: { type: "string", description: "Data no formato YYYY-MM-DD. Se não informada, mostra todas as pendentes." },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_pending_transactions",
+      description: "Lista detalhadamente as transações pendentes de aprovação financeira, item por item. Use quando o gestor pedir para ver, listar ou detalhar as pendências.",
+      parameters: {
+        type: "object",
+        properties: {
+          date: { type: "string", description: "Data no formato YYYY-MM-DD para filtrar pendências de um dia específico." },
+          type_filter: { type: "string", enum: ["income", "expense"], description: "Filtrar apenas receitas ou despesas." },
+          limit: { type: "number", description: "Quantidade máxima de itens a retornar. Padrão: 20." },
         },
         required: [],
         additionalProperties: false,
@@ -1664,23 +1683,95 @@ export async function executeAdminTool(
   if (fnName === "get_pending_summary") {
     const { date } = args;
 
-    const rpcArgs: any = { _organization_id: organizationId };
-    if (date) rpcArgs._date = date;
+    // Direct query instead of RPC to avoid auth.uid() dependency in service_role context
+    let query = supabase
+      .from("transactions")
+      .select("type, amount")
+      .eq("organization_id", organizationId)
+      .eq("approval_status", "pending_approval")
+      .is("deleted_at", null);
 
-    const { data, error } = await supabase.rpc("get_pending_approval_summary", rpcArgs);
+    if (date) query = query.eq("date", date);
+
+    const { data: txns, error } = await query;
     if (error) return `Erro ao buscar resumo: ${error.message}`;
 
-    const s = data as any;
-    if (!s || s.total_pending === 0) {
+    if (!txns || txns.length === 0) {
       return "✅ Não há transações pendentes de aprovação financeira.";
     }
 
+    const incomeItems = txns.filter((t: any) => t.type === "income");
+    const expenseItems = txns.filter((t: any) => t.type === "expense");
+    const incomeTotal = incomeItems.reduce((s: number, t: any) => s + Number(t.amount), 0);
+    const expenseTotal = expenseItems.reduce((s: number, t: any) => s + Number(t.amount), 0);
+    const balance = incomeTotal - expenseTotal;
+
     return `📊 Resumo de pendências${date ? ` (${date})` : ""}:\n\n` +
-      `• Receitas pendentes: ${s.pending_income_count} (R$ ${Number(s.pending_income_total).toFixed(2)})\n` +
-      `• Despesas pendentes: ${s.pending_expense_count} (R$ ${Number(s.pending_expense_total).toFixed(2)})\n` +
-      `• Saldo operacional pendente: R$ ${Number(s.pending_balance).toFixed(2)}\n` +
-      `• Total de transações: ${s.total_pending}\n\n` +
+      `• Receitas pendentes: ${incomeItems.length} (R$ ${incomeTotal.toFixed(2)})\n` +
+      `• Despesas pendentes: ${expenseItems.length} (R$ ${expenseTotal.toFixed(2)})\n` +
+      `• Saldo operacional pendente: R$ ${balance.toFixed(2)}\n` +
+      `• Total de transações: ${txns.length}\n\n` +
       `Deseja que eu aprove todas, revise item por item ou mantenha pendente?`;
+  }
+
+  if (fnName === "list_pending_transactions") {
+    const { date, type_filter, limit: maxItems } = args;
+    const resultLimit = Math.min(maxItems || 20, 50);
+
+    let query = supabase
+      .from("transactions")
+      .select(`
+        id, type, amount, description, date, category, origin,
+        supplier:suppliers(name),
+        client:clients(name),
+        service:services(id, service_type, quote_number)
+      `)
+      .eq("organization_id", organizationId)
+      .eq("approval_status", "pending_approval")
+      .is("deleted_at", null)
+      .order("date", { ascending: false })
+      .limit(resultLimit);
+
+    if (date) query = query.eq("date", date);
+    if (type_filter) query = query.eq("type", type_filter);
+
+    const { data: txns, error } = await query;
+    if (error) return `Erro ao listar pendências: ${error.message}`;
+
+    if (!txns || txns.length === 0) {
+      const filterMsg = type_filter === "income" ? " de receitas" : type_filter === "expense" ? " de despesas" : "";
+      return `✅ Não há transações${filterMsg} pendentes de aprovação${date ? ` em ${date}` : ""}.`;
+    }
+
+    // Also get total count for pagination context
+    let countQuery = supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .eq("approval_status", "pending_approval")
+      .is("deleted_at", null);
+    if (date) countQuery = countQuery.eq("date", date);
+    if (type_filter) countQuery = countQuery.eq("type", type_filter);
+    const { count: totalCount } = await countQuery;
+
+    const lines = txns.map((t: any, i: number) => {
+      const typeLabel = t.type === "income" ? "📥 Receita" : "📤 Despesa";
+      const clientName = t.client?.name ? ` — ${t.client.name}` : "";
+      const serviceName = t.service?.quote_number ? ` — OS ${t.service.quote_number}` : "";
+      const origin = t.origin ? ` (${t.origin})` : "";
+      return `${i + 1}. ${typeLabel}: R$ ${Number(t.amount).toFixed(2)}${clientName}${serviceName}\n   ${t.description || "Sem descrição"} • ${t.date}${origin}`;
+    });
+
+    let result = `📋 Pendências de aprovação${date ? ` (${date})` : ""}:\n\n${lines.join("\n\n")}`;
+
+    if (totalCount && totalCount > resultLimit) {
+      result += `\n\n_Mostrando ${txns.length} de ${totalCount} pendências. Peça para ver mais se necessário._`;
+    }
+
+    result += `\n\nDeseja aprovar todas, aprovar/reprovar alguma específica ou manter pendente?`;
+
+    await logToolSuccess(supabase, organizationId, fnName, { count: txns.length, date, type_filter });
+    return result;
   }
 
   if (fnName === "create_financial_account") {
