@@ -470,6 +470,47 @@ export type Database = {
           },
         ]
       }
+      ai_franchise: {
+        Row: {
+          created_at: string
+          id: string
+          monthly_allowance: number
+          organization_id: string
+          period_start: string
+          plan_slug: string
+          updated_at: string
+          used_this_period: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          monthly_allowance?: number
+          organization_id: string
+          period_start?: string
+          plan_slug?: string
+          updated_at?: string
+          used_this_period?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          monthly_allowance?: number
+          organization_id?: string
+          period_start?: string
+          plan_slug?: string
+          updated_at?: string
+          used_this_period?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_franchise_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_rate_limits: {
         Row: {
           created_at: string
@@ -7579,21 +7620,37 @@ export type Database = {
         Args: { _action_slug: string; _org_id: string; _user_id?: string }
         Returns: boolean
       }
-      consume_ai_credits_with_log: {
-        Args: {
-          _action_slug: string
-          _completion_tokens?: number
-          _duration_ms?: number
-          _model?: string
-          _org_id: string
-          _prompt_tokens?: number
-          _request_id: string
-          _status?: string
-          _total_tokens?: number
-          _user_id?: string
-        }
-        Returns: Json
-      }
+      consume_ai_credits_with_log:
+        | {
+            Args: {
+              _action_slug: string
+              _completion_tokens?: number
+              _duration_ms?: number
+              _model?: string
+              _org_id: string
+              _prompt_tokens?: number
+              _request_id: string
+              _status?: string
+              _total_tokens?: number
+              _user_id?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _action_slug?: string
+              _completion_tokens?: number
+              _duration_ms?: number
+              _model?: string
+              _org_id?: string
+              _prompt_tokens?: number
+              _request_id?: string
+              _status?: string
+              _total_tokens?: number
+              _user_id?: string
+            }
+            Returns: Json
+          }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -7601,6 +7658,25 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      ensure_franchise: {
+        Args: { _org_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          monthly_allowance: number
+          organization_id: string
+          period_start: string
+          plan_slug: string
+          updated_at: string
+          used_this_period: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ai_franchise"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       generate_demo_data: { Args: { _org_id: string }; Returns: undefined }
       get_ai_daily_usage: {
@@ -7657,6 +7733,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_franchise_status: { Args: { _org_id: string }; Returns: Json }
       get_invite_by_token: {
         Args: { invite_token: string }
         Returns: {
