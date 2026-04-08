@@ -740,6 +740,15 @@ Tipos comuns: instalacao, manutencao, limpeza, reparo, visita_tecnica, outro
   "Você quer que eu envie essa ordem de serviço para o cliente [Nome]?"
 - NUNCA envie automaticamente. Só envie após o usuário confirmar explicitamente.
 
+⚠️ REGRA DE CATÁLOGO (OBRIGATÓRIA):
+- SEMPRE use o parâmetro catalog_service_name para informar o serviço do catálogo mais próximo.
+- Se o usuário diz "limpeza" → busque no catálogo acima qual item de limpeza corresponde.
+- Se existem múltiplas opções (ex: 9k, 12k, 18k) → PERGUNTE qual antes de criar.
+- Se match único → use automaticamente e informe o preço do catálogo na confirmação.
+- Se o usuário NÃO informou valor → o sistema usará o preço do catálogo automaticamente. NUNCA crie com valor 0 se houver item no catálogo.
+- Se o serviço NÃO existe no catálogo → use descrição livre normalmente (fallback).
+- Se o usuário informou valor diferente do catálogo → use o valor do usuário (ele tem precedência).
+
 3. FERRAMENTA 'create_quote' — criar Orçamento.
 Quando o usuário pedir para criar/fazer/registrar um orçamento:
 - Extraia: nome do cliente, tipo de serviço, descrição, valor estimado
