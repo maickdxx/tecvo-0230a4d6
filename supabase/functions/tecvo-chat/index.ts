@@ -363,24 +363,17 @@ NÃO cumprimente. NÃO diga "olá". Vá direto ao ponto.`;
       console.warn('[TECVO-CHAT] Audit log failed:', auditErr);
     }
 
-    // Log usage
+    // Finalize usage log (correlates with credit debit via requestId)
     const usage = result.usage || {};
-    await logAIUsage(supabaseAdmin, {
-      organizationId, userId, actionSlug: "tecvo_chat", model: aiModel,
+    const estimatedCost = calculateCostUSD(aiModel, usage.prompt_tokens || 0, usage.completion_tokens || 0);
+    await finalizeAIUsage(supabaseAdmin, creditCheck.requestId, {
+      model: aiModel,
       promptTokens: usage.prompt_tokens || 0,
       completionTokens: usage.completion_tokens || 0,
       totalTokens: usage.total_tokens || 0,
       durationMs, status: toolErrors.length > 0 ? "error" : "success",
+      estimatedCostUsd: estimatedCost,
     });
-
-    // Monitor recurring failure patterns - log if multiple tool errors in one request
-    if (toolErrors.length >= 2) {
-      console.warn(`[TECVO-CHAT] RECURRING FAILURE PATTERN: ${toolErrors.length} tool errors in single request for org=${organizationId}`, toolErrors);
-      await logAIUsage(supabaseAdmin, {
-        organizationId, userId, actionSlug: "recurring_failure_pattern", model: aiModel,
-        promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs: 0, status: "error",
-      }).catch(() => {});
-    }
 
     // Return as SSE stream format for frontend compatibility
     const encoder = new TextEncoder();
