@@ -288,6 +288,7 @@ export function ConversationList({
     { key: "aguardando", label: "Aguardando", count: aguardandoCount },
     { key: "agendados", label: "Agendados", count: agendadosCount },
     { key: "finalizado", label: "Finalizados", count: finalizadoCount },
+    ...(lauraCount > 0 ? [{ key: "laura" as StatusFilter, label: "🤖 Laura", count: lauraCount }] : []),
   ];
 
   const allSelected = filtered.length > 0 && selectedIds.size === filtered.length;
