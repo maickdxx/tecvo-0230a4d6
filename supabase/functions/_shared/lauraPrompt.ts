@@ -3,6 +3,13 @@
  * the App chat (tecvo-chat) and WhatsApp (webhook-whatsapp).
  *
  * Any behavioral change to Laura MUST happen here so both channels stay in sync.
+ *
+ * ARCHITECTURE (refactored):
+ *   lauraContext.ts   → fetchOrgContext, formatBRL, buildContactDecisionsSummary
+ *   lauraTools.ts     → ADMIN_TOOLS definitions array
+ *   lauraNewTools.ts  → handlers for edit/cancel/search/update/equipment tools
+ *   lauraPrompt.ts    → buildSystemPrompt, buildToolsInstruction, executeAdminTool (this file)
+ *   actionShield.ts   → risk classification and pre-execution gate
  */
 
 import {
@@ -15,11 +22,20 @@ import {
   buildTimestampEdge,
 } from "./timezone.ts";
 
-// ─────────────────── helpers ───────────────────
+// Re-export from extracted modules for backward compatibility
+export { fetchOrgContext, formatBRL, buildContactDecisionsSummary } from "./lauraContext.ts";
+export { ADMIN_TOOLS } from "./lauraTools.ts";
 
-function formatBRL(value: number) {
-  return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+import { fetchOrgContext, formatBRL, buildContactDecisionsSummary } from "./lauraContext.ts";
+import { ADMIN_TOOLS } from "./lauraTools.ts";
+import {
+  handleEditService,
+  handleCancelService,
+  handleUpdateClient,
+  handleSearchServices,
+  handleSearchClients,
+  handleGetServiceEquipment,
+} from "./lauraNewTools.ts";
 
 // ─────────────────── catalog matching helpers ───────────────────
 
