@@ -1539,8 +1539,16 @@ export async function executeAdminTool(
       return "⚠️ Não há ação de aprovação pendente ou ela expirou. Solicite novamente a aprovação para gerar um novo resumo.";
     }
 
-    // Execute the approval using the IDs from the pending action
-    const confirmedIds = pendingAction.payload?.transaction_ids || ids;
+    // SECURITY: Use ONLY data from the persisted pending action — never from the new call
+    const confirmedIds = pendingAction.payload?.transaction_ids;
+    if (!confirmedIds || !Array.isArray(confirmedIds) || confirmedIds.length === 0) {
+      await supabase
+        .from("pending_finance_actions")
+        .update({ status: "expired" })
+        .eq("id", pendingAction.id);
+      return "⚠️ Não foi possível concluir a ação porque os dados da confirmação estão incompletos. Solicite novamente a aprovação.";
+    }
+
     const { data: result, error: approveErr } = await supabase.rpc("approve_transactions", {
       _transaction_ids: confirmedIds,
       _organization_id: organizationId,
@@ -1555,9 +1563,11 @@ export async function executeAdminTool(
       .eq("id", pendingAction.id);
 
     const count = (result as any)?.approved_count || confirmedIds.length;
+    const savedIncome = pendingAction.payload?.total_income ?? 0;
+    const savedExpense = pendingAction.payload?.total_expense ?? 0;
 
     await logToolSuccess(supabase, organizationId, fnName, { scope, count, confirmed: true });
-    return `✅ ${count} transação(ões) aprovada(s) e consolidada(s) no saldo financeiro.\n\nReceitas: R$ ${totalIncome.toFixed(2)}\nDespesas: R$ ${totalExpense.toFixed(2)}\nImpacto no saldo: R$ ${(totalIncome - totalExpense).toFixed(2)}`;
+    return `✅ ${count} transação(ões) aprovada(s) e consolidada(s) no saldo financeiro.\n\nReceitas: R$ ${Number(savedIncome).toFixed(2)}\nDespesas: R$ ${Number(savedExpense).toFixed(2)}\nImpacto no saldo: R$ ${(Number(savedIncome) - Number(savedExpense)).toFixed(2)}`;
   }
 
   if (fnName === "reject_pending_transactions") {
