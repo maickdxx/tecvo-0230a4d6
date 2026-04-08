@@ -992,11 +992,14 @@ Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 - IMPORTANTE: O account_id DEVE ser o UUID da conta (ex: "abc123-..."), NUNCA o nome da conta.
 
 APROVAÇÃO FINANCEIRA:
-- Quando o gestor pedir para "aprovar tudo", "aprovar pendências", "aprovar transações" → use a ferramenta 'approve_pending_transactions'
-- Quando pedir para "reprovar", "rejeitar" → use a ferramenta 'reject_pending_transactions'
+- Quando o gestor pedir para "aprovar tudo", "aprovar pendências", "aprovar transações" → use a ferramenta 'approve_pending_transactions' SEM confirmed=true
+- O sistema vai retornar um RESUMO e pedir confirmação. NÃO execute diretamente.
+- Somente quando o usuário responder exatamente "CONFIRMAR" ou "confirmar" → chame novamente a ferramenta com confirmed=true
+- NUNCA interprete "ok", "pode fazer", "sim", "beleza" como confirmação para aprovar/reprovar. Apenas "CONFIRMAR" ou "confirmar".
+- Quando pedir para "reprovar", "rejeitar" → use a ferramenta 'reject_pending_transactions' SEM confirmed=true
 - Quando pedir "resumo de pendências" ou "o que está pendente" → use 'get_pending_summary'
-- Ao aprovar: diga "Aprovado e consolidado no saldo financeiro."
-- Ao reprovar: diga "Reprovado. Não impactará o saldo consolidado."
+- Ao aprovar (após confirmação): diga "Aprovado e consolidado no saldo financeiro."
+- Ao reprovar (após confirmação): diga "Reprovado. Não impactará o saldo consolidado."
 
 2. FERRAMENTA 'create_service' — criar Ordem de Serviço (OS).
 Quando o usuário pedir para criar/agendar um serviço ou OS:
@@ -1243,12 +1246,13 @@ export const ADMIN_TOOLS = [
     type: "function",
     function: {
       name: "approve_pending_transactions",
-      description: "Aprova transações financeiras pendentes, consolidando no saldo real. Apenas gestores podem usar.",
+      description: "Aprova transações financeiras pendentes, consolidando no saldo real. Apenas gestores podem usar. PRIMEIRA chamada (sem confirmed): retorna resumo e pede confirmação. SEGUNDA chamada (com confirmed=true): executa a aprovação.",
       parameters: {
         type: "object",
         properties: {
           scope: { type: "string", enum: ["all_today", "all_pending", "by_type"], description: "Escopo: all_today (tudo de hoje), all_pending (todas pendentes), by_type (por tipo)" },
           type_filter: { type: "string", enum: ["income", "expense"], description: "Filtro por tipo, usado quando scope=by_type" },
+          confirmed: { type: "boolean", description: "true SOMENTE após o usuário responder CONFIRMAR. Não use na primeira chamada." },
         },
         required: ["scope"],
         additionalProperties: false,
@@ -1259,12 +1263,13 @@ export const ADMIN_TOOLS = [
     type: "function",
     function: {
       name: "reject_pending_transactions",
-      description: "Reprova transações financeiras pendentes. Não impacta o saldo.",
+      description: "Reprova transações financeiras pendentes. Não impacta o saldo. PRIMEIRA chamada (sem confirmed): retorna resumo e pede confirmação. SEGUNDA chamada (com confirmed=true): executa a reprovação.",
       parameters: {
         type: "object",
         properties: {
           transaction_ids: { type: "array", items: { type: "string" }, description: "IDs das transações para reprovar" },
           reason: { type: "string", description: "Motivo da reprovação" },
+          confirmed: { type: "boolean", description: "true SOMENTE após o usuário responder CONFIRMAR. Não use na primeira chamada." },
         },
         required: [],
         additionalProperties: false,
@@ -1462,12 +1467,12 @@ export async function executeAdminTool(
   }
 
   if (fnName === "approve_pending_transactions") {
-    const { scope, type_filter } = args;
+    const { scope, type_filter, confirmed } = args;
 
-    // Fetch pending transactions
+    // Fetch pending transactions for summary
     let query = supabase
       .from("transactions")
-      .select("id, type, amount, date")
+      .select("id, type, amount, date, description")
       .eq("organization_id", organizationId)
       .eq("approval_status", "pending_approval")
       .is("deleted_at", null);
@@ -1485,39 +1490,157 @@ export async function executeAdminTool(
     if (!pendingTxns || pendingTxns.length === 0) return "Não há transações pendentes de aprovação no escopo solicitado.";
 
     const ids = pendingTxns.map((t: any) => t.id);
+    const totalIncome = pendingTxns.filter((t: any) => t.type === "income").reduce((s: number, t: any) => s + Number(t.amount), 0);
+    const totalExpense = pendingTxns.filter((t: any) => t.type === "expense").reduce((s: number, t: any) => s + Number(t.amount), 0);
+    const impact = totalIncome - totalExpense;
+
+    // ── HARD GATE: Step 1 — Show summary and request confirmation ──
+    if (!confirmed) {
+      // Expire any old pending actions for this org
+      await supabase
+        .from("pending_finance_actions")
+        .update({ status: "expired" })
+        .eq("organization_id", organizationId)
+        .eq("status", "pending");
+
+      // Save pending action
+      const summary = `Aprovar ${ids.length} transação(ões).\nReceitas: R$ ${totalIncome.toFixed(2)}\nDespesas: R$ ${totalExpense.toFixed(2)}\nImpacto no saldo: ${impact >= 0 ? "+" : ""}R$ ${impact.toFixed(2)}`;
+      
+      await supabase.from("pending_finance_actions").insert({
+        organization_id: organizationId,
+        action_type: "approve",
+        payload: { transaction_ids: ids, scope, type_filter },
+        summary,
+        contact_id: ctx?.contactId || null,
+        conversation_id: ctx?.conversationId || null,
+        channel: ctx?.remoteJid ? "whatsapp" : "app",
+      });
+
+      return `⚠️ *Confirmação obrigatória*\n\nVocê está prestes a aprovar *${ids.length} transação(ões)*:\n\n` +
+        `• Receitas: R$ ${totalIncome.toFixed(2)}\n` +
+        `• Despesas: R$ ${totalExpense.toFixed(2)}\n` +
+        `• Impacto no saldo: ${impact >= 0 ? "+" : ""}R$ ${impact.toFixed(2)}\n\n` +
+        `Responda exatamente *CONFIRMAR* para aprovar ou *CANCELAR* para abortar.`;
+    }
+
+    // ── HARD GATE: Step 2 — confirmed=true, validate pending action exists ──
+    const { data: pendingAction } = await supabase
+      .from("pending_finance_actions")
+      .select("id, payload")
+      .eq("organization_id", organizationId)
+      .eq("action_type", "approve")
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!pendingAction) {
+      return "⚠️ Não há ação de aprovação pendente ou ela expirou. Solicite novamente a aprovação para gerar um novo resumo.";
+    }
+
+    // Execute the approval using the IDs from the pending action
+    const confirmedIds = pendingAction.payload?.transaction_ids || ids;
     const { data: result, error: approveErr } = await supabase.rpc("approve_transactions", {
-      _transaction_ids: ids,
+      _transaction_ids: confirmedIds,
       _organization_id: organizationId,
     });
 
     if (approveErr) return `Erro ao aprovar: ${approveErr.message}`;
 
-    const totalIncome = pendingTxns.filter((t: any) => t.type === "income").reduce((s: number, t: any) => s + Number(t.amount), 0);
-    const totalExpense = pendingTxns.filter((t: any) => t.type === "expense").reduce((s: number, t: any) => s + Number(t.amount), 0);
-    const count = (result as any)?.approved_count || ids.length;
+    // Mark pending action as executed
+    await supabase
+      .from("pending_finance_actions")
+      .update({ status: "executed", executed_at: new Date().toISOString() })
+      .eq("id", pendingAction.id);
 
-    await logToolSuccess(supabase, organizationId, fnName, { scope, count });
+    const count = (result as any)?.approved_count || confirmedIds.length;
+
+    await logToolSuccess(supabase, organizationId, fnName, { scope, count, confirmed: true });
     return `✅ ${count} transação(ões) aprovada(s) e consolidada(s) no saldo financeiro.\n\nReceitas: R$ ${totalIncome.toFixed(2)}\nDespesas: R$ ${totalExpense.toFixed(2)}\nImpacto no saldo: R$ ${(totalIncome - totalExpense).toFixed(2)}`;
   }
 
   if (fnName === "reject_pending_transactions") {
-    const { transaction_ids, reason } = args;
+    const { transaction_ids, reason, confirmed } = args;
 
     if (!transaction_ids || transaction_ids.length === 0) {
       return "Informe quais transações deseja reprovar. Use 'get_pending_summary' para ver as pendentes.";
     }
 
+    // ── HARD GATE: Step 1 — Show summary and request confirmation ──
+    if (!confirmed) {
+      // Fetch details for summary
+      const { data: txnDetails } = await supabase
+        .from("transactions")
+        .select("id, type, amount, description")
+        .in("id", transaction_ids)
+        .eq("organization_id", organizationId)
+        .eq("approval_status", "pending_approval");
+
+      const count = txnDetails?.length || transaction_ids.length;
+      const totalAmount = txnDetails?.reduce((s: number, t: any) => s + Number(t.amount), 0) || 0;
+
+      // Expire old and save new
+      await supabase
+        .from("pending_finance_actions")
+        .update({ status: "expired" })
+        .eq("organization_id", organizationId)
+        .eq("status", "pending");
+
+      const summary = `Reprovar ${count} transação(ões). Total: R$ ${totalAmount.toFixed(2)}${reason ? `. Motivo: ${reason}` : ""}`;
+
+      await supabase.from("pending_finance_actions").insert({
+        organization_id: organizationId,
+        action_type: "reject",
+        payload: { transaction_ids, reason },
+        summary,
+        contact_id: ctx?.contactId || null,
+        conversation_id: ctx?.conversationId || null,
+        channel: ctx?.remoteJid ? "whatsapp" : "app",
+      });
+
+      const detailList = txnDetails?.map((t: any) => `• R$ ${Number(t.amount).toFixed(2)} — ${t.description}`).join("\n") || "";
+
+      return `⚠️ *Confirmação obrigatória*\n\nVocê está prestes a reprovar *${count} transação(ões)*:\n\n${detailList}\n\nTotal: R$ ${totalAmount.toFixed(2)}${reason ? `\nMotivo: ${reason}` : ""}\n\nResponda exatamente *CONFIRMAR* para reprovar ou *CANCELAR* para abortar.`;
+    }
+
+    // ── HARD GATE: Step 2 — confirmed=true, validate pending action ──
+    const { data: pendingAction } = await supabase
+      .from("pending_finance_actions")
+      .select("id, payload")
+      .eq("organization_id", organizationId)
+      .eq("action_type", "reject")
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!pendingAction) {
+      return "⚠️ Não há ação de reprovação pendente ou ela expirou. Solicite novamente para gerar um novo resumo.";
+    }
+
+    const confirmedIds = pendingAction.payload?.transaction_ids || transaction_ids;
+    const confirmedReason = pendingAction.payload?.reason || reason;
+
     const { data: result, error } = await supabase.rpc("reject_transactions", {
-      _transaction_ids: transaction_ids,
+      _transaction_ids: confirmedIds,
       _organization_id: organizationId,
-      _reason: reason || null,
+      _reason: confirmedReason || null,
     });
 
     if (error) return `Erro ao reprovar: ${error.message}`;
+
+    // Mark as executed
+    await supabase
+      .from("pending_finance_actions")
+      .update({ status: "executed", executed_at: new Date().toISOString() })
+      .eq("id", pendingAction.id);
+
     const count = (result as any)?.rejected_count || 0;
 
-    await logToolSuccess(supabase, organizationId, fnName, { count, reason });
-    return `❌ ${count} transação(ões) reprovada(s). Não impactam o saldo consolidado.${reason ? `\nMotivo: ${reason}` : ""}`;
+    await logToolSuccess(supabase, organizationId, fnName, { count, reason: confirmedReason, confirmed: true });
+    return `❌ ${count} transação(ões) reprovada(s). Não impactam o saldo consolidado.${confirmedReason ? `\nMotivo: ${confirmedReason}` : ""}`;
   }
 
   if (fnName === "get_pending_summary") {
