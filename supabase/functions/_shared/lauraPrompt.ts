@@ -1970,6 +1970,19 @@ export async function executeAdminTool(
 
     await logToolSuccess(supabase, organizationId, fnName, args);
 
+    // OAL: Log touchpoint on successful client send
+    if (sendTarget === "client" && serviceData.client_id) {
+      await supabase.from("client_touchpoints").insert({
+        organization_id: organizationId,
+        client_id: serviceData.client_id,
+        source: "laura",
+        category: "service",
+        reference_id: serviceData.id,
+        status: "sent",
+        metadata: { action: "send_service_pdf", doc_type: result.docType, os_number: result.osNumber },
+      }).then(() => {}).catch((e: any) => console.warn("[OAL] Failed to log touchpoint:", e?.message));
+    }
+
     if (sendTarget === "self") {
       return `SILENT_PDF_SENT_SELF:${result.docType} #${result.osNumber} - ${result.clientName} enviado para você!`;
     }
