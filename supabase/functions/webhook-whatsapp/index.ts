@@ -3717,10 +3717,8 @@ Deno.serve(async (req) => {
                     const ttsResult = await generateTTSAudio(safeResponse);
                     // ── GOVERNANCE: Log TTS usage (currently subsidized, 0 credits) ──
                     if (ttsResult.provider) {
-                      await logAIUsage(supabase, {
-                        organizationId: targetOrganizationId, userId: null,
-                        actionSlug: "tts_generation", model: ttsResult.provider,
-                        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                      await logFreeAIUsage(supabase, targetOrganizationId, null, "tts_generation", {
+                        model: ttsResult.provider, promptTokens: 0, completionTokens: 0, totalTokens: 0,
                         durationMs: ttsResult.durationMs, status: ttsResult.audio ? "success" : "error",
                       });
                     }
