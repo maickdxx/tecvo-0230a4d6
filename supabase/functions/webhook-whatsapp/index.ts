@@ -3074,6 +3074,9 @@ Deno.serve(async (req) => {
               if (matchedProfile?.full_name) {
                 orgContext.currentUserName = matchedProfile.full_name;
                 orgContext.currentUserRole = matchedProfile.position || "proprietário";
+                orgContext.currentUserId = ownerUserId;
+              } else {
+                orgContext.currentUserId = ownerUserId;
               }
             }
           }
