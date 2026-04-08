@@ -38,12 +38,8 @@ export function formatWhatsAppMessage(content: string, isMe: boolean = false): s
       href = `https://${cleanUrl}`;
     }
 
-    // Link styling:
-    // - blue-600/400 for received messages
-    // - blue-100/200 with underline for sent messages (better contrast on primary bg)
-    const linkColorClass = isMe 
-      ? "text-blue-100 dark:text-blue-200 underline decoration-blue-100/50 underline-offset-2" 
-      : "text-blue-600 dark:text-blue-400 hover:underline underline-offset-2";
+    // Link styling: blue for both sent and received (both have light backgrounds now)
+    const linkColorClass = "text-blue-600 dark:text-blue-400 hover:underline underline-offset-2";
 
     return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="${linkColorClass} break-all transition-colors">${cleanUrl}</a>${suffix}`;
   });

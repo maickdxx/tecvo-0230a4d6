@@ -139,7 +139,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, isMe, messageId }
           onClick={togglePlay}
           className={cn(
             "h-12 w-12 rounded-full flex items-center justify-center shrink-0 transition-transform hover:scale-105 active:scale-95 shadow-sm",
-            isMe ? "bg-primary text-primary-foreground" : "bg-background text-primary"
+            isMe ? "bg-primary/15 text-primary" : "bg-background text-primary"
           )}
         >
           {isPlaying ? (
