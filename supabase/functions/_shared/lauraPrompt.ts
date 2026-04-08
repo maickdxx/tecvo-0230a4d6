@@ -1200,7 +1200,7 @@ export async function executeAdminTool(
   }
 
   if (fnName === "create_service") {
-    const { client_name, scheduled_date, service_type, description, value, assigned_to_name } = args;
+    const { client_name, scheduled_date, service_type, description, value, assigned_to_name, catalog_service_name } = args;
     if (!client_name || !scheduled_date || !service_type || !description) {
       return "Erro: campos obrigatórios faltando.";
     }
@@ -1245,17 +1245,79 @@ export async function executeAdminTool(
 
     const finalServiceType = (typeExists && typeExists.length > 0) ? service_type : "outro";
 
+    // ── CATALOG MATCHING ──
+    let catalogMatch: any = null;
+    let catalogServiceId: string | null = null;
+    let finalValue = value ?? null; // null means "not provided by user"
+    let finalDescription = description;
+
+    if (catalog_service_name) {
+      // Direct match by name provided by AI
+      const { data: catalogMatches } = await supabase
+        .from("catalog_services")
+        .select("id, name, unit_price, service_type, description")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .ilike("name", `%${catalog_service_name}%`)
+        .limit(5);
+
+      if (catalogMatches && catalogMatches.length === 1) {
+        catalogMatch = catalogMatches[0];
+      } else if (catalogMatches && catalogMatches.length > 1) {
+        // Multiple matches — return options for Laura to ask user
+        const options = catalogMatches.map((c: any) => `• ${c.name}: R$ ${Number(c.unit_price).toFixed(2)}`).join("\n");
+        return `CATALOG_MULTIPLE_MATCHES:Encontrei ${catalogMatches.length} itens no catálogo:\n${options}\n\nQual deles é o correto? Informe o nome exato.`;
+      }
+    }
+
+    // Fallback: try matching by service_type + keywords from description
+    if (!catalogMatch && !catalog_service_name) {
+      const { data: typeCatalog } = await supabase
+        .from("catalog_services")
+        .select("id, name, unit_price, service_type, description")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .eq("service_type", finalServiceType)
+        .limit(10);
+
+      if (typeCatalog && typeCatalog.length === 1) {
+        catalogMatch = typeCatalog[0];
+      }
+      // If multiple, don't auto-match — Laura should have asked
+    }
+
+    if (catalogMatch) {
+      catalogServiceId = catalogMatch.id;
+      // Use catalog price if user didn't provide one
+      if (finalValue === null || finalValue === undefined) {
+        finalValue = Number(catalogMatch.unit_price);
+      }
+      // Enhance description with catalog name if it's generic
+      if (description.length < 30) {
+        finalDescription = catalogMatch.name;
+      }
+      console.log(`[LAURA] Catalog match: "${catalogMatch.name}" (R$ ${catalogMatch.unit_price}) → service`);
+    }
+
+    // Final fallback: value = 0 only if truly no catalog and no user value
+    if (finalValue === null || finalValue === undefined) {
+      finalValue = 0;
+    }
+
     const { data: newService, error } = await supabase.from("services").insert({
       organization_id: organizationId,
       client_id: client.id,
       scheduled_date,
       service_type: finalServiceType,
-      description,
-      value: value || 0,
+      description: finalDescription,
+      value: finalValue,
       assigned_to: assignedTo,
       status: "scheduled",
       document_type: "service_order",
       pdf_status: "pending",
+      catalog_service_id: catalogServiceId,
     }).select("id").single();
 
     if (error) {
@@ -1296,8 +1358,9 @@ export async function executeAdminTool(
     const pdfNote = pdfStatus === "ready"
       ? "\n📄 PDF oficial gerado com sucesso."
       : "\n⚠️ O PDF oficial ainda não foi gerado. Ele pode ser gerado pelo painel.";
+    const catalogNote = catalogMatch ? `\n📋 Vinculado ao catálogo: "${catalogMatch.name}" (preço padrão: R$ ${Number(catalogMatch.unit_price).toFixed(2)})` : "";
     await logToolSuccess(supabase, organizationId, fnName, args);
-    return `OS #${osNum} criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Valor: R$ ${(value || 0).toFixed(2)}\n• service_id: ${newService.id}${pdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newService.id}" diretamente.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
+    return `OS #${osNum} criada com sucesso!\n• Cliente: ${client.name}\n• Data: ${dateFormatted}\n• Tipo: ${finalServiceType}\n• Serviço: ${finalDescription}\n• Valor: R$ ${Number(finalValue).toFixed(2)}${catalogNote}\n• service_id: ${newService.id}${pdfNote}\n✅ Confirmado no sistema.\n\nIMPORTANTE PARA A IA: Ao chamar send_service_pdf, use service_id="${newService.id}" diretamente.\n\nPERGUNTE AO USUÁRIO: "Quer que eu envie essa OS para o cliente ${client.name}?"`;
   }
 
   if (fnName === "create_quote") {
