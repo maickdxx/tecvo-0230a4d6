@@ -3037,7 +3037,29 @@ Deno.serve(async (req) => {
             targetOrganizationId,
           );
 
-          // Better owner identification: find admin/owner role user's profile
+          // Identify current user by matching sender phone against profiles
+          // normalizedSender is already available from earlier in the flow
+          if (normalizedSender) {
+            const { data: phoneProfiles } = await supabase
+              .from("profiles")
+              .select("user_id, full_name, position, phone")
+              .eq("organization_id", targetOrganizationId)
+              .not("phone", "is", null);
+
+            if (phoneProfiles && phoneProfiles.length > 0) {
+              // Normalize profile phones for comparison
+              const matchedByPhone = phoneProfiles.find((p: any) => {
+                const pPhone = (p.phone || "").replace(/\D/g, "");
+                return pPhone && (normalizedSender.includes(pPhone) || pPhone.includes(normalizedSender));
+              });
+              if (matchedByPhone?.full_name) {
+                orgContext.currentUserName = matchedByPhone.full_name;
+                orgContext.currentUserRole = matchedByPhone.position || "proprietário";
+              }
+            }
+          }
+
+          // Fallback: find admin/owner role user's profile
           if (!orgContext.currentUserName) {
             const { data: ownerRoles } = await supabase
               .from("user_roles")
@@ -3048,7 +3070,7 @@ Deno.serve(async (req) => {
             if (ownerRoles && ownerRoles.length > 0) {
               const ownerUserId = ownerRoles[0].user_id;
               const matchedProfile = (orgContext.profiles || []).find((p: any) => p.user_id === ownerUserId);
-              if (matchedProfile) {
+              if (matchedProfile?.full_name) {
                 orgContext.currentUserName = matchedProfile.full_name;
                 orgContext.currentUserRole = matchedProfile.position || "proprietário";
               }

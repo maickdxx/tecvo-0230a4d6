@@ -86,7 +86,7 @@ serve(async (req) => {
       supabaseAdmin
         .from("profiles")
         .select("full_name, position")
-        .eq("id", userId)
+        .eq("user_id", userId)
         .single(),
     ]);
 
