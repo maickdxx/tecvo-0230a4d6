@@ -59,6 +59,10 @@ serve(async (req) => {
       return accessDeniedResponse(corsHeaders);
     }
 
+    // ── RATE LIMIT ──
+    const rateCheck = await checkAIRateLimit(supabaseAdmin, organizationId, corsHeaders);
+    if (!rateCheck.allowed) return rateCheck.response!;
+
     // Check and consume AI credits
     const { data: hasCredits, error: creditError } = await supabaseAdmin.rpc("consume_ai_credits", {
       _org_id: organizationId,
