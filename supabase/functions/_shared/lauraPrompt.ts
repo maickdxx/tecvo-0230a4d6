@@ -128,7 +128,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
 
   const [servicesRes, clientsRes, transactionsRes, profilesRes, orgRes, catalogRes,
          servicesTotalRes, clientsTotalRes, transactionsTotalRes,
-         financialAccountsRes] = await Promise.all([
+         financialAccountsRes, contactDecisionsRes] = await Promise.all([
     supabase
       .from("services")
       .select("id, status, scheduled_date, completed_date, value, description, service_type, assigned_to, client_id, created_at, payment_method, document_type, operational_status")
@@ -193,6 +193,8 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
       .eq("organization_id", organizationId)
       .eq("is_active", true)
       .order("name"),
+    // OAL: Pre-computed contact decisions
+    supabase.rpc("get_client_contact_decisions", { _org_id: organizationId }),
   ]);
 
   const services = servicesRes.data || [];
