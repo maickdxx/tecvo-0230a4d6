@@ -183,11 +183,11 @@ export function useAssistantChat() {
           if (resp.status === 429) {
             errKind = errData.code === "DAILY_CAP_REACHED" ? "daily_cap" : "rate_limit";
             errMsg = errKind === "daily_cap"
-              ? "Você atingiu o limite diário de uso de IA do seu plano."
-              : "Muitas solicitações. Aguarde alguns segundos.";
+              ? "A Laura atingiu o limite de processamento do dia. Ela volta a operar normalmente amanhã."
+              : "A Laura está processando muitas solicitações. Aguarde alguns segundos.";
           } else if (resp.status === 402) {
             errKind = "credits_empty";
-            errMsg = "A Laura está pausada. Recarregue a capacidade de IA para continuar usando todos os recursos inteligentes.";
+            errMsg = "A Laura está temporariamente pausada. Amplie a capacidade para continuar usando todos os recursos inteligentes.";
           } else {
             errMsg = errData.error || "Erro ao processar resposta.";
           }

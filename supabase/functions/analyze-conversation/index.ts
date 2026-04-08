@@ -71,7 +71,7 @@ serve(async (req) => {
     });
 
     if (creditError || !hasCredits) {
-      return new Response(JSON.stringify({ error: "Créditos de IA insuficientes. Recarregue seus créditos para continuar." }), {
+      return new Response(JSON.stringify({ error: "A capacidade de processamento da Laura está pausada. Amplie para continuar." }), {
         status: 402,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
