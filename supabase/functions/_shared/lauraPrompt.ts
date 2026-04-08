@@ -206,6 +206,7 @@ export async function fetchOrgContext(supabase: any, organizationId: string) {
   const totalTransactionsAllTime = transactionsTotalRes.count ?? transactions.length;
 
   const financialAccounts = financialAccountsRes.data || [];
+  const contactDecisions = contactDecisionsRes.data || [];
   const defaultAiAccountId = orgRes.data?.default_ai_account_id || null;
   const defaultAccount = defaultAiAccountId
     ? financialAccounts.find((a: any) => a.id === defaultAiAccountId) || null
