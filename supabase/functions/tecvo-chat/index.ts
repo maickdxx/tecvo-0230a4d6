@@ -54,7 +54,7 @@ serve(async (req) => {
     }
     const userId = user.id;
 
-    const { messages, organizationId, mode } = await req.json();
+    const { messages, organizationId, mode, conversationId } = await req.json();
     if (!organizationId) {
       return new Response(JSON.stringify({ error: "organizationId required" }), {
         status: 400,
