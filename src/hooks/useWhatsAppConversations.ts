@@ -361,8 +361,8 @@ export function useWhatsAppConversations() {
       optimisticFields.conversation_status = "atendendo";
     }
     if (currentPipelineStatus === "novo_contato") {
-      updates.conversion_status = "em_atendimento";
-      optimisticFields.conversion_status = "em_atendimento";
+      updates.conversion_status = "qualificacao";
+      optimisticFields.conversion_status = "qualificacao";
     }
     
     if (Object.keys(updates).length === 0) return;
