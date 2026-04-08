@@ -364,12 +364,8 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Status Filters — Pinned extremes + rotating center */}
+      {/* Status Filters — All 5 visible: Novas pinned left, Finalizados pinned right, 3 middle centered */}
       {(() => {
-        const novasTab = filters[0]; // "Novas" always left
-        const finalizadoTab = filters[4]; // "Finalizados" always right
-        const middleTabs = [filters[1], filters[2], filters[3]]; // Atendimento, Agendados, Aguardando
-
         const handleTabClick = (key: StatusFilter) => {
           if (statusFilter !== key) {
             setStatusFilter(key);
@@ -377,32 +373,28 @@ export function ConversationList({
           }
         };
 
-        // Determine which middle tab to show in center
-        const activeMiddleIdx = middleTabs.findIndex(f => f.key === statusFilter);
-        // If active is an extreme, default center to first middle tab
-        const centerMiddleIdx = activeMiddleIdx >= 0 ? activeMiddleIdx : 0;
-        const centerMiddleTab = middleTabs[centerMiddleIdx];
-
-        const renderTab = (tab: typeof filters[0], isActive: boolean, position: "pinned" | "center") => {
+        const renderTab = (tab: typeof filters[0]) => {
+          const isActive = statusFilter === tab.key;
+          const isPinned = tab.key === "novas" || tab.key === "finalizado";
           return (
             <button
               key={tab.key}
               onClick={() => handleTabClick(tab.key)}
               className={cn(
-                "inline-flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap relative transition-all duration-300 ease-in-out",
+                "inline-flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap relative transition-all duration-300 ease-in-out",
                 isActive
-                  ? "flex-[1.3] bg-primary text-primary-foreground shadow-md scale-100"
-                  : position === "pinned"
-                    ? "flex-[0.8] text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40 scale-95"
-                    : "flex-1 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40 scale-95"
+                  ? "flex-[1.4] bg-primary text-primary-foreground shadow-md"
+                  : isPinned
+                    ? "flex-[0.7] text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40"
+                    : "flex-[0.9] text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40"
               )}
             >
-              <span className={cn("transition-opacity duration-300", isActive ? "opacity-100" : "opacity-70")}>
+              <span className={cn("transition-opacity duration-300 truncate", isActive ? "opacity-100" : "opacity-70")}>
                 {tab.label}
               </span>
               {tab.count > 0 && (
                 <span className={cn(
-                  "text-[10px] rounded-full px-1.5 min-w-[16px] text-center font-semibold transition-opacity duration-300",
+                  "text-[9px] rounded-full px-1 min-w-[14px] text-center font-semibold transition-opacity duration-300 shrink-0",
                   isActive
                     ? "bg-primary-foreground/20 text-primary-foreground opacity-100"
                     : tab.key !== "finalizado"
@@ -418,9 +410,7 @@ export function ConversationList({
 
         return (
           <div className="px-3 pb-2.5 flex items-center gap-1">
-            {renderTab(novasTab, statusFilter === "novas", "pinned")}
-            {renderTab(centerMiddleTab, statusFilter === centerMiddleTab.key, "center")}
-            {renderTab(finalizadoTab, statusFilter === "finalizado", "pinned")}
+            {filters.map(tab => renderTab(tab))}
           </div>
         );
       })()}
