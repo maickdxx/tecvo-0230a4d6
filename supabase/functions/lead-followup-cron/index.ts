@@ -161,8 +161,8 @@ REGRAS:
 - Use emoji com moderação (0-2 por mensagem)`;
 
   try {
-    const aiUrl = Deno.env.get("AI_GATEWAY_URL") || "https://ai.lovable.dev/v1/chat/completions";
-    const aiKey = Deno.env.get("AI_GATEWAY_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const aiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const aiKey = Deno.env.get("LOVABLE_API_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const resp = await fetch(aiUrl, {
       method: "POST",
