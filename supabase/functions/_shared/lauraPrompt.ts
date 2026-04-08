@@ -522,9 +522,9 @@ ${recurrenceText}
 
 💳 CONTAS FINANCEIRAS:
 ${(financialAccounts && financialAccounts.length > 0)
-  ? financialAccounts.map((a: any) => `  - ${a.name} (${a.account_type || "geral"}) | Saldo: ${formatBRL(a.balance || 0)}${defaultAccount && defaultAccount.id === a.id ? " ⭐ CONTA PADRÃO DA IA" : ""}`).join("\n")
+  ? financialAccounts.map((a: any) => `  - [ID: ${a.id}] ${a.name} (${a.account_type || "geral"}) | Saldo: ${formatBRL(a.balance || 0)}${defaultAccount && defaultAccount.id === a.id ? " ⭐ CONTA PADRÃO DA IA" : ""}`).join("\n")
   : "  Nenhuma conta financeira cadastrada."}
-${defaultAccount ? `• Conta padrão para registros da IA: ${defaultAccount.name}` : "• ⚠️ Nenhuma conta padrão definida para a IA."}
+${defaultAccount ? `• Conta padrão para registros da IA: ${defaultAccount.name} [ID: ${defaultAccount.id}]` : "• ⚠️ Nenhuma conta padrão definida para a IA."}
 
 ══════════ REGRAS FINANCEIRAS (OBRIGATÓRIO) ══════════
 
@@ -986,7 +986,8 @@ Categorias comuns de despesa: material, combustível, alimentação, aluguel, fo
 Categorias comuns de receita: serviço, manutenção, instalação, venda, outro
 - Despesas vão para CONTAS A PAGAR com status pendente. Receitas vão para CONTAS A RECEBER com status pendente.
 - NUNCA marque como pago automaticamente.
-- Se o sistema informar que existem contas cadastradas mas nenhuma padrão, pergunte ao usuário qual conta deseja usar. Quando ele responder (ex: "a 1", "Nubank", "a primeira"), use a ferramenta 'set_default_account' com o account_id correspondente e depois prossiga com o registro.
+- Se o sistema informar que existem contas cadastradas mas nenhuma padrão, pergunte ao usuário qual conta deseja usar. Quando ele responder (ex: "a 1", "Nubank", "a primeira"), use a ferramenta 'set_default_account' com o account_id (UUID) correspondente da lista de CONTAS FINANCEIRAS do contexto e depois prossiga AUTOMATICAMENTE com o registro — NÃO peça ao usuário para repetir o pedido.
+- IMPORTANTE: O account_id DEVE ser o UUID da conta (ex: "abc123-..."), NUNCA o nome da conta.
 
 2. FERRAMENTA 'create_service' — criar Ordem de Serviço (OS).
 Quando o usuário pedir para criar/agendar um serviço ou OS:
@@ -1361,11 +1362,11 @@ export async function executeAdminTool(
             .update({ default_ai_account_id: accountId })
             .eq("id", organizationId);
         } else {
-          // Multiple accounts — ask user to choose
+          // Multiple accounts — list with IDs so AI can call set_default_account
           const accountList = existingAccounts
-            .map((a, i) => `${i + 1}. ${a.name}`)
+            .map((a, i) => `${i + 1}. ${a.name} (ID: ${a.id})`)
             .join("\n");
-          return `Encontrei ${existingAccounts.length} contas financeiras cadastradas:\n\n${accountList}\n\nQual delas deseja usar como conta padrão para os registros da IA?`;
+          return `Encontrei ${existingAccounts.length} contas financeiras cadastradas:\n\n${accountList}\n\nQual delas deseja usar como conta padrão para os registros da IA?\n\n⚡ INSTRUÇÃO INTERNA: Quando o usuário escolher, use a ferramenta 'set_default_account' com o account_id correspondente e DEPOIS execute automaticamente a ferramenta 'register_transaction' com os mesmos dados originais. NÃO peça para o usuário repetir o pedido.`;
         }
       } else {
         return '⚠️ Você ainda não tem uma conta financeira cadastrada.\n\nPosso *criar uma conta agora* para você! Basta me dizer o nome do banco, por exemplo: "Crie uma conta do Itaú".';
