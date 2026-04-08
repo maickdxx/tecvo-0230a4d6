@@ -20,6 +20,102 @@ function formatBRL(value: number) {
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// ─────────────────── catalog matching helpers ───────────────────
+
+/** Remove accents, lowercase, strip stopwords */
+function normalizeCatalogText(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b(de|do|da|dos|das|para|em|um|uma|o|a|os|as|e|com|no|na|nos|nas|por|que|se)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Synonym groups → canonical keyword */
+const CATALOG_SYNONYMS: Record<string, string[]> = {
+  limpeza: ["limpeza", "higienizacao", "lavagem", "limpar", "higienizar", "lavar"],
+  instalacao: ["instalacao", "instalar", "colocar", "montar", "montagem", "colocar ar"],
+  manutencao: ["manutencao", "conserto", "consertar", "arrumar", "reparo", "reparar", "manutenção preventiva"],
+  desinstalacao: ["desinstalacao", "desinstalar", "remover", "retirar", "remoção", "retirada"],
+  visita: ["visita", "visita tecnica", "avaliacao", "avaliar", "diagnostico"],
+  recarga: ["recarga", "gas", "recarregar", "fluido", "refrigerante"],
+};
+
+/** Expand user text with synonyms → returns canonical group or original */
+function expandSynonyms(normalized: string): string[] {
+  const groups: string[] = [];
+  for (const [canonical, synonyms] of Object.entries(CATALOG_SYNONYMS)) {
+    if (synonyms.some((s) => normalized.includes(s))) {
+      groups.push(canonical);
+    }
+  }
+  return groups.length > 0 ? groups : [normalized];
+}
+
+/** Score a catalog item against user input (higher = better match) */
+function catalogMatchScore(catalogName: string, userInput: string, userGroups: string[]): number {
+  const normCatalog = normalizeCatalogText(catalogName);
+  let score = 0;
+
+  // Exact normalized match
+  if (normCatalog === userInput) return 100;
+
+  // Contains full input
+  if (normCatalog.includes(userInput)) score += 50;
+
+  // Synonym group match
+  for (const group of userGroups) {
+    if (normCatalog.includes(group)) score += 30;
+  }
+
+  // Word overlap
+  const userWords = userInput.split(" ").filter((w) => w.length > 2);
+  const catalogWords = normCatalog.split(" ");
+  for (const w of userWords) {
+    if (catalogWords.some((cw) => cw.includes(w) || w.includes(cw))) score += 10;
+  }
+
+  // BTU number match (e.g., "12k" → "12.000", "12000")
+  const btuMatch = userInput.match(/(\d+)\s*k/i);
+  if (btuMatch) {
+    const btuNum = btuMatch[1];
+    if (normCatalog.includes(`${btuNum}.000`) || normCatalog.includes(`${btuNum}000`)) {
+      score += 40;
+    }
+  }
+
+  return score;
+}
+
+/** Smart catalog matching: returns { match, matches, noMatch } */
+function smartCatalogMatch(
+  catalogItems: any[],
+  userInput: string,
+): { match: any | null; matches: any[]; noMatch: boolean } {
+  if (!catalogItems || catalogItems.length === 0) return { match: null, matches: [], noMatch: true };
+
+  const normInput = normalizeCatalogText(userInput);
+  const groups = expandSynonyms(normInput);
+
+  const scored = catalogItems
+    .map((item) => ({ item, score: catalogMatchScore(item.name, normInput, groups) }))
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length === 0) return { match: null, matches: [], noMatch: true };
+  if (scored.length === 1) return { match: scored[0].item, matches: [scored[0].item], noMatch: false };
+
+  // If top score is significantly higher, auto-select
+  if (scored[0].score >= 50 && scored[0].score > scored[1].score * 1.5) {
+    return { match: scored[0].item, matches: scored.map((s) => s.item), noMatch: false };
+  }
+
+  // Multiple viable matches
+  return { match: null, matches: scored.map((s) => s.item), noMatch: false };
+}
+
 // ─────────────────── context fetcher ───────────────────
 
 export async function fetchOrgContext(supabase: any, organizationId: string) {
