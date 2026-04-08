@@ -16,7 +16,7 @@ function StatusDot({ isEmpty, isLow }: { isEmpty: boolean; isLow: boolean }) {
 
 function StatusLabel({ isEmpty, isLow }: { isEmpty: boolean; isLow: boolean }) {
   if (isEmpty) return <span className="text-destructive">Pausada</span>;
-  if (isLow) return <span className="text-amber-600">Limitada</span>;
+  if (isLow) return <span className="text-amber-600">Atenção</span>;
   return <span className="text-emerald-600">Ativa</span>;
 }
 
