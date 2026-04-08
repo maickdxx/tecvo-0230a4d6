@@ -3872,7 +3872,7 @@ Deno.serve(async (req) => {
                   organization_id: targetOrganizationId,
                   user_id: null,
                   channel: 'whatsapp',
-                  user_question: (incomingText || '').slice(0, 2000),
+                  user_question: (currentUserText || '').slice(0, 2000),
                   ai_response: aiResponse.slice(0, 5000),
                   numbers_cited: numbersCited,
                   data_source: JSON.stringify({
