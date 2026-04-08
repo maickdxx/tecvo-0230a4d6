@@ -4116,6 +4116,7 @@ Cada "sim" aproxima o lead da decisão final.
               }
             }
           }
+          } // end creditGuard else block
         }
       } catch (aiError) {
         console.error("[WEBHOOK-WHATSAPP] AI processing error:", aiError);
