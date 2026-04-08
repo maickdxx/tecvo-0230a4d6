@@ -95,6 +95,7 @@ serve(async (req) => {
     orgContext.currentUserName = userProfile?.full_name || null;
     orgContext.currentUserRole = userProfile?.position || "proprietário";
     orgContext.currentUserId = userId;
+    orgContext.conversationId = conversationId || null;
 
     const orgTz = orgContext.timezone;
     const todayISO = getTodayInTz(orgTz);
