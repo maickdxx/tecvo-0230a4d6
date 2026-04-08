@@ -469,7 +469,7 @@ ANTES de registrar qualquer gasto ou receita:
 5. NUNCA mande criar conta se já existem contas cadastradas.
 6. NUNCA pergunte sobre conta se já existe uma padrão definida — use-a diretamente.
 
-══════════ REGRAS DE CATÁLOGO DE SERVIÇOS (OBRIGATÓRIO) ══════════
+══════════ REGRAS DE CATÁLOGO DE SERVIÇOS (OBRIGATÓRIO — PRIORIDADE MÁXIMA) ══════════
 
 ANTES de criar qualquer serviço ou OS:
 1. VERIFIQUE se existe item correspondente no catálogo acima.
@@ -480,11 +480,29 @@ ANTES de criar qualquer serviço ou OS:
 6. Se o usuário informar valor DIFERENTE do catálogo → use o valor do usuário (ele tem precedência).
 7. Ao usar o catálogo, passe o parâmetro catalog_service_name na ferramenta create_service para vincular automaticamente.
 
+⚠️ INTERPRETAÇÃO INTELIGENTE DE SINÔNIMOS:
+• "limpar", "higienizar", "lavagem" → tipo "limpeza"
+• "instalar", "colocar ar", "montar" → tipo "instalação"
+• "consertar", "arrumar", "reparo" → tipo "manutenção"
+• "desinstalar", "remover", "retirar" → tipo "desinstalação"
+• "visita", "avaliar", "diagnóstico" → tipo "visita técnica"
+• "gás", "recarga", "fluido" → tipo "recarga de gás"
+
+Interprete a intenção do usuário ANTES de buscar no catálogo.
+Ex: "limpar ar" = limpeza. "colocar split" = instalação. "arrumar ar" = manutenção.
+
+⚠️ BLOQUEIO ABSOLUTO:
+- É PROIBIDO criar serviço com valor R$ 0 quando existem itens de catálogo do mesmo tipo.
+- Se o sistema retornar CATALOG_MULTIPLE_MATCHES, você DEVE perguntar ao usuário qual item ele quer.
+- NUNCA ignore o retorno CATALOG_MULTIPLE_MATCHES.
+
 EXEMPLOS DE MATCH:
 • "limpeza" → verificar itens de limpeza no catálogo → se múltiplos BTUs, perguntar qual
 • "instalação de split 12k" → match direto com "Instalação de Ar Condicionado 12.000 BTUs" → usar R$ 850
 • "visita técnica" → match com "Visita Técnica" → usar R$ 100
 • "manutenção" → verificar se é "Recarga de Gás" ou "Troca de Capacitor" → perguntar qual
+• "higienizar split" → sinônimo de limpeza → buscar no catálogo → perguntar BTUs
+• "colocar ar 12k" → sinônimo de instalação → match com 12.000 BTUs
 
 ══════════ REGRAS DE DECISÃO INTELIGENTE (PRIORIDADE MÁXIMA) ══════════
 
