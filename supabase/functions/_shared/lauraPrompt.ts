@@ -1263,12 +1263,13 @@ export const ADMIN_TOOLS = [
     type: "function",
     function: {
       name: "reject_pending_transactions",
-      description: "Reprova transações financeiras pendentes. Não impacta o saldo.",
+      description: "Reprova transações financeiras pendentes. Não impacta o saldo. PRIMEIRA chamada (sem confirmed): retorna resumo e pede confirmação. SEGUNDA chamada (com confirmed=true): executa a reprovação.",
       parameters: {
         type: "object",
         properties: {
           transaction_ids: { type: "array", items: { type: "string" }, description: "IDs das transações para reprovar" },
           reason: { type: "string", description: "Motivo da reprovação" },
+          confirmed: { type: "boolean", description: "true SOMENTE após o usuário responder CONFIRMAR. Não use na primeira chamada." },
         },
         required: [],
         additionalProperties: false,
