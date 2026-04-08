@@ -1239,6 +1239,53 @@ export const ADMIN_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "approve_pending_transactions",
+      description: "Aprova transações financeiras pendentes, consolidando no saldo real. Apenas gestores podem usar.",
+      parameters: {
+        type: "object",
+        properties: {
+          scope: { type: "string", enum: ["all_today", "all_pending", "by_type"], description: "Escopo: all_today (tudo de hoje), all_pending (todas pendentes), by_type (por tipo)" },
+          type_filter: { type: "string", enum: ["income", "expense"], description: "Filtro por tipo, usado quando scope=by_type" },
+        },
+        required: ["scope"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "reject_pending_transactions",
+      description: "Reprova transações financeiras pendentes. Não impacta o saldo.",
+      parameters: {
+        type: "object",
+        properties: {
+          transaction_ids: { type: "array", items: { type: "string" }, description: "IDs das transações para reprovar" },
+          reason: { type: "string", description: "Motivo da reprovação" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_pending_summary",
+      description: "Retorna resumo das transações pendentes de aprovação financeira.",
+      parameters: {
+        type: "object",
+        properties: {
+          date: { type: "string", description: "Data no formato YYYY-MM-DD. Se não informada, mostra todas as pendentes." },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─────────────────── reliability layer (via actionShield) ───────────────────
