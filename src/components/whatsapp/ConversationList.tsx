@@ -85,7 +85,7 @@ export function ConversationList({
   // Persist status filter
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
     const saved = localStorage.getItem("tecvo_whatsapp_status_filter");
-    if (saved === "novas" || saved === "atendendo" || saved === "aguardando" || saved === "finalizado") {
+    if (saved === "novas" || saved === "atendendo" || saved === "agendados" || saved === "aguardando" || saved === "finalizado") {
       return saved as StatusFilter;
     }
     return "atendendo";
@@ -93,7 +93,7 @@ export function ConversationList({
 
   // Effect to ensure status is always valid and persisted
   useEffect(() => {
-    if (!statusFilter || !["novas", "atendendo", "aguardando", "finalizado"].includes(statusFilter)) {
+    if (!statusFilter || !["novas", "atendendo", "agendados", "aguardando", "finalizado"].includes(statusFilter)) {
       setStatusFilter("atendendo");
       localStorage.setItem("tecvo_whatsapp_status_filter", "atendendo");
     } else {
