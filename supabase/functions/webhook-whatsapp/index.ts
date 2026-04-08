@@ -3963,16 +3963,15 @@ Cada "sim" aproxima o lead da decisão final.
           const aiUsageLead = extractUsageFromResponse({
             usage: aiResultLead.usage,
           });
-          await logAIUsage(supabase, {
-            organizationId: targetOrganizationId,
-            userId: null,
-            actionSlug: "bot_lead_reply",
+          const leadEstCost = calculateCostUSD("google/gemini-2.5-flash", aiUsageLead.promptTokens, aiUsageLead.completionTokens);
+          await finalizeAIUsage(supabase, leadCreditCheck.requestId, {
             model: "google/gemini-2.5-flash",
             promptTokens: aiUsageLead.promptTokens,
             completionTokens: aiUsageLead.completionTokens,
             totalTokens: aiUsageLead.totalTokens,
             durationMs: aiDurationLead,
             status: "success",
+            estimatedCostUsd: leadEstCost,
           });
 
           // Retry once on empty response (no extra debit — already paid)
@@ -3983,10 +3982,8 @@ Cada "sim" aproxima o lead da decisão final.
               const retryResult = await callAI(systemPrompt, conversationHistory);
               aiResponse = retryResult.content;
               const retryUsage = extractUsageFromResponse({ usage: retryResult.usage });
-              await logAIUsage(supabase, {
-                organizationId: targetOrganizationId,
-                userId: null,
-                actionSlug: "bot_lead_reply",
+              // Log retry as separate free entry (debit already happened)
+              await logFreeAIUsage(supabase, targetOrganizationId, null, "bot_lead_reply", {
                 model: "google/gemini-2.5-flash",
                 promptTokens: retryUsage.promptTokens,
                 completionTokens: retryUsage.completionTokens,
