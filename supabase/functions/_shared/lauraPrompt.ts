@@ -2031,10 +2031,13 @@ export async function executeAdminTool(
       console.warn(`[LAURA] QUALITY LOG: Service WITHOUT catalog link. Type="${finalServiceType}", desc="${description}"`);
     }
 
+    const tz = ctx?.timezone || "America/Sao_Paulo";
+    const safeScheduledDate = buildTimestampEdge(scheduled_date, tz);
+
     const { data: newService, error } = await supabase.from("services").insert({
       organization_id: organizationId,
       client_id: client.id,
-      scheduled_date,
+      scheduled_date: safeScheduledDate,
       service_type: finalServiceType,
       description: finalDescription,
       value: finalValue,
