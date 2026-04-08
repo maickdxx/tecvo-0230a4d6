@@ -4048,10 +4048,8 @@ Cada "sim" aproxima o lead da decisão final.
                   try {
                     const ttsResultLead = await generateTTSAudio(safeResponseLead);
                     if (ttsResultLead.provider) {
-                      await logAIUsage(supabase, {
-                        organizationId: targetOrganizationId, userId: null,
-                        actionSlug: "tts_generation", model: ttsResultLead.provider,
-                        promptTokens: 0, completionTokens: 0, totalTokens: 0,
+                      await logFreeAIUsage(supabase, targetOrganizationId, null, "tts_generation", {
+                        model: ttsResultLead.provider, promptTokens: 0, completionTokens: 0, totalTokens: 0,
                         durationMs: ttsResultLead.durationMs, status: ttsResultLead.audio ? "success" : "error",
                       });
                     }
