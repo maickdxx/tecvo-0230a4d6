@@ -5286,10 +5286,14 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          approval_status: string
+          approved_at: string | null
+          approved_by_user_id: string | null
           category: string
           client_id: string | null
           compensation_date: string | null
           created_at: string
+          created_by_user_id: string | null
           date: string
           deleted_at: string | null
           description: string
@@ -5304,18 +5308,24 @@ export type Database = {
           payment_method: string | null
           payment_source_type: string | null
           recurrence: string | null
+          rejection_reason: string | null
           service_id: string | null
           status: string | null
           supplier_id: string | null
+          transaction_origin: string
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
         }
         Insert: {
           amount: number
+          approval_status?: string
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           category: string
           client_id?: string | null
           compensation_date?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           date?: string
           deleted_at?: string | null
           description: string
@@ -5330,18 +5340,24 @@ export type Database = {
           payment_method?: string | null
           payment_source_type?: string | null
           recurrence?: string | null
+          rejection_reason?: string | null
           service_id?: string | null
           status?: string | null
           supplier_id?: string | null
+          transaction_origin?: string
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
         }
         Update: {
           amount?: number
+          approval_status?: string
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           category?: string
           client_id?: string | null
           compensation_date?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           date?: string
           deleted_at?: string | null
           description?: string
@@ -5356,9 +5372,11 @@ export type Database = {
           payment_method?: string | null
           payment_source_type?: string | null
           recurrence?: string | null
+          rejection_reason?: string | null
           service_id?: string | null
           status?: string | null
           supplier_id?: string | null
+          transaction_origin?: string
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
         }
@@ -7586,6 +7604,10 @@ export type Database = {
         Args: { _account_id: string; _delta: number }
         Returns: number
       }
+      approve_transactions: {
+        Args: { _organization_id: string; _transaction_ids: string[] }
+        Returns: Json
+      }
       calculate_service_total_duration: {
         Args: { s_id: string }
         Returns: string
@@ -7740,6 +7762,10 @@ export type Database = {
           page_title: string
         }[]
       }
+      get_pending_approval_summary: {
+        Args: { _date?: string; _organization_id: string }
+        Returns: Json
+      }
       get_portal_config_by_slug: {
         Args: { _slug: string }
         Returns: {
@@ -7864,6 +7890,14 @@ export type Database = {
           new_status: string
           old_status: string
         }[]
+      }
+      reject_transactions: {
+        Args: {
+          _organization_id: string
+          _reason?: string
+          _transaction_ids: string[]
+        }
+        Returns: Json
       }
       sign_service_signature: {
         Args: {
