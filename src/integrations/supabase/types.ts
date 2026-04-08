@@ -7659,6 +7659,15 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reconcile_whatsapp_pipeline: {
+        Args: never
+        Returns: {
+          contact_id: string
+          contact_name: string
+          new_status: string
+          old_status: string
+        }[]
+      }
       sign_service_signature: {
         Args: {
           p_ip_address?: string
