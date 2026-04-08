@@ -6,6 +6,9 @@ interface FinanceSummaryProps {
   income: number;
   expense: number;
   balance: number;
+  pendingIncome?: number;
+  pendingExpense?: number;
+  pendingCount?: number;
 }
 
 export function FinanceSummary({ income, expense, balance }: FinanceSummaryProps) {
