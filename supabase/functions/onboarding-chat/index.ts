@@ -204,6 +204,7 @@ async function callAI(messages: ChatMessage[], systemPrompt: string) {
   return {
     content: choice?.message?.content || "",
     toolCalls: choice?.message?.tool_calls || [],
+    usage: result.usage || {},
   };
 }
 
